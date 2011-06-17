@@ -9,9 +9,12 @@ import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 
 // The weaver instruments byte-codes into java class. 
-public interface Weaver {
+public class Weaver {
 
 	// TODO include analysis
-	void instrument(ClassNode classNode,
-			Map<Snippet, List<MarkedRegion>> snippetMarkings);
+	public void instrument(ClassNode classNode,
+			Map<Snippet, List<MarkedRegion>> snippetMarkings) {
+		
+		// TODO! implement
+	}
 }

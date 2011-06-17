@@ -7,7 +7,7 @@ public class SnippetImpl {
 
 	protected Marker marker;
 	protected Scope scope;
-	// TODO protected ?Code? asmCode;
+	// TODO! protected ?Code? asmCode;
 
 	public Marker getMarker() {
 		return marker;

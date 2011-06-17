@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.analyzer.Analyzer;
+import ch.usi.dag.disl.parser.Parser;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.weaver.Weaver;
@@ -16,6 +17,9 @@ import ch.usi.dag.jborat.agent.Instrumentation;
 
 public class DiSLDriver implements Instrumentation {
 
+	final String PROP_DISL_CLASSES = "disl.classes";
+	final String PROP_CLASSES_DELIM = ",";
+	
 	List<Snippet> snippets = new LinkedList<Snippet>();
 	List<Analyzer> analyzers = new LinkedList<Analyzer>();
 	Weaver weaver;
@@ -23,13 +27,32 @@ public class DiSLDriver implements Instrumentation {
 	public DiSLDriver() {
 		super();
 		
-		// TODO compile DiSL classes
+		String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
+		List<byte []> compiledClasses = new LinkedList<byte []>();
+
+		// TODO replace for real compiler
+		CompilerStub compiler = new CompilerStub();
 		
-		// TODO parse DiSL classes
+		// *** compile DiSL classes ***
+		for(String file : classesToCompile.split(PROP_CLASSES_DELIM)) {
+			
+			compiledClasses.add(compiler.compile(file));
+		}
+		
+		// *** parse compiled classes ***
 		//  - create snippets
 		//  - create analyzers
 		
-		// TODO initialize viewer
+		Parser parser = new Parser(); 
+		
+		for(byte [] classAsBytes : compiledClasses) {
+			parser.parse(classAsBytes);
+		}
+		
+		// initialize fields
+		snippets = parser.getSnippets();
+		analyzers = parser.getAnalyzers();
+		weaver = new Weaver();
 	}
 
 	/**
