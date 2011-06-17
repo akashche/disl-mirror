@@ -1,10 +1,7 @@
 package ch.usi.dag.disl.analyzer;
 
-import org.objectweb.asm.tree.ClassNode;
+public interface Analyzer {
 
-// Provide static analysis of the java class.
-public class Analyzer {
-	public static void analyse(ClassNode clazz){
-		
-	}
+	// TODO
+	void analyse();
 }

@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.snippet;
 
-import ch.usi.dag.disl.marker.Marker;
-import ch.usi.dag.disl.scope.Scope;
+import ch.usi.dag.disl.snippet.marker.Marker;
+import ch.usi.dag.disl.snippet.scope.Scope;
 
 public interface Snippet {
 

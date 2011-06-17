@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.scope;
+package ch.usi.dag.disl.snippet.scope;
 
 import org.objectweb.asm.tree.MethodNode;
 

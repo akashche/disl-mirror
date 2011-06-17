@@ -8,10 +8,10 @@ import java.util.Map;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.analysis.Analyzer;
-import ch.usi.dag.disl.marker.MarkedRegion;
+import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.viewer.Viewer;
+import ch.usi.dag.disl.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.weaver.Viewer;
 import ch.usi.dag.jborat.agent.Instrumentation;
 
 public class DiSLDriver implements Instrumentation {

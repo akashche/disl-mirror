@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.marker;
+package ch.usi.dag.disl.snippet.marker;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 
