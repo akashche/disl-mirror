@@ -50,6 +50,8 @@ public class DiSLDriver implements Instrumentation {
 			parser.parse(classAsBytes);
 		}
 		
+		// TODO support for synthetic local
+		
 		// initialize fields
 		snippets = parser.getSnippets();
 		analyzers = parser.getAnalyzers();
@@ -110,15 +112,15 @@ public class DiSLDriver implements Instrumentation {
 	}
 	
 	@Override
-	public void instrument(ClassNode clazz) {
+	public void instrument(ClassNode classNode) {
 		
 		// instrument all methods in a class
-		for(Object methodObj : clazz.methods) {
+		for(Object methodObj : classNode.methods) {
 			
 			// cast - ASM still uses Java 1.4 interface
 			MethodNode method = (MethodNode) methodObj;
 			
-			instrumentMethod(clazz, method);
+			instrumentMethod(classNode, method);
 		}
 	}
 

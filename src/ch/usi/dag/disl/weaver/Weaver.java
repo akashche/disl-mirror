@@ -12,6 +12,7 @@ import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 public class Weaver {
 
 	// TODO include analysis
+	// TODO support for synthetic local
 	public void instrument(ClassNode classNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings) {
 		
