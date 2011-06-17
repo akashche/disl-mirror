@@ -10,7 +10,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.analyzer.Analyzer;
-import ch.usi.dag.disl.parser.AnnotationParser;
+import ch.usi.dag.disl.annotation.parser.AnnotationParser;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.weaver.Weaver;

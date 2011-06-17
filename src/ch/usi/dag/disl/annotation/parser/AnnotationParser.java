@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.parser;
+package ch.usi.dag.disl.annotation.parser;
 
 import java.util.Iterator;
 import java.util.LinkedList;
