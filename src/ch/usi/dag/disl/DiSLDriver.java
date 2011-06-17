@@ -1,5 +1,6 @@
 package ch.usi.dag.disl;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,7 +25,7 @@ public class DiSLDriver implements Instrumentation {
 	List<Analyzer> analyzers = new LinkedList<Analyzer>();
 	Weaver weaver;
 	
-	public DiSLDriver() {
+	public DiSLDriver() throws IOException {
 		super();
 		
 		String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
