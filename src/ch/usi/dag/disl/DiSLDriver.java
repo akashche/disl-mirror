@@ -11,23 +11,23 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
-import ch.usi.dag.disl.weaver.Viewer;
+import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
 
 public class DiSLDriver implements Instrumentation {
 
 	List<Snippet> snippets = new LinkedList<Snippet>();
 	List<Analyzer> analyzers = new LinkedList<Analyzer>();
-	Viewer viewer;
+	Weaver weaver;
 	
 	public DiSLDriver() {
 		super();
 		
 		// TODO compile DiSL classes
 		
-		// TODO create snippets
-		
-		// TODO create analyzers
+		// TODO parse DiSL classes
+		//  - create snippets
+		//  - create analyzers
 		
 		// TODO initialize viewer
 	}
@@ -82,7 +82,7 @@ public class DiSLDriver implements Instrumentation {
 		
 		// *** viewing ***
 		
-		viewer.instrument(classNode, snippetMarkings);
+		weaver.instrument(classNode, snippetMarkings);
 	}
 	
 	@Override
