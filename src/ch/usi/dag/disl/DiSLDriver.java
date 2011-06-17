@@ -10,7 +10,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.analyzer.Analyzer;
-import ch.usi.dag.disl.parser.Parser;
+import ch.usi.dag.disl.parser.AnnotationParser;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.weaver.Weaver;
@@ -44,7 +44,7 @@ public class DiSLDriver implements Instrumentation {
 		//  - create snippets
 		//  - create analyzers
 		
-		Parser parser = new Parser(); 
+		AnnotationParser parser = new AnnotationParser(); 
 		
 		for(byte [] classAsBytes : compiledClasses) {
 			parser.parse(classAsBytes);

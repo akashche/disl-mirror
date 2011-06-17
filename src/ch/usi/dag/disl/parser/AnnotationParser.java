@@ -24,7 +24,7 @@ import ch.usi.dag.disl.snippet.scope.ScopeImpl;
  *  The parser takes annotated java file as input and creates Snippet and
  *  Analyzer classes
  */
-public class Parser {
+public class AnnotationParser {
 	
 	private List<Snippet> snippets = new LinkedList<Snippet>();
 	private List<Analyzer> analyzers = new LinkedList<Analyzer>();

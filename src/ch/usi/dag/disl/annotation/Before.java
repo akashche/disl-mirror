@@ -4,7 +4,7 @@ import ch.usi.dag.disl.snippet.marker.Marker;
 
 public @interface Before {
 	
-	// NOTE if you want to change names, you need to change Parser class
+	// NOTE if you want to change names, you need to change AnnotationParser class
 	Class<Marker> marker();
 	String scope();
 	int order() default 100;
