@@ -11,13 +11,13 @@ import org.objectweb.asm.tree.MethodNode;
 public class InvocationMarker implements Marker {
 
 	@Override
-	public List<MarkRegion> mark(MethodNode method) {
-		List<MarkRegion> regions = new LinkedList<MarkRegion>();
+	public List<MarkedRegion> mark(MethodNode method) {
+		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		InsnList ilst = method.instructions;
 
 		for (AbstractInsnNode instruction : ilst.toArray())
 			if (instruction instanceof MethodInsnNode)
-				regions.add(new MarkRegion(instruction, instruction));
+				regions.add(new MarkedRegion(instruction, instruction));
 
 		return regions;
 	}

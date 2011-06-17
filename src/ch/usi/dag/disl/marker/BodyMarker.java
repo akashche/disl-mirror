@@ -9,10 +9,10 @@ import org.objectweb.asm.tree.MethodNode;
 public class BodyMarker implements Marker {
 
 	@Override
-	public List<MarkRegion> mark(MethodNode method) {
-		List<MarkRegion> regions = new LinkedList<MarkRegion>();
+	public List<MarkedRegion> mark(MethodNode method) {
+		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		InsnList ilst = method.instructions;
-		MarkRegion region = new MarkRegion();
+		MarkedRegion region = new MarkedRegion();
 		region.start = ilst.getFirst();
 		// FIXME Does the region contain the return-instruction?
 		// What about a try-finally block?
