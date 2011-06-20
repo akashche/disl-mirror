@@ -4,5 +4,5 @@ import org.objectweb.asm.tree.MethodNode;
 
 public interface Scope {
 
-	boolean matches(MethodNode method);
+	public boolean matches(MethodNode method);
 }

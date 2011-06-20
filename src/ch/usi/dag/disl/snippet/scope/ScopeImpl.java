@@ -8,10 +8,9 @@ public class ScopeImpl implements Scope {
 		// TODO implement
 	}
 
-	@Override
 	public boolean matches(MethodNode method) {
 		
-		// TODO implementation
+		// TODO implement
 		
 		return true;
 	}
