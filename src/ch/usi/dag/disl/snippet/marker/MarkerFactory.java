@@ -5,9 +5,11 @@ import org.objectweb.asm.Type;
 public class MarkerFactory {
 
 	public static Marker createMarker(Type marker) {
-		// TODO! implement
-		// load class according to Type and instantiate
-		return null;
+		try {
+			return (Marker) Class.forName(marker.getClassName()).newInstance();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new EmptyMarker();
+		}
 	}
-
 }
