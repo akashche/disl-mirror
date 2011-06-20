@@ -29,6 +29,8 @@ public class AnnotationParser {
 	private List<Snippet> snippets = new LinkedList<Snippet>();
 	private List<Analyzer> analyzers = new LinkedList<Analyzer>();
 	
+	final private String constructorName = "<init>";
+	
 	public void parse(byte [] classAsBytes) {
 		
 		// TODO support for synthetic local
@@ -49,6 +51,11 @@ public class AnnotationParser {
 			
 			// cast - ASM still uses Java 1.4 interface
 			MethodNode method = (MethodNode) methodObj;
+
+			// skip the constructor
+			if(method.name.equals(constructorName)) {
+				continue;
+			}
 			
 			parseSnippets(method);
 		}
@@ -61,6 +68,7 @@ public class AnnotationParser {
 	 */
 	protected void parseAnalyzers(List<?> annotations) {
 		// TODO implement
+		// TODO check for null
 	}
 	
 	// data holder for parseMethodAnnotation methods
@@ -108,6 +116,12 @@ public class AnnotationParser {
 	}
 	
 	protected void parseSnippets(MethodNode method) {
+		
+		if(method.invisibleAnnotations == null) {
+			// TODO report to user bad behavior - should not be RuntimeE..
+			throw new RuntimeException(
+					"Method " + method.name + " has no anottations which is unsupported");
+		}
 		
 		// more annotations on one snippet
 		// supported but we will have multiple snippets ;)

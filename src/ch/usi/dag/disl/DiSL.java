@@ -1,7 +1,5 @@
 package ch.usi.dag.disl;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,7 +7,6 @@ import java.util.Map;
 
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.util.TraceClassVisitor;
 
 import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.annotation.parser.AnnotationParser;
@@ -27,37 +24,44 @@ public class DiSL implements Instrumentation {
 	List<Analyzer> analyzers = new LinkedList<Analyzer>();
 	Weaver weaver;
 	
-	public DiSL() throws IOException {
+	public DiSL() {
 		super();
 		
-		String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
-		List<byte []> compiledClasses = new LinkedList<byte []>();
-
-		// TODO replace for real compiler
-		CompilerStub compiler = new CompilerStub();
+		// report every exception within our code - dont let anyone mask it
+		try {
 		
-		// *** compile DiSL classes ***
-		for(String file : classesToCompile.split(PROP_CLASSES_DELIM)) {
+			String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
+			List<byte []> compiledClasses = new LinkedList<byte []>();
+	
+			// TODO replace for real compiler
+			CompilerStub compiler = new CompilerStub();
 			
-			compiledClasses.add(compiler.compile(file));
+			// *** compile DiSL classes ***
+			for(String file : classesToCompile.split(PROP_CLASSES_DELIM)) {
+				
+				compiledClasses.add(compiler.compile(file));
+			}
+			
+			// *** parse compiled classes ***
+			//  - create snippets
+			//  - create analyzers
+			
+			AnnotationParser parser = new AnnotationParser(); 
+			
+			for(byte [] classAsBytes : compiledClasses) {
+				parser.parse(classAsBytes);
+			}
+			
+			// TODO support for synthetic local
+			
+			// initialize fields
+			snippets = parser.getSnippets();
+			analyzers = parser.getAnalyzers();
+			weaver = new Weaver();
 		}
-		
-		// *** parse compiled classes ***
-		//  - create snippets
-		//  - create analyzers
-		
-		AnnotationParser parser = new AnnotationParser(); 
-		
-		for(byte [] classAsBytes : compiledClasses) {
-			parser.parse(classAsBytes);
+		catch(Throwable e) {
+			reportError(e);
 		}
-		
-		// TODO support for synthetic local
-		
-		// initialize fields
-		snippets = parser.getSnippets();
-		analyzers = parser.getAnalyzers();
-		weaver = new Weaver();
 	}
 
 	/**
@@ -79,9 +83,15 @@ public class DiSL implements Instrumentation {
 		for(Snippet snippet : snippets) {
 			
 			// snippet matching
-			if(snippet.getScope().matches(method)) {
+			if(snippet.getScope().matches(classNode.name, method)) {
 				matchedSnippets.add(snippet);
 			}
+		}
+		
+		// if there is nothing to instrument -> quit
+		// just to be faster out
+		if(matchedSnippets.isEmpty()) {
+			return;
 		}
 		
 		// *** create markings ***
@@ -111,25 +121,37 @@ public class DiSL implements Instrumentation {
 		// *** viewing ***
 		
 		weaver.instrument(classNode, snippetMarkings);
-	}
-	
-	@Override
-	public void instrument(ClassNode classNode) {
-		
-		// instrument all methods in a class
-		for(Object methodObj : classNode.methods) {
-			
-			// cast - ASM still uses Java 1.4 interface
-			MethodNode method = (MethodNode) methodObj;
-			
-			instrumentMethod(classNode, method);
-		}
 		
 		// TODO debug --
-		System.out.println("--- instumentation done");
-		TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
-		classNode.accept(tcv);
+		System.out.println("--- instumentation of " + classNode.name);
+		//TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
+		//classNode.accept(tcv);
 		System.out.println("---");
 	}
+	
+	public void instrument(ClassNode classNode) {
 
+		// report every exception within our code - dont let anyone mask it
+		try {
+		
+			// instrument all methods in a class
+			for(Object methodObj : classNode.methods) {
+				
+				// cast - ASM still uses Java 1.4 interface
+				MethodNode method = (MethodNode) methodObj;
+				
+				instrumentMethod(classNode, method);
+			}
+			
+		}
+		catch(Throwable e) {
+			reportError(e);
+		}
+	}
+	
+	private void reportError(Throwable e) {
+
+		// TODO something better
+		e.printStackTrace();
+	}
 }

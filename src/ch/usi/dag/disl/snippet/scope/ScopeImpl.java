@@ -8,11 +8,11 @@ public class ScopeImpl implements Scope {
 		// TODO implement
 	}
 
-	public boolean matches(MethodNode method) {
+	public boolean matches(String className, MethodNode method) {
 		
 		// TODO implement
 		
-		return true;
+		return className.equals("TargetClass");
 	}
 
 }
