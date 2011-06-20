@@ -1,18 +1,26 @@
 package ch.usi.dag.disl.snippet.marker;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 public class MarkedRegion {
 	public AbstractInsnNode start;
-	public AbstractInsnNode end;
+	public List<AbstractInsnNode> ends;
 
 	public MarkedRegion() {
 		this.start = null;
-		this.end = null;
+		this.ends = new LinkedList<AbstractInsnNode>();
 	}
-	
+
 	public MarkedRegion(AbstractInsnNode start, AbstractInsnNode end) {
 		this.start = start;
-		this.end = end;
+		this.ends = new LinkedList<AbstractInsnNode>();
+		this.ends.add(end);
+	}
+
+	public void addExitPoint(AbstractInsnNode exitpoint) {
+		this.ends.add(exitpoint);
 	}
 }
