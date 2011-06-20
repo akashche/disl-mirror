@@ -43,7 +43,7 @@ public class AnnotationParser {
 		ClassNode classNode = new ClassNode();
 		cr.accept(classNode, 0);
 
-		parseAnalyzers(classNode.visibleAnnotations);
+		parseAnalyzers(classNode.invisibleAnnotations);
 		
 		for(Object methodObj : classNode.methods) {
 			
@@ -111,7 +111,7 @@ public class AnnotationParser {
 		
 		// more annotations on one snippet
 		// supported but we will have multiple snippets ;)
-		for(Object annotationObj : method.visibleAnnotations) {
+		for(Object annotationObj : method.invisibleAnnotations) {
 
 			MethodAnnotationData annotData =
 				// cast - ASM still uses Java 1.4 interface
