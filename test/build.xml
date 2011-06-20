@@ -1,0 +1,20 @@
+<project name="disl-test" default="package" basedir=".">
+
+	<property file="../disl.version"/>
+	
+	<path id="buildpath">
+		<pathelement location="../build/disl-${disl.version}"/>
+	</path>
+
+	<target name="compile">
+		<mkdir dir="bin"/>
+		<javac  srcdir="src" destdir="bin" debug="true">
+			<classpath refid="buildpath"/>
+		</javac>
+	</target>
+
+	<target name="clean">
+		<delete dir="bin"/>
+	</target>
+
+</project>

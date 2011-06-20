@@ -1,0 +1,29 @@
+<project name="disl" default="package" basedir=".">
+
+	<property file="build.properties"/>
+	<property file="disl.version"/>
+
+	<path id="buildpath">
+		<pathelement location="${asm.path}"/>
+		<pathelement location="${jborat.path}"/>
+	</path>
+
+	<target name="package" depends="compile">
+		<mkdir dir="build"/>
+		<jar basedir="bin" destfile="build/disl-${disl.version}.jar"/>
+	</target>
+
+
+	<target name="compile">
+		<mkdir dir="bin"/>
+		<javac srcdir="src" destdir="bin" debug="true">
+			<classpath refid="buildpath"/>
+		</javac>
+	</target>
+	
+	<target name="clean">
+		<delete dir="bin"/>
+		<delete dir="build"/>
+	</target>
+
+</project>
