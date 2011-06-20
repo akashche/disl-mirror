@@ -1,4 +1,4 @@
-<project name="disl-test" default="package" basedir=".">
+<project name="disl-test" default="compile" basedir=".">
 
 	<property file="../disl.version"/>
 	
@@ -8,7 +8,7 @@
 
 	<target name="compile">
 		<mkdir dir="bin"/>
-		<javac  srcdir="src" destdir="bin" debug="true">
+		<javac  srcdir="src" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath"/>
 		</javac>
 	</target>

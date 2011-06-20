@@ -16,7 +16,7 @@
 
 	<target name="compile">
 		<mkdir dir="bin"/>
-		<javac srcdir="src" destdir="bin" debug="true">
+		<javac srcdir="src" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath"/>
 		</javac>
 	</target>
