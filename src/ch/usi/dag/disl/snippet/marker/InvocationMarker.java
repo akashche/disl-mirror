@@ -15,9 +15,11 @@ public class InvocationMarker implements Marker {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		InsnList ilst = method.instructions;
 
-		for (AbstractInsnNode instruction : ilst.toArray())
-			if (instruction instanceof MethodInsnNode)
+		for (AbstractInsnNode instruction : ilst.toArray()) {
+			if (instruction instanceof MethodInsnNode) {
 				regions.add(new MarkedRegion(ilst, instruction, instruction));
+			}
+		}
 
 		return regions;
 	}

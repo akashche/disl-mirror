@@ -20,8 +20,9 @@ public class BodyMarker implements Marker {
 		for (AbstractInsnNode instr : method.instructions.toArray()) {
 			int opcode = instr.getOpcode();
 
-			if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
+			if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
 				region.addExitPoint(instr.getPrevious());
+			}
 		}
 
 		regions.add(region);
