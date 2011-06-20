@@ -24,6 +24,7 @@ public class Weaver {
 	// TODO support for synthetic local
 	public void instrument(ClassNode classNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings) {
+
 		for (Snippet snippet : snippetMarkings.keySet()) {
 			List<MarkedRegion> regions = snippetMarkings.get(snippet);
 			InsnList ilst = snippet.getAsmCode();
@@ -34,8 +35,9 @@ public class Weaver {
 			for (AbstractInsnNode instr : ilst.toArray()) {
 				int opcode = instr.getOpcode();
 
-				if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
+				if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
 					returns.add(instr);
+				}
 			}
 
 			if (returns.size() > 1) {
@@ -48,17 +50,23 @@ public class Weaver {
 							label));
 					ilst.remove(instr);
 				}
-			} else if (returns.size() == 1)
+			}
+			else if (returns.size() == 1) {
 				ilst.remove(returns.get(0));
+			}
 
 			// Instrument
 			if (snippet.getAnnotationClass().equals(Before.class)) {
-				for (MarkedRegion region : regions)
+				for (MarkedRegion region : regions) {
 					region.ilst.insertBefore(region.start, ilst);
-			} else if (snippet.getAnnotationClass().equals(After.class)) {
-				for (MarkedRegion region : regions)
-					for (AbstractInsnNode exit : region.ends)
+				}
+			}
+			else if (snippet.getAnnotationClass().equals(After.class)) {
+				for (MarkedRegion region : regions) {
+					for (AbstractInsnNode exit : region.ends) {
 						region.ilst.insert(exit, ilst);
+					}
+				}
 			}
 		}
 	}
