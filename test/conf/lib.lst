@@ -1,0 +1,5 @@
+# This is a sample configuration with relative paths
+# you can use full path using file:/// format 
+../lib/asm-all-3.3.jar
+../lib/jborat.jar
+../build/disl-unspec.jar

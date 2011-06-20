@@ -1,12 +1,21 @@
 <project name="disl-test" default="compile" basedir=".">
 
 	<property file="../disl.version"/>
+	<property name="disl.jar.path" value="../build/disl-${disl.version}.jar"/>
 	
 	<path id="buildpath">
-		<pathelement location="../build/disl-${disl.version}"/>
+		<pathelement location="${disl.jar.path}"/>
 	</path>
 
-	<target name="compile">
+	<target name="check-disl-jar">
+		<available file="${disl.jar.path}" property="disl.jar.present"/>
+	    </target>
+	
+	<target name="report-missing-jar" depends="check-disl-jar" unless="disl.jar.present">
+		<fail message="DiSL jar not found at ${disl.jar.path}. Build DiSL first!" />
+	</target> 
+
+	<target name="compile" depends="report-missing-jar">
 		<mkdir dir="bin"/>
 		<javac  srcdir="src" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath"/>

@@ -1,6 +1,7 @@
 package ch.usi.dag.disl;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Map;
 
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.annotation.parser.AnnotationParser;
@@ -16,7 +18,7 @@ import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
 
-public class DiSLDriver implements Instrumentation {
+public class DiSL implements Instrumentation {
 
 	final String PROP_DISL_CLASSES = "disl.classes";
 	final String PROP_CLASSES_DELIM = ",";
@@ -25,7 +27,7 @@ public class DiSLDriver implements Instrumentation {
 	List<Analyzer> analyzers = new LinkedList<Analyzer>();
 	Weaver weaver;
 	
-	public DiSLDriver() throws IOException {
+	public DiSL() throws IOException {
 		super();
 		
 		String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
@@ -122,6 +124,12 @@ public class DiSLDriver implements Instrumentation {
 			
 			instrumentMethod(classNode, method);
 		}
+		
+		// TODO debug --
+		System.out.println("--- instumentation done");
+		TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
+		classNode.accept(tcv);
+		System.out.println("---");
 	}
 
 }
