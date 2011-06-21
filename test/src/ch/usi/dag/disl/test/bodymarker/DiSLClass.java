@@ -6,7 +6,7 @@ import ch.usi.dag.disl.snippet.marker.BodyMarker;
 
 public class DiSLClass {
 	
-	@Before(marker = BodyMarker.class, scope = "TargetClass.print()", order = 0)
+	@Before(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 0)
 	public static void precondition() {
 		
 		final String one = "1";
@@ -22,7 +22,7 @@ public class DiSLClass {
 		System.out.println("Precondition: This should NOT be printed");
 	}
 	
-	@After(marker = BodyMarker.class, scope = "TargetClass.print()", order = 0)
+	@After(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 0)
 	public static void postcondition() {
 		System.out.println("Postcondition!");
 	}

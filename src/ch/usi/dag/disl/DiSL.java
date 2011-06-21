@@ -123,10 +123,8 @@ public class DiSL implements Instrumentation {
 		weaver.instrument(classNode, snippetMarkings);
 		
 		// TODO debug --
-		System.out.println("--- instumentation of " + classNode.name);
-		//TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
-		//classNode.accept(tcv);
-		System.out.println("---");
+		System.out.println("--- instumentation of "
+				+ classNode.name + "." + method.name);
 	}
 	
 	public void instrument(ClassNode classNode) {

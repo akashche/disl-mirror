@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.test.bodymarker;
 public class TargetClass {
+	
 	public void print(boolean branch) {
 		
 		System.out.println("This is the body of TargetClass.print");
