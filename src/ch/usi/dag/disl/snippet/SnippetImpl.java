@@ -16,22 +16,22 @@ public class SnippetImpl implements Snippet {
 	public SnippetImpl(Class<?> annotationClass, Marker marker, Scope scope,
 			int order, InsnList asmCode) {
 		super();
-		
+
 		this.annotationClass = annotationClass;
 		this.marker = marker;
 		this.scope = scope;
-		this.order = order; 
+		this.order = order;
 		this.asmCode = asmCode;
 	}
 
 	public Class<?> getAnnotationClass() {
 		return annotationClass;
 	}
-	
+
 	public Marker getMarker() {
 		return marker;
 	}
-	
+
 	public Scope getScope() {
 		return scope;
 	}
@@ -39,9 +39,14 @@ public class SnippetImpl implements Snippet {
 	public int getOrder() {
 		return order;
 	}
-	
+
 	public InsnList getAsmCode() {
 		return asmCode;
+	}
+
+	@Override
+	public int compareTo(Snippet o) {
+		return order - o.getOrder();
 	}
 
 }

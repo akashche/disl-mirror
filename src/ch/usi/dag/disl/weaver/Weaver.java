@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.weaver;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,6 +23,32 @@ import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
+
+	public void removeReturns(InsnList ilst) {
+		// Remove 'return' instruction
+		List<AbstractInsnNode> returns = new LinkedList<AbstractInsnNode>();
+
+		for (AbstractInsnNode instr : ilst.toArray()) {
+			int opcode = instr.getOpcode();
+
+			if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
+				returns.add(instr);
+			}
+		}
+
+		if (returns.size() > 1) {
+			// Replace 'return' instructions with 'goto'
+			LabelNode label = new LabelNode(new Label());
+			ilst.add(label);
+
+			for (AbstractInsnNode instr : returns) {
+				ilst.insertBefore(instr, new JumpInsnNode(Opcodes.GOTO, label));
+				ilst.remove(instr);
+			}
+		} else if (returns.size() == 1) {
+			ilst.remove(returns.get(0));
+		}
+	}
 
 	// Make a clone of an instruction list
 	public InsnList cloneList(InsnList src) {
@@ -48,49 +76,37 @@ public class Weaver {
 		return dst;
 	}
 
-	public void fixLocalIndex(int maxLocals, InsnList src) {
+	public int fixLocalIndex(int maxLocals, InsnList src) {
+		int max = maxLocals;
+
 		for (AbstractInsnNode instr : src.toArray()) {
 
 			if (instr instanceof VarInsnNode) {
-				((VarInsnNode) instr).var += maxLocals;
-			}
+				VarInsnNode varInstr = (VarInsnNode) instr;
+				varInstr.var += maxLocals;
 
+				if (varInstr.var > max) {
+					max = varInstr.var;
+				}
+			}
 		}
+
+		return max;
 	}
 
 	// TODO include analysis
 	// TODO support for synthetic local
 	public void instrument(ClassNode classNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings) {
+		// Sort the snippets based on their order
+		ArrayList<Snippet> array = new ArrayList<Snippet>(snippetMarkings.keySet());
+		Collections.sort(array);
 
-		for (Snippet snippet : snippetMarkings.keySet()) {
+		for (Snippet snippet : array) {
 			List<MarkedRegion> regions = snippetMarkings.get(snippet);
 			InsnList ilst = snippet.getAsmCode();
 
-			// Remove 'return' instruction
-			List<AbstractInsnNode> returns = new LinkedList<AbstractInsnNode>();
-
-			for (AbstractInsnNode instr : ilst.toArray()) {
-				int opcode = instr.getOpcode();
-
-				if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
-					returns.add(instr);
-				}
-			}
-
-			if (returns.size() > 1) {
-				// Replace 'return' instructions with 'goto'
-				LabelNode label = new LabelNode(new Label());
-				ilst.add(label);
-
-				for (AbstractInsnNode instr : returns) {
-					ilst.insertBefore(instr, new JumpInsnNode(Opcodes.GOTO,
-							label));
-					ilst.remove(instr);
-				}
-			} else if (returns.size() == 1) {
-				ilst.remove(returns.get(0));
-			}
+			removeReturns(ilst);
 
 			// Instrument
 			if (snippet.getAnnotationClass().equals(Before.class)) {
@@ -111,4 +127,5 @@ public class Weaver {
 			}
 		}
 	}
+
 }
