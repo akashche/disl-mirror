@@ -12,6 +12,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.Before;
@@ -35,16 +36,26 @@ public class Weaver {
 		}
 
 		for (AbstractInsnNode instr : src.toArray()) {
-			
+
 			if (instr instanceof LabelNode) {
 				dst.add(map.get(instr));
 				continue;
 			}
-			
+
 			dst.add(instr.clone(map));
 		}
 
 		return dst;
+	}
+
+	public void fixLocalIndex(int maxLocals, InsnList src) {
+		for (AbstractInsnNode instr : src.toArray()) {
+
+			if (instr instanceof VarInsnNode) {
+				((VarInsnNode) instr).var += maxLocals;
+			}
+
+		}
 	}
 
 	// TODO include analysis
@@ -84,14 +95,17 @@ public class Weaver {
 			// Instrument
 			if (snippet.getAnnotationClass().equals(Before.class)) {
 				for (MarkedRegion region : regions) {
+					InsnList newlst = cloneList(ilst);
+					fixLocalIndex(region.methodnode.maxLocals, newlst);
 					region.methodnode.instructions.insertBefore(region.start,
-							cloneList(ilst));
+							newlst);
 				}
 			} else if (snippet.getAnnotationClass().equals(After.class)) {
 				for (MarkedRegion region : regions) {
 					for (AbstractInsnNode exit : region.ends) {
-						region.methodnode.instructions.insert(exit,
-								cloneList(ilst));
+						InsnList newlst = cloneList(ilst);
+						fixLocalIndex(region.methodnode.maxLocals, newlst);
+						region.methodnode.instructions.insert(exit, newlst);
 					}
 				}
 			}
