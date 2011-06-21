@@ -5,7 +5,7 @@ import ch.usi.dag.disl.snippet.marker.BodyMarker;
 
 public class AnnotatedClass {
 	
-	@Before(marker = BodyMarker.class, scope = "TargetClass.print()")
+	@Before(marker = BodyMarker.class, scope = "TargetClass.print()", order = 0)
 	public static void precondition() {
 		
 		final String one = "1";
@@ -21,7 +21,7 @@ public class AnnotatedClass {
 		System.out.println("Precondition: This should NOT be printed");
 	}
 	
-	@After(marker = BodyMarker.class, scope = "TargetClass.print()")
+	@After(marker = BodyMarker.class, scope = "TargetClass.print()", order = 0)
 	public static void postcondition() {
 		System.out.println("Postcondition!");
 	}
