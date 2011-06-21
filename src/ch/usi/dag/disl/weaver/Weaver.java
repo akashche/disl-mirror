@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.weaver;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,38 @@ import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
+
+	// Make a clone of an instruction list
+	public InsnList cloneList(InsnList src) {
+		Map<AbstractInsnNode, AbstractInsnNode> map = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		InsnList dst = new InsnList();
+
+		// First iterate the instruction list and get all the label
+		for (AbstractInsnNode instr : src.toArray()) {
+			if (instr instanceof LabelNode) {
+				LabelNode label = new LabelNode(new Label());
+				dst.add(label);
+				map.put(instr, label);
+			}
+		}
+
+		// Build a new instruction list using instruction.clone
+		AbstractInsnNode current = dst.getFirst();
+
+		for (AbstractInsnNode instr : src.toArray()) {
+			if (instr instanceof LabelNode) {
+				current = current.getNext();
+			} else {
+				if (current != null) {
+					dst.insertBefore(current, instr.clone(map));
+				} else {
+					dst.add(instr.clone(map));
+				}
+			}
+		}
+
+		return dst;
+	}
 
 	// TODO include analysis
 	// TODO support for synthetic local
@@ -50,21 +83,21 @@ public class Weaver {
 							label));
 					ilst.remove(instr);
 				}
-			}
-			else if (returns.size() == 1) {
+			} else if (returns.size() == 1) {
 				ilst.remove(returns.get(0));
 			}
 
 			// Instrument
 			if (snippet.getAnnotationClass().equals(Before.class)) {
 				for (MarkedRegion region : regions) {
-					region.ilst.insertBefore(region.start, ilst);
+					region.methodnode.instructions.insertBefore(region.start,
+							cloneList(ilst));
 				}
-			}
-			else if (snippet.getAnnotationClass().equals(After.class)) {
+			} else if (snippet.getAnnotationClass().equals(After.class)) {
 				for (MarkedRegion region : regions) {
 					for (AbstractInsnNode exit : region.ends) {
-						region.ilst.insert(exit, ilst);
+						region.methodnode.instructions.insert(exit,
+								cloneList(ilst));
 					}
 				}
 			}
