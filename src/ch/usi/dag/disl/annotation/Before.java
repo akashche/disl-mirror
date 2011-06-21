@@ -7,5 +7,5 @@ public @interface Before {
 	// NOTE if you want to change names, you need to change AnnotationParser class
 	Class<? extends Marker> marker();
 	String scope();
-	int order() default 100;
+	int order();
 }
