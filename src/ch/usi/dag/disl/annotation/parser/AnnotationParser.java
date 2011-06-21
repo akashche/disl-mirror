@@ -19,7 +19,7 @@ import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.marker.MarkerFactory;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
-import ch.usi.dag.disl.util.StaticField;
+import ch.usi.dag.disl.util.Constants;
 
 /**
  * The parser takes annotated java file as input and creates Snippet and
@@ -52,7 +52,7 @@ public class AnnotationParser {
 			MethodNode method = (MethodNode) methodObj;
 
 			// skip the constructor
-			if (method.name.equals(StaticField.CONSTRUCTORNAME)) {
+			if (method.name.equals(Constants.CONSTRUCTORNAME)) {
 				continue;
 			}
 

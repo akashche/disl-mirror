@@ -1,3 +1,5 @@
+package ch.usi.dag.disl.test;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -8,10 +10,10 @@ import org.objectweb.asm.tree.ClassNode;
 
 import ch.usi.dag.disl.DiSL;
 
-public class TestDisl {
+public class SimpleAgent {
 	public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException {
 		ClassReader cr = new ClassReader(
-				TestDisl.class.getResourceAsStream("TargetClass.class"));
+				SimpleAgent.class.getResourceAsStream("TargetClass.class"));
 		ClassNode cn = new ClassNode();
 		cr.accept(cn, 0);
 		

@@ -1,9 +1,10 @@
+package ch.usi.dag.disl.test.bodymarker;
+
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.snippet.marker.BodyMarker;
 
-
-public class AnnotatedClass {
+public class DiSLClass {
 	
 	@Before(marker = BodyMarker.class, scope = "TargetClass.print()", order = 0)
 	public static void precondition() {

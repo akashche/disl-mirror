@@ -8,7 +8,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.util.StaticField;
+import ch.usi.dag.disl.util.Constants;
 
 public class BodyMarker implements Marker {
 
@@ -19,7 +19,7 @@ public class BodyMarker implements Marker {
 		MarkedRegion region = new MarkedRegion(method);
 		region.start = ilst.getFirst();
 
-		if (method.name.equals(StaticField.CONSTRUCTORNAME)) {
+		if (method.name.equals(Constants.CONSTRUCTORNAME)) {
 			// TODO For the constructor, skip instructions for initializing
 			// NOTE THAT instructions for initializing should be the first place in
 			// the method.

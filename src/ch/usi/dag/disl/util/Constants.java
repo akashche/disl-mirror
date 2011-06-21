@@ -1,5 +1,5 @@
 package ch.usi.dag.disl.util;
 
-public class StaticField {
+public class Constants {
 	final public static String CONSTRUCTORNAME = "<init>";
 }

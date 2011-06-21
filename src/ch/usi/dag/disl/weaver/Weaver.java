@@ -26,28 +26,22 @@ public class Weaver {
 		Map<AbstractInsnNode, AbstractInsnNode> map = new HashMap<AbstractInsnNode, AbstractInsnNode>();
 		InsnList dst = new InsnList();
 
-		// First iterate the instruction list and get all the label
+		// First iterate the instruction list and get all the labels
 		for (AbstractInsnNode instr : src.toArray()) {
 			if (instr instanceof LabelNode) {
 				LabelNode label = new LabelNode(new Label());
-				dst.add(label);
 				map.put(instr, label);
 			}
 		}
 
-		// Build a new instruction list using instruction.clone
-		AbstractInsnNode current = dst.getFirst();
-
 		for (AbstractInsnNode instr : src.toArray()) {
+			
 			if (instr instanceof LabelNode) {
-				current = current.getNext();
-			} else {
-				if (current != null) {
-					dst.insertBefore(current, instr.clone(map));
-				} else {
-					dst.add(instr.clone(map));
-				}
+				dst.add(map.get(instr));
+				continue;
 			}
+			
+			dst.add(instr.clone(map));
 		}
 
 		return dst;
