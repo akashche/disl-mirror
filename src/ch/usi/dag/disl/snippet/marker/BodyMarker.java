@@ -14,7 +14,7 @@ public class BodyMarker implements Marker {
 	public List<MarkedRegion> mark(MethodNode method) {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		InsnList ilst = method.instructions;
-		MarkedRegion region = new MarkedRegion(ilst);
+		MarkedRegion region = new MarkedRegion(method);
 		region.start = ilst.getFirst();
 
 		for (AbstractInsnNode instr : method.instructions.toArray()) {

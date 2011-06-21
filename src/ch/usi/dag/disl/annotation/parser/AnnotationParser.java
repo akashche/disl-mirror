@@ -150,8 +150,7 @@ public class AnnotationParser {
 	
 	protected MethodAnnotationData parseMethodAnnotation(AnnotationNode annotation) {
 		
-		// TODO is this correct ??
-		Type annotationType = internalNameToType(annotation.desc);
+		Type annotationType = Type.getType(annotation.desc);
 		
 		// after annotation
 		if(annotationType.equals(Type.getType(After.class))) {
@@ -216,14 +215,6 @@ public class AnnotationParser {
 		}
 		
 		return new MethodAnnotationData(type, marker, scope, order);
-	}
-
-	// TODO needed?
-	private Type internalNameToType(String classNameInternal) {
-
-		final char OBJ_BEGIN = 'L';
-        final char OBJ_END = ';';
-        return Type.getType(OBJ_BEGIN + classNameInternal + OBJ_END);
 	}
 	
 	public List<Snippet> getSnippets() {
