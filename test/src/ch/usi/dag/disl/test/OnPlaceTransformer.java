@@ -12,16 +12,16 @@ import org.objectweb.asm.util.TraceClassVisitor;
 
 import ch.usi.dag.disl.DiSL;
 
-public class SimpleTester {
+public class OnPlaceTransformer {
 	
 	public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException {
 		
-		// NOTE: Under Eclipse call me with these jvm params (example)
+		// INSTRUCTIONS: Under Eclipse call me with these jvm params (example)
 		// -Dtest.class=/ch/usi/dag/disl/test/bodymarker/TargetClass.class
 		// -Ddisl.classes=bin/ch/usi/dag/disl/test/bodymarker/DiSLClass.class
 		
 		ClassReader cr = new ClassReader(
-				SimpleTester.class.getResourceAsStream(
+				OnPlaceTransformer.class.getResourceAsStream(
 						System.getProperty("test.class")));
 		ClassNode cn = new ClassNode();
 		cr.accept(cn, 0);

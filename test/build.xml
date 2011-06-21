@@ -21,9 +21,19 @@
 			<classpath refid="buildpath"/>
 		</javac>
 	</target>
+	
+	<target name="agent" description="create simple agent jar file" >
+		<mkdir dir="build"/>
+		<jar jarfile="build/agent-light.jar">
+			<manifest>
+			<attribute name="Premain-Class" value="ch.usi.dag.disl.test.agent.Agent"/>
+			</manifest>
+		</jar>
+	</target>
 
 	<target name="clean">
 		<delete dir="bin"/>
+		<delete dir="build"/>
 	</target>
 
 </project>
