@@ -19,44 +19,43 @@ import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.marker.MarkerFactory;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
+import ch.usi.dag.disl.util.StaticField;
 
 /**
- *  The parser takes annotated java file as input and creates Snippet and
- *  Analyzer classes
+ * The parser takes annotated java file as input and creates Snippet and
+ * Analyzer classes
  */
 public class AnnotationParser {
-	
+
 	private List<Snippet> snippets = new LinkedList<Snippet>();
 	private List<Analyzer> analyzers = new LinkedList<Analyzer>();
-	
-	final private String constructorName = "<init>";
-	
-	public void parse(byte [] classAsBytes) {
-		
+
+	public void parse(byte[] classAsBytes) {
+
 		// TODO support for synthetic local
-		//  - what if two synthetic local vars with the same name are defined
-		//    in different files ???
-		//  - if we don't want to merge them we should prefix them with class
-		//   - in byte code they are
-		
+		// - what if two synthetic local vars with the same name are defined
+		// in different files ???
+		// - if we don't want to merge them we should prefix them with class
+		// - in byte code they are
+
 		// NOTE this method can be called many times
-		
+
 		ClassReader cr = new ClassReader(classAsBytes);
 		ClassNode classNode = new ClassNode();
 		cr.accept(classNode, 0);
 
 		parseAnalyzers(classNode.invisibleAnnotations);
-		
-		for(Object methodObj : classNode.methods) {
-			
+
+		for (Object methodObj : classNode.methods) {
+
 			// cast - ASM still uses Java 1.4 interface
 			MethodNode method = (MethodNode) methodObj;
 
 			// skip the constructor
-			if(method.name.equals(constructorName)) {
+			if (method.name.equals(StaticField.CONSTRUCTORNAME)) {
 				continue;
 			}
-			
+
 			parseSnippets(method);
 		}
 	}
@@ -64,29 +63,31 @@ public class AnnotationParser {
 	/**
 	 * Method creates analyzers according to annotations
 	 * 
-	 * @param annotations contains specifications for analyzers
+	 * @param annotations
+	 *            contains specifications for analyzers
 	 */
 	protected void parseAnalyzers(List<?> annotations) {
 		// TODO implement
 		// TODO check for null
 	}
-	
+
 	// data holder for parseMethodAnnotation methods
 	private class MethodAnnotationData {
-		
+
 		private boolean known;
 		private Class<?> type;
 		private Type marker;
 		private String scope;
 		private int order;
-		
+
 		public MethodAnnotationData() {
 			this.known = false;
 		}
-		
-		public MethodAnnotationData(Class<?> type, Type marker, String scope, int order) {
+
+		public MethodAnnotationData(Class<?> type, Type marker, String scope,
+				int order) {
 			super();
-			
+
 			this.known = true;
 			this.type = type;
 			this.marker = marker;
@@ -97,134 +98,135 @@ public class AnnotationParser {
 		public boolean isKnown() {
 			return known;
 		}
-		
+
 		public Class<?> getType() {
 			return type;
 		}
-		
+
 		public Type getMarker() {
 			return marker;
 		}
-		
+
 		public String getScope() {
 			return scope;
 		}
-		
+
 		public int getOrder() {
 			return order;
 		}
 	}
-	
+
 	protected void parseSnippets(MethodNode method) {
-		
-		if(method.invisibleAnnotations == null) {
+
+		if (method.invisibleAnnotations == null) {
 			// TODO report to user bad behavior - should not be RuntimeE..
-			throw new RuntimeException(
-					"Method " + method.name + " has no anottations which is unsupported");
+			throw new RuntimeException("Method " + method.name
+					+ " has no anottations which is unsupported");
 		}
-		
+
 		// more annotations on one snippet
 		// supported but we will have multiple snippets ;)
-		for(Object annotationObj : method.invisibleAnnotations) {
+		for (Object annotationObj : method.invisibleAnnotations) {
 
 			MethodAnnotationData annotData =
-				// cast - ASM still uses Java 1.4 interface
-				parseMethodAnnotation((AnnotationNode) annotationObj);
-			
+			// cast - ASM still uses Java 1.4 interface
+			parseMethodAnnotation((AnnotationNode) annotationObj);
+
 			// if this is unknown annotation skip it
-			if(! annotData.isKnown()) {
+			if (!annotData.isKnown()) {
 				continue;
 			}
-			
+
 			// marker
 			Marker marker = MarkerFactory.createMarker(annotData.getMarker());
-			
+
 			// scope
 			Scope scope = new ScopeImpl(annotData.getScope());
-			
+
 			// whole snippet
 			snippets.add(new SnippetImpl(annotData.getType(), marker, scope,
 					annotData.getOrder(), method.instructions));
 		}
 	}
-	
-	protected MethodAnnotationData parseMethodAnnotation(AnnotationNode annotation) {
-		
+
+	protected MethodAnnotationData parseMethodAnnotation(
+			AnnotationNode annotation) {
+
 		Type annotationType = Type.getType(annotation.desc);
-		
+
 		// after annotation
-		if(annotationType.equals(Type.getType(After.class))) {
-			return parseMethodAnnotFields(
-					After.class, annotation, annotation.values);
+		if (annotationType.equals(Type.getType(After.class))) {
+			return parseMethodAnnotFields(After.class, annotation,
+					annotation.values);
 		}
 
 		// before annotation
-		if(annotationType.equals(Type.getType(Before.class))) {
-			return parseMethodAnnotFields(
-					Before.class, annotation, annotation.values);
+		if (annotationType.equals(Type.getType(Before.class))) {
+			return parseMethodAnnotFields(Before.class, annotation,
+					annotation.values);
 		}
-				
+
 		// unknown annotation
 		return new MethodAnnotationData();
 	}
 
 	private MethodAnnotationData parseMethodAnnotFields(Class<?> type,
 			AnnotationNode annotation, List<?> annotValues) {
-		
+
 		Iterator<?> it = annotValues.iterator();
-		
+
 		String name = null;
 		Type marker = null;
 		String scope = null;
 		Integer order = null;
-		
-		while(it.hasNext()) {
-			
-			name = (String)  it.next();
-			
-			if(name.equals("marker")) {
-			
+
+		while (it.hasNext()) {
+
+			name = (String) it.next();
+
+			if (name.equals("marker")) {
+
 				marker = (Type) it.next();
 				continue;
 			}
-			
-			if(name.equals("scope")) {
-			
+
+			if (name.equals("scope")) {
+
 				scope = (String) it.next();
 				continue;
 			}
-			
-			if(name.equals("order")) {
-				
+
+			if (name.equals("order")) {
+
 				order = (Integer) it.next();
 				continue;
 			}
-			
-			throw new RuntimeException(
-					"Unknow field " + name + " in annotation " + type.toString()
+
+			throw new RuntimeException("Unknow field " + name
+					+ " in annotation " + type.toString()
 					+ ". This may happen if annotation class is changed but"
 					+ " parser is not.");
 		}
-		
-		if(marker == null || scope == null || order == null) {
-			
-			throw new RuntimeException(
-					"Missing field in annotation " + type.toString()
+
+		if (marker == null || scope == null || order == null) {
+
+			throw new RuntimeException("Missing field in annotation "
+					+ type.toString()
 					+ ". This may happen if annotation class is changed but"
 					+ " parser is not.");
 		}
-		
+
 		return new MethodAnnotationData(type, marker, scope, order);
 	}
-	
+
 	public List<Snippet> getSnippets() {
-		
+
 		return snippets;
 	}
-	
+
 	public List<Analyzer> getAnalyzers() {
-		
+
 		return analyzers;
 	}
-	
+
 }
