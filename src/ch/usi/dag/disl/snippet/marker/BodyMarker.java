@@ -14,8 +14,8 @@ public class BodyMarker implements Marker {
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		MarkedRegion region = new MarkedRegion(method);
-		region.start = InsnListHelper.findFirstValidMark(method);
+		MarkedRegion region = 
+			new MarkedRegion(method, InsnListHelper.findFirstValidMark(method));
 
 		for (AbstractInsnNode instr : method.instructions.toArray()) {
 			int opcode = instr.getOpcode();

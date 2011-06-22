@@ -52,6 +52,7 @@ public class SnippetImpl implements Snippet {
 	}
 
 	public void initialize() {
+		// TODO ! detect empty stippets
 		// TODO ! remove returns in asm code
 		// TODO ! create list of local variables
 	}

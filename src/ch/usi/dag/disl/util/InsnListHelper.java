@@ -91,6 +91,12 @@ public class InsnListHelper {
 	// For a constructor, the return value will be the instruction after
 	// the object initialization.
 	public static AbstractInsnNode findFirstValidMark(MethodNode method) {
+
+		// This is not a constructor. Just return the first instruction
+		if(! method.name.equals(Constants.CONSTRUCTOR_NAME)) {
+			return method.instructions.getFirst();
+		}
+		
 		// Similar to 'const Node **instr' in c. 
 		final AbstractInsnNode instr[] = new AbstractInsnNode[1];
 		instr[0] = method.instructions.getFirst();
@@ -113,13 +119,8 @@ public class InsnListHelper {
 			}
 		});
 		
-		if (instr[0]==null){
-			// This is not a constructor. Just return the first instruction  
-			return method.instructions.getFirst();
-		}else{
-			// Now the rebuilding has done. And what we need is the instruction 
-			// right after the object initialization.
-			return instr[0].getNext();
-		}
+		// Now the rebuilding has done. And what we need is the instruction 
+		// right after the object initialization.
+		return instr[0].getNext();
 	}
 }

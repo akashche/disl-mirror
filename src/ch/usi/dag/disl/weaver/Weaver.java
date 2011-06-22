@@ -40,18 +40,18 @@ public class Weaver {
 			if (snippet.getAnnotationClass().equals(Before.class)) {
 				for (MarkedRegion region : regions) {
 					InsnList newlst = InsnListHelper.cloneList(ilst);
-					InsnListHelper.fixLocalIndex(region.methodnode.maxLocals,
+					InsnListHelper.fixLocalIndex(region.getMethodnode().maxLocals,
 							newlst);
-					region.methodnode.instructions.insertBefore(region.start,
-							newlst);
+					region.getMethodnode().instructions.insertBefore(
+							region.getStart(), newlst);
 				}
 			} else if (snippet.getAnnotationClass().equals(After.class)) {
 				for (MarkedRegion region : regions) {
-					for (AbstractInsnNode exit : region.ends) {
+					for (AbstractInsnNode exit : region.getEnds()) {
 						InsnList newlst = InsnListHelper.cloneList(ilst);
 						InsnListHelper.fixLocalIndex(
-								region.methodnode.maxLocals, newlst);
-						region.methodnode.instructions.insert(exit, newlst);
+								region.getMethodnode().maxLocals, newlst);
+						region.getMethodnode().instructions.insert(exit, newlst);
 					}
 				}
 			}
