@@ -31,6 +31,13 @@ public class DiSL implements Instrumentation {
 		try {
 		
 			String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
+			
+			if(classesToCompile == null) {
+				// TODO report user errors
+				throw new RuntimeException(
+						"Property " + PROP_DISL_CLASSES + "is not defined");	
+			}
+			
 			List<byte []> compiledClasses = new LinkedList<byte []>();
 	
 			// TODO replace for real compiler

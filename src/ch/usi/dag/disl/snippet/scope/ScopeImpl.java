@@ -17,6 +17,8 @@ public class ScopeImpl implements Scope {
 	private final String METHOD_DELIM = ".";
 	private final String PACKAGE_DELIM = ".";
 	private final String PARAM_MATCH_REST = "...";
+	private final char PACKAGE_INNER_DELIM = '/';
+	private final char PACKAGE_STD_DELIM = '.';
 	
 	private String classWildCard;
 	private String methodWildCard;
@@ -194,6 +196,9 @@ public class ScopeImpl implements Scope {
 		// TODO you should also take care about number of dots
 		*/
 
+		// replace delimiters for matching
+		className = className.replace(PACKAGE_INNER_DELIM, PACKAGE_STD_DELIM);
+		
 		if(classWildCard != null
 				&& ! WildCard.match(className, classWildCard)) {
 			return false;
