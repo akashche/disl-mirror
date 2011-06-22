@@ -8,12 +8,14 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetImpl;
 import ch.usi.dag.disl.snippet.marker.Marker;
@@ -22,6 +24,7 @@ import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.InsnListHelper;
 
 /**
  * The parser takes annotated java file as input and creates Snippet and
@@ -66,7 +69,7 @@ public class AnnotationParser {
 		
 		// parse annotations
 		List<SyntheticLocalVar> slVars = 
-			parseSyntheticLocalVars(classNode.fields);
+			parseSyntheticLocalVars(classNode.name, classNode.fields);
 		
 		// get static initialization code
 		InsnList origInitCodeIL = null;
@@ -97,6 +100,11 @@ public class AnnotationParser {
 			if (method.name.equals(Constants.CONSTRUCTOR_NAME)) {
 				continue;
 			}
+			
+			// skip static initializer
+			if (method.name.equals(Constants.STATIC_INIT_NAME)) {
+				continue;
+			}
 
 			snippets.addAll(parseSnippets(method));
 		}
@@ -115,9 +123,44 @@ public class AnnotationParser {
 		return new LinkedList<Analyzer>();
 	}
 	
-	private List<SyntheticLocalVar> parseSyntheticLocalVars(List<?> fields) {
-		// TODO !
-		return null;
+	private List<SyntheticLocalVar> parseSyntheticLocalVars(
+			String className, List<?> fields) {
+		
+		List<SyntheticLocalVar> result = new LinkedList<SyntheticLocalVar>();
+		
+		for (Object fieldObj : fields) {
+		
+			// cast - ASM still uses Java 1.4 interface
+			FieldNode field = (FieldNode) fieldObj;
+			
+			if (field.invisibleAnnotations == null) {
+				// TODO report user errors
+				throw new RuntimeException("DiSL anottation for field "
+						+ field.name + " is missing");
+			}
+	
+			if (field.invisibleAnnotations.size() > 1) {
+				// TODO report user errors
+				throw new RuntimeException("Field "
+						+ field.name + " may have only one anotation");
+			}
+			
+			AnnotationNode annotation = 
+				(AnnotationNode) field.invisibleAnnotations.get(0);
+			
+			Type annotationType = Type.getType(annotation.desc);
+
+			// check annotation type
+			if (! annotationType.equals(Type.getType(SyntheticLocal.class))) {
+				throw new RuntimeException("Field " + field.name
+						+ " has unsupported DiSL annotation");
+			}
+	
+			// whole snippet
+			result.add(new SyntheticLocalVar(className, field.name));
+		}
+		
+		return result;
 	}
 	
 	private void parseInitCodeForSLV(InsnList origInitCodeIL,
@@ -177,8 +220,8 @@ public class AnnotationParser {
 		
 		if (method.invisibleAnnotations == null) {
 			// TODO report user errors
-			throw new RuntimeException("Method " + method.name
-					+ " has no anottations which is unsupported");
+			throw new RuntimeException("DiSL anottation for method "
+					+ method.name + " is missing");
 		}
 
 		// more annotations on one snippet
@@ -189,9 +232,10 @@ public class AnnotationParser {
 			// cast - ASM still uses Java 1.4 interface
 			parseMethodAnnotation((AnnotationNode) annotationObj);
 
-			// if this is unknown annotation skip it
-			if (!annotData.isKnown()) {
-				continue;
+			// if this is unknown annotation
+			if (! annotData.isKnown()) {
+				throw new RuntimeException("Method " + method.name
+						+ " has unsupported DiSL annotation");
 			}
 
 			// marker
@@ -202,7 +246,8 @@ public class AnnotationParser {
 
 			// whole snippet
 			result.add(new SnippetImpl(annotData.getType(), marker, scope,
-					annotData.getOrder(), method.instructions));
+					annotData.getOrder(),
+					InsnListHelper.cloneList(method.instructions)));
 		}
 		
 		return result;

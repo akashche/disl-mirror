@@ -7,13 +7,13 @@ public class SyntheticLocalVar {
 	final static String NAME_DELIM = ".";
 	
 	private String className;
-	private String methodName;
+	private String fieldName;
 	private InsnList initASMCode;
 	
-	public SyntheticLocalVar(String className, String methodName) {
+	public SyntheticLocalVar(String className, String fieldName) {
 		super();
 		this.className = className;
-		this.methodName = methodName;
+		this.fieldName = fieldName;
 	}
 	
 	public InsnList getInitASMCode() {
@@ -25,6 +25,6 @@ public class SyntheticLocalVar {
 	}
 	
 	public String getID() {
-		return className + NAME_DELIM + methodName;
+		return className + NAME_DELIM + fieldName;
 	}
 }
