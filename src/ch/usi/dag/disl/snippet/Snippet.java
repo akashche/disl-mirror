@@ -16,5 +16,7 @@ public interface Snippet extends Comparable<Snippet> {
 	public int getOrder();
 	
 	public InsnList getAsmCode();
+
+	public void initialize();
 	
 }

@@ -13,6 +13,7 @@ import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.util.InsnListHelper;
 
 // The weaver instruments byte-codes into java class. 
@@ -21,7 +22,8 @@ public class Weaver {
 	// TODO include analysis
 	// TODO support for synthetic local
 	public void instrument(ClassNode classNode,
-			Map<Snippet, List<MarkedRegion>> snippetMarkings) {
+			Map<Snippet, List<MarkedRegion>> snippetMarkings,
+			List<SyntheticLocalVar> syntheticLoclaVars) {
 		// Sort the snippets based on their order
 		ArrayList<Snippet> array = new ArrayList<Snippet>(
 				snippetMarkings.keySet());

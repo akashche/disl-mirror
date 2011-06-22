@@ -8,6 +8,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.analyzer.Analyzer;
@@ -19,6 +20,7 @@ import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.marker.MarkerFactory;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
+import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.util.Constants;
 
 /**
@@ -29,14 +31,25 @@ public class AnnotationParser {
 
 	private List<Snippet> snippets = new LinkedList<Snippet>();
 	private List<Analyzer> analyzers = new LinkedList<Analyzer>();
+	private List<SyntheticLocalVar> syntheticLocalVars = 
+		new LinkedList<SyntheticLocalVar>();
 
+	public List<Snippet> getSnippets() {
+
+		return snippets;
+	}
+
+	public List<Analyzer> getAnalyzers() {
+
+		return analyzers;
+	}
+
+	public List<SyntheticLocalVar> getSyntheticLocalVars() {
+
+		return syntheticLocalVars;
+	}
+	
 	public void parse(byte[] classAsBytes) {
-
-		// TODO support for synthetic local
-		// - what if two synthetic local vars with the same name are defined
-		// in different files ???
-		// - if we don't want to merge them we should prefix them with class
-		// - in byte code they are
 
 		// NOTE this method can be called many times
 
@@ -44,19 +57,48 @@ public class AnnotationParser {
 		ClassNode classNode = new ClassNode();
 		cr.accept(classNode, 0);
 
-		parseAnalyzers(classNode.invisibleAnnotations);
+		analyzers.addAll(parseAnalyzers(classNode.invisibleAnnotations));
+		
+		// support for synthetic local
+		// - if two synthetic local vars with the same name are defined
+		//   in different files they will be prefixed with class name as it is
+		//   also in byte code
+		
+		// parse annotations
+		List<SyntheticLocalVar> slVars = 
+			parseSyntheticLocalVars(classNode.fields);
+		
+		// get static initialization code
+		InsnList origInitCodeIL = null;
+		for(Object methodObj : classNode.methods) {
 
+			// cast - ASM still uses Java 1.4 interface
+			MethodNode method = (MethodNode) methodObj;
+			
+			// get the code
+			if (method.name.equals(Constants.CONSTRUCTOR_NAME)) {
+				origInitCodeIL = method.instructions;
+				break;
+			}
+		}
+		
+		// parse init code for synthetic local vars and assigns them accordingly
+		parseInitCodeForSLV(origInitCodeIL, slVars);
+		
+		// add them into the list
+		syntheticLocalVars.addAll(slVars);
+		
 		for (Object methodObj : classNode.methods) {
 
 			// cast - ASM still uses Java 1.4 interface
 			MethodNode method = (MethodNode) methodObj;
 
 			// skip the constructor
-			if (method.name.equals(Constants.CONSTRUCTORNAME)) {
+			if (method.name.equals(Constants.CONSTRUCTOR_NAME)) {
 				continue;
 			}
 
-			parseSnippets(method);
+			snippets.addAll(parseSnippets(method));
 		}
 	}
 
@@ -66,9 +108,22 @@ public class AnnotationParser {
 	 * @param annotations
 	 *            contains specifications for analyzers
 	 */
-	protected void parseAnalyzers(List<?> annotations) {
+	protected List<Analyzer> parseAnalyzers(List<?> annotations) {
 		// TODO implement
 		// TODO check for null
+		
+		return new LinkedList<Analyzer>();
+	}
+	
+	private List<SyntheticLocalVar> parseSyntheticLocalVars(List<?> fields) {
+		// TODO !
+		return null;
+	}
+	
+	private void parseInitCodeForSLV(InsnList origInitCodeIL,
+			List<SyntheticLocalVar> slVars) {
+		// TODO !
+		
 	}
 
 	// data holder for parseMethodAnnotation methods
@@ -116,10 +171,12 @@ public class AnnotationParser {
 		}
 	}
 
-	protected void parseSnippets(MethodNode method) {
+	protected List<Snippet> parseSnippets(MethodNode method) {
 
+		List<Snippet> result = new LinkedList<Snippet>();
+		
 		if (method.invisibleAnnotations == null) {
-			// TODO report to user bad behavior - should not be RuntimeE..
+			// TODO report user errors
 			throw new RuntimeException("Method " + method.name
 					+ " has no anottations which is unsupported");
 		}
@@ -144,9 +201,11 @@ public class AnnotationParser {
 			Scope scope = new ScopeImpl(annotData.getScope());
 
 			// whole snippet
-			snippets.add(new SnippetImpl(annotData.getType(), marker, scope,
+			result.add(new SnippetImpl(annotData.getType(), marker, scope,
 					annotData.getOrder(), method.instructions));
 		}
+		
+		return result;
 	}
 
 	protected MethodAnnotationData parseMethodAnnotation(
@@ -218,15 +277,4 @@ public class AnnotationParser {
 
 		return new MethodAnnotationData(type, marker, scope, order);
 	}
-
-	public List<Snippet> getSnippets() {
-
-		return snippets;
-	}
-
-	public List<Analyzer> getAnalyzers() {
-
-		return analyzers;
-	}
-
 }

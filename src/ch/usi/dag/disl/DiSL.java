@@ -12,16 +12,19 @@ import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.annotation.parser.AnnotationParser;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
 
+// TODO javadoc comment all
 public class DiSL implements Instrumentation {
 
 	final String PROP_DISL_CLASSES = "disl.classes";
 	final String PROP_CLASSES_DELIM = ",";
 	
-	List<Snippet> snippets = new LinkedList<Snippet>();
-	List<Analyzer> analyzers = new LinkedList<Analyzer>();
+	List<Snippet> snippets;
+	List<Analyzer> analyzers;
+	List<SyntheticLocalVar> syntheticLoclaVars;
 	Weaver weaver;
 	
 	public DiSL() {
@@ -35,7 +38,7 @@ public class DiSL implements Instrumentation {
 			if(classesToCompile == null) {
 				// TODO report user errors
 				throw new RuntimeException(
-						"Property " + PROP_DISL_CLASSES + "is not defined");	
+						"Property " + PROP_DISL_CLASSES + " is not defined");	
 			}
 			
 			List<byte []> compiledClasses = new LinkedList<byte []>();
@@ -59,11 +62,20 @@ public class DiSL implements Instrumentation {
 				parser.parse(classAsBytes);
 			}
 			
-			// TODO support for synthetic local
-			
-			// initialize fields
+			// initialize snippets
 			snippets = parser.getSnippets();
+			
+			for(Snippet snippet : snippets) {
+				snippet.initialize();
+			}
+			
+			// initialize analyzers
 			analyzers = parser.getAnalyzers();
+			
+			// initialize synthetic local variables
+			syntheticLoclaVars = parser.getSyntheticLocalVars();
+			
+			// initialize weaver
 			weaver = new Weaver();
 		}
 		catch(Throwable e) {
@@ -127,9 +139,9 @@ public class DiSL implements Instrumentation {
 		
 		// *** viewing ***
 		
-		weaver.instrument(classNode, snippetMarkings);
+		weaver.instrument(classNode, snippetMarkings, syntheticLoclaVars);
 		
-		// TODO debug --
+		// TODO just for debugging
 		System.out.println("--- instumentation of "
 				+ classNode.name + "." + method.name);
 	}

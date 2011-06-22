@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.snippet;
 
+import java.util.List;
+
 import org.objectweb.asm.tree.InsnList;
 
 import ch.usi.dag.disl.snippet.marker.Marker;
@@ -12,6 +14,7 @@ public class SnippetImpl implements Snippet {
 	protected Scope scope;
 	protected int order;
 	protected InsnList asmCode;
+	protected List<String> localVars;
 
 	public SnippetImpl(Class<?> annotationClass, Marker marker, Scope scope,
 			int order, InsnList asmCode) {
@@ -44,9 +47,13 @@ public class SnippetImpl implements Snippet {
 		return asmCode;
 	}
 
-	@Override
 	public int compareTo(Snippet o) {
 		return order - o.getOrder();
+	}
+
+	public void initialize() {
+		// TODO ! remove returns in asm code
+		// TODO ! create list of local variables
 	}
 
 }

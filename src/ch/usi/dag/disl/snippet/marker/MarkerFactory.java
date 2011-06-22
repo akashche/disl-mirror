@@ -6,10 +6,11 @@ public class MarkerFactory {
 
 	public static Marker createMarker(Type marker) {
 		try {
-			// TODO loaded with the class loader we need ?
 			return (Marker) Class.forName(marker.getClassName()).newInstance();
 		} catch (Exception e) {
+			// TODO report user errors
 			e.printStackTrace();
+			// TODO continue with empty marker ??
 			return new EmptyMarker();
 		}
 	}
