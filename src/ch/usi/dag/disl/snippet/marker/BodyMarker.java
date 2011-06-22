@@ -5,25 +5,17 @@ import java.util.List;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.InsnListHelper;
 
 public class BodyMarker implements Marker {
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		InsnList ilst = method.instructions;
 		MarkedRegion region = new MarkedRegion(method);
-		region.start = ilst.getFirst();
-
-		if (method.name.equals(Constants.CONSTRUCTORNAME)) {
-			// TODO For the constructor, skip instructions for initializing
-			// NOTE THAT instructions for initializing should be the first place in
-			// the method.
-		}
+		region.start = InsnListHelper.findFirstValidMark(method);
 
 		for (AbstractInsnNode instr : method.instructions.toArray()) {
 			int opcode = instr.getOpcode();
