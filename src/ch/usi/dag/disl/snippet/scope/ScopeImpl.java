@@ -16,6 +16,7 @@ public class ScopeImpl implements Scope {
 	private final String PARAM_DELIM = ",";
 	private final String METHOD_DELIM = ".";
 	private final String PACKAGE_DELIM = ".";
+	private final String PARAM_MATCH_REST = "...";
 	
 	private String classWildCard;
 	private String methodWildCard;
@@ -208,19 +209,30 @@ public class ScopeImpl implements Scope {
 		// -- match parameters --
 		
 		if(paramsWildCard != null) {
-		
+
+			// get last param
+			String lastParamWC = paramsWildCard.get(paramsWildCard.size() - 1);
+			
 			// get parameters and match one by one
 			Type[] parameters = Type.getArgumentTypes(method.desc);
 			
-			if(parameters.length != paramsWildCard.size()) {
+			// if the last param is not PARAM_MATCH_REST then test for equal size
+			if(! lastParamWC.equals(PARAM_MATCH_REST) &&
+					parameters.length != paramsWildCard.size()) {
 				return false;
 			}
 			
 			for(int i = 0; i < parameters.length; ++i) {
 				
-				String typeName = parameters[i].getClassName();
 				String paramWC = paramsWildCard.get(i);
 				
+				// if there is PARAM_MATCH_REST then stop
+				if(paramWC.equals(PARAM_MATCH_REST)) {
+					break;
+				}
+				
+				String typeName = parameters[i].getClassName();
+						
 				if(! WildCard.match(typeName, paramWC)) {
 					return false;
 				}
