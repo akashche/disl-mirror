@@ -7,16 +7,18 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class BodyMarker implements Marker {
+import ch.usi.dag.disl.util.InsnListHelper;
 
-	// FIXME: for empty method, instrumentation according
+public class AfterInitBodyMarker implements Marker {
+
+	// FIXME: for empty constructor and empty method, instrumentation according
 	//        to marks produced by this marker will not work properly
 	
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		MarkedRegion region = 
-			new MarkedRegion(method, method.instructions.getFirst());
+			new MarkedRegion(method, InsnListHelper.findFirstValidMark(method));
 
 		for (AbstractInsnNode instr : method.instructions.toArray()) {
 			int opcode = instr.getOpcode();
