@@ -8,6 +8,7 @@ import java.util.Map;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.AdviceAdapter;
+import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -91,36 +92,37 @@ public class InsnListHelper {
 	// For a constructor, the return value will be the instruction after
 	// the object initialization.
 	public static AbstractInsnNode findFirstValidMark(MethodNode method) {
+		AbstractInsnNode first = method.instructions.getFirst();
 
 		// This is not a constructor. Just return the first instruction
-		if(! method.name.equals(Constants.CONSTRUCTOR_NAME)) {
-			return method.instructions.getFirst();
+		if (!method.name.equals(Constants.CONSTRUCTOR_NAME)) {
+			return first;
 		}
-		
-		// Similar to 'const Node **instr' in c. 
-		final AbstractInsnNode instr[] = new AbstractInsnNode[1];
-		instr[0] = method.instructions.getFirst();
-		// TODO null has passed to construct this method node. Untested.
-		MethodNode temp = new MethodNode(method.access, method.name,
-				method.desc, method.signature, null);
 
-		// WARNNING When a method node is going to visit another method node,
-		// directly or indirectly, it will trigger the rebuilding of the 
-		// instruction list. And that is what this method depends on.
-		method.accept(new AdviceAdapter(temp, method.access, method.name,
-				method.desc) {
+		// Similar to 'const boolean **trigger' in c.
+		final boolean trigger[] = { false };
+
+		AdviceAdapter adapter = new AdviceAdapter(new EmptyVisitor(),
+				method.access, method.name, method.desc) {
 			@Override
 			public void onMethodEnter() {
-				// Now the pointer has pointed to the last instruction
-				// of the object initialization. Generally speaking, it's
-				// an invoke special instruction that calls other constructor
-				// of this class or the constructor of the super class.
-				instr[0] = ((MethodNode) mv).instructions.getLast();
+				trigger[0] = true;
 			}
-		});
-		
-		// Now the rebuilding has done. And what we need is the instruction 
-		// right after the object initialization.
-		return instr[0].getNext();
+		};
+
+		// Iterate instruction list till the instruction right after the
+		// object initialization
+		adapter.visitCode();
+
+		for (AbstractInsnNode iterator : method.instructions.toArray()) {
+			iterator.accept(adapter);
+
+			if (trigger[0]) {
+				first = iterator.getPrevious();
+				break;
+			}
+		}
+
+		return first;
 	}
 }
