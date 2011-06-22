@@ -138,7 +138,8 @@ public class ScopeImpl implements Scope {
 				// if there is no package specified - allow any
 				if(classWildCard.indexOf(PACKAGE_DELIM) == -1
 						&& ! classWildCard.startsWith(WildCard.WILDCARD_STR)) {
-					classWildCard = WildCard.WILDCARD_STR + classWildCard;
+					classWildCard = 
+						WildCard.WILDCARD_STR + PACKAGE_DELIM + classWildCard;
 				}
 			}
 		}
