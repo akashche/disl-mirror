@@ -7,21 +7,25 @@ import java.util.Map;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
+
 public class InsnListHelper {
 
 	public static boolean isReturn(int opcode) {
 		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
 	}
-	
+
 	public static void removeReturns(InsnList ilst) {
 		// Remove 'return' instruction
 		List<AbstractInsnNode> returns = new LinkedList<AbstractInsnNode>();
@@ -50,18 +54,17 @@ public class InsnListHelper {
 
 	// Make a clone of an instruction list
 	public static InsnList cloneList(InsnList src) {
-		
+
 		return cloneList(src, src.getFirst(), src.getLast());
 	}
-	
+
 	// NOTE: You should know what you are doing, if you are copying jumps, try,
-	//   etc. the code doesn't need to be valid
+	// etc. the code doesn't need to be valid
 	public static InsnList cloneList(InsnList src, AbstractInsnNode from,
 			AbstractInsnNode to) {
-		
-		Map<AbstractInsnNode, AbstractInsnNode> map =
-			new HashMap<AbstractInsnNode, AbstractInsnNode>();
-		
+
+		Map<AbstractInsnNode, AbstractInsnNode> map = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+
 		InsnList dst = new InsnList();
 
 		// First iterate the instruction list and get all the labels
@@ -78,30 +81,34 @@ public class InsnListHelper {
 
 			// special case where we put a new label instead of old one
 			if (instr instanceof LabelNode) {
-				
+
 				dst.add(map.get(instr));
-				
+
 				instr = instr.getNext();
-				
+
 				continue;
 			}
 
 			dst.add(instr.clone(map));
-			
+
 			instr = instr.getNext();
 		}
 
 		return dst;
 	}
 
-	public static int fixLocalIndex(int maxLocals, InsnList src) {
-		int max = maxLocals;
+	// Fix the stack operand index of each stack-based instruction
+	// according to the maximum number of locals in the target method node.
+	// NOTE that the field maxLocals of the method node will be automatically
+	// updated.
+	public static void fixLocalIndex(MethodNode method, InsnList src) {
+		int max = method.maxLocals;
 
 		for (AbstractInsnNode instr : src.toArray()) {
 
 			if (instr instanceof VarInsnNode) {
 				VarInsnNode varInstr = (VarInsnNode) instr;
-				varInstr.var += maxLocals;
+				varInstr.var += method.maxLocals;
 
 				if (varInstr.var > max) {
 					max = varInstr.var;
@@ -109,7 +116,50 @@ public class InsnListHelper {
 			}
 		}
 
-		return max;
+		method.maxLocals = max;
+	}
+
+	// Transform static fields to synthetic local
+	// NOTE that the field maxLocals of the method node will be automatically
+	// updated.
+	public static void static2Local(MethodNode method,
+			List<SyntheticLocalVar> syntheticLocalVars) {
+		// Extract the 'id' field in each synthetic local 
+		List<String> id_set = new LinkedList<String>();
+		
+		for (SyntheticLocalVar local:syntheticLocalVars){
+			id_set.add(local.getID());
+		}
+		
+		for (AbstractInsnNode instr : method.instructions.toArray()) {
+			int opcode = instr.getOpcode();
+
+			// Only field instructions will be transformed.
+			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
+				FieldInsnNode field_instr = (FieldInsnNode) instr;
+				String id = field_instr.owner + SyntheticLocalVar.NAME_DELIM
+						+ field_instr.name;
+				int index = id_set.indexOf(id);
+
+				if (index == -1) {
+					// Not contained in the synthetic locals.
+					continue;
+				}
+
+				// Construct a instruction for local
+				Type type = Type.getType(field_instr.desc);
+				int new_opcode = type
+						.getOpcode(opcode == Opcodes.GETSTATIC ? Opcodes.ILOAD
+								: Opcodes.ISTORE);
+				VarInsnNode insn = new VarInsnNode(new_opcode, method.maxLocals
+						+ index);
+				method.instructions.insertBefore(instr, insn);
+				method.instructions.remove(instr);
+			}
+		}
+
+		// TODO Maybe we won't need that many.
+		method.maxLocals += syntheticLocalVars.size();
 	}
 
 	// Get the first valid mark of a method.
@@ -149,10 +199,10 @@ public class InsnListHelper {
 
 		return first;
 	}
-	
+
 	// Detects if the instruction list contains only return
 	public static boolean containsOnlyReturn(InsnList ilst) {
-		
+
 		return isReturn(ilst.getFirst().getOpcode());
 	}
 }
