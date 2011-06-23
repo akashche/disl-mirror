@@ -84,7 +84,7 @@ public class AnnotationParser {
 			MethodNode method = (MethodNode) methodObj;
 			
 			// get the code
-			if (method.name.equals(Constants.CONSTRUCTOR_NAME)) {
+			if (method.name.equals(Constants.STATIC_INIT_NAME)) {
 				origInitCodeIL = method.instructions;
 				break;
 			}
@@ -401,6 +401,7 @@ public class AnnotationParser {
 	private SnippetCodeData processSnippetCode(String className,
 			InsnList snippetCode) {
 
+		// clone the instrucition list
 		InsnList asmCode = InsnListHelper.cloneList(snippetCode);
 		
 		// detect empty stippets
@@ -411,9 +412,28 @@ public class AnnotationParser {
 		// remove returns in snippet (in asm code)
 		InsnListHelper.removeReturns(asmCode);
 		
-		// TODO ! create list of synthetic local variables
+		List<String> slvList = new LinkedList<String>();
+		
+		// create list of synthetic local variables
+		for(AbstractInsnNode instr : asmCode.toArray()) {
 
-		// TODO ! update return
-		return new SnippetCodeData(asmCode, null);
+			// if our instruction is field
+			if (instr instanceof FieldInsnNode) {
+				
+				FieldInsnNode fieldInstr = (FieldInsnNode) instr;
+
+				// we've found SyntheticLocal variable
+				if(className.equals(fieldInstr.owner)) {
+					
+					// get whole name of the field
+					String wholeFieldName = fieldInstr.owner
+							+ SyntheticLocalVar.NAME_DELIM + fieldInstr.name;
+					
+					slvList.add(wholeFieldName);
+				}
+			}
+		}
+
+		return new SnippetCodeData(asmCode, slvList);
 	}
 }
