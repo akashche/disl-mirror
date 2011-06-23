@@ -33,9 +33,11 @@ public class Weaver {
 			List<MarkedRegion> regions = snippetMarkings.get(snippet);
 			InsnList ilst = snippet.getAsmCode();
 
-			// TODO remove this line of code
-			InsnListHelper.removeReturns(ilst);
-
+			// skip snippets with empty code
+			if(snippet.getAsmCode() == null) {
+				continue;
+			}
+			
 			// Instrument
 			if (snippet.getAnnotationClass().equals(Before.class)) {
 				for (MarkedRegion region : regions) {

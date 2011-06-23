@@ -6,6 +6,7 @@ import org.objectweb.asm.tree.InsnList;
 
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
+import ch.usi.dag.disl.util.InsnListHelper;
 
 public class SnippetImpl implements Snippet {
 
@@ -52,9 +53,17 @@ public class SnippetImpl implements Snippet {
 	}
 
 	public void initialize() {
-		// TODO ! detect empty stippets
-		// TODO ! remove returns in asm code
-		// TODO ! create list of local variables
+
+		// detect empty stippets
+		if(InsnListHelper.containsOnlyReturn(asmCode)) {
+			asmCode = null;
+			return;
+		}
+		
+		// remove returns in snippet (in asm code)
+		InsnListHelper.removeReturns(asmCode);
+		
+		// TODO ! create list of synthetic local variables
 	}
 
 }

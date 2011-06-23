@@ -125,4 +125,18 @@ public class InsnListHelper {
 
 		return first;
 	}
+	
+	// Detects if the instruction list contains only return
+	public static boolean containsOnlyReturn(InsnList ilst) {
+		
+		AbstractInsnNode instr = ilst.getFirst();
+		
+		int opcode = instr.getOpcode();
+		
+		if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
+			return true;
+		}
+		
+		return false;
+	}
 }
