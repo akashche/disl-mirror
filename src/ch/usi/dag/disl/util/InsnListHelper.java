@@ -18,6 +18,10 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 public class InsnListHelper {
 
+	public static boolean isReturn(int opcode) {
+		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
+	}
+	
 	public static void removeReturns(InsnList ilst) {
 		// Remove 'return' instruction
 		List<AbstractInsnNode> returns = new LinkedList<AbstractInsnNode>();
@@ -25,7 +29,7 @@ public class InsnListHelper {
 		for (AbstractInsnNode instr : ilst.toArray()) {
 			int opcode = instr.getOpcode();
 
-			if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
+			if (isReturn(opcode)) {
 				returns.add(instr);
 			}
 		}
@@ -46,7 +50,18 @@ public class InsnListHelper {
 
 	// Make a clone of an instruction list
 	public static InsnList cloneList(InsnList src) {
-		Map<AbstractInsnNode, AbstractInsnNode> map = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		
+		return cloneList(src, src.getFirst(), src.getLast());
+	}
+	
+	// NOTE: You should know what you are doing, if you are copying jumps, try,
+	//   etc. the code doesn't need to be valid
+	public static InsnList cloneList(InsnList src, AbstractInsnNode from,
+			AbstractInsnNode to) {
+		
+		Map<AbstractInsnNode, AbstractInsnNode> map =
+			new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		
 		InsnList dst = new InsnList();
 
 		// First iterate the instruction list and get all the labels
@@ -57,14 +72,19 @@ public class InsnListHelper {
 			}
 		}
 
-		for (AbstractInsnNode instr : src.toArray()) {
+		// then copy instructions using clone
+		AbstractInsnNode instr = from;
+		while (instr != to.getNext()) {
 
+			// special case where we put a new label instead of old one
 			if (instr instanceof LabelNode) {
 				dst.add(map.get(instr));
 				continue;
 			}
 
 			dst.add(instr.clone(map));
+			
+			instr = instr.getNext();
 		}
 
 		return dst;
@@ -129,14 +149,6 @@ public class InsnListHelper {
 	// Detects if the instruction list contains only return
 	public static boolean containsOnlyReturn(InsnList ilst) {
 		
-		AbstractInsnNode instr = ilst.getFirst();
-		
-		int opcode = instr.getOpcode();
-		
-		if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
-			return true;
-		}
-		
-		return false;
+		return isReturn(ilst.getFirst().getOpcode());
 	}
 }

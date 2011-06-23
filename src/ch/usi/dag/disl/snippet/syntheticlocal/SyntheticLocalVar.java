@@ -4,7 +4,7 @@ import org.objectweb.asm.tree.InsnList;
 
 public class SyntheticLocalVar {
 
-	final static String NAME_DELIM = ".";
+	public final static String NAME_DELIM = ".";
 	
 	private String className;
 	private String fieldName;

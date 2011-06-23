@@ -1,13 +1,18 @@
 package ch.usi.dag.disl.annotation.parser;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
@@ -68,7 +73,7 @@ public class AnnotationParser {
 		//   also in byte code
 		
 		// parse annotations
-		List<SyntheticLocalVar> slVars = 
+		Map<String, SyntheticLocalVar> slVars = 
 			parseSyntheticLocalVars(classNode.name, classNode.fields);
 		
 		// get static initialization code
@@ -89,7 +94,7 @@ public class AnnotationParser {
 		parseInitCodeForSLV(origInitCodeIL, slVars);
 		
 		// add them into the list
-		syntheticLocalVars.addAll(slVars);
+		syntheticLocalVars.addAll(slVars.values());
 		
 		for (Object methodObj : classNode.methods) {
 
@@ -106,7 +111,7 @@ public class AnnotationParser {
 				continue;
 			}
 
-			snippets.addAll(parseSnippets(method));
+			snippets.addAll(parseSnippets(classNode.name, method));
 		}
 	}
 
@@ -123,10 +128,11 @@ public class AnnotationParser {
 		return new LinkedList<Analyzer>();
 	}
 	
-	private List<SyntheticLocalVar> parseSyntheticLocalVars(
+	private Map<String, SyntheticLocalVar> parseSyntheticLocalVars(
 			String className, List<?> fields) {
 		
-		List<SyntheticLocalVar> result = new LinkedList<SyntheticLocalVar>();
+		Map<String, SyntheticLocalVar> result = 
+			new HashMap<String, SyntheticLocalVar>();
 		
 		for (Object fieldObj : fields) {
 		
@@ -155,18 +161,106 @@ public class AnnotationParser {
 				throw new RuntimeException("Field " + field.name
 						+ " has unsupported DiSL annotation");
 			}
-	
-			// whole snippet
-			result.add(new SyntheticLocalVar(className, field.name));
+			
+			// check if field is static
+			if((field.access & Opcodes.ACC_STATIC) == 0) {
+				throw new RuntimeException("Field " + field.name
+						+ " declared as Synthetic Local but is not static");
+			}
+
+			// add to results
+			SyntheticLocalVar slv =
+				new SyntheticLocalVar(className, field.name);
+			result.put(slv.getID(), slv);
 		}
 		
 		return result;
 	}
 	
 	private void parseInitCodeForSLV(InsnList origInitCodeIL,
-			List<SyntheticLocalVar> slVars) {
-		// TODO !
+			Map<String, SyntheticLocalVar> slVars) {
 		
+		// first initialization instruction for some field
+		AbstractInsnNode firstInitInsn = origInitCodeIL.getFirst();
+		
+		for(AbstractInsnNode instr : origInitCodeIL.toArray()) {
+
+			// if our instruction is field
+			if (instr instanceof FieldInsnNode) {
+				
+				FieldInsnNode fieldInstr = (FieldInsnNode) instr;
+
+				// get whole name of the field
+				String wholeFieldName = fieldInstr.owner
+						+ SyntheticLocalVar.NAME_DELIM + fieldInstr.name;
+				
+				SyntheticLocalVar slv = slVars.get(wholeFieldName);
+				
+				if(slv == null) {
+					throw new RuntimeException("Initialization of static field "
+							+ wholeFieldName
+							+ " found, but no such field declared");
+				}
+				
+				// clone part of the asm code
+				InsnList initASMCode = InsnListHelper.cloneList(origInitCodeIL,
+						firstInitInsn, instr);
+				
+				// store the code
+				slv.setInitASMCode(initASMCode);
+				
+				// prepare first init for next field
+				firstInitInsn = instr.getNext();
+			}
+		
+			// if opcode is return then we are done
+			if(InsnListHelper.isReturn(instr.getOpcode())) {
+				break;
+			}
+		}
+	}
+
+	protected List<Snippet> parseSnippets(String className, MethodNode method) {
+
+		List<Snippet> result = new LinkedList<Snippet>();
+		
+		if (method.invisibleAnnotations == null) {
+			// TODO report user errors
+			throw new RuntimeException("DiSL anottation for method "
+					+ method.name + " is missing");
+		}
+
+		// more annotations on one snippet
+		// supported but we will have multiple snippets ;)
+		for (Object annotationObj : method.invisibleAnnotations) {
+
+			MethodAnnotationData annotData =
+			// cast - ASM still uses Java 1.4 interface
+			parseMethodAnnotation((AnnotationNode) annotationObj);
+
+			// if this is unknown annotation
+			if (! annotData.isKnown()) {
+				throw new RuntimeException("Method " + method.name
+						+ " has unsupported DiSL annotation");
+			}
+
+			// marker
+			Marker marker = MarkerFactory.createMarker(annotData.getMarker());
+
+			// scope
+			Scope scope = new ScopeImpl(annotData.getScope());
+
+			// process code
+			SnippetCodeData scd = 
+				processSnippetCode(className, method.instructions); 
+			
+			// whole snippet
+			result.add(new SnippetImpl(annotData.getType(), marker, scope,
+					annotData.getOrder(), scd.getAsmCode(),
+					scd.getReferencedSLV()));
+		}
+		
+		return result;
 	}
 
 	// data holder for parseMethodAnnotation methods
@@ -213,46 +307,7 @@ public class AnnotationParser {
 			return order;
 		}
 	}
-
-	protected List<Snippet> parseSnippets(MethodNode method) {
-
-		List<Snippet> result = new LinkedList<Snippet>();
-		
-		if (method.invisibleAnnotations == null) {
-			// TODO report user errors
-			throw new RuntimeException("DiSL anottation for method "
-					+ method.name + " is missing");
-		}
-
-		// more annotations on one snippet
-		// supported but we will have multiple snippets ;)
-		for (Object annotationObj : method.invisibleAnnotations) {
-
-			MethodAnnotationData annotData =
-			// cast - ASM still uses Java 1.4 interface
-			parseMethodAnnotation((AnnotationNode) annotationObj);
-
-			// if this is unknown annotation
-			if (! annotData.isKnown()) {
-				throw new RuntimeException("Method " + method.name
-						+ " has unsupported DiSL annotation");
-			}
-
-			// marker
-			Marker marker = MarkerFactory.createMarker(annotData.getMarker());
-
-			// scope
-			Scope scope = new ScopeImpl(annotData.getScope());
-
-			// whole snippet
-			result.add(new SnippetImpl(annotData.getType(), marker, scope,
-					annotData.getOrder(),
-					InsnListHelper.cloneList(method.instructions)));
-		}
-		
-		return result;
-	}
-
+	
 	protected MethodAnnotationData parseMethodAnnotation(
 			AnnotationNode annotation) {
 
@@ -321,5 +376,44 @@ public class AnnotationParser {
 		}
 
 		return new MethodAnnotationData(type, marker, scope, order);
+	}
+	
+	private class SnippetCodeData {
+		
+		private InsnList asmCode;
+		private List<String> referencedSLV;
+		
+		public SnippetCodeData(InsnList asmCode, List<String> referencedSLV) {
+			super();
+			this.asmCode = asmCode;
+			this.referencedSLV = referencedSLV;
+		}
+
+		public InsnList getAsmCode() {
+			return asmCode;
+		}
+
+		public List<String> getReferencedSLV() {
+			return referencedSLV;
+		}
+	}
+	
+	private SnippetCodeData processSnippetCode(String className,
+			InsnList snippetCode) {
+
+		InsnList asmCode = InsnListHelper.cloneList(snippetCode);
+		
+		// detect empty stippets
+		if(InsnListHelper.containsOnlyReturn(asmCode)) {
+			return new SnippetCodeData(null, null);
+		}
+		
+		// remove returns in snippet (in asm code)
+		InsnListHelper.removeReturns(asmCode);
+		
+		// TODO ! create list of synthetic local variables
+
+		// TODO ! update return
+		return new SnippetCodeData(asmCode, null);
 	}
 }

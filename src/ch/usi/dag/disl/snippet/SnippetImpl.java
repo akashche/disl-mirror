@@ -6,7 +6,6 @@ import org.objectweb.asm.tree.InsnList;
 
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
-import ch.usi.dag.disl.util.InsnListHelper;
 
 public class SnippetImpl implements Snippet {
 
@@ -18,7 +17,7 @@ public class SnippetImpl implements Snippet {
 	protected List<String> localVars;
 
 	public SnippetImpl(Class<?> annotationClass, Marker marker, Scope scope,
-			int order, InsnList asmCode) {
+			int order, InsnList asmCode, List<String> localVars) {
 		super();
 
 		this.annotationClass = annotationClass;
@@ -26,6 +25,7 @@ public class SnippetImpl implements Snippet {
 		this.scope = scope;
 		this.order = order;
 		this.asmCode = asmCode;
+		this.localVars = localVars;
 	}
 
 	public Class<?> getAnnotationClass() {
@@ -51,19 +51,4 @@ public class SnippetImpl implements Snippet {
 	public int compareTo(Snippet o) {
 		return order - o.getOrder();
 	}
-
-	public void initialize() {
-
-		// detect empty stippets
-		if(InsnListHelper.containsOnlyReturn(asmCode)) {
-			asmCode = null;
-			return;
-		}
-		
-		// remove returns in snippet (in asm code)
-		InsnListHelper.removeReturns(asmCode);
-		
-		// TODO ! create list of synthetic local variables
-	}
-
 }

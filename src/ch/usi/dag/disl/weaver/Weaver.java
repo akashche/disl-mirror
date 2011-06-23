@@ -20,7 +20,7 @@ import ch.usi.dag.disl.util.InsnListHelper;
 public class Weaver {
 
 	// TODO include analysis
-	// TODO support for synthetic local
+	// TODO ! support for synthetic local
 	public void instrument(ClassNode classNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLoclaVars) {
