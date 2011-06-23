@@ -1,10 +1,12 @@
 package ch.usi.dag.disl.annotation.parser;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -93,7 +95,7 @@ public class AnnotationParser {
 		// parse init code for synthetic local vars and assigns them accordingly
 		parseInitCodeForSLV(origInitCodeIL, slVars);
 		
-		// add them into the list
+		// add local vars from this class to others
 		syntheticLocalVars.addAll(slVars.values());
 		
 		for (Object methodObj : classNode.methods) {
@@ -381,9 +383,9 @@ public class AnnotationParser {
 	private class SnippetCodeData {
 		
 		private InsnList asmCode;
-		private List<String> referencedSLV;
+		private Set<String> referencedSLV;
 		
-		public SnippetCodeData(InsnList asmCode, List<String> referencedSLV) {
+		public SnippetCodeData(InsnList asmCode, Set<String> referencedSLV) {
 			super();
 			this.asmCode = asmCode;
 			this.referencedSLV = referencedSLV;
@@ -393,7 +395,7 @@ public class AnnotationParser {
 			return asmCode;
 		}
 
-		public List<String> getReferencedSLV() {
+		public Set<String> getReferencedSLV() {
 			return referencedSLV;
 		}
 	}
@@ -412,7 +414,7 @@ public class AnnotationParser {
 		// remove returns in snippet (in asm code)
 		InsnListHelper.removeReturns(asmCode);
 		
-		List<String> slvList = new LinkedList<String>();
+		Set<String> slvList = new HashSet<String>();
 		
 		// create list of synthetic local variables
 		for(AbstractInsnNode instr : asmCode.toArray()) {

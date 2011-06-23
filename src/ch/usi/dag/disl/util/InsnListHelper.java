@@ -78,7 +78,11 @@ public class InsnListHelper {
 
 			// special case where we put a new label instead of old one
 			if (instr instanceof LabelNode) {
+				
 				dst.add(map.get(instr));
+				
+				instr = instr.getNext();
+				
 				continue;
 			}
 

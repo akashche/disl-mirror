@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.snippet;
 
-import java.util.List;
+import java.util.Set;
 
 import org.objectweb.asm.tree.InsnList;
 
@@ -14,10 +14,10 @@ public class SnippetImpl implements Snippet {
 	protected Scope scope;
 	protected int order;
 	protected InsnList asmCode;
-	protected List<String> localVars;
+	protected Set<String> localVars;
 
 	public SnippetImpl(Class<?> annotationClass, Marker marker, Scope scope,
-			int order, InsnList asmCode, List<String> localVars) {
+			int order, InsnList asmCode, Set<String> localVars) {
 		super();
 
 		this.annotationClass = annotationClass;
