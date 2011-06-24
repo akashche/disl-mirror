@@ -13,13 +13,13 @@ public class BasicBlockMarker implements Marker {
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		List<AbstractInsnNode> bb_begins = InsnListHelper
-				.getBasicBlocks(method);
-		AbstractInsnNode start, end;
+		List<AbstractInsnNode> seperators = InsnListHelper
+				.getBasicBlocks(method);		
+		seperators.add(method.instructions.getLast());
 
-		for (int i = 0; i < bb_begins.size() - 1; i++) {
-			start = bb_begins.get(i);
-			end = bb_begins.get(i + 1);
+		for (int i = 0; i < seperators.size() - 1; i++) {
+			AbstractInsnNode start = seperators.get(i);
+			AbstractInsnNode end = seperators.get(i + 1);
 
 			if (InsnListHelper.isBranch(end))
 				end = end.getPrevious();
