@@ -21,6 +21,8 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.AfterAbnormal;
+import ch.usi.dag.disl.annotation.AfterNormal;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.exception.DiSLFatalException;
@@ -321,6 +323,18 @@ public class AnnotationParser {
 		// after annotation
 		if (annotationType.equals(Type.getType(After.class))) {
 			return parseMethodAnnotFields(After.class, annotation,
+					annotation.values);
+		}
+		
+		// after normal execution annotation
+		if (annotationType.equals(Type.getType(AfterNormal.class))) {
+			return parseMethodAnnotFields(AfterNormal.class, annotation,
+					annotation.values);
+		}
+		
+		// after abnormal execution annotation
+		if (annotationType.equals(Type.getType(AfterAbnormal.class))) {
+			return parseMethodAnnotFields(AfterAbnormal.class, annotation,
 					annotation.values);
 		}
 

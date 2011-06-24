@@ -73,6 +73,14 @@ public class DiSL implements Instrumentation {
 			
 			// initialize weaver
 			weaver = new Weaver();
+			
+			// TODO put checker here
+			// like After should catch normal and abnormal execution
+			// but if you are using After (AfterAbnormal) with BasicBlockMarker
+			// or InstructionMarker that doesn't throw exception, then it is
+			// probably something, you don't want - so just warn the user
+			// also it can warn about unknown opcodes if you let user to
+			// specify this for InstructionMarker
 		}
 		catch(Exception e) {
 			reportError(e);
