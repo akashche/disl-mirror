@@ -2,16 +2,17 @@ package ch.usi.dag.disl.snippet.marker;
 
 import org.objectweb.asm.Type;
 
+import ch.usi.dag.disl.exception.MarkerException;
+
 public class MarkerFactory {
 
-	public static Marker createMarker(Type marker) {
+	public static Marker createMarker(Type marker) throws MarkerException {
+		
 		try {
 			return (Marker) Class.forName(marker.getClassName()).newInstance();
 		} catch (Exception e) {
-			// TODO report user errors
-			e.printStackTrace();
-			// TODO continue with empty marker ??
-			return new EmptyMarker();
+			throw new MarkerException("Marker class " + marker.getClassName()
+					+ " cannot be resolved", e);
 		}
 	}
 }

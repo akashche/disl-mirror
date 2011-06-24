@@ -7,6 +7,7 @@ import java.util.List;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.util.WildCard;
 
 public class ScopeImpl implements Scope {
@@ -43,7 +44,7 @@ public class ScopeImpl implements Scope {
 		return false;
 	}
 	
-	public ScopeImpl(String scopeExpression) {
+	public ScopeImpl(String scopeExpression) throws ScopeParserException {
 		
 		// -- parse the scope into parts - trim whitespace everywhere --
 
@@ -67,8 +68,7 @@ public class ScopeImpl implements Scope {
 			
 			// PARAM_END check
 			if(! paramsStr.endsWith(PARAM_END)) {
-				// TODO report user errors
-				throw new RuntimeException("Scope \"" + scopeExpression
+				throw new ScopeParserException("Scope \"" + scopeExpression
 						+ "\" should end with \"" + PARAM_END + "\"");
 			}
 			
@@ -88,8 +88,8 @@ public class ScopeImpl implements Scope {
 					param = param.trim();
 					
 					if(param.isEmpty()) {
-						// TODO report user errors
-						throw new RuntimeException("Scope \"" + scopeExpression
+						throw new ScopeParserException("Scope \""
+								+ scopeExpression
 								+ " has bad parameter definition");
 					}
 					
@@ -114,8 +114,7 @@ public class ScopeImpl implements Scope {
 		methodWildCard = methodWildCard.trim();
 		
 		if(methodWildCard.isEmpty()) {
-			// TODO report user errors
-			throw new RuntimeException("Scope \"" + scopeExpression
+			throw new ScopeParserException("Scope \"" + scopeExpression
 					+ "\" should have defined method at least as \"*\"");
 		}
 		
@@ -158,8 +157,7 @@ public class ScopeImpl implements Scope {
 	
 				// no whitespace in restOfExpr
 				if(containsWhiteSpace(restOfExpr)) {
-					// TODO report user errors
-					throw new RuntimeException("Cannot parse scope \""
+					throw new ScopeParserException("Cannot parse scope \""
 							+ scopeExpression + "\"");
 				}
 				

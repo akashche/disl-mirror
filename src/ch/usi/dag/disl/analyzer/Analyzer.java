@@ -2,6 +2,6 @@ package ch.usi.dag.disl.analyzer;
 
 public interface Analyzer {
 
-	// TODO refine interface
+	// TODO analysis: refine interface
 	public void analyse();
 }

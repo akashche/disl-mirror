@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.annotation.parser.AnnotationParser;
+import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
@@ -36,9 +37,8 @@ public class DiSL implements Instrumentation {
 			String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
 			
 			if(classesToCompile == null) {
-				// TODO report user errors
-				throw new RuntimeException(
-						"Property " + PROP_DISL_CLASSES + " is not defined");	
+				throw new DiSLException(
+						"Property " + PROP_DISL_CLASSES + " is not defined");
 			}
 			
 			List<byte []> compiledClasses = new LinkedList<byte []>();
@@ -74,8 +74,12 @@ public class DiSL implements Instrumentation {
 			// initialize weaver
 			weaver = new Weaver();
 		}
-		catch(Throwable e) {
+		catch(Exception e) {
 			reportError(e);
+		}
+		catch(Throwable e) {
+			// unexpected exception, just print stack trace
+			e.printStackTrace();
 		}
 	}
 
@@ -130,7 +134,7 @@ public class DiSL implements Instrumentation {
 		
 		// *** analyze ***
 		
-		// TODO think about structure for analysis
+		// TODO analysis: think about structure for analysis
 		//  - what all we need to analyze and what (structure) is the output
 		
 		// *** viewing ***
@@ -158,13 +162,19 @@ public class DiSL implements Instrumentation {
 			
 		}
 		catch(Throwable e) {
-			reportError(e);
+			// unexpected exception, just print stack trace
+			e.printStackTrace();
 		}
 	}
 	
-	private void reportError(Throwable e) {
+	private void reportError(Exception e) {
 
-		// TODO something better
-		e.printStackTrace();
+		// error report for user (input) errors
+		System.err.println("DiSL error: " + e.getMessage());
+		Throwable cause = e.getCause();
+		while(cause != null) {
+			System.err.println("  Inner error: " + cause.getMessage());
+			cause = cause.getCause();
+		}
 	}
 }

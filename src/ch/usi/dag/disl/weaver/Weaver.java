@@ -22,7 +22,7 @@ import ch.usi.dag.disl.util.InsnListHelper;
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
 
-	// TODO include analysis
+	// TODO analysis: include analysis
 	// TODO ! support for synthetic local
 	public void instrument(ClassNode classNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,

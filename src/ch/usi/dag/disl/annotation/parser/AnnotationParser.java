@@ -23,6 +23,10 @@ import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.MarkerException;
+import ch.usi.dag.disl.exception.AnnotParserException;
+import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetImpl;
 import ch.usi.dag.disl.snippet.marker.Marker;
@@ -59,7 +63,8 @@ public class AnnotationParser {
 		return syntheticLocalVars;
 	}
 	
-	public void parse(byte[] classAsBytes) {
+	public void parse(byte[] classAsBytes) 
+			throws MarkerException, AnnotParserException, ScopeParserException {
 
 		// NOTE this method can be called many times
 
@@ -124,14 +129,14 @@ public class AnnotationParser {
 	 *            contains specifications for analyzers
 	 */
 	protected List<Analyzer> parseAnalyzers(List<?> annotations) {
-		// TODO implement
-		// TODO check for null
+		// TODO analysis: implement
+		// TODO analysis: check for null
 		
 		return new LinkedList<Analyzer>();
 	}
 	
 	private Map<String, SyntheticLocalVar> parseSyntheticLocalVars(
-			String className, List<?> fields) {
+			String className, List<?> fields) throws AnnotParserException {
 		
 		Map<String, SyntheticLocalVar> result = 
 			new HashMap<String, SyntheticLocalVar>();
@@ -142,14 +147,12 @@ public class AnnotationParser {
 			FieldNode field = (FieldNode) fieldObj;
 			
 			if (field.invisibleAnnotations == null) {
-				// TODO report user errors
-				throw new RuntimeException("DiSL anottation for field "
+				throw new AnnotParserException("DiSL anottation for field "
 						+ field.name + " is missing");
 			}
 	
 			if (field.invisibleAnnotations.size() > 1) {
-				// TODO report user errors
-				throw new RuntimeException("Field "
+				throw new AnnotParserException("Field "
 						+ field.name + " may have only one anotation");
 			}
 			
@@ -160,14 +163,14 @@ public class AnnotationParser {
 
 			// check annotation type
 			if (! annotationType.equals(Type.getType(SyntheticLocal.class))) {
-				throw new RuntimeException("Field " + field.name
+				throw new AnnotParserException("Field " + field.name
 						+ " has unsupported DiSL annotation");
 			}
 			
 			// check if field is static
 			if((field.access & Opcodes.ACC_STATIC) == 0) {
-				throw new RuntimeException("Field " + field.name
-						+ " declared as Synthetic Local but is not static");
+				throw new AnnotParserException("Field " + field.name
+						+ " declared as SyntheticLocal but is not static");
 			}
 
 			// add to results
@@ -199,8 +202,8 @@ public class AnnotationParser {
 				SyntheticLocalVar slv = slVars.get(wholeFieldName);
 				
 				if(slv == null) {
-					throw new RuntimeException("Initialization of static field "
-							+ wholeFieldName
+					throw new DiSLFatalException(
+							"Initialization of static field " + wholeFieldName
 							+ " found, but no such field declared");
 				}
 				
@@ -222,13 +225,13 @@ public class AnnotationParser {
 		}
 	}
 
-	protected List<Snippet> parseSnippets(String className, MethodNode method) {
+	protected List<Snippet> parseSnippets(String className, MethodNode method)
+			throws MarkerException, AnnotParserException, ScopeParserException {
 
 		List<Snippet> result = new LinkedList<Snippet>();
 		
 		if (method.invisibleAnnotations == null) {
-			// TODO report user errors
-			throw new RuntimeException("DiSL anottation for method "
+			throw new AnnotParserException("DiSL anottation for method "
 					+ method.name + " is missing");
 		}
 
@@ -242,7 +245,7 @@ public class AnnotationParser {
 
 			// if this is unknown annotation
 			if (! annotData.isKnown()) {
-				throw new RuntimeException("Method " + method.name
+				throw new AnnotParserException("Method " + method.name
 						+ " has unsupported DiSL annotation");
 			}
 
@@ -363,7 +366,7 @@ public class AnnotationParser {
 				continue;
 			}
 
-			throw new RuntimeException("Unknow field " + name
+			throw new DiSLFatalException("Unknow field " + name
 					+ " in annotation " + type.toString()
 					+ ". This may happen if annotation class is changed but"
 					+ " parser is not.");
@@ -371,7 +374,7 @@ public class AnnotationParser {
 
 		if (marker == null || scope == null || order == null) {
 
-			throw new RuntimeException("Missing field in annotation "
+			throw new DiSLFatalException("Missing field in annotation "
 					+ type.toString()
 					+ ". This may happen if annotation class is changed but"
 					+ " parser is not.");
