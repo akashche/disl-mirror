@@ -23,6 +23,10 @@ public class MarkedRegion {
 	public List<AbstractInsnNode> getEnds() {
 		return ends;
 	}
+
+	public void setStart(AbstractInsnNode start) {
+		this.start = start;
+	}
 	
 	public MarkedRegion(MethodNode methodnode, AbstractInsnNode start) {
 		this.methodnode = methodnode;

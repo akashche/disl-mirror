@@ -218,10 +218,11 @@ public class InsnListHelper {
 	// is followed with a label which is the end of an instruction list, then
 	// it has no next instruction.
 	public static boolean hasNext(InsnList instr_lst, int i) {
-		if (i + 2 <= instr_lst.size()) {
+		if (i < instr_lst.size()) {
 			AbstractInsnNode nextInstruction = instr_lst.get(i + 1);
-			return !(nextInstruction.getOpcode() == -1 && nextInstruction
-					.getNext() == null);
+			return nextInstruction == null
+					|| !(nextInstruction.getOpcode() == -1 && nextInstruction
+							.getNext() == null);
 		}
 
 		return false;
