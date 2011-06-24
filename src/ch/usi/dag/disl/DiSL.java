@@ -31,7 +31,7 @@ public class DiSL implements Instrumentation {
 	public DiSL() {
 		super();
 		
-		// report every exception within our code - dont let anyone mask it
+		// report every exception within our code - don't let anyone mask it
 		try {
 		
 			String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
@@ -76,7 +76,7 @@ public class DiSL implements Instrumentation {
 			
 			// TODO put checker here
 			// like After should catch normal and abnormal execution
-			// but if you are using After (AfterAbnormal) with BasicBlockMarker
+			// but if you are using After (AfterThrowing) with BasicBlockMarker
 			// or InstructionMarker that doesn't throw exception, then it is
 			// probably something, you don't want - so just warn the user
 			// also it can warn about unknown opcodes if you let user to
@@ -156,7 +156,7 @@ public class DiSL implements Instrumentation {
 	
 	public void instrument(ClassNode classNode) {
 
-		// report every exception within our code - dont let anyone mask it
+		// report every exception within our code - don't let anyone mask it
 		try {
 		
 			// instrument all methods in a class
