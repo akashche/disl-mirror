@@ -17,7 +17,7 @@ public class SnippetImpl implements Snippet {
 	protected InsnList asmCode;
 	protected Set<String> localVars;
 	private Set<Class<? extends Analysis>> analyses;
-
+	
 	public SnippetImpl(Class<?> annotationClass, Marker marker, Scope scope,
 			int order, InsnList asmCode, Set<String> localVars,
 			Set<Class<? extends Analysis>> analyses) {
@@ -51,12 +51,17 @@ public class SnippetImpl implements Snippet {
 	public InsnList getAsmCode() {
 		return asmCode;
 	}
-
-	public int compareTo(Snippet o) {
-		return order - o.getOrder();
+	
+	public Set<String> getLocalVars() {
+		return localVars;
 	}
 
-	public Set<Class<? extends Analysis>> getAnalyes() {
+	public Set<Class<? extends Analysis>> getAnalyses() {
 		return analyses;
+	}
+
+	
+	public int compareTo(Snippet o) {
+		return order - o.getOrder();
 	}
 }

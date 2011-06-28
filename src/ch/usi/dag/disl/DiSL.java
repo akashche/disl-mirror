@@ -12,6 +12,7 @@ import ch.usi.dag.disl.annotation.parser.AnnotationParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.snippet.syntheticlocal.SLVSelector;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
@@ -23,7 +24,7 @@ public class DiSL implements Instrumentation {
 	final String PROP_CLASSES_DELIM = ",";
 	
 	List<Snippet> snippets;
-	List<SyntheticLocalVar> syntheticLoclaVars;
+	Map<String, SyntheticLocalVar> syntheticLoclaVars;
 	
 	public DiSL() {
 		super();
@@ -139,10 +140,18 @@ public class DiSL implements Instrumentation {
 		//  - first key is marked region
 		//  - second key is id of the invoked method
 		
+		// *** select synthetic local vars ***
+
+		// we need list of synthetic locals that are actively used in selected
+		// (marked) snippets
+		
+		List<SyntheticLocalVar> selectedSLV = SLVSelector.usedInSnippets(
+				snippetMarkings.keySet(), syntheticLoclaVars); 
+		
 		// *** viewing ***
 		
 		// TODO ! weaver should have two parts, weaving and rewriting
-		Weaver.instrument(classNode, snippetMarkings, syntheticLoclaVars);
+		Weaver.instrument(classNode, snippetMarkings, selectedSLV);
 		
 		// TODO just for debugging
 		System.out.println("--- instumentation of "

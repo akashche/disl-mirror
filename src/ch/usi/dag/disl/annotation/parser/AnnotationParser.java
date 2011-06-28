@@ -49,8 +49,8 @@ public class AnnotationParser {
 	private final String ANALYSIS_PACKAGE_PREFIX; 
 
 	private List<Snippet> snippets = new LinkedList<Snippet>();
-	private List<SyntheticLocalVar> syntheticLocalVars = 
-		new LinkedList<SyntheticLocalVar>();
+	private Map<String, SyntheticLocalVar> syntheticLocalVars = 
+		new HashMap<String, SyntheticLocalVar>();
 
 	public AnnotationParser() {
 		super();
@@ -70,7 +70,7 @@ public class AnnotationParser {
 		return snippets;
 	}
 
-	public List<SyntheticLocalVar> getSyntheticLocalVars() {
+	public Map<String, SyntheticLocalVar> getSyntheticLocalVars() {
 
 		return syntheticLocalVars;
 	}
@@ -111,7 +111,7 @@ public class AnnotationParser {
 		parseInitCodeForSLV(origInitCodeIL, slVars);
 		
 		// add local vars from this class to others
-		syntheticLocalVars.addAll(slVars.values());
+		syntheticLocalVars.putAll(slVars);
 		
 		for (Object methodObj : classNode.methods) {
 
