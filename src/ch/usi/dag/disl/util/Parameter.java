@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.util;
 
-// TODO use this class for analyses and marker parameter parsing
+// TODO use this class for marker parameter parsing
 public class Parameter {
 
 	protected String name;

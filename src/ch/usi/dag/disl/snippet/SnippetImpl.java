@@ -6,6 +6,7 @@ import org.objectweb.asm.tree.InsnList;
 
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
+import ch.usi.dag.disl.staticinfo.analysis.Analysis;
 
 public class SnippetImpl implements Snippet {
 
@@ -15,9 +16,11 @@ public class SnippetImpl implements Snippet {
 	protected int order;
 	protected InsnList asmCode;
 	protected Set<String> localVars;
+	private Set<Class<? extends Analysis>> analyses;
 
 	public SnippetImpl(Class<?> annotationClass, Marker marker, Scope scope,
-			int order, InsnList asmCode, Set<String> localVars) {
+			int order, InsnList asmCode, Set<String> localVars,
+			Set<Class<? extends Analysis>> analyses) {
 		super();
 
 		this.annotationClass = annotationClass;
@@ -26,6 +29,7 @@ public class SnippetImpl implements Snippet {
 		this.order = order;
 		this.asmCode = asmCode;
 		this.localVars = localVars;
+		this.analyses = analyses;
 	}
 
 	public Class<?> getAnnotationClass() {
@@ -50,5 +54,9 @@ public class SnippetImpl implements Snippet {
 
 	public int compareTo(Snippet o) {
 		return order - o.getOrder();
+	}
+
+	public Set<Class<? extends Analysis>> getAnalyes() {
+		return analyses;
 	}
 }

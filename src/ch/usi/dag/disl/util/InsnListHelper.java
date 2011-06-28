@@ -29,6 +29,8 @@ import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 
 public class InsnListHelper {
 
+	// TODO ! refactor - specific methods should go to Weaver
+	
 	public static boolean isReturn(int opcode) {
 		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
 	}

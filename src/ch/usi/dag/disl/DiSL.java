@@ -8,7 +8,6 @@ import java.util.Map;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.annotation.parser.AnnotationParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.snippet.Snippet;
@@ -24,9 +23,7 @@ public class DiSL implements Instrumentation {
 	final String PROP_CLASSES_DELIM = ",";
 	
 	List<Snippet> snippets;
-	List<Analyzer> analyzers;
 	List<SyntheticLocalVar> syntheticLoclaVars;
-	Weaver weaver;
 	
 	public DiSL() {
 		super();
@@ -54,7 +51,7 @@ public class DiSL implements Instrumentation {
 			
 			// *** parse compiled classes ***
 			//  - create snippets
-			//  - create analyzers
+			//  - create analyses
 			
 			AnnotationParser parser = new AnnotationParser(); 
 			
@@ -65,14 +62,8 @@ public class DiSL implements Instrumentation {
 			// initialize snippets
 			snippets = parser.getSnippets();
 
-			// initialize analyzers
-			analyzers = parser.getAnalyzers();
-			
 			// initialize synthetic local variables
 			syntheticLoclaVars = parser.getSyntheticLocalVars();
-			
-			// initialize weaver
-			weaver = new Weaver();
 			
 			// TODO put checker here
 			// like After should catch normal and abnormal execution
@@ -140,14 +131,18 @@ public class DiSL implements Instrumentation {
 			snippetMarkings.put(snippet, marking);
 		}
 		
-		// *** analyze ***
+		// *** compute static info ***
 		
-		// TODO analysis: think about structure for analysis
-		//  - what all we need to analyze and what (structure) is the output
+		// TODO analysis
+		// - call analysis for each marked region and create map of computed values
+		// - store it in 2 level hash map
+		//  - first key is marked region
+		//  - second key is id of the invoked method
 		
 		// *** viewing ***
 		
-		weaver.instrument(classNode, snippetMarkings, syntheticLoclaVars);
+		// TODO ! weaver should have two parts, weaving and rewriting
+		Weaver.instrument(classNode, snippetMarkings, syntheticLoclaVars);
 		
 		// TODO just for debugging
 		System.out.println("--- instumentation of "

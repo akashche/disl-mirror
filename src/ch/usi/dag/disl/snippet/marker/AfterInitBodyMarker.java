@@ -11,9 +11,6 @@ import ch.usi.dag.disl.util.InsnListHelper;
 
 public class AfterInitBodyMarker implements Marker {
 
-	// FIXME: for empty constructor and empty method, instrumentation according
-	//        to marks produced by this marker will not work properly
-	
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();

@@ -26,7 +26,7 @@ public class Weaver {
 
 	// If 'end' is the previous instruction of 'start', then the basic block
 	// contains only one branch instruction.
-	public int isPrevious(AbstractInsnNode end, AbstractInsnNode start) {
+	public static int isPrevious(AbstractInsnNode end, AbstractInsnNode start) {
 		// This happens only when the first instruction is a branch instruction.
 		if (end == null)
 			return 0;
@@ -47,9 +47,10 @@ public class Weaver {
 		return -1;
 	}
 
-	// TODO analysis: include analysis
 	// TODO ! support for synthetic local
-	public void instrument(ClassNode classNode,
+	// TODO support for AfterReturning and AfterThrowing
+	// TODO support for static information weaving
+	public static void instrument(ClassNode classNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars) {
 		// Sort the snippets based on their order

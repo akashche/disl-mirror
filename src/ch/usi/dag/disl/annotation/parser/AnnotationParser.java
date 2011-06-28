@@ -17,17 +17,17 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.analyzer.Analyzer;
 import ch.usi.dag.disl.annotation.After;
-import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.exception.AnnotParserException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.MarkerException;
-import ch.usi.dag.disl.exception.AnnotParserException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetImpl;
@@ -36,28 +36,38 @@ import ch.usi.dag.disl.snippet.marker.MarkerFactory;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
+import ch.usi.dag.disl.staticinfo.analysis.Analysis;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.InsnListHelper;
 
 /**
  * The parser takes annotated java file as input and creates Snippet and
- * Analyzer classes
+ * Analysis classes
  */
 public class AnnotationParser {
 
+	private final String ANALYSIS_PACKAGE_PREFIX; 
+
 	private List<Snippet> snippets = new LinkedList<Snippet>();
-	private List<Analyzer> analyzers = new LinkedList<Analyzer>();
 	private List<SyntheticLocalVar> syntheticLocalVars = 
 		new LinkedList<SyntheticLocalVar>();
 
+	public AnnotationParser() {
+		super();
+
+		// ANALYSIS_PACKAGE_PREFIX
+		// created on the fly so we don't have to care about renaming etc.
+		
+		String iAnalysisName = 
+			Type.getType(Analysis.class).getClassName();
+		int lastDelim = 
+			iAnalysisName.lastIndexOf(Constants.INTERNAL_PACKAGE_DELIM);
+		ANALYSIS_PACKAGE_PREFIX = iAnalysisName.substring(0, lastDelim);
+	}
+	
 	public List<Snippet> getSnippets() {
 
 		return snippets;
-	}
-
-	public List<Analyzer> getAnalyzers() {
-
-		return analyzers;
 	}
 
 	public List<SyntheticLocalVar> getSyntheticLocalVars() {
@@ -74,8 +84,6 @@ public class AnnotationParser {
 		ClassNode classNode = new ClassNode();
 		cr.accept(classNode, 0);
 
-		analyzers.addAll(parseAnalyzers(classNode.invisibleAnnotations));
-		
 		// support for synthetic local
 		// - if two synthetic local vars with the same name are defined
 		//   in different files they will be prefixed with class name as it is
@@ -124,19 +132,6 @@ public class AnnotationParser {
 		}
 	}
 
-	/**
-	 * Method creates analyzers according to annotations
-	 * 
-	 * @param annotations
-	 *            contains specifications for analyzers
-	 */
-	protected List<Analyzer> parseAnalyzers(List<?> annotations) {
-		// TODO analysis: implement
-		// TODO analysis: check for null
-		
-		return new LinkedList<Analyzer>();
-	}
-	
 	private Map<String, SyntheticLocalVar> parseSyntheticLocalVars(
 			String className, List<?> fields) throws AnnotParserException {
 		
@@ -236,6 +231,11 @@ public class AnnotationParser {
 			throw new AnnotParserException("DiSL anottation for method "
 					+ method.name + " is missing");
 		}
+		
+		if ((method.access & Opcodes.ACC_STATIC) == 0) {
+			throw new AnnotParserException("DiSL method " + method.name
+					+ " should be declared as static");
+		}
 
 		// more annotations on one snippet
 		// supported but we will have multiple snippets ;)
@@ -264,7 +264,7 @@ public class AnnotationParser {
 			// whole snippet
 			result.add(new SnippetImpl(annotData.getType(), marker, scope,
 					annotData.getOrder(), scd.getAsmCode(),
-					scd.getReferencedSLV()));
+					scd.getReferencedSLV(), scd.getAnalyses()));
 		}
 		
 		return result;
@@ -401,11 +401,14 @@ public class AnnotationParser {
 		
 		private InsnList asmCode;
 		private Set<String> referencedSLV;
+		private Set<Class<? extends Analysis>> analyses;
 		
-		public SnippetCodeData(InsnList asmCode, Set<String> referencedSLV) {
+		public SnippetCodeData(InsnList asmCode, Set<String> referencedSLV,
+				Set<Class<? extends Analysis>> analyses) {
 			super();
 			this.asmCode = asmCode;
 			this.referencedSLV = referencedSLV;
+			this.analyses = analyses;
 		}
 
 		public InsnList getAsmCode() {
@@ -414,6 +417,10 @@ public class AnnotationParser {
 
 		public Set<String> getReferencedSLV() {
 			return referencedSLV;
+		}
+
+		public Set<Class<? extends Analysis>> getAnalyses() {
+			return analyses;
 		}
 	}
 	
@@ -425,7 +432,7 @@ public class AnnotationParser {
 		
 		// detect empty stippets
 		if(InsnListHelper.containsOnlyReturn(asmCode)) {
-			return new SnippetCodeData(null, null);
+			return new SnippetCodeData(null, null, null);
 		}
 		
 		// remove returns in snippet (in asm code)
@@ -433,10 +440,15 @@ public class AnnotationParser {
 		
 		Set<String> slvList = new HashSet<String>();
 		
+		Set<Class<? extends Analysis>> analyses = 
+			new HashSet<Class<? extends Analysis>>();
+		
 		// create list of synthetic local variables
 		for(AbstractInsnNode instr : asmCode.toArray()) {
 
-			// if our instruction is field
+			// *** Parse synthetic local variables ***
+			
+			// instruction uses field
 			if (instr instanceof FieldInsnNode) {
 				
 				FieldInsnNode fieldInstr = (FieldInsnNode) instr;
@@ -451,8 +463,24 @@ public class AnnotationParser {
 					slvList.add(wholeFieldName);
 				}
 			}
+			
+			// *** Parse analysis classes in use ***
+
+			// instruction invokes method
+			if (instr instanceof MethodInsnNode) {
+				
+				MethodInsnNode methodInstr = (MethodInsnNode) instr;
+				
+				// we've found SyntheticLocal variable
+				if(methodInstr.owner.startsWith(ANALYSIS_PACKAGE_PREFIX)) {
+					
+					// TODO ! analysis
+					// TODO check interface
+				}
+			}
+			
 		}
 
-		return new SnippetCodeData(asmCode, slvList);
+		return new SnippetCodeData(asmCode, slvList, analyses);
 	}
 }

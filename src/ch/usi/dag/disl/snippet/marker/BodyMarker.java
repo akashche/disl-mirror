@@ -9,9 +9,6 @@ import org.objectweb.asm.tree.MethodNode;
 
 public class BodyMarker implements Marker {
 
-	// FIXME: for empty method, instrumentation according
-	//        to marks produced by this marker will not work properly
-	
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
