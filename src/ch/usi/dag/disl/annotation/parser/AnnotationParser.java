@@ -30,7 +30,6 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.snippet.SnippetImpl;
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.marker.MarkerFactory;
 import ch.usi.dag.disl.snippet.scope.Scope;
@@ -262,7 +261,7 @@ public class AnnotationParser {
 				processSnippetCode(className, method.instructions); 
 			
 			// whole snippet
-			result.add(new SnippetImpl(annotData.getType(), marker, scope,
+			result.add(new Snippet(annotData.getType(), marker, scope,
 					annotData.getOrder(), scd.getAsmCode(),
 					scd.getReferencedSLV(), scd.getAnalyses()));
 		}

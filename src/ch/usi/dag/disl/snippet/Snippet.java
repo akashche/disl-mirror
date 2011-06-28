@@ -8,7 +8,7 @@ import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.staticinfo.analysis.Analysis;
 
-public class SnippetImpl implements Snippet {
+public class Snippet implements Comparable<Snippet> {
 
 	protected Class<?> annotationClass;
 	protected Marker marker;
@@ -18,7 +18,7 @@ public class SnippetImpl implements Snippet {
 	protected Set<String> localVars;
 	private Set<Class<? extends Analysis>> analyses;
 	
-	public SnippetImpl(Class<?> annotationClass, Marker marker, Scope scope,
+	public Snippet(Class<?> annotationClass, Marker marker, Scope scope,
 			int order, InsnList asmCode, Set<String> localVars,
 			Set<Class<? extends Analysis>> analyses) {
 		super();
