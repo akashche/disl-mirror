@@ -132,7 +132,8 @@ public class InsnListHelper {
 	// NOTE that the field maxLocals of the method node will be automatically
 	// updated.
 	public static void static2Local(MethodNode method,
-			Set<SyntheticLocalVar> syntheticLocalVars) {
+			List<SyntheticLocalVar> syntheticLocalVars) {
+		
 		// Extract the 'id' field in each synthetic local
 		List<String> id_set = new LinkedList<String>();
 		AbstractInsnNode first = method.instructions.getFirst();

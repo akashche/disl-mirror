@@ -2,11 +2,8 @@ package ch.usi.dag.disl.weaver;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -54,26 +51,16 @@ public class Weaver {
 			MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars) {
-		Map<MethodNode, Set<SyntheticLocalVar>> localsInMethod;
 		// Sort the snippets based on their order
 		ArrayList<Snippet> array = new ArrayList<Snippet>(
 				snippetMarkings.keySet());
 		Collections.sort(array);
 
-		// For each method, we have a set of synthetic locals. 
-		localsInMethod = new HashMap<MethodNode, Set<SyntheticLocalVar>>();
-
-		for (Object obj : classNode.methods) {
-			MethodNode method = (MethodNode) obj;
-			localsInMethod.put(method, new HashSet<SyntheticLocalVar>());
-		}
-
-		// Prepare for weaving.
+		// Fixing empty region
 		for (Snippet snippet : array) {
 			List<MarkedRegion> regions = snippetMarkings.get(snippet);
 
 			for (MarkedRegion region : regions) {
-				// Fixing empty region
 				// For iterating through the list. NOTE that we are going to
 				// remove/add new items into the list.
 				AbstractInsnNode ends[] = new AbstractInsnNode[region.getEnds()
@@ -98,20 +85,14 @@ public class Weaver {
 						break;
 					}
 				}
-
-				// Collecting synthetic locals
-				localsInMethod.get(region.getMethodnode()).addAll(
-						snippet.getSyntheticLocalVars());
 			}
 		}
-
-		Set<MethodNode> instrumented_methods = new HashSet<MethodNode>();
 
 		for (Snippet snippet : array) {
 			List<MarkedRegion> regions = snippetMarkings.get(snippet);
 			InsnList ilst = snippet.getAsmCode();
 
-			// skip snippets with empty code
+			// skip snippet with empty code
 			if (snippet.getAsmCode() == null) {
 				continue;
 			}
@@ -124,7 +105,6 @@ public class Weaver {
 							.fixLocalIndex(region.getMethodnode(), newlst);
 					region.getMethodnode().instructions.insertBefore(
 							region.getStart(), newlst);
-					instrumented_methods.add(region.getMethodnode());
 				}
 			} else if (snippet.getAnnotationClass().equals(After.class)) {
 				for (MarkedRegion region : regions) {
@@ -134,16 +114,11 @@ public class Weaver {
 								newlst);
 						region.getMethodnode().instructions
 								.insert(exit, newlst);
-						instrumented_methods.add(region.getMethodnode());
 					}
 				}
 			}
 		}
-
-		// Transform static fields to synthetic local
-		for (MethodNode method : instrumented_methods) {
-			InsnListHelper.static2Local(method, localsInMethod.get(method));
-		}
-
+		
+		InsnListHelper.static2Local(methodNode, syntheticLocalVars);
 	}
 }
