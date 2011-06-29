@@ -51,6 +51,7 @@ public class Weaver {
 	// TODO support for AfterReturning and AfterThrowing
 	// TODO support for static information weaving
 	public static void instrument(ClassNode classNode,
+			MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars) {
 		Map<MethodNode, Set<SyntheticLocalVar>> localsInMethod;

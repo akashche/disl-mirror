@@ -86,9 +86,10 @@ public class DiSL implements Instrumentation {
 	 * NOTE: This method changes the classNode argument
 	 * 
 	 * @param classNode class that will be instrumented
-	 * @param method method in the classNode argument, that will be instrumented
+	 * @param methodNode method in the classNode argument, that will be
+	 * instrumented
 	 */
-	private void instrumentMethod(ClassNode classNode, MethodNode method) {
+	private void instrumentMethod(ClassNode classNode, MethodNode methodNode) {
 		
 		// TODO create finite-state machine if possible
 		
@@ -99,7 +100,7 @@ public class DiSL implements Instrumentation {
 		for(Snippet snippet : snippets) {
 			
 			// snippet matching
-			if(snippet.getScope().matches(classNode.name, method)) {
+			if(snippet.getScope().matches(classNode.name, methodNode)) {
 				matchedSnippets.add(snippet);
 			}
 		}
@@ -122,7 +123,7 @@ public class DiSL implements Instrumentation {
 		for(Snippet snippet : matchedSnippets) {
 			
 			// marking
-			List<MarkedRegion> marking = snippet.getMarker().mark(method);
+			List<MarkedRegion> marking = snippet.getMarker().mark(methodNode);
 			
 			// add to lists
 			allMarkings.addAll(marking);
@@ -150,12 +151,12 @@ public class DiSL implements Instrumentation {
 		// *** viewing ***
 		
 		// TODO ! weaver should have two parts, weaving and rewriting
-		Weaver.instrument(classNode, snippetMarkings,
+		Weaver.instrument(classNode, methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(selectedSLV));
 		
 		// TODO just for debugging
 		System.out.println("--- instumentation of "
-				+ classNode.name + "." + method.name);
+				+ classNode.name + "." + methodNode.name);
 	}
 	
 	public void instrument(ClassNode classNode) {
