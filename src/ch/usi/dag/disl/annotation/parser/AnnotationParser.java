@@ -142,7 +142,7 @@ public class AnnotationParser {
 			FieldNode field = (FieldNode) fieldObj;
 
 			if (field.invisibleAnnotations == null) {
-				throw new AnnotParserException("DiSL anottation for field "
+				throw new AnnotParserException("DiSL annotation for field "
 						+ field.name + " is missing");
 			}
 

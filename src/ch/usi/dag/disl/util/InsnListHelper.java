@@ -30,7 +30,7 @@ import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 public class InsnListHelper {
 
 	// TODO ! refactor - specific methods should go to Weaver
-	
+
 	public static boolean isReturn(int opcode) {
 		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
 	}
@@ -132,14 +132,20 @@ public class InsnListHelper {
 	// NOTE that the field maxLocals of the method node will be automatically
 	// updated.
 	public static void static2Local(MethodNode method,
-			List<SyntheticLocalVar> syntheticLocalVars) {
+			Set<SyntheticLocalVar> syntheticLocalVars) {
 		// Extract the 'id' field in each synthetic local
 		List<String> id_set = new LinkedList<String>();
+		AbstractInsnNode first = method.instructions.getFirst();
 
-		for (SyntheticLocalVar local : syntheticLocalVars) {
-			id_set.add(local.getID());
+		// Initialization
+		for (SyntheticLocalVar var : syntheticLocalVars) {
+			InsnList newlst = InsnListHelper.cloneList(var.getInitASMCode());
+			method.instructions.insertBefore(first, newlst);
+			
+			id_set.add(var.getID());
 		}
 
+		// Scan for FIELD instructions and replace with local load/store.
 		for (AbstractInsnNode instr : method.instructions.toArray()) {
 			int opcode = instr.getOpcode();
 
@@ -167,7 +173,6 @@ public class InsnListHelper {
 			}
 		}
 
-		// TODO Maybe we won't need that many.
 		method.maxLocals += syntheticLocalVars.size();
 	}
 

@@ -2,6 +2,7 @@ package ch.usi.dag.disl.weaver;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,27 +48,36 @@ public class Weaver {
 		return -1;
 	}
 
-	// TODO ! support for synthetic local
 	// TODO support for AfterReturning and AfterThrowing
 	// TODO support for static information weaving
 	public static void instrument(ClassNode classNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars) {
+		Map<MethodNode, Set<SyntheticLocalVar>> localsInMethod;
 		// Sort the snippets based on their order
 		ArrayList<Snippet> array = new ArrayList<Snippet>(
 				snippetMarkings.keySet());
 		Collections.sort(array);
 
-		// Fix empty region
+		// For each method, we have a set of synthetic locals. 
+		localsInMethod = new HashMap<MethodNode, Set<SyntheticLocalVar>>();
+
+		for (Object obj : classNode.methods) {
+			MethodNode method = (MethodNode) obj;
+			localsInMethod.put(method, new HashSet<SyntheticLocalVar>());
+		}
+
+		// Prepare for weaving.
 		for (Snippet snippet : array) {
 			List<MarkedRegion> regions = snippetMarkings.get(snippet);
 
 			for (MarkedRegion region : regions) {
+				// Fixing empty region
 				// For iterating through the list. NOTE that we are going to
 				// remove/add new items into the list.
 				AbstractInsnNode ends[] = new AbstractInsnNode[region.getEnds()
 						.size()];
-				
+
 				for (AbstractInsnNode exit : region.getEnds().toArray(ends)) {
 					AbstractInsnNode start = region.getStart();
 
@@ -87,6 +97,10 @@ public class Weaver {
 						break;
 					}
 				}
+
+				// Collecting synthetic locals
+				localsInMethod.get(region.getMethodnode()).addAll(
+						snippet.getSyntheticLocalVars());
 			}
 		}
 
@@ -127,7 +141,7 @@ public class Weaver {
 
 		// Transform static fields to synthetic local
 		for (MethodNode method : instrumented_methods) {
-			InsnListHelper.static2Local(method, syntheticLocalVars);
+			InsnListHelper.static2Local(method, localsInMethod.get(method));
 		}
 
 	}
