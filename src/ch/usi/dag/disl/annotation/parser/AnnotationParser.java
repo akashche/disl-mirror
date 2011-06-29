@@ -45,25 +45,23 @@ import ch.usi.dag.disl.util.InsnListHelper;
  */
 public class AnnotationParser {
 
-	private final String ANALYSIS_PACKAGE_PREFIX; 
+	private final String ANALYSIS_PACKAGE_PREFIX;
 
 	private List<Snippet> snippets = new LinkedList<Snippet>();
-	private Map<String, SyntheticLocalVar> syntheticLocalVars = 
-		new HashMap<String, SyntheticLocalVar>();
+	private Map<String, SyntheticLocalVar> syntheticLocalVars = new HashMap<String, SyntheticLocalVar>();
 
 	public AnnotationParser() {
 		super();
 
 		// ANALYSIS_PACKAGE_PREFIX
 		// created on the fly so we don't have to care about renaming etc.
-		
-		String iAnalysisName = 
-			Type.getType(Analysis.class).getClassName();
-		int lastDelim = 
-			iAnalysisName.lastIndexOf(Constants.INTERNAL_PACKAGE_DELIM);
+
+		String iAnalysisName = Type.getType(Analysis.class).getInternalName();
+		int lastDelim = iAnalysisName
+				.lastIndexOf(Constants.INTERNAL_PACKAGE_DELIM);
 		ANALYSIS_PACKAGE_PREFIX = iAnalysisName.substring(0, lastDelim);
 	}
-	
+
 	public List<Snippet> getSnippets() {
 
 		return snippets;
@@ -73,9 +71,9 @@ public class AnnotationParser {
 
 		return syntheticLocalVars;
 	}
-	
-	public void parse(byte[] classAsBytes) 
-			throws MarkerException, AnnotParserException, ScopeParserException {
+
+	public void parse(byte[] classAsBytes) throws MarkerException,
+			AnnotParserException, ScopeParserException {
 
 		// NOTE this method can be called many times
 
@@ -85,33 +83,35 @@ public class AnnotationParser {
 
 		// support for synthetic local
 		// - if two synthetic local vars with the same name are defined
-		//   in different files they will be prefixed with class name as it is
-		//   also in byte code
-		
+		// in different files they will be prefixed with class name as it is
+		// also in byte code
+
 		// parse annotations
-		Map<String, SyntheticLocalVar> slVars = 
-			parseSyntheticLocalVars(classNode.name, classNode.fields);
-		
+		Map<String, SyntheticLocalVar> slVars = parseSyntheticLocalVars(
+				classNode.name, classNode.fields);
+
 		// get static initialization code
 		InsnList origInitCodeIL = null;
-		for(Object methodObj : classNode.methods) {
+		for (Object methodObj : classNode.methods) {
 
 			// cast - ASM still uses Java 1.4 interface
 			MethodNode method = (MethodNode) methodObj;
-			
+
 			// get the code
 			if (method.name.equals(Constants.STATIC_INIT_NAME)) {
 				origInitCodeIL = method.instructions;
 				break;
 			}
 		}
-		
+
 		// parse init code for synthetic local vars and assigns them accordingly
-		parseInitCodeForSLV(origInitCodeIL, slVars);
-		
+		if (origInitCodeIL != null) {
+			parseInitCodeForSLV(origInitCodeIL, slVars);
+		}
+
 		// add local vars from this class to others
 		syntheticLocalVars.putAll(slVars);
-		
+
 		for (Object methodObj : classNode.methods) {
 
 			// cast - ASM still uses Java 1.4 interface
@@ -121,7 +121,7 @@ public class AnnotationParser {
 			if (method.name.equals(Constants.CONSTRUCTOR_NAME)) {
 				continue;
 			}
-			
+
 			// skip static initializer
 			if (method.name.equals(Constants.STATIC_INIT_NAME)) {
 				continue;
@@ -133,89 +133,87 @@ public class AnnotationParser {
 
 	private Map<String, SyntheticLocalVar> parseSyntheticLocalVars(
 			String className, List<?> fields) throws AnnotParserException {
-		
-		Map<String, SyntheticLocalVar> result = 
-			new HashMap<String, SyntheticLocalVar>();
-		
+
+		Map<String, SyntheticLocalVar> result = new HashMap<String, SyntheticLocalVar>();
+
 		for (Object fieldObj : fields) {
-		
+
 			// cast - ASM still uses Java 1.4 interface
 			FieldNode field = (FieldNode) fieldObj;
-			
+
 			if (field.invisibleAnnotations == null) {
 				throw new AnnotParserException("DiSL anottation for field "
 						+ field.name + " is missing");
 			}
-	
+
 			if (field.invisibleAnnotations.size() > 1) {
-				throw new AnnotParserException("Field "
-						+ field.name + " may have only one anotation");
+				throw new AnnotParserException("Field " + field.name
+						+ " may have only one anotation");
 			}
-			
-			AnnotationNode annotation = 
-				(AnnotationNode) field.invisibleAnnotations.get(0);
-			
+
+			AnnotationNode annotation = (AnnotationNode) field.invisibleAnnotations
+					.get(0);
+
 			Type annotationType = Type.getType(annotation.desc);
 
 			// check annotation type
-			if (! annotationType.equals(Type.getType(SyntheticLocal.class))) {
+			if (!annotationType.equals(Type.getType(SyntheticLocal.class))) {
 				throw new AnnotParserException("Field " + field.name
 						+ " has unsupported DiSL annotation");
 			}
-			
+
 			// check if field is static
-			if((field.access & Opcodes.ACC_STATIC) == 0) {
+			if ((field.access & Opcodes.ACC_STATIC) == 0) {
 				throw new AnnotParserException("Field " + field.name
 						+ " declared as SyntheticLocal but is not static");
 			}
 
 			// add to results
-			SyntheticLocalVar slv =
-				new SyntheticLocalVar(className, field.name);
+			SyntheticLocalVar slv = new SyntheticLocalVar(className, field.name);
 			result.put(slv.getID(), slv);
 		}
-		
+
 		return result;
 	}
-	
+
 	private void parseInitCodeForSLV(InsnList origInitCodeIL,
 			Map<String, SyntheticLocalVar> slVars) {
-		
+
 		// first initialization instruction for some field
 		AbstractInsnNode firstInitInsn = origInitCodeIL.getFirst();
-		
-		for(AbstractInsnNode instr : origInitCodeIL.toArray()) {
+
+		for (AbstractInsnNode instr : origInitCodeIL.toArray()) {
 
 			// if our instruction is field
 			if (instr instanceof FieldInsnNode) {
-				
+
 				FieldInsnNode fieldInstr = (FieldInsnNode) instr;
 
 				// get whole name of the field
 				String wholeFieldName = fieldInstr.owner
 						+ SyntheticLocalVar.NAME_DELIM + fieldInstr.name;
-				
+
 				SyntheticLocalVar slv = slVars.get(wholeFieldName);
-				
-				if(slv == null) {
+
+				if (slv == null) {
 					throw new DiSLFatalException(
 							"Initialization of static field " + wholeFieldName
-							+ " found, but no such field declared");
+									+ " found, but no such field declared");
 				}
-				
+
 				// clone part of the asm code
 				InsnList initASMCode = InsnListHelper.cloneList(origInitCodeIL,
 						firstInitInsn, instr);
-				
+
 				// store the code
 				slv.setInitASMCode(initASMCode);
-				
+
 				// prepare first init for next field
 				firstInitInsn = instr.getNext();
 			}
-		
+
 			// if opcode is return then we are done
-			if(InsnListHelper.isReturn(instr.getOpcode())) {
+			if (InsnListHelper.isReturn(instr.getOpcode())) {
 				break;
 			}
 		}
@@ -225,12 +223,12 @@ public class AnnotationParser {
 			throws MarkerException, AnnotParserException, ScopeParserException {
 
 		List<Snippet> result = new LinkedList<Snippet>();
-		
+
 		if (method.invisibleAnnotations == null) {
 			throw new AnnotParserException("DiSL anottation for method "
 					+ method.name + " is missing");
 		}
-		
+
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {
 			throw new AnnotParserException("DiSL method " + method.name
 					+ " should be declared as static");
@@ -245,7 +243,7 @@ public class AnnotationParser {
 			parseMethodAnnotation((AnnotationNode) annotationObj);
 
 			// if this is unknown annotation
-			if (! annotData.isKnown()) {
+			if (!annotData.isKnown()) {
 				throw new AnnotParserException("Method " + method.name
 						+ " has unsupported DiSL annotation");
 			}
@@ -257,15 +255,15 @@ public class AnnotationParser {
 			Scope scope = new ScopeImpl(annotData.getScope());
 
 			// process code
-			SnippetCodeData scd = 
-				processSnippetCode(className, method.instructions); 
-			
+			SnippetCodeData scd = processSnippetCode(className,
+					method.instructions);
+
 			// whole snippet
 			result.add(new Snippet(annotData.getType(), marker, scope,
-					annotData.getOrder(), scd.getAsmCode(),
-					scd.getReferencedSLV(), scd.getAnalyses()));
+					annotData.getOrder(), scd.getAsmCode(), scd
+							.getReferencedSLV(), scd.getAnalyses()));
 		}
-		
+
 		return result;
 	}
 
@@ -313,7 +311,7 @@ public class AnnotationParser {
 			return order;
 		}
 	}
-	
+
 	protected MethodAnnotationData parseMethodAnnotation(
 			AnnotationNode annotation) {
 
@@ -324,13 +322,13 @@ public class AnnotationParser {
 			return parseMethodAnnotFields(After.class, annotation,
 					annotation.values);
 		}
-		
+
 		// after normal execution annotation
 		if (annotationType.equals(Type.getType(AfterReturning.class))) {
 			return parseMethodAnnotFields(AfterReturning.class, annotation,
 					annotation.values);
 		}
-		
+
 		// after abnormal execution annotation
 		if (annotationType.equals(Type.getType(AfterThrowing.class))) {
 			return parseMethodAnnotFields(AfterThrowing.class, annotation,
@@ -395,13 +393,13 @@ public class AnnotationParser {
 
 		return new MethodAnnotationData(type, marker, scope, order);
 	}
-	
+
 	private class SnippetCodeData {
-		
+
 		private InsnList asmCode;
 		private Set<SyntheticLocalVar> referencedSLV;
 		private Set<Class<? extends Analysis>> analyses;
-		
+
 		public SnippetCodeData(InsnList asmCode,
 				Set<SyntheticLocalVar> referencedSLV,
 				Set<Class<? extends Analysis>> analyses) {
@@ -423,62 +421,61 @@ public class AnnotationParser {
 			return analyses;
 		}
 	}
-	
+
 	private SnippetCodeData processSnippetCode(String className,
 			InsnList snippetCode) {
 
 		// clone the instrucition list
 		InsnList asmCode = InsnListHelper.cloneList(snippetCode);
-		
+
 		// detect empty stippets
-		if(InsnListHelper.containsOnlyReturn(asmCode)) {
+		if (InsnListHelper.containsOnlyReturn(asmCode)) {
 			return new SnippetCodeData(null, null, null);
 		}
-		
+
 		// remove returns in snippet (in asm code)
 		InsnListHelper.removeReturns(asmCode);
-		
+
 		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
-		
-		Set<Class<? extends Analysis>> analyses = 
-			new HashSet<Class<? extends Analysis>>();
-		
+
+		Set<Class<? extends Analysis>> analyses = new HashSet<Class<? extends Analysis>>();
+
 		// create list of synthetic local variables
-		for(AbstractInsnNode instr : asmCode.toArray()) {
+		for (AbstractInsnNode instr : asmCode.toArray()) {
 
 			// *** Parse synthetic local variables ***
-			
+
 			// instruction uses field
 			if (instr instanceof FieldInsnNode) {
-				
+
 				FieldInsnNode fieldInstr = (FieldInsnNode) instr;
 
 				// we've found SyntheticLocal variable
-				if(className.equals(fieldInstr.owner)) {
-					
+				if (className.equals(fieldInstr.owner)) {
+
 					// get whole name of the field
 					String wholeFieldName = fieldInstr.owner
 							+ SyntheticLocalVar.NAME_DELIM + fieldInstr.name;
-					
+
 					slvList.add(syntheticLocalVars.get(wholeFieldName));
 				}
 			}
-			
+
 			// *** Parse analysis classes in use ***
 
 			// instruction invokes method
 			if (instr instanceof MethodInsnNode) {
-				
+
 				MethodInsnNode methodInstr = (MethodInsnNode) instr;
-				
+
 				// we've found analysis
-				if(methodInstr.owner.startsWith(ANALYSIS_PACKAGE_PREFIX)) {
-					
+				if (methodInstr.owner.startsWith(ANALYSIS_PACKAGE_PREFIX)) {
+
 					// TODO ! analysis
 					// TODO check interface
 				}
 			}
-			
+
 		}
 
 		return new SnippetCodeData(asmCode, slvList, analyses);
