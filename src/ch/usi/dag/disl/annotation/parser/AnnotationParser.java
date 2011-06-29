@@ -399,10 +399,11 @@ public class AnnotationParser {
 	private class SnippetCodeData {
 		
 		private InsnList asmCode;
-		private Set<String> referencedSLV;
+		private Set<SyntheticLocalVar> referencedSLV;
 		private Set<Class<? extends Analysis>> analyses;
 		
-		public SnippetCodeData(InsnList asmCode, Set<String> referencedSLV,
+		public SnippetCodeData(InsnList asmCode,
+				Set<SyntheticLocalVar> referencedSLV,
 				Set<Class<? extends Analysis>> analyses) {
 			super();
 			this.asmCode = asmCode;
@@ -414,7 +415,7 @@ public class AnnotationParser {
 			return asmCode;
 		}
 
-		public Set<String> getReferencedSLV() {
+		public Set<SyntheticLocalVar> getReferencedSLV() {
 			return referencedSLV;
 		}
 
@@ -437,7 +438,7 @@ public class AnnotationParser {
 		// remove returns in snippet (in asm code)
 		InsnListHelper.removeReturns(asmCode);
 		
-		Set<String> slvList = new HashSet<String>();
+		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
 		
 		Set<Class<? extends Analysis>> analyses = 
 			new HashSet<Class<? extends Analysis>>();
@@ -459,7 +460,7 @@ public class AnnotationParser {
 					String wholeFieldName = fieldInstr.owner
 							+ SyntheticLocalVar.NAME_DELIM + fieldInstr.name;
 					
-					slvList.add(wholeFieldName);
+					slvList.add(syntheticLocalVars.get(wholeFieldName));
 				}
 			}
 			
@@ -470,7 +471,7 @@ public class AnnotationParser {
 				
 				MethodInsnNode methodInstr = (MethodInsnNode) instr;
 				
-				// we've found SyntheticLocal variable
+				// we've found analysis
 				if(methodInstr.owner.startsWith(ANALYSIS_PACKAGE_PREFIX)) {
 					
 					// TODO ! analysis

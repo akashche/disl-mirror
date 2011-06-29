@@ -1,9 +1,11 @@
 package ch.usi.dag.disl;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -12,7 +14,6 @@ import ch.usi.dag.disl.annotation.parser.AnnotationParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
-import ch.usi.dag.disl.snippet.syntheticlocal.SLVSelector;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
@@ -24,7 +25,6 @@ public class DiSL implements Instrumentation {
 	final String PROP_CLASSES_DELIM = ",";
 	
 	List<Snippet> snippets;
-	Map<String, SyntheticLocalVar> syntheticLoclaVars;
 	
 	public DiSL() {
 		super();
@@ -63,9 +63,6 @@ public class DiSL implements Instrumentation {
 			// initialize snippets
 			snippets = parser.getSnippets();
 
-			// initialize synthetic local variables
-			syntheticLoclaVars = parser.getSyntheticLocalVars();
-			
 			// TODO put checker here
 			// like After should catch normal and abnormal execution
 			// but if you are using After (AfterThrowing) with BasicBlockMarker
@@ -134,7 +131,7 @@ public class DiSL implements Instrumentation {
 		
 		// *** compute static info ***
 		
-		// TODO analysis
+		// TODO ! analysis
 		// - call analysis for each marked region and create map of computed values
 		// - store it in 2 level hash map
 		//  - first key is marked region
@@ -145,13 +142,16 @@ public class DiSL implements Instrumentation {
 		// we need list of synthetic locals that are actively used in selected
 		// (marked) snippets
 		
-		List<SyntheticLocalVar> selectedSLV = SLVSelector.usedInSnippets(
-				snippetMarkings.keySet(), syntheticLoclaVars); 
+		Set<SyntheticLocalVar> selectedSLV = new HashSet<SyntheticLocalVar>();
+		for(Snippet snippet : snippetMarkings.keySet()) {
+			selectedSLV.addAll(snippet.getSyntheticLocalVars());
+		}
 		
 		// *** viewing ***
 		
 		// TODO ! weaver should have two parts, weaving and rewriting
-		Weaver.instrument(classNode, snippetMarkings, selectedSLV);
+		Weaver.instrument(classNode, snippetMarkings,
+				new LinkedList<SyntheticLocalVar>(selectedSLV));
 		
 		// TODO just for debugging
 		System.out.println("--- instumentation of "

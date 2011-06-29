@@ -6,6 +6,7 @@ import org.objectweb.asm.tree.InsnList;
 
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
+import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.staticinfo.analysis.Analysis;
 
 public class Snippet implements Comparable<Snippet> {
@@ -15,11 +16,14 @@ public class Snippet implements Comparable<Snippet> {
 	protected Scope scope;
 	protected int order;
 	protected InsnList asmCode;
-	protected Set<String> localVars;
+	protected Set<SyntheticLocalVar> syntheticLocalVars;
 	private Set<Class<? extends Analysis>> analyses;
 	
-	public Snippet(Class<?> annotationClass, Marker marker, Scope scope,
-			int order, InsnList asmCode, Set<String> localVars,
+	public Snippet(Class<?> annotationClass,
+			Marker marker,
+			Scope scope,
+			int order, InsnList asmCode,
+			Set<SyntheticLocalVar> syntheticLocalVars,
 			Set<Class<? extends Analysis>> analyses) {
 		super();
 
@@ -28,7 +32,7 @@ public class Snippet implements Comparable<Snippet> {
 		this.scope = scope;
 		this.order = order;
 		this.asmCode = asmCode;
-		this.localVars = localVars;
+		this.syntheticLocalVars = syntheticLocalVars;
 		this.analyses = analyses;
 	}
 
@@ -52,8 +56,8 @@ public class Snippet implements Comparable<Snippet> {
 		return asmCode;
 	}
 	
-	public Set<String> getLocalVars() {
-		return localVars;
+	public Set<SyntheticLocalVar> getSyntheticLocalVars() {
+		return syntheticLocalVars;
 	}
 
 	public Set<Class<? extends Analysis>> getAnalyses() {
