@@ -2,7 +2,9 @@ package ch.usi.dag.disl.staticinfo.analysis;
 
 public interface Analysis {
 
-	// NOTE: all classes implementing this iface should follow convention:
+	// It isn't mandatory (but it's good practice) to implement this interface
+	
+	// NOTE: all analysis classes should follow convention:
 	// a) method returns the desired value as the method return value
 	// (not by using modified argument)
 	// b) return value can be only basic type (+String)

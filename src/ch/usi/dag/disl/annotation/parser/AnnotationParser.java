@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.annotation.parser;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,17 +27,18 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.exception.AnalysisException;
 import ch.usi.dag.disl.exception.AnnotParserException;
+import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
-import ch.usi.dag.disl.exception.MarkerException;
-import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.Marker;
-import ch.usi.dag.disl.snippet.marker.MarkerFactory;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
+import ch.usi.dag.disl.staticinfo.StaticInfoData;
 import ch.usi.dag.disl.staticinfo.analysis.Analysis;
+import ch.usi.dag.disl.util.ClassFactory;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.InsnListHelper;
 
@@ -48,7 +51,8 @@ public class AnnotationParser {
 	private final String ANALYSIS_PACKAGE_PREFIX;
 
 	private List<Snippet> snippets = new LinkedList<Snippet>();
-	private Map<String, SyntheticLocalVar> syntheticLocalVars = new HashMap<String, SyntheticLocalVar>();
+	private Map<String, SyntheticLocalVar> syntheticLocalVars =
+		new HashMap<String, SyntheticLocalVar>();
 
 	public AnnotationParser() {
 		super();
@@ -72,8 +76,7 @@ public class AnnotationParser {
 		return syntheticLocalVars;
 	}
 
-	public void parse(byte[] classAsBytes) throws MarkerException,
-			AnnotParserException, ScopeParserException {
+	public void parse(byte[] classAsBytes) throws DiSLException {
 
 		// NOTE this method can be called many times
 
@@ -134,7 +137,8 @@ public class AnnotationParser {
 	private Map<String, SyntheticLocalVar> parseSyntheticLocalVars(
 			String className, List<?> fields) throws AnnotParserException {
 
-		Map<String, SyntheticLocalVar> result = new HashMap<String, SyntheticLocalVar>();
+		Map<String, SyntheticLocalVar> result =
+			new HashMap<String, SyntheticLocalVar>();
 
 		for (Object fieldObj : fields) {
 
@@ -151,8 +155,8 @@ public class AnnotationParser {
 						+ " may have only one anotation");
 			}
 
-			AnnotationNode annotation = (AnnotationNode) field.invisibleAnnotations
-					.get(0);
+			AnnotationNode annotation =
+				(AnnotationNode) field.invisibleAnnotations.get(0);
 
 			Type annotationType = Type.getType(annotation.desc);
 
@@ -169,7 +173,8 @@ public class AnnotationParser {
 			}
 
 			// add to results
-			SyntheticLocalVar slv = new SyntheticLocalVar(className, field.name);
+			SyntheticLocalVar slv =
+				new SyntheticLocalVar(className, field.name);
 			result.put(slv.getID(), slv);
 		}
 
@@ -220,7 +225,7 @@ public class AnnotationParser {
 	}
 
 	protected List<Snippet> parseSnippets(String className, MethodNode method)
-			throws MarkerException, AnnotParserException, ScopeParserException {
+			throws DiSLException {
 
 		List<Snippet> result = new LinkedList<Snippet>();
 
@@ -249,7 +254,8 @@ public class AnnotationParser {
 			}
 
 			// marker
-			Marker marker = MarkerFactory.createMarker(annotData.getMarker());
+			Marker marker = 
+				(Marker) ClassFactory.createInstance(annotData.getMarker());
 
 			// scope
 			Scope scope = new ScopeImpl(annotData.getScope());
@@ -398,11 +404,11 @@ public class AnnotationParser {
 
 		private InsnList asmCode;
 		private Set<SyntheticLocalVar> referencedSLV;
-		private Set<Class<? extends Analysis>> analyses;
+		private Map<String, Method> analyses;
 
 		public SnippetCodeData(InsnList asmCode,
 				Set<SyntheticLocalVar> referencedSLV,
-				Set<Class<? extends Analysis>> analyses) {
+				Map<String, Method> analyses) {
 			super();
 			this.asmCode = asmCode;
 			this.referencedSLV = referencedSLV;
@@ -417,13 +423,13 @@ public class AnnotationParser {
 			return referencedSLV;
 		}
 
-		public Set<Class<? extends Analysis>> getAnalyses() {
+		public Map<String, Method> getAnalyses() {
 			return analyses;
 		}
 	}
 
 	private SnippetCodeData processSnippetCode(String className,
-			InsnList snippetCode) {
+			InsnList snippetCode) throws DiSLException {
 
 		// clone the instrucition list
 		InsnList asmCode = InsnListHelper.cloneList(snippetCode);
@@ -438,46 +444,146 @@ public class AnnotationParser {
 
 		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
 
-		Set<Class<? extends Analysis>> analyses = new HashSet<Class<? extends Analysis>>();
+		Map<String, Method> analyses = new HashMap<String, Method>();
 
 		// create list of synthetic local variables
 		for (AbstractInsnNode instr : asmCode.toArray()) {
 
 			// *** Parse synthetic local variables ***
 
-			// instruction uses field
-			if (instr instanceof FieldInsnNode) {
-
-				FieldInsnNode fieldInstr = (FieldInsnNode) instr;
-
-				// we've found SyntheticLocal variable
-				if (className.equals(fieldInstr.owner)) {
-
-					// get whole name of the field
-					String wholeFieldName = fieldInstr.owner
-							+ SyntheticLocalVar.NAME_DELIM + fieldInstr.name;
-
-					slvList.add(syntheticLocalVars.get(wholeFieldName));
-				}
+			String slvName = insnUsesSLV(instr, className);
+			
+			if(slvName != null) {
+				slvList.add(syntheticLocalVars.get(slvName));
 			}
 
 			// *** Parse analysis classes in use ***
 
-			// instruction invokes method
-			if (instr instanceof MethodInsnNode) {
-
-				MethodInsnNode methodInstr = (MethodInsnNode) instr;
-
-				// we've found analysis
-				if (methodInstr.owner.startsWith(ANALYSIS_PACKAGE_PREFIX)) {
-
-					// TODO ! analysis
-					// TODO check interface
-				}
+			AnalysisMethod anlMtd = 
+				insnInvokesAnalysis(instr, analyses.keySet());
+			
+			if(anlMtd != null) {
+				analyses.put(anlMtd.getId(), anlMtd.getRefM());
 			}
-
 		}
 
 		return new SnippetCodeData(asmCode, slvList, analyses);
+	}
+
+	private String insnUsesSLV(AbstractInsnNode instr, String className) {
+
+		// check - instruction uses field
+		if (! (instr instanceof FieldInsnNode)) {
+			return null;
+		}
+		
+		FieldInsnNode fieldInstr = (FieldInsnNode) instr;
+
+		// check - it is SyntheticLocal variable (it's defined in snippet)
+		if (! className.equals(fieldInstr.owner)) {
+			return null;
+		}
+		
+		// get whole name of the field
+		String wholeFieldName = fieldInstr.owner
+				+ SyntheticLocalVar.NAME_DELIM + fieldInstr.name;
+		
+		return wholeFieldName;
+	}
+	
+	class AnalysisMethod {
+		
+		private String id;
+		private Method refM;
+		
+		public AnalysisMethod(String id, Method refM) {
+			super();
+			this.id = id;
+			this.refM = refM;
+		}
+
+		public String getId() {
+			return id;
+		}
+
+		public Method getRefM() {
+			return refM;
+		}
+	}
+	
+	private AnalysisMethod insnInvokesAnalysis(AbstractInsnNode instr,
+			Set<String> knownMethods) throws AnalysisException, DiSLException {
+		
+		// check - instruction invokes method
+		if (! (instr instanceof MethodInsnNode)) {
+			return null;
+		}
+
+		MethodInsnNode methodInstr = (MethodInsnNode) instr;
+
+		// check - we've found analysis
+		if (! methodInstr.owner.startsWith(ANALYSIS_PACKAGE_PREFIX)) {
+			return null;
+		}
+
+		// crate ASM Method object
+		org.objectweb.asm.commons.Method asmMethod = 
+			new org.objectweb.asm.commons.Method(
+					methodInstr.name, methodInstr.desc);
+
+		// check method argument
+		// only one method argument (StaticInfoData) is allowed
+		Type[] methodArguments = asmMethod.getArgumentTypes();
+		
+		if(methodArguments.length != 1) {
+			throw new AnalysisException("Analysis method " + methodInstr.name
+					+ " in class " + methodInstr.owner
+					+ " should have only one parameter.");
+		}
+		
+		if(! methodArguments[0].equals(Type.getType(StaticInfoData.class))) {
+			throw new AnalysisException("Parameter in alysis method "
+					+ methodInstr.name + " in class " + methodInstr.owner
+					+ " should be of type "
+					+ StaticInfoData.class.getCanonicalName());
+		}
+		
+		// crate analysis method id
+		String methodID = methodInstr.owner + Constants.ANALYSIS_METHOD_DELIM
+				+ methodInstr.name;
+
+		if(knownMethods.contains(methodID)) {
+			return null;
+		}
+		
+		// resolve analysis class
+		Class<?> analysisClass = ClassFactory.resolve(
+				Type.getType(methodInstr.owner));
+
+		// NOTE: we don't check if the class is implementing
+		// Analysis interface - implementation is not mandatory
+
+		// resolve method
+		Method method = null;
+		try {
+			method = analysisClass.getMethod(
+					methodInstr.name, StaticInfoData.class);
+		}
+		catch(NoSuchMethodException e) {
+			throw new AnalysisException(
+					"Method " + methodInstr.name + " in class "
+					+ methodInstr.owner + " cannot be found."
+					+ " Snippet was probably compiled against modified"
+					+ " (different) class");
+		}
+		
+		// check if the method is static
+		if(! Modifier.isStatic(method.getModifiers())) {
+			throw new AnalysisException(
+					"Analysis method " + methodInstr.name + " in class "
+					+ methodInstr.owner + " should be static.");
+		}
+		
+		return new AnalysisMethod(methodID, method);
 	}
 }

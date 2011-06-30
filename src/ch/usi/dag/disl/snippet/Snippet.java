@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.snippet;
 
+import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.asm.tree.InsnList;
@@ -7,7 +9,6 @@ import org.objectweb.asm.tree.InsnList;
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
-import ch.usi.dag.disl.staticinfo.analysis.Analysis;
 
 public class Snippet implements Comparable<Snippet> {
 
@@ -17,14 +18,14 @@ public class Snippet implements Comparable<Snippet> {
 	protected int order;
 	protected InsnList asmCode;
 	protected Set<SyntheticLocalVar> syntheticLocalVars;
-	private Set<Class<? extends Analysis>> analyses;
+	private Map<String, Method> analyses;
 	
 	public Snippet(Class<?> annotationClass,
 			Marker marker,
 			Scope scope,
 			int order, InsnList asmCode,
 			Set<SyntheticLocalVar> syntheticLocalVars,
-			Set<Class<? extends Analysis>> analyses) {
+			Map<String, Method> analyses) {
 		super();
 
 		this.annotationClass = annotationClass;
@@ -60,7 +61,7 @@ public class Snippet implements Comparable<Snippet> {
 		return syntheticLocalVars;
 	}
 
-	public Set<Class<? extends Analysis>> getAnalyses() {
+	public Map<String, Method> getAnalyses() {
 		return analyses;
 	}
 

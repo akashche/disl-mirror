@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -47,8 +46,7 @@ public class Weaver {
 
 	// TODO support for AfterReturning and AfterThrowing
 	// TODO support for static information weaving
-	public static void instrument(ClassNode classNode,
-			MethodNode methodNode,
+	public static void instrument(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars) {
 		// Sort the snippets based on their order
