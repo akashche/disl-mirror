@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.test.bodymarker;
 
-import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.snippet.marker.BodyMarker;
 
@@ -22,8 +22,18 @@ public class DiSLClass {
 		System.out.println("Precondition: This should NOT be printed");
 	}
 	
-	@After(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 0)
+	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 0)
 	public static void postcondition() {
 		System.out.println("Postcondition!");
+	}
+	
+	@Before(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 2)
+	public static void precondition2() {
+		System.out.println("Precondition2!");
+	}
+	
+	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 3)
+	public static void postcondition2() {
+		System.out.println("Postcondition2!");
 	}
 }

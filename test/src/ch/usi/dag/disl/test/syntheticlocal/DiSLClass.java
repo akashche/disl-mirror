@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.test.syntheticlocal;
 
-import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.snippet.marker.BodyMarker;
@@ -23,7 +23,7 @@ public class DiSLClass {
 		System.out.println("Precondition: This should NOT be printed");
 	}
 	
-	@After(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 0)
+	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 0)
 	public static void postcondition() {
 		System.out.println("Postcondition!");
 		
