@@ -10,22 +10,16 @@ import java.util.Set;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.tree.VarInsnNode;
-
-import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 
 public class InsnListHelper {
 
@@ -106,77 +100,6 @@ public class InsnListHelper {
 		return dst;
 	}
 
-	// Fix the stack operand index of each stack-based instruction
-	// according to the maximum number of locals in the target method node.
-	// NOTE that the field maxLocals of the method node will be automatically
-	// updated.
-	public static void fixLocalIndex(MethodNode method, InsnList src) {
-		int max = method.maxLocals;
-
-		for (AbstractInsnNode instr : src.toArray()) {
-
-			if (instr instanceof VarInsnNode) {
-				VarInsnNode varInstr = (VarInsnNode) instr;
-				varInstr.var += method.maxLocals;
-
-				if (varInstr.var > max) {
-					max = varInstr.var;
-				}
-			}
-		}
-
-		method.maxLocals = max;
-	}
-
-	// Transform static fields to synthetic local
-	// NOTE that the field maxLocals of the method node will be automatically
-	// updated.
-	public static void static2Local(MethodNode method,
-			List<SyntheticLocalVar> syntheticLocalVars) {
-		
-		// Extract the 'id' field in each synthetic local
-		List<String> id_set = new LinkedList<String>();
-		AbstractInsnNode first = method.instructions.getFirst();
-
-		// Initialization
-		for (SyntheticLocalVar var : syntheticLocalVars) {
-			InsnList newlst = InsnListHelper.cloneList(var.getInitASMCode());
-			method.instructions.insertBefore(first, newlst);
-			
-			id_set.add(var.getID());
-		}
-
-		// Scan for FIELD instructions and replace with local load/store.
-		for (AbstractInsnNode instr : method.instructions.toArray()) {
-			int opcode = instr.getOpcode();
-
-			// Only field instructions will be transformed.
-			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
-				FieldInsnNode field_instr = (FieldInsnNode) instr;
-				String id = field_instr.owner + SyntheticLocalVar.NAME_DELIM
-						+ field_instr.name;
-				int index = id_set.indexOf(id);
-
-				if (index == -1) {
-					// Not contained in the synthetic locals.
-					continue;
-				}
-
-				// Construct a instruction for local
-				Type type = Type.getType(field_instr.desc);
-				int new_opcode = type
-						.getOpcode(opcode == Opcodes.GETSTATIC ? Opcodes.ILOAD
-								: Opcodes.ISTORE);
-				VarInsnNode insn = new VarInsnNode(new_opcode, method.maxLocals
-						+ index);
-				method.instructions.insertBefore(instr, insn);
-				method.instructions.remove(instr);
-			}
-		}
-
-		method.maxLocals += syntheticLocalVars.size();
-	}
-
 	// Get the first valid mark of a method.
 	// For a constructor, the return value will be the instruction after
 	// the object initialization.
@@ -240,7 +163,6 @@ public class InsnListHelper {
 		int opcode = instruction.getOpcode();
 
 		return instruction instanceof JumpInsnNode
-				|| instruction instanceof MethodInsnNode
 				|| instruction instanceof LookupSwitchInsnNode
 				|| instruction instanceof TableSwitchInsnNode
 				|| opcode == Opcodes.ATHROW || opcode == Opcodes.RET
@@ -294,18 +216,7 @@ public class InsnListHelper {
 				break;
 			}
 
-			case AbstractInsnNode.METHOD_INSN: {
-				// Covers invoke*
-				if (hasNext(instr_lst, i)) {
-					bb_begins.add(instruction.getNext());
-				}
-			}
-
 			default:
-				if (opcode == Opcodes.CHECKCAST && hasNext(instr_lst, i)) {
-					// checkcast might throw an exception.
-					bb_begins.add(instruction.getNext());
-				}
 				break;
 			}
 		}
