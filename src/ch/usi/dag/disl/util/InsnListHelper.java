@@ -236,4 +236,62 @@ public class InsnListHelper {
 
 		return bb_list;
 	}
+
+	public static boolean mightThrowException(AbstractInsnNode instruction) {
+
+		switch (instruction.getOpcode()) {
+	
+			// NullPointerException, ArrayIndexOutOfBoundsException
+		case Opcodes.BALOAD:
+		case Opcodes.DALOAD:
+		case Opcodes.FALOAD:
+		case Opcodes.IALOAD:
+		case Opcodes.LALOAD:
+		case Opcodes.BASTORE:
+		case Opcodes.CASTORE:
+		case Opcodes.DASTORE:
+		case Opcodes.FASTORE:
+		case Opcodes.IASTORE:
+		case Opcodes.LASTORE:
+		case Opcodes.AALOAD:
+		case Opcodes.CALOAD:
+		case Opcodes.SALOAD:
+		case Opcodes.SASTORE:
+			// NullPointerException, ArrayIndexOutOfBoundsException,
+			// ArrayStoreException
+		case Opcodes.AASTORE:
+			// NullPointerException
+		case Opcodes.ARRAYLENGTH:
+		case Opcodes.ATHROW:
+		case Opcodes.GETFIELD:
+		case Opcodes.PUTFIELD:
+			// NullPointerException, StackOverflowError
+		case Opcodes.INVOKEINTERFACE:
+		case Opcodes.INVOKESPECIAL:
+		case Opcodes.INVOKEVIRTUAL:
+			// StackOverflowError
+		case Opcodes.INVOKESTATIC:
+			// NegativeArraySizeException
+		case Opcodes.ANEWARRAY:
+			// NegativeArraySizeException, OutOfMemoryError 
+		case Opcodes.NEWARRAY:
+		case Opcodes.MULTIANEWARRAY:
+			// OutOfMemoryError, InstantiationError
+		case Opcodes.NEW:
+			// OutOfMemoryError
+		case Opcodes.LDC:
+			// ClassCastException 
+		case Opcodes.CHECKCAST:
+			// ArithmeticException
+		case Opcodes.IDIV:
+		case Opcodes.IREM:
+		case Opcodes.LDIV:
+		case Opcodes.LREM:
+			// New instruction in JDK7
+		case Opcodes.INVOKEDYNAMIC:
+			return true;			
+		default:
+			return false;
+		}
+	}
 }
