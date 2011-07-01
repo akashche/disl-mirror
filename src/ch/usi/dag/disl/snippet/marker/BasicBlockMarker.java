@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.InsnListHelper;
@@ -22,12 +21,8 @@ public class BasicBlockMarker implements Marker {
 			AbstractInsnNode start = seperators.get(i);
 			AbstractInsnNode end = seperators.get(i + 1).getPrevious();
 			
-			if (start instanceof LabelNode){
+			while (start.getOpcode() == -1){
 				start = start.getNext();
-			}
-
-			if (start.getPrevious() != end && InsnListHelper.isBranch(end)){
-				end = end.getPrevious();
 			}
 
 			regions.add(new MarkedRegion(method, start, end));

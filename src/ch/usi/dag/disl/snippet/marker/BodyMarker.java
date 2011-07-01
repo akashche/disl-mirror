@@ -19,7 +19,7 @@ public class BodyMarker implements Marker {
 			int opcode = instr.getOpcode();
 
 			if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
-				region.addExitPoint(instr.getPrevious());
+				region.addExitPoint(instr);
 			}
 		}
 

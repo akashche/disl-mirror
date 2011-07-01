@@ -6,7 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -17,6 +16,8 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
@@ -26,41 +27,35 @@ import ch.usi.dag.disl.util.InsnListHelper;
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
 
-	// If 'end' is the previous instruction of 'start', then the basic block
-	// contains only one branch instruction.
-	public static int isPrevious(AbstractInsnNode end, AbstractInsnNode start) {
-		// This happens only when the first instruction is a branch instruction.
-		if (end == null)
-			return 0;
+	public static void fixRegion(MethodNode methodNode, MarkedRegion region) {
+		// Assume that the first end is the closest to the start.
+		AbstractInsnNode start = region.getStart();
 
-		// Skip labels and compare the first not-label one with 'end'.
-		AbstractInsnNode iterator = start.getPrevious();
-		int label_count = 0;
+		for (AbstractInsnNode end : region.getEnds()) {
+			if (InsnListHelper.isBranch(end)) {
+				if (start == end) {
+					LabelNode labelNode = new LabelNode();
+					methodNode.instructions.insertBefore(start, labelNode);
+					region.setStart(labelNode);
+				}
 
-		while (iterator != null) {
-			if (iterator.getOpcode() == -1) {
-				iterator = iterator.getPrevious();
-				label_count++;
-			} else {
-				return iterator == end ? label_count : -1;
+				region.addWeavingExitPoint(end.getPrevious());
 			}
 		}
-
-		return -1;
 	}
 
 	// Fix the stack operand index of each stack-based instruction
 	// according to the maximum number of locals in the target method node.
 	// NOTE that the field maxLocals of the method node will be automatically
 	// updated.
-	public static void fixLocalIndex(MethodNode method, InsnList src) {
-		int max = method.maxLocals;
+	public static void fixLocalIndex(MethodNode methodNode, InsnList src) {
+		int max = methodNode.maxLocals;
 
 		for (AbstractInsnNode instr : src.toArray()) {
 
 			if (instr instanceof VarInsnNode) {
 				VarInsnNode varInstr = (VarInsnNode) instr;
-				varInstr.var += method.maxLocals;
+				varInstr.var += methodNode.maxLocals;
 
 				if (varInstr.var > max) {
 					max = varInstr.var;
@@ -68,33 +63,33 @@ public class Weaver {
 			}
 		}
 
-		method.maxLocals = max;
+		methodNode.maxLocals = max;
 	}
 
 	// Transform static fields to synthetic local
 	// NOTE that the field maxLocals of the method node will be automatically
 	// updated.
-	public static void static2Local(MethodNode method,
+	public static void static2Local(MethodNode methodNode,
 			List<SyntheticLocalVar> syntheticLocalVars) {
 
 		// Extract the 'id' field in each synthetic local
 		List<String> id_set = new LinkedList<String>();
-		AbstractInsnNode first = method.instructions.getFirst();
+		AbstractInsnNode first = methodNode.instructions.getFirst();
 
 		// Initialization
 		for (SyntheticLocalVar var : syntheticLocalVars) {
-			
+
 			if (var.getInitASMCode() != null) {
 				InsnList newlst = InsnListHelper
 						.cloneList(var.getInitASMCode());
-				method.instructions.insertBefore(first, newlst);
+				methodNode.instructions.insertBefore(first, newlst);
 			}
 
 			id_set.add(var.getID());
 		}
 
 		// Scan for FIELD instructions and replace with local load/store.
-		for (AbstractInsnNode instr : method.instructions.toArray()) {
+		for (AbstractInsnNode instr : methodNode.instructions.toArray()) {
 			int opcode = instr.getOpcode();
 
 			// Only field instructions will be transformed.
@@ -114,14 +109,14 @@ public class Weaver {
 				int new_opcode = type
 						.getOpcode(opcode == Opcodes.GETSTATIC ? Opcodes.ILOAD
 								: Opcodes.ISTORE);
-				VarInsnNode insn = new VarInsnNode(new_opcode, method.maxLocals
-						+ index);
-				method.instructions.insertBefore(instr, insn);
-				method.instructions.remove(instr);
+				VarInsnNode insn = new VarInsnNode(new_opcode,
+						methodNode.maxLocals + index);
+				methodNode.instructions.insertBefore(instr, insn);
+				methodNode.instructions.remove(instr);
 			}
 		}
 
-		method.maxLocals += syntheticLocalVars.size();
+		methodNode.maxLocals += syntheticLocalVars.size();
 	}
 
 	// TODO support for AfterReturning and AfterThrowing
@@ -134,35 +129,10 @@ public class Weaver {
 				snippetMarkings.keySet());
 		Collections.sort(array);
 
-		// Fixing empty region
-		for (Snippet snippet : array) {
-			List<MarkedRegion> regions = snippetMarkings.get(snippet);
-
-			for (MarkedRegion region : regions) {
-				// For iterating through the list. NOTE that we are going to
-				// remove/add new items into the list.
-				AbstractInsnNode ends[] = new AbstractInsnNode[region.getEnds()
-						.size()];
-
-				for (AbstractInsnNode exit : region.getEnds().toArray(ends)) {
-					AbstractInsnNode start = region.getStart();
-
-					switch (isPrevious(exit, start)) {
-					case -1:
-						break;
-					case 0:
-						// No label? Then give them one label!
-						region.getMethodnode().instructions.insertBefore(start,
-								new LabelNode(new Label()));
-					default:
-						// Now we have a label between them. Both 'start' and
-						// 'end' will set to the label node.
-						region.setStart(region.getStart().getPrevious());
-						region.getEnds().remove(exit);
-						region.addExitPoint(region.getStart());
-						break;
-					}
-				}
+		// Prepare for weaving
+		for (Snippet snippet : array) {			
+			for (MarkedRegion region : snippetMarkings.get(snippet)) {				
+				fixRegion(methodNode, region);
 			}
 		}
 
@@ -179,19 +149,23 @@ public class Weaver {
 			if (snippet.getAnnotationClass().equals(Before.class)) {
 				for (MarkedRegion region : regions) {
 					InsnList newlst = InsnListHelper.cloneList(ilst);
-					fixLocalIndex(region.getMethodnode(), newlst);
-					region.getMethodnode().instructions.insertBefore(
-							region.getStart(), newlst);
+					fixLocalIndex(methodNode, newlst);
+					methodNode.instructions.insertBefore(region.getStart(),
+							newlst);
 				}
-			} else if (snippet.getAnnotationClass().equals(After.class)) {
+			} else if (snippet.getAnnotationClass()
+					.equals(AfterReturning.class)) {
 				for (MarkedRegion region : regions) {
-					for (AbstractInsnNode exit : region.getEnds()) {
+					for (AbstractInsnNode exit : region.getWeavingEnds()) {
 						InsnList newlst = InsnListHelper.cloneList(ilst);
-						fixLocalIndex(region.getMethodnode(), newlst);
-						region.getMethodnode().instructions
-								.insert(exit, newlst);
+						fixLocalIndex(methodNode, newlst);
+						methodNode.instructions.insert(exit, newlst);
 					}
 				}
+			} else if (snippet.getAnnotationClass().equals(AfterThrowing.class)) {
+
+			} else if (snippet.getAnnotationClass().equals(After.class)) {
+
 			}
 		}
 

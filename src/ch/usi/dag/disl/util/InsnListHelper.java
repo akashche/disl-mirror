@@ -166,7 +166,6 @@ public class InsnListHelper {
 				|| instruction instanceof LookupSwitchInsnNode
 				|| instruction instanceof TableSwitchInsnNode
 				|| opcode == Opcodes.ATHROW || opcode == Opcodes.RET
-				|| opcode == Opcodes.JSR || opcode == Opcodes.CHECKCAST
 				|| (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
 	}
 
@@ -240,8 +239,8 @@ public class InsnListHelper {
 	public static boolean mightThrowException(AbstractInsnNode instruction) {
 
 		switch (instruction.getOpcode()) {
-	
-			// NullPointerException, ArrayIndexOutOfBoundsException
+
+		// NullPointerException, ArrayIndexOutOfBoundsException
 		case Opcodes.BALOAD:
 		case Opcodes.DALOAD:
 		case Opcodes.FALOAD:
@@ -273,14 +272,14 @@ public class InsnListHelper {
 		case Opcodes.INVOKESTATIC:
 			// NegativeArraySizeException
 		case Opcodes.ANEWARRAY:
-			// NegativeArraySizeException, OutOfMemoryError 
+			// NegativeArraySizeException, OutOfMemoryError
 		case Opcodes.NEWARRAY:
 		case Opcodes.MULTIANEWARRAY:
 			// OutOfMemoryError, InstantiationError
 		case Opcodes.NEW:
 			// OutOfMemoryError
 		case Opcodes.LDC:
-			// ClassCastException 
+			// ClassCastException
 		case Opcodes.CHECKCAST:
 			// ArithmeticException
 		case Opcodes.IDIV:
@@ -289,7 +288,7 @@ public class InsnListHelper {
 		case Opcodes.LREM:
 			// New instruction in JDK7
 		case Opcodes.INVOKEDYNAMIC:
-			return true;			
+			return true;
 		default:
 			return false;
 		}
