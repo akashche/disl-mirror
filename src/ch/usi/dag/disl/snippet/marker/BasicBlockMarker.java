@@ -14,14 +14,20 @@ public class BasicBlockMarker implements Marker {
 	public List<MarkedRegion> mark(MethodNode method) {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		List<AbstractInsnNode> seperators = InsnListHelper
-				.getBasicBlocks(method);		
-		seperators.add(method.instructions.getLast());
+				.getBasicBlocks(method);
+
+		AbstractInsnNode last = method.instructions.getLast();
+		seperators.add(last);
 
 		for (int i = 0; i < seperators.size() - 1; i++) {
 			AbstractInsnNode start = seperators.get(i);
-			AbstractInsnNode end = seperators.get(i + 1).getPrevious();
-			
-			while (start.getOpcode() == -1){
+			AbstractInsnNode end = seperators.get(i + 1);
+
+			if (end != last) {
+				end = end.getPrevious();
+			}
+
+			while (start.getOpcode() == -1) {
 				start = start.getNext();
 			}
 
