@@ -1,21 +1,22 @@
-package ch.usi.dag.disl.staticinfo;
+package ch.usi.dag.disl.staticinfo.analysis;
 
 import java.util.List;
 
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 
-public class StaticInfoData {
+public class AnalysisInfo {
 
 	private ClassNode classNode;
-	private ClassNode methodNode;
+	private MethodNode methodNode;
 	private Snippet snippet;
 	private List<MarkedRegion> marking;
 	private MarkedRegion markedRegion;
 	
-	public StaticInfoData(ClassNode classNode, ClassNode methodNode,
+	public AnalysisInfo(ClassNode classNode, MethodNode methodNode,
 			Snippet snippet, List<MarkedRegion> marking,
 			MarkedRegion markedRegion) {
 		super();
@@ -30,7 +31,7 @@ public class StaticInfoData {
 		return classNode;
 	}
 
-	public ClassNode getMethodNode() {
+	public MethodNode getMethodNode() {
 		return methodNode;
 	}
 

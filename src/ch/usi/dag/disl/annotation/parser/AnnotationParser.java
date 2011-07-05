@@ -36,8 +36,8 @@ import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
-import ch.usi.dag.disl.staticinfo.StaticInfoData;
 import ch.usi.dag.disl.staticinfo.analysis.Analysis;
+import ch.usi.dag.disl.staticinfo.analysis.AnalysisInfo;
 import ch.usi.dag.disl.util.ClassFactory;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.InsnListHelper;
@@ -532,7 +532,7 @@ public class AnnotationParser {
 					methodInstr.name, methodInstr.desc);
 
 		// check method argument
-		// only one method argument (StaticInfoData) is allowed
+		// only one method argument (AnalysisInfo) is allowed
 		Type[] methodArguments = asmMethod.getArgumentTypes();
 		
 		if(methodArguments.length != 1) {
@@ -541,11 +541,11 @@ public class AnnotationParser {
 					+ " should have only one parameter.");
 		}
 		
-		if(! methodArguments[0].equals(Type.getType(StaticInfoData.class))) {
+		if(! methodArguments[0].equals(Type.getType(AnalysisInfo.class))) {
 			throw new AnalysisException("Parameter in alysis method "
 					+ methodInstr.name + " in class " + methodInstr.owner
 					+ " should be of type "
-					+ StaticInfoData.class.getCanonicalName());
+					+ AnalysisInfo.class.getCanonicalName());
 		}
 		
 		// crate analysis method id
@@ -567,7 +567,7 @@ public class AnnotationParser {
 		Method method = null;
 		try {
 			method = analysisClass.getMethod(
-					methodInstr.name, StaticInfoData.class);
+					methodInstr.name, AnalysisInfo.class);
 		}
 		catch(NoSuchMethodException e) {
 			throw new AnalysisException(

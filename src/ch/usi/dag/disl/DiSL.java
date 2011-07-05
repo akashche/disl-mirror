@@ -1,5 +1,6 @@
 package ch.usi.dag.disl;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -15,6 +16,8 @@ import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
+import ch.usi.dag.disl.staticinfo.StaticInfoHolder;
+import ch.usi.dag.disl.staticinfo.analysis.AnalysisInfo;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
 
@@ -25,6 +28,7 @@ public class DiSL implements Instrumentation {
 	final String PROP_CLASSES_DELIM = ",";
 	
 	List<Snippet> snippets;
+	StaticInfoHolder staticInfoHolder;
 	
 	public DiSL() {
 		super();
@@ -63,6 +67,8 @@ public class DiSL implements Instrumentation {
 			// initialize snippets
 			snippets = parser.getSnippets();
 
+			staticInfoHolder = new StaticInfoHolder();
+			
 			// TODO put checker here
 			// like After should catch normal and abnormal execution
 			// but if you are using After (AfterThrowing) with BasicBlockMarker
@@ -88,8 +94,10 @@ public class DiSL implements Instrumentation {
 	 * @param classNode class that will be instrumented
 	 * @param methodNode method in the classNode argument, that will be
 	 * instrumented
+	 * @throws DiSLException 
 	 */
-	private void instrumentMethod(ClassNode classNode, MethodNode methodNode) {
+	private void instrumentMethod(ClassNode classNode, MethodNode methodNode)
+			throws DiSLException {
 		
 		// TODO create finite-state machine if possible
 		
@@ -132,11 +140,39 @@ public class DiSL implements Instrumentation {
 		
 		// *** compute static info ***
 		
-		// TODO ! analysis
-		// - call analysis for each marked region and create map of computed values
-		// - store it in 2 level hash map
-		//  - first key is marked region
-		//  - second key is id of the invoked method
+		// Call analysis for each snippet and each marked region and create
+		// a map of computed values
+		
+		for(Snippet snippet : snippetMarkings.keySet()) {
+			
+			for(MarkedRegion markedRegion : snippetMarkings.get(snippet)) {
+				
+				for(String analysisMehodName : snippet.getAnalyses().keySet()) {
+
+					// create analysis info data
+					AnalysisInfo ai = new AnalysisInfo(classNode, methodNode,
+							snippet, snippetMarkings.get(snippet),
+							markedRegion);
+					
+					// get analysis method
+					Method analysisMethod = 
+						snippet.getAnalyses().get(analysisMehodName);
+					
+					try {
+						// invoke analysis method
+						Object result = analysisMethod.invoke(null, ai);
+						
+						// store the result
+						staticInfoHolder.setSI(snippet, markedRegion,
+								analysisMehodName, result);
+						
+					} catch (Exception e) {
+						throw new DiSLException("Cannot invoke analysis method",
+								e);
+					}
+				}
+			}
+		}
 		
 		// *** select synthetic local vars ***
 
