@@ -11,7 +11,6 @@ public class MarkedRegion {
 	private MethodNode methodnode;
 	private AbstractInsnNode start;
 	private List<AbstractInsnNode> ends;
-	private List<AbstractInsnNode> weaving_ends;
 
 	public MethodNode getMethodnode() {
 		return methodnode;
@@ -33,7 +32,6 @@ public class MarkedRegion {
 		this.methodnode = methodnode;
 		this.start = start;
 		this.ends = new LinkedList<AbstractInsnNode>();
-		weaving_ends = new LinkedList<AbstractInsnNode>();
 	}
 	
 	public MarkedRegion(MethodNode methodnode, AbstractInsnNode start,
@@ -42,19 +40,9 @@ public class MarkedRegion {
 		this.start = start;
 		this.ends = new LinkedList<AbstractInsnNode>();
 		this.ends.add(end);
-		
-		weaving_ends = new LinkedList<AbstractInsnNode>();
 	}
 
 	public void addExitPoint(AbstractInsnNode exitpoint) {
 		this.ends.add(exitpoint);
-	}
-
-	public void addWeavingExitPoint(AbstractInsnNode exitpoint) {
-		this.weaving_ends.add(exitpoint);
-	}
-	
-	public List<AbstractInsnNode> getWeavingEnds() {
-		return weaving_ends;
 	}
 }

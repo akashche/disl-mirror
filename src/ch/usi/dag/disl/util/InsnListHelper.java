@@ -169,6 +169,12 @@ public class InsnListHelper {
 				|| (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
 	}
 
+	public static boolean isConditionalBranch(AbstractInsnNode instruction) {
+		int opcode = instruction.getOpcode();
+
+		return (instruction instanceof JumpInsnNode && opcode != Opcodes.GOTO);
+	}
+
 	// Get basic blocks of the given method node.
 	public static List<AbstractInsnNode> getBasicBlocks(MethodNode method) {
 		InsnList instr_lst = method.instructions;
