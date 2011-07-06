@@ -25,6 +25,7 @@ import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
+import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.util.InsnListHelper;
 
 // The weaver instruments byte-codes into java class. 
@@ -167,7 +168,8 @@ public class Weaver {
 	// TODO support for static information weaving
 	public static void instrument(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
-			List<SyntheticLocalVar> syntheticLocalVars) {
+			List<SyntheticLocalVar> syntheticLocalVars,
+			StaticInfo staticInfoHolder) {
 		// Sort the snippets based on their order
 		Map<MarkedRegion, List<AbstractInsnNode>> weaving_ends_map;
 		ArrayList<Snippet> array = new ArrayList<Snippet>(

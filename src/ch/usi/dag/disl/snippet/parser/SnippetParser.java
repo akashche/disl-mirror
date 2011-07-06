@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.annotation.parser;
+package ch.usi.dag.disl.snippet.parser;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -43,10 +43,9 @@ import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.InsnListHelper;
 
 /**
- * The parser takes annotated java file as input and creates Snippet and
- * Analysis classes
+ * The parser takes annotated java file as input and creates Snippet classes
  */
-public class AnnotationParser {
+public class SnippetParser {
 
 	private final String ANALYSIS_PACKAGE_PREFIX;
 
@@ -54,7 +53,7 @@ public class AnnotationParser {
 	private Map<String, SyntheticLocalVar> syntheticLocalVars =
 		new HashMap<String, SyntheticLocalVar>();
 
-	public AnnotationParser() {
+	public SnippetParser() {
 		super();
 
 		// ANALYSIS_PACKAGE_PREFIX

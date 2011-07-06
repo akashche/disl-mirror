@@ -1,6 +1,5 @@
 package ch.usi.dag.disl;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -11,13 +10,12 @@ import java.util.Set;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.annotation.parser.AnnotationParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.snippet.parser.SnippetParser;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
-import ch.usi.dag.disl.staticinfo.StaticInfoHolder;
-import ch.usi.dag.disl.staticinfo.analysis.AnalysisInfo;
+import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
 
@@ -28,7 +26,6 @@ public class DiSL implements Instrumentation {
 	final String PROP_CLASSES_DELIM = ",";
 	
 	List<Snippet> snippets;
-	StaticInfoHolder staticInfoHolder;
 	
 	public DiSL() {
 		super();
@@ -58,7 +55,7 @@ public class DiSL implements Instrumentation {
 			//  - create snippets
 			//  - create analyses
 			
-			AnnotationParser parser = new AnnotationParser(); 
+			SnippetParser parser = new SnippetParser(); 
 			
 			for(byte [] classAsBytes : compiledClasses) {
 				parser.parse(classAsBytes);
@@ -67,8 +64,6 @@ public class DiSL implements Instrumentation {
 			// initialize snippets
 			snippets = parser.getSnippets();
 
-			staticInfoHolder = new StaticInfoHolder();
-			
 			// TODO put checker here
 			// like After should catch normal and abnormal execution
 			// but if you are using After (AfterThrowing) with BasicBlockMarker
@@ -140,39 +135,9 @@ public class DiSL implements Instrumentation {
 		
 		// *** compute static info ***
 		
-		// Call analysis for each snippet and each marked region and create
-		// a map of computed values
-		
-		for(Snippet snippet : snippetMarkings.keySet()) {
-			
-			for(MarkedRegion markedRegion : snippetMarkings.get(snippet)) {
-				
-				for(String analysisMehodName : snippet.getAnalyses().keySet()) {
-
-					// create analysis info data
-					AnalysisInfo ai = new AnalysisInfo(classNode, methodNode,
-							snippet, snippetMarkings.get(snippet),
-							markedRegion);
-					
-					// get analysis method
-					Method analysisMethod = 
-						snippet.getAnalyses().get(analysisMehodName);
-					
-					try {
-						// invoke analysis method
-						Object result = analysisMethod.invoke(null, ai);
-						
-						// store the result
-						staticInfoHolder.setSI(snippet, markedRegion,
-								analysisMehodName, result);
-						
-					} catch (Exception e) {
-						throw new DiSLException("Cannot invoke analysis method",
-								e);
-					}
-				}
-			}
-		}
+		// prepares StaticInfo class (computes analysis)
+		StaticInfo staticInfo = 
+			new StaticInfo(classNode, methodNode, snippetMarkings);
 		
 		// *** select synthetic local vars ***
 
@@ -188,7 +153,8 @@ public class DiSL implements Instrumentation {
 		
 		// TODO ! weaver should have two parts, weaving and rewriting
 		Weaver.instrument(methodNode, snippetMarkings,
-				new LinkedList<SyntheticLocalVar>(selectedSLV));
+				new LinkedList<SyntheticLocalVar>(selectedSLV),
+				staticInfo);
 		
 		// TODO just for debugging
 		System.out.println("--- instumentation of "
