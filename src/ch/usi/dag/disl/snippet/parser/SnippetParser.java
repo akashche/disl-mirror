@@ -557,7 +557,7 @@ public class SnippetParser {
 		
 		// resolve analysis class
 		Class<?> analysisClass = ClassFactory.resolve(
-				Type.getType(methodInstr.owner));
+				Type.getObjectType(methodInstr.owner));
 
 		// NOTE: we don't check if the class is implementing
 		// Analysis interface - implementation is not mandatory

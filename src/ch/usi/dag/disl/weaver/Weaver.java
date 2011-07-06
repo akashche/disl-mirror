@@ -15,6 +15,8 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -49,6 +51,32 @@ public class Weaver {
 		}
 
 		return weaving_ends;
+	}
+
+	public static void fixPseudoVar(Snippet snippet, MarkedRegion region,
+			InsnList src, StaticInfo staticInfoHolder) {
+
+		for (AbstractInsnNode instr : src.toArray()) {
+
+			AbstractInsnNode previous = instr.getPrevious();
+			// pseudo var are represented by a static function call with
+			// a null as its parameter.
+			if (instr.getOpcode() != Opcodes.INVOKESTATIC || previous == null
+					|| previous.getOpcode() != Opcodes.ACONST_NULL) {
+				continue;
+			}
+
+			MethodInsnNode invocation = (MethodInsnNode) instr;
+			Object const_var = staticInfoHolder.getSI(snippet, region,
+					invocation.owner, invocation.name);
+
+			if (const_var != null) {
+				// Insert a ldc instruction and remove the pseudo ones.
+				src.insert(instr, new LdcInsnNode(const_var));
+				src.remove(previous);
+				src.remove(instr);
+			}
+		}
 	}
 
 	// Fix the stack operand index of each stack-based instruction
@@ -155,12 +183,9 @@ public class Weaver {
 		return label;
 	}
 
+	// TODO End label for exception handler
 	public static LabelNode getEndLabel(MethodNode methodNode,
 			AbstractInsnNode end) {
-		if (InsnListHelper.isConditionalBranch(end)) {
-
-		}
-
 		return null;
 	}
 
@@ -176,10 +201,9 @@ public class Weaver {
 				snippetMarkings.keySet());
 		Collections.sort(array);
 
-		//
+		// Prepare for weaving
 		weaving_ends_map = new HashMap<MarkedRegion, List<AbstractInsnNode>>();
 
-		// Prepare for weaving
 		for (Snippet snippet : array) {
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
 				weaving_ends_map.put(region, fixRegion(methodNode, region));
@@ -199,6 +223,7 @@ public class Weaver {
 			if (snippet.getAnnotationClass().equals(Before.class)) {
 				for (MarkedRegion region : regions) {
 					InsnList newlst = InsnListHelper.cloneList(ilst);
+					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 					fixLocalIndex(methodNode, newlst);
 					methodNode.instructions.insertBefore(region.getStart(),
 							newlst);
@@ -208,6 +233,7 @@ public class Weaver {
 				for (MarkedRegion region : regions) {
 					for (AbstractInsnNode exit : weaving_ends_map.get(region)) {
 						InsnList newlst = InsnListHelper.cloneList(ilst);
+						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						fixLocalIndex(methodNode, newlst);
 						methodNode.instructions.insert(exit, newlst);
 					}
@@ -216,6 +242,7 @@ public class Weaver {
 				for (MarkedRegion region : regions) {
 					for (AbstractInsnNode exit : region.getEnds()) {
 						InsnList newlst = InsnListHelper.cloneList(ilst);
+						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						fixLocalIndex(methodNode, newlst);
 						addExceptionHandlerFrame(methodNode, newlst);
 						methodNode.instructions.insert(exit, newlst);
