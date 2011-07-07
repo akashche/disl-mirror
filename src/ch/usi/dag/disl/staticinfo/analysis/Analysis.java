@@ -13,4 +13,5 @@ public interface Analysis {
 	// e) all classes should share the prefix of the package with this interface
 	// f) javadoc should explain, that the parameter passed by user should be
 	// null (because it will be invoked by DiSL with proper parameter)
+	// h) consistency - method called on same data should return same result
 }

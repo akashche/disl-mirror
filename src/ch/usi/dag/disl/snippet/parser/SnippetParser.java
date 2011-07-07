@@ -369,6 +369,10 @@ public class SnippetParser {
 				marker = (Type) it.next();
 				continue;
 			}
+			
+			// TODO support for param - empty default
+			// param will be passed to the constructor if marker has the proper
+			// one
 
 			if (name.equals("scope")) {
 
@@ -376,6 +380,7 @@ public class SnippetParser {
 				continue;
 			}
 
+			// TODO support for order default
 			if (name.equals("order")) {
 
 				order = (Integer) it.next();

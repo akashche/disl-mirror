@@ -21,8 +21,18 @@ public class WildCard {
 	public static final String WILDCARD_STR = "*";
 	private static final String WILDCARD_PATTERN = "\\*";
 	
-    public static boolean match(String text, String pattern)
-    {
+    public static boolean match(String text, String pattern) {
+    	
+    	// special cases
+    	
+    	if(pattern.equals(WILDCARD_STR)) {
+    		return true;
+    	}
+    	
+    	if(pattern.isEmpty()) {
+    		return false;
+    	}
+    	
         // Create the cards by splitting using a RegEx. If more speed 
         // is desired, a simpler character based splitting can be done.
         String [] cards = pattern.split(WILDCARD_PATTERN);
