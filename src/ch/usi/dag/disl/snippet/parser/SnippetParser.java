@@ -22,6 +22,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.ProcessorHack;
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
@@ -126,6 +127,13 @@ public class SnippetParser {
 
 			// skip static initializer
 			if (method.name.equals(Constants.STATIC_INIT_NAME)) {
+				continue;
+			}
+			
+			// TODO remove ProcessorHack
+			if (method.name.startsWith("processor")) {
+				
+				ProcessorHack.parseProcessor(classNode.name, method);
 				continue;
 			}
 
