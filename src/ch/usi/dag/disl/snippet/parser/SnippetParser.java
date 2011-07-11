@@ -252,7 +252,7 @@ public class SnippetParser {
 
 			MethodAnnotationData annotData =
 			// cast - ASM still uses Java 1.4 interface
-			parseMethodAnnotation((AnnotationNode) annotationObj);
+				parseMethodAnnotation((AnnotationNode) annotationObj);
 
 			// if this is unknown annotation
 			if (!annotData.isKnown()) {
