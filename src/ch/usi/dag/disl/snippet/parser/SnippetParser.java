@@ -130,7 +130,7 @@ public class SnippetParser {
 				continue;
 			}
 			
-			// TODO remove ProcessorHack
+			// TODO ProcessorHack remove
 			if (method.name.startsWith("processor")) {
 				
 				ProcessorHack.parseProcessor(classNode.name, method);

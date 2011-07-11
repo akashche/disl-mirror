@@ -253,6 +253,7 @@ public class Weaver {
 			}
 		}
 
-		static2Local(methodNode, syntheticLocalVars);
+		// TODO ProcessorHack uncomment
+		//static2Local(methodNode, syntheticLocalVars);
 	}
 }
