@@ -17,6 +17,11 @@ public class BasicBlockMarker implements Marker {
 				.getBasicBlocks(method);
 
 		AbstractInsnNode last = method.instructions.getLast();
+		
+		while (last.getOpcode() == -1) {
+			last = last.getPrevious();
+		}
+		
 		seperators.add(last);
 
 		for (int i = 0; i < seperators.size() - 1; i++) {

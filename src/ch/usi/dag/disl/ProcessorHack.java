@@ -76,7 +76,10 @@ public class ProcessorHack {
 		data.isStatic = isStatic;
 		data.type = Type.VOID_TYPE;
 		data.asmCode = processors.get(data.type);
-		list.add(data);
+		
+		if (data.asmCode != null) {
+			list.add(data);
+		}
 		
 		int offset = 0;
 		
