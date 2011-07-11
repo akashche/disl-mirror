@@ -22,7 +22,7 @@ import ch.usi.dag.disl.weaver.Weaver;
 public class ProcessorHack {
 
 	public @interface Processor {
-		String type();
+		Class<?> type();
 	}
 	
 	protected static Map<Type, InsnList> processors = 
@@ -30,6 +30,7 @@ public class ProcessorHack {
 
 	static class ArgData {
 		int pos;
+		int offset;
 		int allCount;
 		boolean isStatic;
 		InsnList asmCode;
@@ -77,15 +78,28 @@ public class ProcessorHack {
 		data.asmCode = processors.get(data.type);
 		list.add(data);
 		
+		int offset = 0;
+		
 		// For each argument
 		for (int i=0; i<types.length; i++){
 			data = new ArgData();
 			data.pos = i;
+			data.offset = offset;
 			data.allCount = types.length;
 			data.isStatic = isStatic;
 			data.type = types[i];
 			data.asmCode = processors.get(data.type);
-			list.add(data);
+
+			if (data.type.equals(Type.DOUBLE_TYPE)
+					|| data.type.equals(Type.LONG_TYPE)) {
+				offset++;
+			}
+			
+			offset++;
+
+			if (data.asmCode != null) {
+				list.add(data);
+			}
 		}
 		
 		return list;
@@ -100,6 +114,7 @@ public class ProcessorHack {
 
 		for (ArgData data : instrData) {
 			InsnList ilst = InsnListHelper.cloneList(data.asmCode);
+			InsnListHelper.removeReturns(ilst);
 			AbstractInsnNode temp = null;
 			
 			if (data.allCount == -1){
@@ -136,7 +151,7 @@ public class ProcessorHack {
 
 					// Value
 					case 2:
-						varInstr.var = data.pos + (data.isStatic ? 0 : 1);
+						varInstr.var = data.offset + (data.isStatic ? 0 : 1);
 						break;
 
 					default:
