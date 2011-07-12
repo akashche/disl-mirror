@@ -133,6 +133,7 @@ public class ProcessorHack {
 		List<ArgData> instrData = createArgData(methodNode);
 
 		AbstractInsnNode first = methodNode.instructions.getFirst();
+		int max = methodNode.maxLocals;
 
 		for (ArgData data : instrData) {
 			InsnList ilst = InsnListHelper.cloneList(data.asmCode);
@@ -148,12 +149,12 @@ public class ProcessorHack {
 				case Opcodes.FLOAD:
 				case Opcodes.DLOAD:
 				case Opcodes.ALOAD:
-					
-					if (data.allCount == -1){
-						break;
-					}
 
 					VarInsnNode varInstr = (VarInsnNode) instr;
+					
+					if (data.allCount == -1){						
+						break;
+					}
 
 					switch (varInstr.var) {
 					// Index of the argument
@@ -161,25 +162,32 @@ public class ProcessorHack {
 						temp = new LdcInsnNode(data.pos);
 						ilst.insertBefore(instr, temp);
 						ilst.remove(instr);
-						break;
+						continue;
 
 					// Number of the arguments
 					case 1:
 						temp = new LdcInsnNode(data.allCount);
 						ilst.insertBefore(instr, temp);
 						ilst.remove(instr);
-						break;
+						continue;
 
 					// Value
 					case 2:
 						varInstr.var = data.offset + (data.isStatic ? 0 : 1);
-						break;
+						continue;
 
-					default:
+					default:						
 						break;
 					}
 
-					break;					
+					break;
+					
+
+				case Opcodes.ISTORE:
+				case Opcodes.LSTORE:
+				case Opcodes.FSTORE:
+				case Opcodes.DSTORE:
+				case Opcodes.ASTORE:
 
 				case Opcodes.INVOKESTATIC:
 					
@@ -207,11 +215,22 @@ public class ProcessorHack {
 				default:
 					break;
 				}
-			}
+				
+				if (instr instanceof VarInsnNode){
+					VarInsnNode varInstr = (VarInsnNode) instr;
+					
+					varInstr.var += methodNode.maxLocals;
 
+					if (varInstr.var > max) {
+						max = varInstr.var;
+					}
+				}
+			}
+			
 			methodNode.instructions.insertBefore(first, ilst);
 		}
 
+		methodNode.maxLocals = max;
 		Weaver.static2Local(methodNode, syntheticLocals);
 	}
 
