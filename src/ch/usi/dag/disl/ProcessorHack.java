@@ -9,8 +9,10 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -107,8 +109,25 @@ public class ProcessorHack {
 		
 		return list;
 	}
+	
+	public static Object pseudoVar(ClassNode clazz, MethodNode method, 
+			String owner, String name){
+		
+		if (owner.equals("ch/usi/dag/disl/staticinfo/analysis/TargetInfo")){
+			
+			if (name.equals("getFullName")){
+				return clazz.name + "." + method.name;
+			}else if (name.equals("getClassName")){
+				return clazz.name;
+			}else if (name.equals("getMethodName")){
+				return method.name;
+			}
+		}
+		
+		return null;
+	}
 
-	public static void instrument(MethodNode methodNode,
+	public static void instrument(ClassNode clazz, MethodNode methodNode,
 			List<SyntheticLocalVar> syntheticLocals) {
 
 		List<ArgData> instrData = createArgData(methodNode);
@@ -119,11 +138,6 @@ public class ProcessorHack {
 			InsnList ilst = InsnListHelper.cloneList(data.asmCode);
 			InsnListHelper.removeReturns(ilst);
 			AbstractInsnNode temp = null;
-			
-			if (data.allCount == -1){
-				methodNode.instructions.insertBefore(first, ilst);
-				continue;
-			}
 
 			for (AbstractInsnNode instr : ilst.toArray()) {
 				int opcode = instr.getOpcode();
@@ -134,6 +148,10 @@ public class ProcessorHack {
 				case Opcodes.FLOAD:
 				case Opcodes.DLOAD:
 				case Opcodes.ALOAD:
+					
+					if (data.allCount == -1){
+						break;
+					}
 
 					VarInsnNode varInstr = (VarInsnNode) instr;
 
@@ -161,8 +179,31 @@ public class ProcessorHack {
 						break;
 					}
 
-					break;
+					break;					
 
+				case Opcodes.INVOKESTATIC:
+					
+					AbstractInsnNode previous = instr.getPrevious();
+					
+					if (previous == null || 
+							previous.getOpcode() != Opcodes.ACONST_NULL) {
+						break;
+					}
+					
+					MethodInsnNode invocation = (MethodInsnNode) instr;
+					
+					Object const_var = pseudoVar(clazz, methodNode, 
+							invocation.owner, invocation.name);
+
+					if (const_var != null) {
+						// Insert a ldc instruction and remove the pseudo ones.
+						ilst.insert(instr, new LdcInsnNode(const_var));
+						ilst.remove(previous);
+						ilst.remove(instr);
+					}
+					
+					break;
+					
 				default:
 					break;
 				}

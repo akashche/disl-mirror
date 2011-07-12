@@ -157,7 +157,8 @@ public class DiSL implements Instrumentation {
 				staticInfo);
 		
 		// TODO ProcessorHack remove
-		ProcessorHack.instrument(methodNode, new LinkedList<SyntheticLocalVar>(selectedSLV));
+		ProcessorHack.instrument(classNode, 
+				methodNode, new LinkedList<SyntheticLocalVar>(selectedSLV));
 		
 		// TODO just for debugging
 		System.out.println("--- instumentation of "
