@@ -7,13 +7,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.TryCatchBlockSorter;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -33,6 +36,13 @@ import ch.usi.dag.disl.util.InsnListHelper;
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
 
+	private static LabelNode createLabel() {
+		Label label = new Label();
+		LabelNode labelNode = new LabelNode(label);
+		label.info = labelNode;
+		return labelNode;
+	}
+
 	public static List<AbstractInsnNode> fixRegion(MethodNode methodNode,
 			MarkedRegion region) {
 		List<AbstractInsnNode> weaving_ends = new LinkedList<AbstractInsnNode>();
@@ -41,12 +51,21 @@ public class Weaver {
 		for (AbstractInsnNode end : region.getEnds()) {
 			if (InsnListHelper.isBranch(end)) {
 				if (start == end) {
-					LabelNode labelNode = new LabelNode();
+					LabelNode labelNode = createLabel();
 					methodNode.instructions.insertBefore(start, labelNode);
 					region.setStart(labelNode);
-				}
+					weaving_ends.add(end.getPrevious());
+				} else {
+					AbstractInsnNode instr = end.getPrevious();
 
-				weaving_ends.add(end.getPrevious());
+					while (instr != start
+							&& (instr.getOpcode() == -1 || InsnListHelper
+									.isBranch(instr))) {
+						instr = instr.getPrevious();
+					}
+
+					weaving_ends.add(instr);
+				}
 			}
 		}
 
@@ -89,6 +108,7 @@ public class Weaver {
 		for (AbstractInsnNode instr : src.toArray()) {
 
 			if (instr instanceof VarInsnNode) {
+
 				VarInsnNode varInstr = (VarInsnNode) instr;
 				varInstr.var += methodNode.maxLocals;
 
@@ -115,6 +135,7 @@ public class Weaver {
 		for (SyntheticLocalVar var : syntheticLocalVars) {
 
 			if (var.getInitASMCode() != null) {
+
 				InsnList newlst = InsnListHelper
 						.cloneList(var.getInitASMCode());
 				methodNode.instructions.insertBefore(first, newlst);
@@ -129,6 +150,7 @@ public class Weaver {
 
 			// Only field instructions will be transformed.
 			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
+
 				FieldInsnNode field_instr = (FieldInsnNode) instr;
 				String id = field_instr.owner + SyntheticLocalVar.NAME_DELIM
 						+ field_instr.name;
@@ -178,15 +200,45 @@ public class Weaver {
 			return (LabelNode) previous;
 		}
 
-		LabelNode label = new LabelNode();
+		LabelNode label = createLabel();
+
 		methodNode.instructions.insertBefore(start, label);
 		return label;
 	}
 
-	// TODO End label for exception handler
 	public static LabelNode getEndLabel(MethodNode methodNode,
-			AbstractInsnNode end) {
-		return null;
+			AbstractInsnNode end,
+			Map<AbstractInsnNode, AbstractInsnNode> ends_after_athrow) {
+		AbstractInsnNode instr = ends_after_athrow.get(end);
+
+		while (instr.getOpcode() == -1 || InsnListHelper.isBranch(instr)) {
+			instr = instr.getPrevious();
+		}
+
+		if (InsnListHelper.isConditionalBranch(instr)
+				|| !InsnListHelper.isBranch(instr)) {
+
+			LabelNode branch = createLabel();
+			methodNode.instructions.insert(instr, branch);
+
+			JumpInsnNode jump = new JumpInsnNode(Opcodes.GOTO, branch);
+			methodNode.instructions.insert(instr, jump);
+			ends_after_athrow.put(end, instr);
+
+			instr = jump;
+		}
+
+		LabelNode label = createLabel();
+		methodNode.instructions.insert(instr, label);
+		return label;
+	}
+
+	public static void sortTryCatchBlocks(MethodNode method) {
+		TryCatchBlockSorter sorter = new TryCatchBlockSorter(null,
+				method.access, method.name, method.desc, method.signature, null);
+		sorter.instructions = method.instructions;
+		sorter.tryCatchBlocks = method.tryCatchBlocks;
+		sorter.visitEnd();
 	}
 
 	// TODO support for AfterReturning and AfterThrowing
@@ -196,17 +248,27 @@ public class Weaver {
 			List<SyntheticLocalVar> syntheticLocalVars,
 			StaticInfo staticInfoHolder) {
 		// Sort the snippets based on their order
-		Map<MarkedRegion, List<AbstractInsnNode>> weaving_ends_map;
+		Map<MarkedRegion, List<AbstractInsnNode>> ends_after_return;
+		Map<AbstractInsnNode, AbstractInsnNode> ends_after_athrow;
 		ArrayList<Snippet> array = new ArrayList<Snippet>(
 				snippetMarkings.keySet());
 		Collections.sort(array);
 
 		// Prepare for weaving
-		weaving_ends_map = new HashMap<MarkedRegion, List<AbstractInsnNode>>();
+		ends_after_return = new HashMap<MarkedRegion, List<AbstractInsnNode>>();
+		ends_after_athrow = new HashMap<AbstractInsnNode, AbstractInsnNode>();
 
 		for (Snippet snippet : array) {
+
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
-				weaving_ends_map.put(region, fixRegion(methodNode, region));
+
+				List<AbstractInsnNode> weaving_ends = fixRegion(methodNode,
+						region);
+				ends_after_return.put(region, weaving_ends);
+
+				for (AbstractInsnNode end : region.getEnds()) {
+					ends_after_athrow.put(end, end);
+				}
 			}
 		}
 
@@ -221,39 +283,59 @@ public class Weaver {
 
 			// Instrument
 			if (snippet.getAnnotationClass().equals(Before.class)) {
+
 				for (MarkedRegion region : regions) {
+
 					InsnList newlst = InsnListHelper.cloneList(ilst);
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 					fixLocalIndex(methodNode, newlst);
 					methodNode.instructions.insertBefore(region.getStart(),
 							newlst);
 				}
-			} else if (snippet.getAnnotationClass()
-					.equals(AfterReturning.class)) {
-				for (MarkedRegion region : regions) {
-					for (AbstractInsnNode exit : weaving_ends_map.get(region)) {
-						InsnList newlst = InsnListHelper.cloneList(ilst);
-						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
-						fixLocalIndex(methodNode, newlst);
-						methodNode.instructions.insert(exit, newlst);
-					}
-				}
-			} else if (snippet.getAnnotationClass().equals(AfterThrowing.class)) {
-				for (MarkedRegion region : regions) {
-					for (AbstractInsnNode exit : region.getEnds()) {
-						InsnList newlst = InsnListHelper.cloneList(ilst);
-						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
-						fixLocalIndex(methodNode, newlst);
-						addExceptionHandlerFrame(methodNode, newlst);
-						methodNode.instructions.insert(exit, newlst);
-					}
-				}
-			} else if (snippet.getAnnotationClass().equals(After.class)) {
+			}
 
+			if (snippet.getAnnotationClass().equals(AfterReturning.class)
+					|| snippet.getAnnotationClass().equals(After.class)) {
+
+				for (MarkedRegion region : regions) {
+
+					for (AbstractInsnNode exit : ends_after_return.get(region)) {
+
+						InsnList newlst = InsnListHelper.cloneList(ilst);
+						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+						fixLocalIndex(methodNode, newlst);
+						methodNode.instructions.insert(exit, newlst);
+					}
+				}
+			}
+
+			if (snippet.getAnnotationClass().equals(AfterThrowing.class)
+					|| snippet.getAnnotationClass().equals(After.class)) {
+
+				for (MarkedRegion region : regions) {
+
+					for (AbstractInsnNode exit : region.getEnds()) {
+
+						InsnList newlst = InsnListHelper.cloneList(ilst);
+						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+						fixLocalIndex(methodNode, newlst);
+
+						LabelNode startLabel = getStartLabel(methodNode,
+								region.getStart());
+						LabelNode endLabel = getEndLabel(methodNode, exit,
+								ends_after_athrow);
+
+						methodNode.visitTryCatchBlock(startLabel.getLabel(),
+								endLabel.getLabel(), endLabel.getLabel(), null);
+						addExceptionHandlerFrame(methodNode, newlst);
+						methodNode.instructions.insert(endLabel, newlst);
+					}
+				}
 			}
 		}
 
+		sortTryCatchBlocks(methodNode);
 		// TODO ProcessorHack uncomment
-		//static2Local(methodNode, syntheticLocalVars);
+		// static2Local(methodNode, syntheticLocalVars);
 	}
 }
