@@ -8,14 +8,28 @@ import java.util.Map;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisInfo;
 import ch.usi.dag.disl.util.Constants;
 
 public class StaticInfo {
 
+	// static analysis info setter method
+	private static Method methodSetSAI;
+	static { // static init for methodSetSAI
+		try {
+			methodSetSAI = 
+				StaticAnalysis.class.getMethod("setStaticAnalysisInfo");
+		} catch (Exception e) {
+			throw new DiSLFatalException("setStaticAnalysisInfo in " + 
+					StaticAnalysis.class.getName() + " has been renamed."); 
+		}
+	}
+	
 	class StaticInfoKey {
 		
 		private Snippet snippet;
@@ -156,10 +170,14 @@ public class StaticInfo {
 							staticAnalysisInstances.put(methodClass, saInst);
 						}
 						
-						// TODO ! analysis invoke setter method
-					
-						// invoke static analysis method
-						Object result = stAnMethod.invoke(saInst, saInfo);
+						// invoke static analysis info setter method
+						// returns cached result or null
+						Object result = methodSetSAI.invoke(saInst, saInfo);
+						
+						// if cache wasn't hit, invoke static analysis method
+						if(result == null) {
+							result = stAnMethod.invoke(saInst, saInfo);
+						}
 						
 						// store the result
 						setSI(snippet, markedRegion, stAnMehodName, result);

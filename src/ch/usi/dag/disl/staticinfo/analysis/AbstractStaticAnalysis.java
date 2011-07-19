@@ -5,10 +5,12 @@ abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 	protected StaticAnalysisInfo staticAnalysisInfo;
 	
 	@Override
-	public void setStaticAnalysisInfo(StaticAnalysisInfo sai) {
+	public Object setStaticAnalysisInfo(StaticAnalysisInfo sai) {
 		
-		// TODO ! analysis - implement caching
 		staticAnalysisInfo = sai;
+
+		// TODO ! analysis - implement caching
+		return null;
 	}
 
 }
