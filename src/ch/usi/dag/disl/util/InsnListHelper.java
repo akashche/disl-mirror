@@ -176,7 +176,7 @@ public class InsnListHelper {
 	}
 
 	// Get basic blocks of the given method node.
-	public static List<AbstractInsnNode> getBasicBlocks(MethodNode method) {
+	public static List<AbstractInsnNode> getBasicBlocks(MethodNode method, boolean isPrecise) {
 		InsnList instr_lst = method.instructions;
 
 		Set<AbstractInsnNode> bb_begins = new HashSet<AbstractInsnNode>();
@@ -227,6 +227,10 @@ public class InsnListHelper {
 
 			default:
 				break;
+			}
+			
+			if (isPrecise && mightThrowException(instruction)){
+				bb_begins.add(instruction.getNext());
 			}
 		}
 

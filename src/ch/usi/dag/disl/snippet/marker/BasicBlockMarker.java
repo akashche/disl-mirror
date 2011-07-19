@@ -9,13 +9,15 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.util.InsnListHelper;
 
 public class BasicBlockMarker implements Marker {
+	
+	protected boolean isPrecise = false;
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
 		
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		List<AbstractInsnNode> seperators = 
-			InsnListHelper.getBasicBlocks(method);
+			InsnListHelper.getBasicBlocks(method, isPrecise);
 
 		AbstractInsnNode last = method.instructions.getLast();
 		

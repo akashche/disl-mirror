@@ -3,18 +3,13 @@ package ch.usi.dag.disl.test.bbmarker;
 public class TargetClass {
 
 	public void print(boolean branch) {
-		String s = new String(new String(
-				"This is the body of TargetClass.print"));
-
-		System.out.println(s);
-
-		if (branch) {
-			System.out.println("branched");
-
-			return;
+		if (branch){
+			System.out.println("true");
+		}else{
+			System.out.println("flase");
 		}
-
-		System.out.println("not branched");
+		
+		return;
 	}
 
 	public static void main(String[] args) {
