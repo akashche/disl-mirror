@@ -9,26 +9,23 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.util.InsnListHelper;
 
 public class BasicBlockMarker implements Marker {
-	
+
 	protected boolean isPrecise = false;
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
-		
-		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		List<AbstractInsnNode> seperators = 
-			InsnListHelper.getBasicBlocks(method, isPrecise);
 
-		AbstractInsnNode last = method.instructions.getLast();
-		
-		while (last.getOpcode() == -1) {
-			last = last.getPrevious();
-		}
-		
+		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
+		List<AbstractInsnNode> seperators = InsnListHelper.getBasicBlocks(
+				method, isPrecise);
+
+		AbstractInsnNode last = InsnListHelper.skipLabels(
+				method.instructions.getLast(), false);
+
 		seperators.add(last);
 
 		for (int i = 0; i < seperators.size() - 1; i++) {
-			
+
 			AbstractInsnNode start = seperators.get(i);
 			AbstractInsnNode end = seperators.get(i + 1);
 
@@ -36,11 +33,8 @@ public class BasicBlockMarker implements Marker {
 				end = end.getPrevious();
 			}
 
-			while (start.getOpcode() == -1) {
-				start = start.getNext();
-			}
-
-			regions.add(new MarkedRegion(method, start, end));
+			regions.add(new MarkedRegion(method, InsnListHelper.skipLabels(
+					start, true), InsnListHelper.skipLabels(end, false)));
 		}
 
 		return regions;

@@ -29,6 +29,15 @@ public class InsnListHelper {
 		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
 	}
 
+	public static AbstractInsnNode skipLabels(AbstractInsnNode instr,
+			boolean isForward) {
+		while (instr != null && instr.getOpcode() == -1) {
+			instr = isForward?instr.getNext():instr.getPrevious();
+		}
+		
+		return instr;
+	}
+
 	public static void removeReturns(InsnList ilst) {
 		// Remove 'return' instruction
 		List<AbstractInsnNode> returns = new LinkedList<AbstractInsnNode>();
@@ -176,7 +185,8 @@ public class InsnListHelper {
 	}
 
 	// Get basic blocks of the given method node.
-	public static List<AbstractInsnNode> getBasicBlocks(MethodNode method, boolean isPrecise) {
+	public static List<AbstractInsnNode> getBasicBlocks(MethodNode method,
+			boolean isPrecise) {
 		InsnList instr_lst = method.instructions;
 
 		Set<AbstractInsnNode> bb_begins = new HashSet<AbstractInsnNode>();
@@ -204,7 +214,7 @@ public class InsnListHelper {
 			case AbstractInsnNode.LOOKUPSWITCH_INSN: {
 				// Covers LOOKUPSWITCH
 				LookupSwitchInsnNode lsin = (LookupSwitchInsnNode) instruction;
-				
+
 				for (LabelNode label : lsin.labels) {
 					bb_begins.add(label);
 				}
@@ -216,7 +226,7 @@ public class InsnListHelper {
 			case AbstractInsnNode.TABLESWITCH_INSN: {
 				// Covers TABLESWITCH
 				TableSwitchInsnNode tsin = (TableSwitchInsnNode) instruction;
-				
+
 				for (LabelNode label : tsin.labels) {
 					bb_begins.add(label);
 				}
@@ -228,8 +238,8 @@ public class InsnListHelper {
 			default:
 				break;
 			}
-			
-			if (isPrecise && mightThrowException(instruction)){
+
+			if (isPrecise && mightThrowException(instruction)) {
 				bb_begins.add(instruction.getNext());
 			}
 		}
