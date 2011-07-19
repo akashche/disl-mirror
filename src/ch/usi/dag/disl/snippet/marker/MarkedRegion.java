@@ -7,7 +7,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 public class MarkedRegion {
-	
+
 	private MethodNode methodnode;
 	private AbstractInsnNode start;
 	private List<AbstractInsnNode> ends;
@@ -27,19 +27,26 @@ public class MarkedRegion {
 	public void setStart(AbstractInsnNode start) {
 		this.start = start;
 	}
-	
+
 	public MarkedRegion(MethodNode methodnode, AbstractInsnNode start) {
 		this.methodnode = methodnode;
 		this.start = start;
 		this.ends = new LinkedList<AbstractInsnNode>();
 	}
-	
+
 	public MarkedRegion(MethodNode methodnode, AbstractInsnNode start,
 			AbstractInsnNode end) {
 		this.methodnode = methodnode;
 		this.start = start;
 		this.ends = new LinkedList<AbstractInsnNode>();
 		this.ends.add(end);
+	}
+
+	public MarkedRegion(MethodNode methodnode, AbstractInsnNode start,
+			List<AbstractInsnNode> ends) {
+		this.methodnode = methodnode;
+		this.start = start;
+		this.ends = ends;
 	}
 
 	public void addExitPoint(AbstractInsnNode exitpoint) {
