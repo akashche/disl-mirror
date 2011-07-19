@@ -8,7 +8,7 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 
-public class AnalysisInfo {
+public class StaticAnalysisInfo {
 
 	private ClassNode classNode;
 	private MethodNode methodNode;
@@ -16,7 +16,7 @@ public class AnalysisInfo {
 	private List<MarkedRegion> marking;
 	private MarkedRegion markedRegion;
 	
-	public AnalysisInfo(ClassNode classNode, MethodNode methodNode,
+	public StaticAnalysisInfo(ClassNode classNode, MethodNode methodNode,
 			Snippet snippet, List<MarkedRegion> marking,
 			MarkedRegion markedRegion) {
 		super();

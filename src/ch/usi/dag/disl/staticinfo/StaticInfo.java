@@ -8,10 +8,10 @@ import java.util.Map;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.exception.AnalysisException;
+import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
-import ch.usi.dag.disl.staticinfo.analysis.AnalysisInfo;
+import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisInfo;
 import ch.usi.dag.disl.util.Constants;
 
 public class StaticInfo {
@@ -98,73 +98,74 @@ public class StaticInfo {
 	Map<StaticInfoKey, Object> staticInfoData = 
 		new HashMap<StaticInfoKey, Object>();
 	
-	public StaticInfo(Map<Class<?>, Object> analysisInstances,
+	public StaticInfo(Map<Class<?>, Object> staticAnalysisInstances,
 			ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
-			throws AnalysisException {
+			throws StaticAnalysisException {
 
-		computeStaticInfo(analysisInstances, classNode, methodNode,
+		computeStaticInfo(staticAnalysisInstances, classNode, methodNode,
 				snippetMarkings);
 	}
 	
 	public Object getSI(Snippet snippet, MarkedRegion markedRegion,
 			String infoClass, String infoMethod) {
 
-		String methodID = infoClass + Constants.ANALYSIS_METHOD_DELIM
+		String methodID = infoClass + Constants.STATIC_ANALYSIS_METHOD_DELIM
 				+ infoMethod;
 
 		return staticInfoData.get(new StaticInfoKey(snippet, markedRegion,
 				methodID));
 	}
 
-	// Call analysis for each snippet and each marked region and create
+	// Call static analysis for each snippet and each marked region and create
 	// a static info values
-	private void computeStaticInfo(Map<Class<?>, Object> analysisInstances,
-			ClassNode classNode, MethodNode methodNode,
-			Map<Snippet, List<MarkedRegion>> snippetMarkings
-			) throws AnalysisException {
+	private void computeStaticInfo(
+			Map<Class<?>, Object> staticAnalysisInstances, ClassNode classNode,
+			MethodNode methodNode,
+			Map<Snippet, List<MarkedRegion>> snippetMarkings)
+			throws StaticAnalysisException {
 		
 		for(Snippet snippet : snippetMarkings.keySet()) {
 			
 			for(MarkedRegion markedRegion : snippetMarkings.get(snippet)) {
 				
-				for(String analysisMehodName : snippet.getAnalyses().keySet()) {
+				for(String stAnMehodName : snippet.getStaticAnalyses().keySet()) {
 
 					try {
 					
-						// create analysis info data
-						AnalysisInfo aInfo = new AnalysisInfo(classNode,
-								methodNode, snippet,
+						// create static analysis info data
+						StaticAnalysisInfo saInfo = new StaticAnalysisInfo(
+								classNode, methodNode, snippet,
 								snippetMarkings.get(snippet), markedRegion);
 
-						// get analysis method
-						Method analysisMethod = 
-							snippet.getAnalyses().get(analysisMehodName);
+						// get static analysis method
+						Method stAnMethod = 
+							snippet.getStaticAnalyses().get(stAnMehodName);
 
-						// get analysis instance
+						// get static analysis instance
 						Class<?> methodClass = 
-							analysisMethod.getDeclaringClass();
-						Object aInst = analysisInstances.get(methodClass);
+							stAnMethod.getDeclaringClass();
+						Object saInst = staticAnalysisInstances.get(methodClass);
 
 						// ... or create new one
-						if (aInst == null) {
+						if (saInst == null) {
 							
-							aInst = methodClass.newInstance();
+							saInst = methodClass.newInstance();
 							
 							// and store for later use
-							analysisInstances.put(methodClass, aInst);
+							staticAnalysisInstances.put(methodClass, saInst);
 						}
 					
-						// invoke analysis method
-						Object result = analysisMethod.invoke(aInst, aInfo);
+						// invoke static analysis method
+						Object result = stAnMethod.invoke(saInst, saInfo);
 						
 						// store the result
-						setSI(snippet, markedRegion, analysisMehodName, result);
+						setSI(snippet, markedRegion, stAnMehodName, result);
 						
 					} catch (Exception e) {
-						throw new AnalysisException(
-								"Invocation of analysis method " +
-								analysisMehodName + " failed", e);
+						throw new StaticAnalysisException(
+								"Invocation of static analysis method " +
+								stAnMehodName + " failed", e);
 					}
 				}
 			}

@@ -27,10 +27,10 @@ public class DiSL implements Instrumentation {
 	
 	List<Snippet> snippets;
 
-	// list of analysis instances
+	// list of static analysis instances
 	// validity of an instance is for one instrumented class
 	// instances are created lazily when needed in StaticInfo
-	Map<Class<?>, Object> analysisInstances;
+	Map<Class<?>, Object> staticAnalysisInstances;
 	
 	public DiSL() {
 		super();
@@ -58,7 +58,7 @@ public class DiSL implements Instrumentation {
 			
 			// *** parse compiled classes ***
 			//  - create snippets
-			//  - create analyses
+			//  - create static analysis methods
 			
 			SnippetParser parser = new SnippetParser(); 
 			
@@ -121,7 +121,7 @@ public class DiSL implements Instrumentation {
 		
 		// *** create markings ***
 		
-		// all markings in one list for analysis
+		// all markings in one list for static analysis
 		List<MarkedRegion> allMarkings = new LinkedList<MarkedRegion>();
 		
 		// markings according to snippets for viewing
@@ -140,9 +140,9 @@ public class DiSL implements Instrumentation {
 		
 		// *** compute static info ***
 		
-		// prepares StaticInfo class (computes analysis)
-		StaticInfo staticInfo = new StaticInfo(analysisInstances, classNode,
-				methodNode, snippetMarkings);
+		// prepares StaticInfo class (computes static analysis)
+		StaticInfo staticInfo = new StaticInfo(staticAnalysisInstances,
+				classNode, methodNode, snippetMarkings);
 		
 		// *** select synthetic local vars ***
 
@@ -175,9 +175,9 @@ public class DiSL implements Instrumentation {
 		// report every exception within our code - don't let anyone mask it
 		try {
 		
-			// list of analysis instances
+			// list of static analysis instances
 			// validity of an instance is for one instrumented class
-			analysisInstances = new HashMap<Class<?>, Object>();
+			staticAnalysisInstances = new HashMap<Class<?>, Object>();
 			
 			// instrument all methods in a class
 			for(Object methodObj : classNode.methods) {

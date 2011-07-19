@@ -18,14 +18,14 @@ public class Snippet implements Comparable<Snippet> {
 	protected int order;
 	protected InsnList asmCode;
 	protected Set<SyntheticLocalVar> syntheticLocalVars;
-	private Map<String, Method> analyses;
+	private Map<String, Method> staticAnalyses;
 	
 	public Snippet(Class<?> annotationClass,
 			Marker marker,
 			Scope scope,
 			int order, InsnList asmCode,
 			Set<SyntheticLocalVar> syntheticLocalVars,
-			Map<String, Method> analyses) {
+			Map<String, Method> staticAnalyses) {
 		super();
 
 		this.annotationClass = annotationClass;
@@ -34,7 +34,7 @@ public class Snippet implements Comparable<Snippet> {
 		this.order = order;
 		this.asmCode = asmCode;
 		this.syntheticLocalVars = syntheticLocalVars;
-		this.analyses = analyses;
+		this.staticAnalyses = staticAnalyses;
 	}
 
 	public Class<?> getAnnotationClass() {
@@ -61,8 +61,8 @@ public class Snippet implements Comparable<Snippet> {
 		return syntheticLocalVars;
 	}
 
-	public Map<String, Method> getAnalyses() {
-		return analyses;
+	public Map<String, Method> getStaticAnalyses() {
+		return staticAnalyses;
 	}
 
 	
