@@ -8,7 +8,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.InsnListHelper;
 
-public class BasicBlockMarker extends AbstractMarker implements Marker {
+public class BasicBlockMarker implements Marker {
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {

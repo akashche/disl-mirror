@@ -7,7 +7,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class BodyMarker extends AbstractMarker implements Marker {
+public class BodyMarker implements Marker {
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {

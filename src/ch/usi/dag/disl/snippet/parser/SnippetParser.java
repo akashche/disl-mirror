@@ -27,10 +27,10 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.exception.AnnotParserException;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
@@ -40,6 +40,7 @@ import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
 import ch.usi.dag.disl.util.ClassFactory;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.disl.util.Parameter;
 
 /**
  * The parser takes annotated java file as input and creates Snippet classes
@@ -236,21 +237,28 @@ public class SnippetParser {
 						+ " has unsupported DiSL annotation");
 			}
 
-			// marker
-			Marker marker = 
-				(Marker) ClassFactory.createInstance(annotData.getMarker());
+			// ** marker **
 			
-			// set marker parameter
-			marker.setParam(annotData.getParam());
-
-			// scope
+			// get marker class
+			Class<?> markerClass = ClassFactory.resolve(annotData.getMarker());
+			
+			// try to instantiate marker WITH Parameter as an argument
+			Marker marker = (Marker) ClassFactory.tryCreateInstance(
+						markerClass, new Parameter(annotData.getParam())); 
+			
+			// instantiate marker WITHOUT Parameter as an argument
+			// throws exception if it is not possible to create an instance
+			if(marker == null) {
+				marker = (Marker) ClassFactory.createInstance(markerClass);
+			}
+			
+			// ** scope **
 			Scope scope = new ScopeImpl(annotData.getScope());
 
-			// parse used static analysis
-			// 
+			// ** parse used static analysis **
 			Set<String> knownStAnClasses = parseAnalysis(method.desc);
 			
-			// process code
+			// ** process code **
 			SnippetCodeData scd = processSnippetCode(className,
 					method.instructions, knownStAnClasses);
 

@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.InsnListHelper;
 
-public class AfterInitBodyMarker extends AbstractMarker implements Marker {
+public class AfterInitBodyMarker implements Marker {
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
