@@ -66,7 +66,7 @@ public class InsnListHelper {
 	public static InsnList cloneList(InsnList src, AbstractInsnNode from,
 			AbstractInsnNode to) {
 
-		Map<AbstractInsnNode, AbstractInsnNode> map = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
 
 		InsnList dst = new InsnList();
 
@@ -74,7 +74,7 @@ public class InsnListHelper {
 		for (AbstractInsnNode instr : src.toArray()) {
 			if (instr instanceof LabelNode) {
 				LabelNode label = new LabelNode(new Label());
-				map.put(instr, label);
+				map.put((LabelNode) instr, label);
 			}
 		}
 
@@ -203,21 +203,25 @@ public class InsnListHelper {
 
 			case AbstractInsnNode.LOOKUPSWITCH_INSN: {
 				// Covers LOOKUPSWITCH
-				for (Object label : ((LookupSwitchInsnNode) instruction).labels) {
-					bb_begins.add((AbstractInsnNode) label);
+				LookupSwitchInsnNode lsin = (LookupSwitchInsnNode) instruction;
+				
+				for (LabelNode label : lsin.labels) {
+					bb_begins.add(label);
 				}
 
-				bb_begins.add(((LookupSwitchInsnNode) instruction).dflt);
+				bb_begins.add(lsin.dflt);
 				break;
 			}
 
 			case AbstractInsnNode.TABLESWITCH_INSN: {
 				// Covers TABLESWITCH
-				for (Object label : ((TableSwitchInsnNode) instruction).labels) {
-					bb_begins.add((AbstractInsnNode) label);
+				TableSwitchInsnNode tsin = (TableSwitchInsnNode) instruction;
+				
+				for (LabelNode label : tsin.labels) {
+					bb_begins.add(label);
 				}
 
-				bb_begins.add(((TableSwitchInsnNode) instruction).dflt);
+				bb_begins.add(tsin.dflt);
 				break;
 			}
 
@@ -226,8 +230,8 @@ public class InsnListHelper {
 			}
 		}
 
-		for (Object try_catch_block : method.tryCatchBlocks) {
-			bb_begins.add(((TryCatchBlockNode) try_catch_block).handler);
+		for (TryCatchBlockNode try_catch_block : method.tryCatchBlocks) {
+			bb_begins.add(try_catch_block.handler);
 		}
 
 		// Sort

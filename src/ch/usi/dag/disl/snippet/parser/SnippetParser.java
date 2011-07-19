@@ -80,10 +80,7 @@ public class SnippetParser {
 
 		// get static initialization code
 		InsnList origInitCodeIL = null;
-		for (Object methodObj : classNode.methods) {
-
-			// cast - ASM still uses Java 1.4 interface
-			MethodNode method = (MethodNode) methodObj;
+		for (MethodNode method : classNode.methods) {
 
 			// get the code
 			if (method.name.equals(Constants.STATIC_INIT_NAME)) {
@@ -102,10 +99,7 @@ public class SnippetParser {
 		// add local vars from this class to others
 		syntheticLocalVars.putAll(slVars);
 
-		for (Object methodObj : classNode.methods) {
-
-			// cast - ASM still uses Java 1.4 interface
-			MethodNode method = (MethodNode) methodObj;
+		for (MethodNode method : classNode.methods) {
 
 			// skip the constructor
 			if (method.name.equals(Constants.CONSTRUCTOR_NAME)) {
@@ -129,15 +123,13 @@ public class SnippetParser {
 	}
 
 	private Map<String, SyntheticLocalVar> parseSyntheticLocalVars(
-			String className, List<?> fields) throws AnnotParserException {
+			String className, List<FieldNode> fields)
+			throws AnnotParserException {
 
 		Map<String, SyntheticLocalVar> result =
 			new HashMap<String, SyntheticLocalVar>();
 
-		for (Object fieldObj : fields) {
-
-			// cast - ASM still uses Java 1.4 interface
-			FieldNode field = (FieldNode) fieldObj;
+		for (FieldNode field : fields) {
 
 			if (field.invisibleAnnotations == null) {
 				throw new AnnotParserException("DiSL annotation for field "
@@ -235,11 +227,9 @@ public class SnippetParser {
 
 		// more annotations on one snippet
 		// supported but we will have multiple snippets ;)
-		for (Object annotationObj : method.invisibleAnnotations) {
+		for (AnnotationNode annotation : method.invisibleAnnotations) {
 
-			MethodAnnotationData annotData =
-			// cast - ASM still uses Java 1.4 interface
-				parseMethodAnnotation((AnnotationNode) annotationObj);
+			MethodAnnotationData annotData = parseMethodAnnotation(annotation);
 
 			// if this is unknown annotation
 			if (!annotData.isKnown()) {

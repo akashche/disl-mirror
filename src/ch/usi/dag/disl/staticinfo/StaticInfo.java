@@ -155,6 +155,8 @@ public class StaticInfo {
 							// and store for later use
 							staticAnalysisInstances.put(methodClass, saInst);
 						}
+						
+						// TODO ! analysis invoke setter method
 					
 						// invoke static analysis method
 						Object result = stAnMethod.invoke(saInst, saInfo);

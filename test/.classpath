@@ -4,6 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/DiSL"/>
 	<classpathentry kind="lib" path="/DiSL/lib/jborat.jar"/>
-	<classpathentry kind="lib" path="/DiSL/lib/asm-all-3.3.jar"/>
+	<classpathentry kind="lib" path="/DiSL/lib/asm-debug-all-4.0_RC1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

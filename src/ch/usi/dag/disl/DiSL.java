@@ -180,10 +180,7 @@ public class DiSL implements Instrumentation {
 			staticAnalysisInstances = new HashMap<Class<?>, Object>();
 			
 			// instrument all methods in a class
-			for(Object methodObj : classNode.methods) {
-				
-				// cast - ASM still uses Java 1.4 interface
-				MethodNode methodNode = (MethodNode) methodObj;
+			for(MethodNode methodNode : classNode.methods) {
 				
 				instrumentMethod(classNode, methodNode);
 			}
