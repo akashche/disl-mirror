@@ -5,7 +5,7 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.staticinfo.analysis.TargetInfo;
+import ch.usi.dag.disl.staticinfo.analysis.ContextInfoo;
 
 public class DiSLClass {
 
@@ -67,7 +67,7 @@ public class DiSLClass {
 
 	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.*")
 	public static void preCondition() {
-		System.out.println("Method " + TargetInfo.getMethodName(null) + ":");
+		System.out.println("Method " + ContextInfo.getMethodName(null) + ":");
 		System.out.println(flag);
 	}
 	
@@ -75,6 +75,6 @@ public class DiSLClass {
 	public static void postCondition() {
 		System.out.println("Again");
 		System.out.println(flag);
-		System.out.println("This is the end of " + TargetInfo.getMethodName(null));
+		System.out.println("This is the end of " + ContextInfo.getMethodName(null));
 	}
 }

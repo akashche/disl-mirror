@@ -1,8 +1,8 @@
 package ch.usi.dag.disl.staticinfo.analysis;
 
-public class BytcodeAnalysis implements StaticAnalysis {
+public class BytcodeAnalysis extends AbstractStaticAnalysis {
 
-	int getNumberOfBytecodes(StaticAnalysisInfo ai) {
+	public int getNumberOfBytecodes() {
 		
 		// TODO compute number of byte codes in a marked region
 		// compute range from start to most further end

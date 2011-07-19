@@ -113,7 +113,7 @@ public class ProcessorHack {
 	public static Object pseudoVar(ClassNode clazz, MethodNode method, 
 			String owner, String name){
 		
-		if (owner.equals("ch/usi/dag/disl/staticinfo/analysis/TargetInfo")){
+		if (owner.equals("ch/usi/dag/disl/staticinfo/analysis/ContextInfo")){
 			
 			if (name.equals("getFullName")){
 				return clazz.name + "." + method.name;
