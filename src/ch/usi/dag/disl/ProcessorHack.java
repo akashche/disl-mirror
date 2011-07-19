@@ -142,6 +142,9 @@ public class ProcessorHack {
 
 			for (AbstractInsnNode instr : ilst.toArray()) {
 				int opcode = instr.getOpcode();
+				
+				if (opcode == -1)
+					continue;
 
 				switch (opcode) {
 				case Opcodes.ILOAD:
@@ -188,13 +191,26 @@ public class ProcessorHack {
 				case Opcodes.FSTORE:
 				case Opcodes.DSTORE:
 				case Opcodes.ASTORE:
+					break;
 
-				case Opcodes.INVOKESTATIC:
+				case Opcodes.INVOKEVIRTUAL:
 					
 					AbstractInsnNode previous = instr.getPrevious();
 					
 					if (previous == null || 
-							previous.getOpcode() != Opcodes.ACONST_NULL) {
+							previous.getOpcode() != Opcodes.INVOKESPECIAL) {
+						break;
+					}
+					
+					previous = previous.getPrevious();
+					
+					if (previous == null || previous.getOpcode() != Opcodes.DUP) {
+						break;
+					}
+
+					previous = previous.getPrevious();
+					
+					if (previous == null || previous.getOpcode() != Opcodes.NEW) {
 						break;
 					}
 					
@@ -206,7 +222,13 @@ public class ProcessorHack {
 					if (const_var != null) {
 						// Insert a ldc instruction and remove the pseudo ones.
 						ilst.insert(instr, new LdcInsnNode(const_var));
-						ilst.remove(previous);
+						
+						while (previous != instr){
+							AbstractInsnNode temp_instr = previous;
+							previous = previous.getNext();
+							ilst.remove(temp_instr);
+						}
+						
 						ilst.remove(instr);
 					}
 					
