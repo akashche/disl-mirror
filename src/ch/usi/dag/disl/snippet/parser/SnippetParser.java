@@ -37,7 +37,6 @@ import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
-import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisInfo;
 import ch.usi.dag.disl.util.ClassFactory;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.InsnListHelper;
@@ -618,8 +617,7 @@ public class SnippetParser {
 		// resolve method
 		Method method = null;
 		try {
-			method = stAnClass.getMethod(
-					methodInstr.name, StaticAnalysisInfo.class);
+			method = stAnClass.getMethod(methodInstr.name);
 		}
 		catch(NoSuchMethodException e) {
 			throw new StaticAnalysisException(

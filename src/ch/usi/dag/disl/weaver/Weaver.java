@@ -36,6 +36,7 @@ import ch.usi.dag.disl.util.InsnListHelper;
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
 
+	// Create a label node.
 	private static LabelNode createLabel() {
 		Label label = new Label();
 		LabelNode labelNode = new LabelNode(label);
@@ -43,35 +44,8 @@ public class Weaver {
 		return labelNode;
 	}
 
-	public static List<AbstractInsnNode> fixRegion(MethodNode methodNode,
-			MarkedRegion region) {
-		List<AbstractInsnNode> weaving_ends = new LinkedList<AbstractInsnNode>();
-		AbstractInsnNode start = region.getStart();
-
-		for (AbstractInsnNode end : region.getEnds()) {
-			if (InsnListHelper.isBranch(end)) {
-				if (start == end) {
-					LabelNode labelNode = createLabel();
-					methodNode.instructions.insertBefore(start, labelNode);
-					region.setStart(labelNode);
-					weaving_ends.add(end.getPrevious());
-				} else {
-					AbstractInsnNode instr = end.getPrevious();
-
-					while (instr != start
-							&& (instr.getOpcode() == -1 || InsnListHelper
-									.isBranch(instr))) {
-						instr = instr.getPrevious();
-					}
-
-					weaving_ends.add(instr);
-				}
-			}
-		}
-
-		return weaving_ends;
-	}
-
+	// Search for an instruction sequence that match the pattern
+	// of the pseudo variables.
 	public static void fixPseudoVar(Snippet snippet, MarkedRegion region,
 			InsnList src, StaticInfo staticInfoHolder) {
 
@@ -80,8 +54,8 @@ public class Weaver {
 			AbstractInsnNode previous = instr.getPrevious();
 			// pseudo var are represented by a static function call with
 			// a null as its parameter.
-			if (instr.getOpcode() != Opcodes.INVOKESTATIC || previous == null
-					|| previous.getOpcode() != Opcodes.ACONST_NULL) {
+			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL || previous == null
+					|| previous.getOpcode() != Opcodes.ALOAD) {
 				continue;
 			}
 
@@ -176,45 +150,56 @@ public class Weaver {
 		methodNode.maxLocals += syntheticLocalVars.size();
 	}
 
+	// Add an exception handler frame to a instruction list.
+	// That is, an astore <n> before the list, then an aload <n>
+	// and an athrow after the list.
 	public static void addExceptionHandlerFrame(MethodNode methodNode,
 			InsnList instructions) {
-		int max = methodNode.maxLocals;
-
 		instructions.insertBefore(instructions.getFirst(), new IntInsnNode(
-				Opcodes.ASTORE, max));
-		instructions.add(new IntInsnNode(Opcodes.ALOAD, max));
+				Opcodes.ASTORE, methodNode.maxLocals));
+		instructions.add(new IntInsnNode(Opcodes.ALOAD, methodNode.maxLocals));
 		instructions.add(new InsnNode(Opcodes.ATHROW));
 
 		methodNode.maxLocals++;
 	}
 
+	// Return a predecessor label of the input 'start'.
 	public static LabelNode getStartLabel(MethodNode methodNode,
 			AbstractInsnNode start) {
+		// Return start if it is a label.
 		if (start instanceof LabelNode) {
 			return (LabelNode) start;
 		}
 
+		// Or Return start.previous if the previous node of 
+		// start is a label.
 		AbstractInsnNode previous = start.getPrevious();
 
 		if (previous != null && previous instanceof LabelNode) {
 			return (LabelNode) previous;
 		}
 
+		// Otherwise, create a label before start and return it.
 		LabelNode label = createLabel();
 
 		methodNode.instructions.insertBefore(start, label);
 		return label;
 	}
 
+	// Return a successor label of weaving location corresponding to 
+	// the input 'end'.
 	public static LabelNode getEndLabel(MethodNode methodNode,
 			AbstractInsnNode end,
 			Map<AbstractInsnNode, AbstractInsnNode> ends_after_athrow) {
 		AbstractInsnNode instr = ends_after_athrow.get(end);
 
+		// Skip branch instructions, label nodes and line number node.
 		while (instr.getOpcode() == -1 || InsnListHelper.isBranch(instr)) {
 			instr = instr.getPrevious();
 		}
 
+		// For those instruction that might fall through, there should
+		// be a 'GOTO' instruction to separate from the exception handler. 
 		if (InsnListHelper.isConditionalBranch(instr)
 				|| !InsnListHelper.isBranch(instr)) {
 
@@ -228,11 +213,14 @@ public class Weaver {
 			instr = jump;
 		}
 
+		// Create a label just after the 'GOTO' instruction.
 		LabelNode label = createLabel();
 		methodNode.instructions.insert(instr, label);
 		return label;
 	}
 
+	// Sort the try-catch blocks of the method according to the
+	// length of each block.
 	public static void sortTryCatchBlocks(MethodNode method) {
 		TryCatchBlockSorter sorter = new TryCatchBlockSorter(null,
 				method.access, method.name, method.desc, method.signature, null);
@@ -241,33 +229,63 @@ public class Weaver {
 		sorter.visitEnd();
 	}
 
-	// TODO support for AfterReturning and AfterThrowing
 	// TODO support for static information weaving
 	public static void instrument(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
 			StaticInfo staticInfoHolder) {
 		// Sort the snippets based on their order
-		Map<MarkedRegion, List<AbstractInsnNode>> ends_after_return;
-		Map<AbstractInsnNode, AbstractInsnNode> ends_after_athrow;
+		Map<AbstractInsnNode, AbstractInsnNode> weaving_loc_normal;
+		Map<AbstractInsnNode, AbstractInsnNode> weaving_loc_athrow;
 		ArrayList<Snippet> array = new ArrayList<Snippet>(
 				snippetMarkings.keySet());
 		Collections.sort(array);
 
 		// Prepare for weaving
-		ends_after_return = new HashMap<MarkedRegion, List<AbstractInsnNode>>();
-		ends_after_athrow = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		weaving_loc_normal = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		weaving_loc_athrow = new HashMap<AbstractInsnNode, AbstractInsnNode>();
 
 		for (Snippet snippet : array) {
 
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
+				// initialize of start
+				AbstractInsnNode start = region.getStart();
 
-				List<AbstractInsnNode> weaving_ends = fixRegion(methodNode,
-						region);
-				ends_after_return.put(region, weaving_ends);
+				if (weaving_loc_normal.get(start) == null) {
+					weaving_loc_normal.put(start, start);
+				}
 
 				for (AbstractInsnNode end : region.getEnds()) {
-					ends_after_athrow.put(end, end);
+					if (InsnListHelper.isBranch(end)) {
+
+						if (start == end) {
+							// Contains only one instruction
+							LabelNode labelNode = createLabel();
+							methodNode.instructions.insertBefore(start,
+									labelNode);
+							weaving_loc_normal.put(start, labelNode);
+							weaving_loc_normal.put(end, labelNode);
+						} else {
+							// Skip branch instructions and ASM label nodes.
+							AbstractInsnNode instr = end.getPrevious();
+
+							while (instr != start
+									&& (instr.getOpcode() == -1 || InsnListHelper
+											.isBranch(instr))) {
+								instr = instr.getPrevious();
+							}
+
+							weaving_loc_normal.put(end, instr);
+						}
+					} else {
+						// this one is not a branch instruction, which
+						// means instruction list can be inserted after
+						// this instruction.
+						weaving_loc_normal.put(end, end);
+					}
+
+					// initial value, might be changed during the weaving
+					weaving_loc_athrow.put(end, end);
 				}
 			}
 		}
@@ -282,33 +300,39 @@ public class Weaver {
 			}
 
 			// Instrument
+			// For @Before, instrument the snippet just before the
+			// entrance of a region.
 			if (snippet.getAnnotationClass().equals(Before.class)) {
-
 				for (MarkedRegion region : regions) {
 
 					InsnList newlst = InsnListHelper.cloneList(ilst);
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 					fixLocalIndex(methodNode, newlst);
-					methodNode.instructions.insertBefore(region.getStart(),
-							newlst);
+					methodNode.instructions.insertBefore(
+							weaving_loc_normal.get(region.getStart()), newlst);
 				}
 			}
 
+			// For normal after(after returning), instrument the snippet
+			// after each adjusted exit of a region.
 			if (snippet.getAnnotationClass().equals(AfterReturning.class)
 					|| snippet.getAnnotationClass().equals(After.class)) {
-
 				for (MarkedRegion region : regions) {
 
-					for (AbstractInsnNode exit : ends_after_return.get(region)) {
+					for (AbstractInsnNode exit : region.getEnds()) {
 
 						InsnList newlst = InsnListHelper.cloneList(ilst);
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						fixLocalIndex(methodNode, newlst);
-						methodNode.instructions.insert(exit, newlst);
+						methodNode.instructions.insert(
+								weaving_loc_normal.get(exit), newlst);
 					}
 				}
 			}
 
+			// For exceptional after(after throwing), wrap the region with
+			// a try-finally clause. And append the snippet as an exception
+			// handler.
 			if (snippet.getAnnotationClass().equals(AfterThrowing.class)
 					|| snippet.getAnnotationClass().equals(After.class)) {
 
@@ -320,10 +344,11 @@ public class Weaver {
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						fixLocalIndex(methodNode, newlst);
 
+						// Create a try-finally clause
 						LabelNode startLabel = getStartLabel(methodNode,
 								region.getStart());
 						LabelNode endLabel = getEndLabel(methodNode, exit,
-								ends_after_athrow);
+								weaving_loc_athrow);
 
 						methodNode.visitTryCatchBlock(startLabel.getLabel(),
 								endLabel.getLabel(), endLabel.getLabel(), null);

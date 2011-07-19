@@ -23,7 +23,7 @@ public class StaticInfo {
 	static { // static init for methodSetSAI
 		try {
 			methodSetSAI = 
-				StaticAnalysis.class.getMethod("setStaticAnalysisInfo");
+				StaticAnalysis.class.getMethod("setStaticAnalysisInfo", StaticAnalysisInfo.class);
 		} catch (Exception e) {
 			throw new DiSLFatalException("setStaticAnalysisInfo in " + 
 					StaticAnalysis.class.getName() + " has been renamed."); 
@@ -176,7 +176,7 @@ public class StaticInfo {
 						
 						// if cache wasn't hit, invoke static analysis method
 						if(result == null) {
-							result = stAnMethod.invoke(saInst, saInfo);
+							result = stAnMethod.invoke(saInst);
 						}
 						
 						// store the result
