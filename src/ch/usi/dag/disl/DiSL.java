@@ -26,6 +26,11 @@ public class DiSL implements Instrumentation {
 	final String PROP_CLASSES_DELIM = ",";
 	
 	List<Snippet> snippets;
+
+	// list of analysis instances
+	// validity of an instance is for one instrumented class
+	// instances are created lazily when needed in StaticInfo
+	Map<Class<?>, Object> analysisInstances;
 	
 	public DiSL() {
 		super();
@@ -136,8 +141,8 @@ public class DiSL implements Instrumentation {
 		// *** compute static info ***
 		
 		// prepares StaticInfo class (computes analysis)
-		StaticInfo staticInfo = 
-			new StaticInfo(classNode, methodNode, snippetMarkings);
+		StaticInfo staticInfo = new StaticInfo(analysisInstances, classNode,
+				methodNode, snippetMarkings);
 		
 		// *** select synthetic local vars ***
 
@@ -170,13 +175,17 @@ public class DiSL implements Instrumentation {
 		// report every exception within our code - don't let anyone mask it
 		try {
 		
+			// list of analysis instances
+			// validity of an instance is for one instrumented class
+			analysisInstances = new HashMap<Class<?>, Object>();
+			
 			// instrument all methods in a class
 			for(Object methodObj : classNode.methods) {
 				
 				// cast - ASM still uses Java 1.4 interface
-				MethodNode method = (MethodNode) methodObj;
+				MethodNode methodNode = (MethodNode) methodObj;
 				
-				instrumentMethod(classNode, method);
+				instrumentMethod(classNode, methodNode);
 			}
 			
 		}

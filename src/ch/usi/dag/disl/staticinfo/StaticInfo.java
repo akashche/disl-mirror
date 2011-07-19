@@ -98,11 +98,13 @@ public class StaticInfo {
 	Map<StaticInfoKey, Object> staticInfoData = 
 		new HashMap<StaticInfoKey, Object>();
 	
-	public StaticInfo(ClassNode classNode,
-			MethodNode methodNode, Map<Snippet,
-			List<MarkedRegion>> snippetMarkings) throws AnalysisException {
-		
-		computeStaticInfo(classNode, methodNode, snippetMarkings);
+	public StaticInfo(Map<Class<?>, Object> analysisInstances,
+			ClassNode classNode, MethodNode methodNode,
+			Map<Snippet, List<MarkedRegion>> snippetMarkings)
+			throws AnalysisException {
+
+		computeStaticInfo(analysisInstances, classNode, methodNode,
+				snippetMarkings);
 	}
 	
 	public Object getSI(Snippet snippet, MarkedRegion markedRegion,
@@ -117,9 +119,10 @@ public class StaticInfo {
 
 	// Call analysis for each snippet and each marked region and create
 	// a static info values
-	private void computeStaticInfo(ClassNode classNode,
-			MethodNode methodNode, Map<Snippet,
-			List<MarkedRegion>> snippetMarkings) throws AnalysisException {
+	private void computeStaticInfo(Map<Class<?>, Object> analysisInstances,
+			ClassNode classNode, MethodNode methodNode,
+			Map<Snippet, List<MarkedRegion>> snippetMarkings
+			) throws AnalysisException {
 		
 		for(Snippet snippet : snippetMarkings.keySet()) {
 			
@@ -127,25 +130,41 @@ public class StaticInfo {
 				
 				for(String analysisMehodName : snippet.getAnalyses().keySet()) {
 
-					// create analysis info data
-					AnalysisInfo ai = new AnalysisInfo(classNode, methodNode,
-							snippet, snippetMarkings.get(snippet),
-							markedRegion);
-					
-					// get analysis method
-					Method analysisMethod = 
-						snippet.getAnalyses().get(analysisMehodName);
-					
 					try {
+					
+						// create analysis info data
+						AnalysisInfo aInfo = new AnalysisInfo(classNode,
+								methodNode, snippet,
+								snippetMarkings.get(snippet), markedRegion);
+
+						// get analysis method
+						Method analysisMethod = 
+							snippet.getAnalyses().get(analysisMehodName);
+
+						// get analysis instance
+						Class<?> methodClass = 
+							analysisMethod.getDeclaringClass();
+						Object aInst = analysisInstances.get(methodClass);
+
+						// ... or create new one
+						if (aInst == null) {
+							
+							aInst = methodClass.newInstance();
+							
+							// and store for later use
+							analysisInstances.put(methodClass, aInst);
+						}
+					
 						// invoke analysis method
-						Object result = analysisMethod.invoke(null, ai);
+						Object result = analysisMethod.invoke(aInst, aInfo);
 						
 						// store the result
 						setSI(snippet, markedRegion, analysisMehodName, result);
 						
 					} catch (Exception e) {
 						throw new AnalysisException(
-								"Cannot invoke analysis method", e);
+								"Invocation of analysis method " +
+								analysisMehodName + " failed", e);
 					}
 				}
 			}

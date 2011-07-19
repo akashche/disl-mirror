@@ -1,7 +1,6 @@
 package ch.usi.dag.disl.snippet.parser;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -48,23 +47,9 @@ import ch.usi.dag.disl.util.InsnListHelper;
  */
 public class SnippetParser {
 
-	private final String ANALYSIS_PACKAGE_PREFIX;
-
 	private List<Snippet> snippets = new LinkedList<Snippet>();
 	private Map<String, SyntheticLocalVar> syntheticLocalVars =
 		new HashMap<String, SyntheticLocalVar>();
-
-	public SnippetParser() {
-		super();
-
-		// ANALYSIS_PACKAGE_PREFIX
-		// created on the fly so we don't have to care about renaming etc.
-
-		String iAnalysisName = Type.getType(Analysis.class).getInternalName();
-		int lastDelim = iAnalysisName
-				.lastIndexOf(Constants.INTERNAL_PACKAGE_DELIM);
-		ANALYSIS_PACKAGE_PREFIX = iAnalysisName.substring(0, lastDelim);
-	}
 
 	public List<Snippet> getSnippets() {
 
@@ -107,6 +92,8 @@ public class SnippetParser {
 			}
 		}
 
+		// TODO ! synthetic local rework
+		
 		// parse init code for synthetic local vars and assigns them accordingly
 		if (origInitCodeIL != null) {
 			parseInitCodeForSLV(origInitCodeIL, slVars);
@@ -267,9 +254,13 @@ public class SnippetParser {
 			// scope
 			Scope scope = new ScopeImpl(annotData.getScope());
 
+			// parse used analysis
+			// 
+			Set<String> knownAnalysesClasses = parseAnalysis(method.desc);
+			
 			// process code
 			SnippetCodeData scd = processSnippetCode(className,
-					method.instructions);
+					method.instructions, knownAnalysesClasses);
 
 			// whole snippet
 			result.add(new Snippet(annotData.getType(), marker, scope,
@@ -412,6 +403,56 @@ public class SnippetParser {
 		return new MethodAnnotationData(type, marker, scope, order);
 	}
 
+	private Set<String> parseAnalysis(String methodDesc) throws DiSLException {
+		
+		// TODO when adding dynamic analysis, return two sets
+		// one for static analysis and one for dynamic analysis
+		// dynamic analysis one will be used only for byte code checking
+		
+		Set<String> knownStAn = new HashSet<String>();
+		
+		for(Type argType : Type.getArgumentTypes(methodDesc)) {
+
+			Class<?> argClass = ClassFactory.resolve(argType);
+			
+			// static analysis should implement analysis interface
+			if(! implementsAnalysis(argClass)) {
+				throw new AnalysisException(argClass.getName() + " does not" +
+						" implement Analysis interface and cannot be used as" +
+						" disl method parameter");
+			}
+			
+			knownStAn.add(argType.getInternalName());
+		}
+		
+		return knownStAn;
+	}
+
+	/**
+	 * Searches for Analysis interface. Searches through whole class hierarchy
+	 * 
+	 * @param classToSearch
+	 */
+	private boolean implementsAnalysis(Class<?> classToSearch) {
+		
+		// through whole hierarchy...
+		while(classToSearch != null) {
+
+			// ...through all interfaces...
+			for(Class<?> iface : classToSearch.getInterfaces()) {
+				
+				// ...search for analysis interface
+				if(iface.equals(Analysis.class)) {
+					return true;
+				}
+			}
+			
+			classToSearch = classToSearch.getSuperclass();
+		}
+		
+		return false;
+	}
+	
 	private class SnippetCodeData {
 
 		private InsnList asmCode;
@@ -441,7 +482,8 @@ public class SnippetParser {
 	}
 
 	private SnippetCodeData processSnippetCode(String className,
-			InsnList snippetCode) throws DiSLException {
+			InsnList snippetCode, Set<String> knownAnalysesClasses)
+			throws DiSLException {
 
 		// clone the instrucition list
 		InsnList asmCode = InsnListHelper.cloneList(snippetCode);
@@ -469,15 +511,18 @@ public class SnippetParser {
 				slvList.add(syntheticLocalVars.get(slvName));
 			}
 
-			// *** Parse analysis classes in use ***
+			// *** Parse analysis methods in use ***
 
-			AnalysisMethod anlMtd = 
-				insnInvokesAnalysis(instr, analyses.keySet());
+			AnalysisMethod anlMtd = insnInvokesAnalysis(knownAnalysesClasses,
+					instr, analyses.keySet());
 			
 			if(anlMtd != null) {
 				analyses.put(anlMtd.getId(), anlMtd.getRefM());
 			}
 		}
+		
+		// TODO ! analysis checking
+		// arguments (local variables 1, 2, ...) may be used only in method calls
 
 		return new SnippetCodeData(asmCode, slvList, analyses);
 	}
@@ -523,8 +568,9 @@ public class SnippetParser {
 		}
 	}
 	
-	private AnalysisMethod insnInvokesAnalysis(AbstractInsnNode instr,
-			Set<String> knownMethods) throws AnalysisException, DiSLException {
+	private AnalysisMethod insnInvokesAnalysis(Set<String> knownAnalysesClasses,
+			AbstractInsnNode instr, Set<String> knownMethods)
+			throws AnalysisException, DiSLException {
 		
 		// check - instruction invokes method
 		if (! (instr instanceof MethodInsnNode)) {
@@ -534,7 +580,7 @@ public class SnippetParser {
 		MethodInsnNode methodInstr = (MethodInsnNode) instr;
 
 		// check - we've found analysis
-		if (! methodInstr.owner.startsWith(ANALYSIS_PACKAGE_PREFIX)) {
+		if (! knownAnalysesClasses.contains(methodInstr.owner)) {
 			return null;
 		}
 
@@ -544,20 +590,13 @@ public class SnippetParser {
 					methodInstr.name, methodInstr.desc);
 
 		// check method argument
-		// only one method argument (AnalysisInfo) is allowed
+		// no argument is allowed
 		Type[] methodArguments = asmMethod.getArgumentTypes();
 		
-		if(methodArguments.length != 1) {
+		if(methodArguments.length != 0) {
 			throw new AnalysisException("Analysis method " + methodInstr.name
 					+ " in class " + methodInstr.owner
-					+ " should have only one parameter.");
-		}
-		
-		if(! methodArguments[0].equals(Type.getType(AnalysisInfo.class))) {
-			throw new AnalysisException("Parameter in alysis method "
-					+ methodInstr.name + " in class " + methodInstr.owner
-					+ " should be of type "
-					+ AnalysisInfo.class.getCanonicalName());
+					+ " shouldn't have a parameter.");
 		}
 		
 		// crate analysis method id
@@ -587,13 +626,6 @@ public class SnippetParser {
 					+ methodInstr.owner + " cannot be found."
 					+ " Snippet was probably compiled against modified"
 					+ " (different) class");
-		}
-		
-		// check if the method is static
-		if(! Modifier.isStatic(method.getModifiers())) {
-			throw new AnalysisException(
-					"Analysis method " + methodInstr.name + " in class "
-					+ methodInstr.owner + " should be static.");
 		}
 		
 		return new AnalysisMethod(methodID, method);
