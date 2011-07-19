@@ -9,15 +9,18 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.InsnListHelper;
 
-public class AfterInitBodyMarker implements Marker {
+public class AfterInitBodyMarker extends AbstractMarker implements Marker {
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
+		
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
+		
 		MarkedRegion region = 
 			new MarkedRegion(method, InsnListHelper.findFirstValidMark(method));
 
 		for (AbstractInsnNode instr : method.instructions.toArray()) {
+			
 			int opcode = instr.getOpcode();
 
 			if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {

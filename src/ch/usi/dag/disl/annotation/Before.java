@@ -5,7 +5,12 @@ import ch.usi.dag.disl.snippet.marker.Marker;
 public @interface Before {
 	
 	// NOTE if you want to change names, you need to change SnippetParser class
+	
+	// NOTE because of weird implementation of annotations in java the defaults
+	// are not retrieved from here but from SnippetParser
+	
 	Class<? extends Marker> marker();
+	String param() default ""; // cannot be null :(
 	String scope();
-	int order();
+	int order() default 100;
 }

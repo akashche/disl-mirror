@@ -8,13 +8,14 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.InsnListHelper;
 
-public class BasicBlockMarker implements Marker {
+public class BasicBlockMarker extends AbstractMarker implements Marker {
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
+		
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		List<AbstractInsnNode> seperators = InsnListHelper
-				.getBasicBlocks(method);
+		List<AbstractInsnNode> seperators = 
+			InsnListHelper.getBasicBlocks(method);
 
 		AbstractInsnNode last = method.instructions.getLast();
 		
@@ -25,6 +26,7 @@ public class BasicBlockMarker implements Marker {
 		seperators.add(last);
 
 		for (int i = 0; i < seperators.size() - 1; i++) {
+			
 			AbstractInsnNode start = seperators.get(i);
 			AbstractInsnNode end = seperators.get(i + 1);
 

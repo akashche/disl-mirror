@@ -240,6 +240,9 @@ public class SnippetParser {
 			// marker
 			Marker marker = 
 				(Marker) ClassFactory.createInstance(annotData.getMarker());
+			
+			// set marker parameter
+			marker.setParam(annotData.getParam());
 
 			// scope
 			Scope scope = new ScopeImpl(annotData.getScope());
@@ -267,6 +270,7 @@ public class SnippetParser {
 		private boolean known;
 		private Class<?> type;
 		private Type marker;
+		private String param;
 		private String scope;
 		private int order;
 
@@ -274,13 +278,14 @@ public class SnippetParser {
 			this.known = false;
 		}
 
-		public MethodAnnotationData(Class<?> type, Type marker, String scope,
-				int order) {
+		public MethodAnnotationData(Class<?> type, Type marker, String param,
+				String scope, int order) {
 			super();
 
 			this.known = true;
 			this.type = type;
 			this.marker = marker;
+			this.param = param;
 			this.scope = scope;
 			this.order = order;
 		}
@@ -295,6 +300,10 @@ public class SnippetParser {
 
 		public Type getMarker() {
 			return marker;
+		}
+		
+		public String getParam() {
+			return param;
 		}
 
 		public String getScope() {
@@ -346,8 +355,9 @@ public class SnippetParser {
 
 		String name = null;
 		Type marker = null;
+		String param = ""; // default
 		String scope = null;
-		Integer order = null;
+		Integer order = 100; // default
 
 		while (it.hasNext()) {
 
@@ -359,9 +369,11 @@ public class SnippetParser {
 				continue;
 			}
 			
-			// TODO support for param - empty default
-			// param will be passed to the constructor if marker has the proper
-			// one
+			if (name.equals("param")) {
+				
+				param = (String) it.next();
+				continue;
+			}
 
 			if (name.equals("scope")) {
 
@@ -369,7 +381,6 @@ public class SnippetParser {
 				continue;
 			}
 
-			// TODO support for order default
 			if (name.equals("order")) {
 
 				order = (Integer) it.next();
@@ -382,7 +393,7 @@ public class SnippetParser {
 					+ " parser is not.");
 		}
 
-		if (marker == null || scope == null || order == null) {
+		if (marker == null || param == null || scope == null || order == null) {
 
 			throw new DiSLFatalException("Missing field in annotation "
 					+ type.toString()
@@ -390,7 +401,7 @@ public class SnippetParser {
 					+ " parser is not.");
 		}
 
-		return new MethodAnnotationData(type, marker, scope, order);
+		return new MethodAnnotationData(type, marker, param, scope, order);
 	}
 
 	private Set<String> parseAnalysis(String methodDesc) throws DiSLException {

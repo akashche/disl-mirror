@@ -8,15 +8,18 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class InvocationMarker implements Marker {
+public class InvocationMarker extends AbstractMarker implements Marker {
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
+		
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		InsnList ilst = method.instructions;
 
 		for (AbstractInsnNode instruction : ilst.toArray()) {
+			
 			if (instruction instanceof MethodInsnNode) {
+				
 				regions.add(new MarkedRegion(method, instruction, instruction));
 			}
 		}

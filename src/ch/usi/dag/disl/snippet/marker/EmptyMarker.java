@@ -5,9 +5,11 @@ import java.util.List;
 
 import org.objectweb.asm.tree.MethodNode;
 
-public class EmptyMarker implements Marker {
+public class EmptyMarker extends AbstractMarker implements Marker {
+	
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
+		
 		return new LinkedList<MarkedRegion>();
 	}
 }

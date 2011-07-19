@@ -5,5 +5,8 @@ import java.util.List;
 import org.objectweb.asm.tree.MethodNode;
 
 public interface Marker {
+	
 	public List<MarkedRegion> mark(MethodNode method);
+	
+	public void setParam(String paramValue);
 }
