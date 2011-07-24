@@ -92,7 +92,7 @@ public class Weaver {
 			}
 		}
 
-		methodNode.maxLocals = max;
+		methodNode.maxLocals = max + 1;
 	}
 
 	// Transform static fields to synthetic local
