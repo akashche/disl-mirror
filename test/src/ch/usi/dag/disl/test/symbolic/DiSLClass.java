@@ -9,10 +9,10 @@ import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.snippet.marker.BodyMarker;
 import ch.usi.dag.disl.snippet.marker.BytecodeMarker;
-import ch.usi.dag.disl.staticinfo.analysis.SEAnalysis;
 import ch.usi.dag.disl.test.symbolic.symbol.BinaryOperation;
 import ch.usi.dag.disl.test.symbolic.symbol.Constraint;
 import ch.usi.dag.disl.test.symbolic.symbol.IConstValue;
+import ch.usi.dag.disl.test.symbolic.symbol.SEAnalysis;
 import ch.usi.dag.disl.test.symbolic.symbol.Symbol;
 import ch.usi.dag.disl.test.symbolic.symbol.SymbolMap;
 

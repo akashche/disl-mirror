@@ -1,9 +1,11 @@
-package ch.usi.dag.disl.staticinfo.analysis;
+package ch.usi.dag.disl.test.symbolic.symbol;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
+
+import ch.usi.dag.disl.staticinfo.analysis.AbstractStaticAnalysis;
 
 public class SEAnalysis extends AbstractStaticAnalysis{
 
