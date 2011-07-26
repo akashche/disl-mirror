@@ -26,7 +26,9 @@ public class OnPlaceTransformer {
 		ClassNode cn = new ClassNode();
 		cr.accept(cn, 0);
 		
-		DiSL.class.newInstance().instrument(cn);
+		DiSL disl = new DiSL();
+		disl.initialize();
+		disl.instrument(cn);
 		
 		// print class
 		TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));

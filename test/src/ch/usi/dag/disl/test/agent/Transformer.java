@@ -22,7 +22,10 @@ public class Transformer implements ClassFileTransformer {
 		ClassNode classNode = new ClassNode();
 		cr.accept(classNode, ClassReader.SKIP_DEBUG | ClassReader.EXPAND_FRAMES);
     	
-		new DiSL().instrument(classNode);
+		DiSL disl = new DiSL();
+		disl.initialize();
+		disl.instrument(classNode);
+
 		
 		ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 		classNode.accept(cw);

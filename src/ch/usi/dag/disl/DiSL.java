@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.DiSLException;
+import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.snippet.parser.SnippetParser;
@@ -47,8 +48,13 @@ public class DiSL implements Instrumentation {
 						"Property " + PROP_DISL_CLASSES + " is not defined");
 			}
 			
-			boolean useDynamicBypass = System.getProperty(DYNAMIC_BYPASS)
-					.toLowerCase().equals(DYNAMIC_BYPASS_TRUE);
+			String useDynamicBypassStr = System.getProperty(DYNAMIC_BYPASS);
+					
+			boolean useDynamicBypass = false;
+			if(useDynamicBypassStr != null) {
+				useDynamicBypass = useDynamicBypassStr.toLowerCase()
+						.equals(DYNAMIC_BYPASS_TRUE);
+			}
 			
 			List<byte []> compiledClasses = new LinkedList<byte []>();
 	
@@ -88,6 +94,8 @@ public class DiSL implements Instrumentation {
 		}
 		catch(Exception e) {
 			reportError(e);
+			// TODO just for debugging
+			e.printStackTrace();
 		}
 		catch(Throwable e) {
 			// unexpected exception, just print stack trace
@@ -192,6 +200,10 @@ public class DiSL implements Instrumentation {
 	
 	public void instrument(ClassNode classNode) {
 
+		if(snippets == null) {
+			throw new DiSLFatalException("DiSL was not initialized");
+		}
+		
 		// report every exception within our code - don't let anyone mask it
 		try {
 		

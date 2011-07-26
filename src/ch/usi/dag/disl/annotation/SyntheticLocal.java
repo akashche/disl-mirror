@@ -5,4 +5,14 @@ package ch.usi.dag.disl.annotation;
 //   will cause invalid instrumentation
 public @interface SyntheticLocal {
 
+	public enum Initialize {
+		ALWAYS, NEVER, BEST_EFFORT 
+	}
+	
+	// NOTE if you want to change names, you need to change SnippetParser class
+	
+	// NOTE because of weird implementation of annotations in java the defaults
+	// are not retrieved from here but from SnippetParser
+	
+	Initialize initialize() default(Initialize.ALWAYS);
 }

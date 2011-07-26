@@ -230,6 +230,7 @@ public class Weaver {
 	}
 
 	// TODO dynamic analysis
+	// TODO respect initialization type in synthetic local variable
 	public static void instrument(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,

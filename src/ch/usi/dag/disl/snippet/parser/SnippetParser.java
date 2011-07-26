@@ -158,10 +158,37 @@ public class SnippetParser {
 				throw new AnnotParserException("Field " + field.name
 						+ " declared as SyntheticLocal but is not static");
 			}
+			
+			// *** parse annotation values ***
+
+			Iterator<?> it = annotation.values.iterator();
+
+			SyntheticLocal.Initialize slvInit =
+				SyntheticLocal.Initialize.ALWAYS; // default
+
+			while (it.hasNext()) {
+
+				String name = (String) it.next();
+
+				if (name.equals("initialize")) {
+
+					// parse enum from string
+					// first is class and second is enum value
+					String[] slvInitStr = (String[]) it.next();
+					slvInit = SyntheticLocal.Initialize.valueOf(slvInitStr[1]);
+					
+					continue;
+				}
+				
+				throw new DiSLFatalException("Unknow field " + name
+						+ " in annotation at " + field.name
+						+ ". This may happen if annotation class is changed but"
+						+ " parser is not.");
+			}
 
 			// add to results
 			SyntheticLocalVar slv =
-				new SyntheticLocalVar(className, field.name);
+				new SyntheticLocalVar(className, field.name, slvInit);
 			result.put(slv.getID(), slv);
 		}
 
@@ -362,7 +389,6 @@ public class SnippetParser {
 
 		Iterator<?> it = annotValues.iterator();
 
-		String name = null;
 		Type marker = null;
 		String param = ""; // default
 		String scope = null;
@@ -370,7 +396,7 @@ public class SnippetParser {
 
 		while (it.hasNext()) {
 
-			name = (String) it.next();
+			String name = (String) it.next();
 
 			if (name.equals("marker")) {
 

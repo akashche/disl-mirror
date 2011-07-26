@@ -31,6 +31,7 @@ public class JarRewriter {
      */
     public JarRewriter(Instrumentation instr) {
         this.instrumentation = instr;
+        instrumentation.initialize();
     }
 
 	/**

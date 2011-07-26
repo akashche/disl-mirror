@@ -3,10 +3,12 @@ package ch.usi.dag.disl.test.syntheticlocal;
 import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.annotation.SyntheticLocal.Initialize;
 import ch.usi.dag.disl.snippet.marker.BodyMarker;
 
 public class DiSLClass {
-	@SyntheticLocal
+	
+	@SyntheticLocal(initialize=Initialize.NEVER)
 	public static String flag; 
 	
 	@Before(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 0)

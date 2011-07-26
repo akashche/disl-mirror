@@ -8,4 +8,6 @@ public class Constants {
 	
 	final public static String CONSTRUCTOR_NAME = "<init>";
 	final public static String STATIC_INIT_NAME = "<clinit>";
+	
+	final public static String CLASS_DELIM = ".";
 }
