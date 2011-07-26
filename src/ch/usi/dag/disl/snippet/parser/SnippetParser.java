@@ -27,6 +27,7 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.dynamicinfo.Context;
 import ch.usi.dag.disl.exception.AnnotParserException;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
@@ -412,15 +413,16 @@ public class SnippetParser {
 	}
 
 	private Set<String> parseAnalysis(String methodDesc) throws DiSLException {
-		
-		// TODO when adding dynamic analysis, return two sets
-		// one for static analysis and one for dynamic analysis
-		// dynamic analysis one will be used only for byte code checking
-		
+
 		Set<String> knownStAn = new HashSet<String>();
 		
 		for(Type argType : Type.getArgumentTypes(methodDesc)) {
 
+			// skip dynamic analysis class - don't check anything
+			if(argType.equals(Type.getType(Context.class))) {
+				continue;
+			}
+			
 			Class<?> argClass = ClassFactory.resolve(argType);
 			
 			// static analysis should implement analysis interface
@@ -606,11 +608,31 @@ public class SnippetParser {
 		if(methodArguments.length != 0) {
 			throw new StaticAnalysisException("Static analysis method "
 					+ methodInstr.name
-					+ " in class " + methodInstr.owner
+					+ " in the class " + methodInstr.owner
 					+ " shouldn't have a parameter.");
 		}
 		
-		// TODO ! check return type - only basic types are allowed
+		Type methodReturn = asmMethod.getReturnType();
+
+		// only basic types + String are allowed as return type
+		if(
+				!(
+				methodReturn.equals(Type.BOOLEAN_TYPE) ||
+				methodReturn.equals(Type.BYTE_TYPE) ||
+				methodReturn.equals(Type.CHAR_TYPE) ||
+				methodReturn.equals(Type.DOUBLE_TYPE) ||
+				methodReturn.equals(Type.FLOAT_TYPE) ||
+				methodReturn.equals(Type.INT_TYPE) ||
+				methodReturn.equals(Type.LONG_TYPE) ||
+				methodReturn.equals(Type.SHORT_TYPE) ||
+				methodReturn.equals(Type.getType(String.class))
+				)) {
+			
+			throw new StaticAnalysisException("Static analysis method "
+					+ methodInstr.name
+					+ " in the class " + methodInstr.owner
+					+ " can have only basic type or String as a return type.");
+		}
 		
 		// crate static analysis method id
 		String methodID = methodInstr.owner
@@ -633,7 +655,7 @@ public class SnippetParser {
 			throw new StaticAnalysisException(
 					"Method " + methodInstr.name + " in class "
 					+ methodInstr.owner + " cannot be found."
-					+ " Snippet was probably compiled against modified"
+					+ " Snippet was probably compiled against a modified"
 					+ " (different) class");
 		}
 		
