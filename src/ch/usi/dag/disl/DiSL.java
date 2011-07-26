@@ -25,6 +25,9 @@ public class DiSL implements Instrumentation {
 	final String PROP_DISL_CLASSES = "disl.classes";
 	final String PROP_CLASSES_DELIM = ",";
 	
+	final String DYNAMIC_BYPASS = ",";
+	final String DYNAMIC_BYPASS_TRUE = "yes";
+	
 	List<Snippet> snippets;
 
 	// list of static analysis instances
@@ -43,6 +46,9 @@ public class DiSL implements Instrumentation {
 				throw new DiSLException(
 						"Property " + PROP_DISL_CLASSES + " is not defined");
 			}
+			
+			boolean useDynamicBypass = System.getProperty(DYNAMIC_BYPASS)
+					.toLowerCase().equals(DYNAMIC_BYPASS_TRUE);
 			
 			List<byte []> compiledClasses = new LinkedList<byte []>();
 	
@@ -67,6 +73,10 @@ public class DiSL implements Instrumentation {
 			
 			// initialize snippets
 			snippets = parser.getSnippets();
+			
+			for(Snippet snippet : snippets) {
+				snippet.prepare(useDynamicBypass);
+			}
 
 			// TODO put checker here
 			// like After should catch normal and abnormal execution
@@ -153,12 +163,23 @@ public class DiSL implements Instrumentation {
 			selectedSLV.addAll(snippet.getSyntheticLocalVars());
 		}
 		
+		// *** determine if any snippet uses dynamic analysis ***
+		
+		boolean usesDynamicAnalysis = false;
+		for(Snippet snippet : snippetMarkings.keySet()) {
+			
+			if(snippet.usesDynamicAnalysis()) {
+				usesDynamicAnalysis = true;
+				break;
+			}
+		}
+		
 		// *** viewing ***
 		
 		// TODO ! weaver should have two parts, weaving and rewriting
 		Weaver.instrument(methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(selectedSLV),
-				staticInfo);
+				staticInfo, usesDynamicAnalysis);
 		
 		// TODO ProcessorHack remove
 		ProcessorHack.instrument(classNode, 

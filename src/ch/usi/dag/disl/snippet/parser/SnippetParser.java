@@ -211,7 +211,7 @@ public class SnippetParser {
 		}
 	}
 
-	protected List<Snippet> parseSnippets(String className, MethodNode method)
+	private List<Snippet> parseSnippets(String className, MethodNode method)
 			throws DiSLException {
 
 		List<Snippet> result = new LinkedList<Snippet>();
@@ -257,16 +257,17 @@ public class SnippetParser {
 			Scope scope = new ScopeImpl(annotData.getScope());
 
 			// ** parse used static analysis **
-			Set<String> knownStAnClasses = parseAnalysis(method.desc);
+			Analysis analysis = parseAnalysis(method.desc);
 			
 			// ** process code **
 			SnippetCodeData scd = processSnippetCode(className,
-					method.instructions, knownStAnClasses);
+					method.instructions, analysis.getStaticAnalyses());
 
 			// whole snippet
 			result.add(new Snippet(annotData.getType(), marker, scope,
 					annotData.getOrder(), scd.getAsmCode(), scd
-							.getReferencedSLV(), scd.getStaticAnalyses()));
+							.getReferencedSLV(), scd.getStaticAnalyses(),
+							analysis.usesDynamicAnalysis()));
 		}
 
 		return result;
@@ -323,7 +324,7 @@ public class SnippetParser {
 		}
 	}
 
-	protected MethodAnnotationData parseMethodAnnotation(
+	private MethodAnnotationData parseMethodAnnotation(
 			AnnotationNode annotation) {
 
 		Type annotationType = Type.getType(annotation.desc);
@@ -412,14 +413,37 @@ public class SnippetParser {
 		return new MethodAnnotationData(type, marker, param, scope, order);
 	}
 
-	private Set<String> parseAnalysis(String methodDesc) throws DiSLException {
+	private class Analysis {
+		
+		private Set<String> staticAnalyses;
+		private boolean usesDynamicAnalysis;
+		
+		public Analysis(Set<String> staticAnalyses,
+				boolean usesDynamicAnalysis) {
+			super();
+			this.staticAnalyses = staticAnalyses;
+			this.usesDynamicAnalysis = usesDynamicAnalysis;
+		}
+
+		public Set<String> getStaticAnalyses() {
+			return staticAnalyses;
+		}
+
+		public boolean usesDynamicAnalysis() {
+			return usesDynamicAnalysis;
+		}
+	}
+	
+	private Analysis parseAnalysis(String methodDesc) throws DiSLException {
 
 		Set<String> knownStAn = new HashSet<String>();
+		boolean usesDynamicAnalysis = false;
 		
 		for(Type argType : Type.getArgumentTypes(methodDesc)) {
 
 			// skip dynamic analysis class - don't check anything
 			if(argType.equals(Type.getType(Context.class))) {
+				usesDynamicAnalysis = true;
 				continue;
 			}
 			
@@ -435,7 +459,7 @@ public class SnippetParser {
 			knownStAn.add(argType.getInternalName());
 		}
 		
-		return knownStAn;
+		return new Analysis(knownStAn, usesDynamicAnalysis);
 	}
 
 	/**
@@ -503,9 +527,6 @@ public class SnippetParser {
 		if (InsnListHelper.containsOnlyReturn(asmCode)) {
 			return new SnippetCodeData(null, null, null);
 		}
-
-		// remove returns in snippet (in asm code)
-		InsnListHelper.removeReturns(asmCode);
 
 		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
 

@@ -10,8 +10,6 @@ import java.util.Set;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.AdviceAdapter;
-import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -23,8 +21,6 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 public class InsnListHelper {
 
-	// TODO ! refactor - specific methods should go to Weaver
-
 	public static boolean isReturn(int opcode) {
 		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
 	}
@@ -32,7 +28,7 @@ public class InsnListHelper {
 	public static AbstractInsnNode skipLabels(AbstractInsnNode instr,
 			boolean isForward) {
 		while (instr != null && instr.getOpcode() == -1) {
-			instr = isForward?instr.getNext():instr.getPrevious();
+			instr = isForward ? instr.getNext() : instr.getPrevious();
 		}
 		
 		return instr;
@@ -109,44 +105,6 @@ public class InsnListHelper {
 		return dst;
 	}
 
-	// Get the first valid mark of a method.
-	// For a constructor, the return value will be the instruction after
-	// the object initialization.
-	public static AbstractInsnNode findFirstValidMark(MethodNode method) {
-		AbstractInsnNode first = method.instructions.getFirst();
-
-		// This is not a constructor. Just return the first instruction
-		if (!method.name.equals(Constants.CONSTRUCTOR_NAME)) {
-			return first;
-		}
-
-		// Similar to 'const boolean **trigger' in c.
-		final boolean trigger[] = { false };
-
-		AdviceAdapter adapter = new AdviceAdapter(new EmptyVisitor(),
-				method.access, method.name, method.desc) {
-			@Override
-			public void onMethodEnter() {
-				trigger[0] = true;
-			}
-		};
-
-		// Iterate instruction list till the instruction right after the
-		// object initialization
-		adapter.visitCode();
-
-		for (AbstractInsnNode iterator : method.instructions.toArray()) {
-			iterator.accept(adapter);
-
-			if (trigger[0]) {
-				first = iterator.getPrevious();
-				break;
-			}
-		}
-
-		return first;
-	}
-
 	// Detects if the instruction list contains only return
 	public static boolean containsOnlyReturn(InsnList ilst) {
 
@@ -158,17 +116,21 @@ public class InsnListHelper {
 	// is followed with a label which is the end of an instruction list, then
 	// it has no next instruction.
 	public static boolean hasNext(InsnList instr_lst, int i) {
+		
 		if (i < instr_lst.size()) {
+			
 			AbstractInsnNode nextInstruction = instr_lst.get(i + 1);
+			
 			return nextInstruction == null
-					|| !(nextInstruction.getOpcode() == -1 && nextInstruction
-							.getNext() == null);
+					|| !(nextInstruction.getOpcode() == -1
+					&& nextInstruction.getNext() == null);
 		}
 
 		return false;
 	}
 
 	public static boolean isBranch(AbstractInsnNode instruction) {
+		
 		int opcode = instruction.getOpcode();
 
 		return instruction instanceof JumpInsnNode
@@ -179,6 +141,7 @@ public class InsnListHelper {
 	}
 
 	public static boolean isConditionalBranch(AbstractInsnNode instruction) {
+		
 		int opcode = instruction.getOpcode();
 
 		return (instruction instanceof JumpInsnNode && opcode != Opcodes.GOTO);
@@ -187,6 +150,7 @@ public class InsnListHelper {
 	// Get basic blocks of the given method node.
 	public static List<AbstractInsnNode> getBasicBlocks(MethodNode method,
 			boolean isPrecise) {
+		
 		InsnList instr_lst = method.instructions;
 
 		Set<AbstractInsnNode> bb_begins = new HashSet<AbstractInsnNode>();
@@ -264,7 +228,7 @@ public class InsnListHelper {
 
 		switch (instruction.getOpcode()) {
 
-		// NullPointerException, ArrayIndexOutOfBoundsException
+			// NullPointerException, ArrayIndexOutOfBoundsException
 		case Opcodes.BALOAD:
 		case Opcodes.DALOAD:
 		case Opcodes.FALOAD:

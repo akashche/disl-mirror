@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.InsnList;
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
+import ch.usi.dag.disl.util.InsnListHelper;
 
 public class Snippet implements Comparable<Snippet> {
 
@@ -18,14 +19,16 @@ public class Snippet implements Comparable<Snippet> {
 	protected int order;
 	protected InsnList asmCode;
 	protected Set<SyntheticLocalVar> syntheticLocalVars;
-	private Map<String, Method> staticAnalyses;
+	protected Map<String, Method> staticAnalyses;
+	protected boolean usesDynamicAnalysis;
 	
 	public Snippet(Class<?> annotationClass,
 			Marker marker,
 			Scope scope,
 			int order, InsnList asmCode,
 			Set<SyntheticLocalVar> syntheticLocalVars,
-			Map<String, Method> staticAnalyses) {
+			Map<String, Method> staticAnalyses,
+			boolean usesDynamicAnalysis) {
 		super();
 
 		this.annotationClass = annotationClass;
@@ -35,6 +38,7 @@ public class Snippet implements Comparable<Snippet> {
 		this.asmCode = asmCode;
 		this.syntheticLocalVars = syntheticLocalVars;
 		this.staticAnalyses = staticAnalyses;
+		this.usesDynamicAnalysis = usesDynamicAnalysis;
 	}
 
 	public Class<?> getAnnotationClass() {
@@ -64,7 +68,21 @@ public class Snippet implements Comparable<Snippet> {
 	public Map<String, Method> getStaticAnalyses() {
 		return staticAnalyses;
 	}
+	
+	public boolean usesDynamicAnalysis() {
+		return usesDynamicAnalysis;
+	}
 
+	public void prepare(boolean useDynamicBypass) {
+		
+		// remove returns in snippet (in asm code)
+		InsnListHelper.removeReturns(asmCode);
+		
+		if(! useDynamicBypass) {
+			return;
+		}
+		// TODO ! dynamic bypass
+	}
 	
 	public int compareTo(Snippet o) {
 		return order - o.getOrder();

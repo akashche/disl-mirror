@@ -229,10 +229,11 @@ public class Weaver {
 		sorter.visitEnd();
 	}
 
+	// TODO dynamic analysis
 	public static void instrument(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
-			StaticInfo staticInfoHolder) {
+			StaticInfo staticInfoHolder, boolean usesDynamicAnalysis) {
 		// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_loc_normal;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_loc_athrow;
