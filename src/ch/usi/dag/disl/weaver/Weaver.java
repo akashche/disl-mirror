@@ -229,7 +229,6 @@ public class Weaver {
 		sorter.visitEnd();
 	}
 
-	// TODO support for static information weaving
 	public static void instrument(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,

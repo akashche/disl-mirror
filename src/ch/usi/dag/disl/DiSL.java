@@ -32,9 +32,8 @@ public class DiSL implements Instrumentation {
 	// instances are created lazily when needed in StaticInfo
 	Map<Class<?>, Object> staticAnalysisInstances;
 	
-	public DiSL() {
-		super();
-		
+	public void initialize() {
+
 		// report every exception within our code - don't let anyone mask it
 		try {
 		

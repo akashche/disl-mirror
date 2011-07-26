@@ -89,7 +89,7 @@ public class SnippetParser {
 			}
 		}
 
-		// TODO ! synthetic local rework
+		// TODO ! update synthetic local with param for init - yes/no/best
 		
 		// parse init code for synthetic local vars and assigns them accordingly
 		if (origInitCodeIL != null) {
@@ -609,6 +609,8 @@ public class SnippetParser {
 					+ " in class " + methodInstr.owner
 					+ " shouldn't have a parameter.");
 		}
+		
+		// TODO ! check return type - only basic types are allowed
 		
 		// crate static analysis method id
 		String methodID = methodInstr.owner
