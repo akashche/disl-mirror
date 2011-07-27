@@ -1,12 +1,13 @@
 package ch.usi.dag.disl.util;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 import org.objectweb.asm.Type;
 
 import ch.usi.dag.disl.exception.DiSLException;
 
-public class ClassFactory {
+public class ReflectionHelper {
 
 	/**
 	 * Instantiates class using constructor with defined arguments similarly
@@ -74,12 +75,27 @@ public class ClassFactory {
 		}
 	}
 	
-	public static Class<?> resolve(Type type) throws DiSLException {
+	public static Class<?> resolveClass(Type asmType) throws DiSLException {
 		try {
-			return Class.forName(type.getClassName());
+			return Class.forName(asmType.getClassName());
 		} catch (ClassNotFoundException e) {
-			throw new DiSLException("Class " + type.getClassName()
+			throw new DiSLException("Class " + asmType.getClassName()
 					+ " cannot be resolved", e);
+		}
+	}
+	
+	public static Method resolveMethod(Class<?> methodOwner, String methodName)
+			throws DiSLException {
+		
+		try {
+			return methodOwner.getMethod(methodName);
+		}
+		catch(NoSuchMethodException e) {
+			throw new DiSLException(
+					"Method " + methodName + " in class "
+					+ methodOwner.getName() + " cannot be found."
+					+ " Snippet was probably compiled against a modified"
+					+ " (different) class");
 		}
 	}
 }

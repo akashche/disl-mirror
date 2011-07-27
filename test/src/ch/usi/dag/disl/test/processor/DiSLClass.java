@@ -5,7 +5,7 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.staticinfo.analysis.ContextInfo;
+import ch.usi.dag.disl.staticinfo.analysis.StaticContext;
 
 public class DiSLClass {
 
@@ -17,7 +17,7 @@ public class DiSLClass {
 		// this will be called before any processor
 
 		flag = "OMG this is for postCondition";
-		System.out.println(new ContextInfo().getMethodName());
+		System.out.println(new StaticContext().getMethodName());
 	}
 
 	@ProcessorHack.Processor(type = Object.class)
@@ -67,13 +67,13 @@ public class DiSLClass {
 	}
 
 	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.*")
-	public static void preCondition(ContextInfo ci) {
+	public static void preCondition(StaticContext ci) {
 		System.out.println("Method " + ci.getMethodName() + ":");
 		System.out.println(flag);
 	}
 	
 	@AfterReturning(marker = BodyMarker.class, order = 1, scope = "TargetClass.*")
-	public static void postCondition(ContextInfo ci) {
+	public static void postCondition(StaticContext ci) {
 		System.out.println("Again");
 		System.out.println(flag);
 		System.out.println("This is the end of " + ci.getMethodName());

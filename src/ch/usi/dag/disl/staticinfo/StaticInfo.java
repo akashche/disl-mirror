@@ -8,28 +8,16 @@ import java.util.Map;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.exception.DiSLFatalException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisInfo;
 import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.ReflectionHelper;
 
 public class StaticInfo {
 
-	// static analysis info setter method
-	private static Method methodSetSAI;
-	static { // static init for methodSetSAI
-		try {
-			methodSetSAI = 
-				StaticAnalysis.class.getMethod("setStaticAnalysisInfo", StaticAnalysisInfo.class);
-		} catch (Exception e) {
-			throw new DiSLFatalException("setStaticAnalysisInfo in " + 
-					StaticAnalysis.class.getName() + " has been renamed."); 
-		}
-	}
-	
 	class StaticInfoKey {
 		
 		private Snippet snippet;
@@ -115,7 +103,7 @@ public class StaticInfo {
 	public StaticInfo(Map<Class<?>, Object> staticAnalysisInstances,
 			ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
-			throws StaticAnalysisException {
+			throws DiSLException {
 
 		computeStaticInfo(staticAnalysisInstances, classNode, methodNode,
 				snippetMarkings);
@@ -137,7 +125,7 @@ public class StaticInfo {
 			Map<Class<?>, Object> staticAnalysisInstances, ClassNode classNode,
 			MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
-			throws StaticAnalysisException {
+			throws DiSLException {
 		
 		for(Snippet snippet : snippetMarkings.keySet()) {
 			
@@ -145,48 +133,37 @@ public class StaticInfo {
 				
 				for(String stAnMehodName : snippet.getStaticAnalyses().keySet()) {
 
-					try {
-					
-						// create static analysis info data
-						StaticAnalysisInfo saInfo = new StaticAnalysisInfo(
-								classNode, methodNode, snippet,
-								snippetMarkings.get(snippet), markedRegion);
+					// create static analysis info data
+					StaticAnalysisInfo saInfo = new StaticAnalysisInfo(
+							classNode, methodNode, snippet,
+							snippetMarkings.get(snippet), markedRegion);
 
-						// get static analysis method
-						Method stAnMethod = 
-							snippet.getStaticAnalyses().get(stAnMehodName);
+					// get static analysis method
+					Method stAnMethod = snippet.getStaticAnalyses().get(
+							stAnMehodName);
 
-						// get static analysis instance
-						Class<?> methodClass = 
-							stAnMethod.getDeclaringClass();
-						Object saInst = staticAnalysisInstances.get(methodClass);
+					// get static analysis instance
+					Class<?> methodClass = stAnMethod.getDeclaringClass();
+					Object saInst = staticAnalysisInstances.get(methodClass);
 
-						// ... or create new one
-						if (saInst == null) {
-							
-							saInst = methodClass.newInstance();
-							
-							// and store for later use
-							staticAnalysisInstances.put(methodClass, saInst);
-						}
-						
-						// invoke static analysis info setter method
-						// returns cached result or null
-						Object result = methodSetSAI.invoke(saInst, saInfo);
-						
-						// if cache wasn't hit, invoke static analysis method
-						if(result == null) {
-							result = stAnMethod.invoke(saInst);
-						}
-						
-						// store the result
-						setSI(snippet, markedRegion, stAnMehodName, result);
-						
-					} catch (Exception e) {
-						throw new StaticAnalysisException(
-								"Invocation of static analysis method " +
-								stAnMehodName + " failed", e);
+					// ... or create new one
+					if (saInst == null) {
+
+						saInst = ReflectionHelper.createInstance(methodClass);
+
+						// and store for later use
+						staticAnalysisInstances.put(methodClass, saInst);
 					}
+
+					// recast analysis object to interface
+					StaticAnalysis saIntr = (StaticAnalysis) saInst;
+
+					// compute static data using analysis
+					Object result = 
+						saIntr.computeStaticData(stAnMethod, saInfo);
+
+					// store the result
+					setSI(snippet, markedRegion, stAnMehodName, result);
 				}
 			}
 		}

@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.dynamicinfo;
 
-abstract public class Context {
+abstract public class DynamicContext {
 
 	/**
 	 * Returns value on application stack at runtime.

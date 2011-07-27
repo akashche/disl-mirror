@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.test.pseudo;
+package ch.usi.dag.disl.test.staticinfo;
 public class TargetClass {
 	
 	public void this_is_a_method_name() {

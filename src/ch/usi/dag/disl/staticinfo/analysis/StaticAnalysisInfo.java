@@ -10,11 +10,11 @@ import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 
 public class StaticAnalysisInfo {
 
-	private ClassNode classNode;
-	private MethodNode methodNode;
-	private Snippet snippet;
-	private List<MarkedRegion> marking;
-	private MarkedRegion markedRegion;
+	protected ClassNode classNode;
+	protected MethodNode methodNode;
+	protected Snippet snippet;
+	protected List<MarkedRegion> marking;
+	protected MarkedRegion markedRegion;
 	
 	public StaticAnalysisInfo(ClassNode classNode, MethodNode methodNode,
 			Snippet snippet, List<MarkedRegion> marking,
@@ -25,6 +25,16 @@ public class StaticAnalysisInfo {
 		this.snippet = snippet;
 		this.marking = marking;
 		this.markedRegion = markedRegion;
+	}
+	
+	// special constructor for caching support
+	public StaticAnalysisInfo(StaticAnalysisInfo sai) {
+		
+		this.classNode = sai.classNode;
+		this.methodNode = sai.methodNode;
+		this.snippet = sai.snippet;
+		this.marking = sai.marking;
+		this.markedRegion = sai.markedRegion;
 	}
 
 	public ClassNode getClassNode() {

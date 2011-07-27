@@ -2,7 +2,7 @@ package ch.usi.dag.disl.staticinfo.analysis;
 
 import ch.usi.dag.disl.util.Constants;
 
-public class ContextInfo extends AbstractStaticAnalysis {
+public class StaticContext extends AbstractStaticAnalysis {
 
 	public String getMethodName() {
 

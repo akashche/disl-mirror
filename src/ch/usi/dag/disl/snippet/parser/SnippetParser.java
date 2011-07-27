@@ -27,7 +27,7 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
-import ch.usi.dag.disl.dynamicinfo.Context;
+import ch.usi.dag.disl.dynamicinfo.DynamicContext;
 import ch.usi.dag.disl.exception.AnnotParserException;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
@@ -38,7 +38,7 @@ import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
-import ch.usi.dag.disl.util.ClassFactory;
+import ch.usi.dag.disl.util.ReflectionHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.InsnListHelper;
 import ch.usi.dag.disl.util.Parameter;
@@ -90,8 +90,6 @@ public class SnippetParser {
 			}
 		}
 
-		// TODO ! update synthetic local with param for init - yes/no/best
-		
 		// parse init code for synthetic local vars and assigns them accordingly
 		if (origInitCodeIL != null) {
 			parseInitCodeForSLV(origInitCodeIL, slVars);
@@ -268,16 +266,17 @@ public class SnippetParser {
 			// ** marker **
 			
 			// get marker class
-			Class<?> markerClass = ClassFactory.resolve(annotData.getMarker());
+			Class<?> markerClass =
+				ReflectionHelper.resolveClass(annotData.getMarker());
 			
 			// try to instantiate marker WITH Parameter as an argument
-			Marker marker = (Marker) ClassFactory.tryCreateInstance(
+			Marker marker = (Marker) ReflectionHelper.tryCreateInstance(
 						markerClass, new Parameter(annotData.getParam())); 
 			
 			// instantiate marker WITHOUT Parameter as an argument
 			// throws exception if it is not possible to create an instance
 			if(marker == null) {
-				marker = (Marker) ClassFactory.createInstance(markerClass);
+				marker = (Marker) ReflectionHelper.createInstance(markerClass);
 			}
 			
 			// ** scope **
@@ -468,12 +467,12 @@ public class SnippetParser {
 		for(Type argType : Type.getArgumentTypes(methodDesc)) {
 
 			// skip dynamic analysis class - don't check anything
-			if(argType.equals(Type.getType(Context.class))) {
+			if(argType.equals(Type.getType(DynamicContext.class))) {
 				usesDynamicAnalysis = true;
 				continue;
 			}
 			
-			Class<?> argClass = ClassFactory.resolve(argType);
+			Class<?> argClass = ReflectionHelper.resolveClass(argType);
 			
 			// static analysis should implement analysis interface
 			if(! implementsStaticAnalysis(argClass)) {
@@ -690,21 +689,11 @@ public class SnippetParser {
 		}
 		
 		// resolve static analysis class
-		Class<?> stAnClass = ClassFactory.resolve(
+		Class<?> stAnClass = ReflectionHelper.resolveClass(
 				Type.getObjectType(methodInstr.owner));
 
-		// resolve method
-		Method method = null;
-		try {
-			method = stAnClass.getMethod(methodInstr.name);
-		}
-		catch(NoSuchMethodException e) {
-			throw new StaticAnalysisException(
-					"Method " + methodInstr.name + " in class "
-					+ methodInstr.owner + " cannot be found."
-					+ " Snippet was probably compiled against a modified"
-					+ " (different) class");
-		}
+		Method method = 
+			ReflectionHelper.resolveMethod(stAnClass, methodInstr.name);
 		
 		return new StaticAnalysisMethod(methodID, method);
 	}
