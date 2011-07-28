@@ -30,7 +30,7 @@ import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dynamicinfo.DynamicContext;
-import ch.usi.dag.disl.exception.AnnotParserException;
+import ch.usi.dag.disl.exception.SnippetParserException;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
@@ -42,7 +42,7 @@ import ch.usi.dag.disl.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
 import ch.usi.dag.disl.util.Constants;
-import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Parameter;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
@@ -126,7 +126,7 @@ public class SnippetParser {
 
 	private Map<String, SyntheticLocalVar> parseSyntheticLocalVars(
 			String className, List<FieldNode> fields)
-			throws AnnotParserException {
+			throws SnippetParserException {
 
 		Map<String, SyntheticLocalVar> result =
 			new HashMap<String, SyntheticLocalVar>();
@@ -134,12 +134,12 @@ public class SnippetParser {
 		for (FieldNode field : fields) {
 
 			if (field.invisibleAnnotations == null) {
-				throw new AnnotParserException("DiSL annotation for field "
+				throw new SnippetParserException("DiSL annotation for field "
 						+ field.name + " is missing");
 			}
 
 			if (field.invisibleAnnotations.size() > 1) {
-				throw new AnnotParserException("Field " + field.name
+				throw new SnippetParserException("Field " + field.name
 						+ " may have only one anotation");
 			}
 
@@ -150,13 +150,13 @@ public class SnippetParser {
 
 			// check annotation type
 			if (!annotationType.equals(Type.getType(SyntheticLocal.class))) {
-				throw new AnnotParserException("Field " + field.name
+				throw new SnippetParserException("Field " + field.name
 						+ " has unsupported DiSL annotation");
 			}
 
 			// check if field is static
 			if ((field.access & Opcodes.ACC_STATIC) == 0) {
-				throw new AnnotParserException("Field " + field.name
+				throw new SnippetParserException("Field " + field.name
 						+ " declared as SyntheticLocal but is not static");
 			}
 			
@@ -259,7 +259,7 @@ public class SnippetParser {
 			}
 
 			// if opcode is return then we are done
-			if (InsnListHelper.isReturn(instr.getOpcode())) {
+			if (AsmHelper.isReturn(instr.getOpcode())) {
 				break;
 			}
 		}
@@ -269,17 +269,17 @@ public class SnippetParser {
 			throws DiSLException {
 
 		if (method.invisibleAnnotations == null) {
-			throw new AnnotParserException("DiSL anottation for method "
+			throw new SnippetParserException("DiSL anottation for method "
 					+ method.name + " is missing");
 		}
 
 		if (method.invisibleAnnotations.size() > 1) {
-			throw new AnnotParserException("Method "
+			throw new SnippetParserException("Method "
 					+ method.name + " can have only one DiSL anottation");
 		}
 		
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {
-			throw new AnnotParserException("DiSL method " + method.name
+			throw new SnippetParserException("DiSL method " + method.name
 					+ " should be declared as static");
 		}
 		
@@ -289,7 +289,7 @@ public class SnippetParser {
 
 		// if this is unknown annotation
 		if (!annotData.isKnown()) {
-			throw new AnnotParserException("Method " + method.name
+			throw new SnippetParserException("Method " + method.name
 					+ " has unsupported DiSL annotation");
 		}
 
@@ -548,8 +548,8 @@ public class SnippetParser {
 			throws DiSLException {
 
 		// detect empty stippets
-		if (InsnListHelper.containsOnlyReturn(snippetCode)) {
-			throw new AnnotParserException("Method " + methodName
+		if (AsmHelper.containsOnlyReturn(snippetCode)) {
+			throw new SnippetParserException("Method " + methodName
 					+ " cannot be empty");
 		}
 

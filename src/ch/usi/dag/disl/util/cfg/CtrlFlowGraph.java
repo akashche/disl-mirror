@@ -11,7 +11,7 @@ import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 
-import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.disl.util.AsmHelper;
 
 public class CtrlFlowGraph {
 
@@ -24,7 +24,7 @@ public class CtrlFlowGraph {
 		connected_nodes = new LinkedList<BasicBlock>();
 
 		// Generating basic blocks
-		List<AbstractInsnNode> seperators = InsnListHelper.getBasicBlocks(
+		List<AbstractInsnNode> seperators = AsmHelper.getBasicBlocks(
 				method, false);
 		AbstractInsnNode last = method.instructions.getLast();
 		seperators.add(last);
@@ -38,7 +38,7 @@ public class CtrlFlowGraph {
 				end = end.getPrevious();
 			}
 
-			end = InsnListHelper.skipLabels(end, false);
+			end = AsmHelper.skipLabels(end, false);
 			nodes.add(new BasicBlock(start, end));
 		}
 	}
@@ -109,7 +109,7 @@ public class CtrlFlowGraph {
 
 		for (; i < connected_nodes.size(); i++) {
 			BasicBlock current = connected_nodes.get(i);
-			AbstractInsnNode exit = InsnListHelper.skipLabels(current.getExit(),
+			AbstractInsnNode exit = AsmHelper.skipLabels(current.getExit(),
 					false);
 
 			int opcode = exit.getOpcode();

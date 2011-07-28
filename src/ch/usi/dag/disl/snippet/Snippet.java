@@ -8,7 +8,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
-import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class Snippet implements Comparable<Snippet> {
@@ -59,7 +59,7 @@ public class Snippet implements Comparable<Snippet> {
 		InsnList insnList = code.getInstructions();
 		
 		// remove returns in snippet (in asm code)
-		InsnListHelper.removeReturns(insnList);
+		AsmHelper.removeReturns(insnList);
 		
 		if(! useDynamicBypass) {
 			return;

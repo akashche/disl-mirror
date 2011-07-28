@@ -19,7 +19,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-public class InsnListHelper {
+public class AsmHelper {
 
 	// Create a label node.
 	// TODO remove it when LabelNode is fixed in ASM

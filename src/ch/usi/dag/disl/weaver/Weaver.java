@@ -31,7 +31,7 @@ import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
-import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.disl.util.AsmHelper;
 
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
@@ -102,7 +102,7 @@ public class Weaver {
 
 			if (var.getInitASMCode() != null) {
 
-				InsnList newlst = InsnListHelper
+				InsnList newlst = AsmHelper
 						.cloneList(var.getInitASMCode());
 				methodNode.instructions.insertBefore(first, newlst);
 			}
@@ -172,7 +172,7 @@ public class Weaver {
 		}
 
 		// Otherwise, create a label before start and return it.
-		LabelNode label = InsnListHelper.createLabel();
+		LabelNode label = AsmHelper.createLabel();
 
 		methodNode.instructions.insertBefore(start, label);
 		return label;
@@ -186,16 +186,16 @@ public class Weaver {
 		AbstractInsnNode instr = ends_after_athrow.get(end);
 
 		// Skip branch instructions, label nodes and line number node.
-		while (instr.getOpcode() == -1 || InsnListHelper.isBranch(instr)) {
+		while (instr.getOpcode() == -1 || AsmHelper.isBranch(instr)) {
 			instr = instr.getPrevious();
 		}
 
 		// For those instruction that might fall through, there should
 		// be a 'GOTO' instruction to separate from the exception handler.
-		if (InsnListHelper.isConditionalBranch(instr)
-				|| !InsnListHelper.isBranch(instr)) {
+		if (AsmHelper.isConditionalBranch(instr)
+				|| !AsmHelper.isBranch(instr)) {
 
-			LabelNode branch = InsnListHelper.createLabel();
+			LabelNode branch = AsmHelper.createLabel();
 			methodNode.instructions.insert(instr, branch);
 
 			JumpInsnNode jump = new JumpInsnNode(Opcodes.GOTO, branch);
@@ -206,7 +206,7 @@ public class Weaver {
 		}
 
 		// Create a label just after the 'GOTO' instruction.
-		LabelNode label = InsnListHelper.createLabel();
+		LabelNode label = AsmHelper.createLabel();
 		methodNode.instructions.insert(instr, label);
 		return label;
 	}
@@ -250,11 +250,11 @@ public class Weaver {
 				}
 
 				for (AbstractInsnNode end : region.getEnds()) {
-					if (InsnListHelper.isBranch(end)) {
+					if (AsmHelper.isBranch(end)) {
 
 						if (start == end) {
 							// Contains only one instruction
-							LabelNode labelNode = InsnListHelper.createLabel();
+							LabelNode labelNode = AsmHelper.createLabel();
 							methodNode.instructions.insertBefore(start,
 									labelNode);
 							weaving_loc_normal.put(start, labelNode);
@@ -264,7 +264,7 @@ public class Weaver {
 							AbstractInsnNode instr = end.getPrevious();
 
 							while (instr != start
-									&& (instr.getOpcode() == -1 || InsnListHelper
+									&& (instr.getOpcode() == -1 || AsmHelper
 											.isBranch(instr))) {
 								instr = instr.getPrevious();
 							}

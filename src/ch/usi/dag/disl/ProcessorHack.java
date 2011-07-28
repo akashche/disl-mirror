@@ -17,7 +17,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
-import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.weaver.Weaver;
 
 // partial and hacked implementation of processor
@@ -136,8 +136,8 @@ public class ProcessorHack {
 		int max = methodNode.maxLocals;
 
 		for (ArgData data : instrData) {
-			InsnList ilst = InsnListHelper.cloneList(data.asmCode);
-			InsnListHelper.removeReturns(ilst);
+			InsnList ilst = AsmHelper.cloneList(data.asmCode);
+			AsmHelper.removeReturns(ilst);
 			AbstractInsnNode temp = null;
 
 			for (AbstractInsnNode instr : ilst.toArray()) {

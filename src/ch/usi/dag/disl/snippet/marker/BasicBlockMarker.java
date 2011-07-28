@@ -6,7 +6,7 @@ import java.util.List;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.disl.util.AsmHelper;
 
 public class BasicBlockMarker implements Marker {
 
@@ -16,10 +16,10 @@ public class BasicBlockMarker implements Marker {
 	public List<MarkedRegion> mark(MethodNode method) {
 
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		List<AbstractInsnNode> seperators = InsnListHelper.getBasicBlocks(
+		List<AbstractInsnNode> seperators = AsmHelper.getBasicBlocks(
 				method, isPrecise);
 
-		AbstractInsnNode last = InsnListHelper.skipLabels(
+		AbstractInsnNode last = AsmHelper.skipLabels(
 				method.instructions.getLast(), false);
 
 		seperators.add(last);
@@ -33,8 +33,8 @@ public class BasicBlockMarker implements Marker {
 				end = end.getPrevious();
 			}
 
-			regions.add(new MarkedRegion(method, InsnListHelper.skipLabels(
-					start, true), InsnListHelper.skipLabels(end, false)));
+			regions.add(new MarkedRegion(method, AsmHelper.skipLabels(
+					start, true), AsmHelper.skipLabels(end, false)));
 		}
 
 		return regions;

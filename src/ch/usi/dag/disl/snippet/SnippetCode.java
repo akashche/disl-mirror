@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
-import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.disl.util.AsmHelper;
 
 public class SnippetCode {
 
@@ -65,7 +65,7 @@ public class SnippetCode {
 		// First iterate the instruction list and get all the labels
 		for (AbstractInsnNode instr : instructions.toArray()) {
 			if (instr instanceof LabelNode) {
-				LabelNode label = InsnListHelper.createLabel();
+				LabelNode label = AsmHelper.createLabel();
 				map.put((LabelNode) instr, label);
 			}
 		}
