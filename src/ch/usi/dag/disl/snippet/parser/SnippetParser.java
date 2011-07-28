@@ -525,20 +525,17 @@ public class SnippetParser {
 			Set<String> knownStAnClasses, boolean usesDynamicAnalysis)
 			throws DiSLException {
 
-		// clone the instrucition list
-		InsnList asmCode = InsnListHelper.cloneList(snippetCode);
-
 		// detect empty stippets
-		if (InsnListHelper.containsOnlyReturn(asmCode)) {
+		if (InsnListHelper.containsOnlyReturn(snippetCode)) {
 			return null;
 		}
 
-		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
+		HashSet<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
 
-		Map<String, Method> staticAnalyses = new HashMap<String, Method>();
+		HashMap<String, Method> staticAnalyses = new HashMap<String, Method>();
 
 		// create list of synthetic local variables
-		for (AbstractInsnNode instr : asmCode.toArray()) {
+		for (AbstractInsnNode instr : snippetCode.toArray()) {
 
 			// *** Parse synthetic local variables ***
 
@@ -561,8 +558,8 @@ public class SnippetParser {
 		// TODO ! static analysis checking
 		// arguments (local variables 1, 2, ...) may be used only in method calls
 
-		return new SnippetCode(asmCode, tryCatchBlocks, slvList,
-				staticAnalyses, usesDynamicAnalysis);
+		return new SnippetCode(snippetCode, new LinkedList<TryCatchBlockNode>(
+				tryCatchBlocks), slvList, staticAnalyses, usesDynamicAnalysis);
 	}
 
 	private String insnUsesSLV(AbstractInsnNode instr, String className) {

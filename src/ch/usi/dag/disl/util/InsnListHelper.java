@@ -21,6 +21,15 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 public class InsnListHelper {
 
+	// Create a label node.
+	// TODO remove it when fixed
+	public static LabelNode createLabel() {
+		Label label = new Label();
+		LabelNode labelNode = new LabelNode(label);
+		label.info = labelNode;
+		return labelNode;
+	}
+
 	public static boolean isReturn(int opcode) {
 		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
 	}
