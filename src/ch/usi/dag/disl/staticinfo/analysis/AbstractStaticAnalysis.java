@@ -10,22 +10,22 @@ import ch.usi.dag.disl.staticinfo.analysis.cache.StAnMethodCache;
 
 abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 
-	protected StaticAnalysisInfo staticAnalysisInfo;
+	protected StaticAnalysisData staticAnalysisInfo;
 	
 	private Map<String, StAnMethodCache> retValCache = 
 		new HashMap<String, StAnMethodCache>();
 	
-	protected <T extends StaticAnalysisInfo> void
+	protected <T extends StaticAnalysisData> void
 			registerCache(String methodName, Class<T> keyCacheClass) {
 
 		retValCache.put(methodName, new StAnMethodCache(keyCacheClass));
 	}
 	
 	@Override
-	public Object computeStaticData(Method usingMethod, StaticAnalysisInfo sai)
+	public Object computeStaticData(Method usingMethod, StaticAnalysisData sad)
 			throws DiSLException {
 
-		staticAnalysisInfo = sai;
+		staticAnalysisInfo = sad;
 
 		// NOTE: default method cache
 		// default method cache is not needed because for each marking,
@@ -37,7 +37,7 @@ abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 		// resolve cached data
 		if(methodCache != null) {
 
-			Object result = methodCache.getCachedResult(sai);
+			Object result = methodCache.getCachedResult(sad);
 			
 			// return cache hit
 			if(result != null) {
@@ -53,7 +53,7 @@ abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 
 			if(methodCache != null) {
 				// ... cache result
-				methodCache.cacheResult(sai, result);
+				methodCache.cacheResult(sad, result);
 			}
 			
 			// ... return result

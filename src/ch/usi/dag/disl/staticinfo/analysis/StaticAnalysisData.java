@@ -8,7 +8,7 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 
-public class StaticAnalysisInfo {
+public class StaticAnalysisData {
 
 	protected ClassNode classNode;
 	protected MethodNode methodNode;
@@ -16,7 +16,7 @@ public class StaticAnalysisInfo {
 	protected List<MarkedRegion> marking;
 	protected MarkedRegion markedRegion;
 	
-	public StaticAnalysisInfo(ClassNode classNode, MethodNode methodNode,
+	public StaticAnalysisData(ClassNode classNode, MethodNode methodNode,
 			Snippet snippet, List<MarkedRegion> marking,
 			MarkedRegion markedRegion) {
 		super();
@@ -28,13 +28,13 @@ public class StaticAnalysisInfo {
 	}
 	
 	// special constructor for caching support
-	public StaticAnalysisInfo(StaticAnalysisInfo sai) {
+	public StaticAnalysisData(StaticAnalysisData sad) {
 		
-		this.classNode = sai.classNode;
-		this.methodNode = sai.methodNode;
-		this.snippet = sai.snippet;
-		this.marking = sai.marking;
-		this.markedRegion = sai.markedRegion;
+		this.classNode = sad.classNode;
+		this.methodNode = sad.methodNode;
+		this.snippet = sad.snippet;
+		this.marking = sad.marking;
+		this.markedRegion = sad.markedRegion;
 	}
 
 	public ClassNode getClassNode() {

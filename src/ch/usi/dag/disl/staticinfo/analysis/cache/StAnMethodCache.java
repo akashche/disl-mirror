@@ -4,37 +4,37 @@ import java.util.HashMap;
 import java.util.Map;
 
 import ch.usi.dag.disl.exception.DiSLException;
-import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisInfo;
+import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisData;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
 public class StAnMethodCache {
 
-	private Class<? extends StaticAnalysisInfo> cacheClass;
+	private Class<? extends StaticAnalysisData> cacheClass;
 
-	// this could be Map<StaticAnalysisInfo, Object> but
+	// this could be Map<StaticAnalysisData, Object> but
 	// we don't have to cast it for usage if we put there object
 	// - valid class is checked already in constructor
 	private Map<Object, Object> cachedData = new HashMap<Object, Object>();
 
-	public StAnMethodCache(Class<? extends StaticAnalysisInfo> cacheClass) {
+	public StAnMethodCache(Class<? extends StaticAnalysisData> cacheClass) {
 		this.cacheClass = cacheClass;
 	}
 
-	private Object createCacheObject(StaticAnalysisInfo sai)
+	private Object createCacheObject(StaticAnalysisData sad)
 			throws DiSLException {
 
 		// create cache object using "copy" constructor
-		return ReflectionHelper.createInstance(cacheClass, sai);
+		return ReflectionHelper.createInstance(cacheClass, sad);
 	}
 
-	public Object getCachedResult(StaticAnalysisInfo sai) throws DiSLException {
+	public Object getCachedResult(StaticAnalysisData sad) throws DiSLException {
 		
-		return cachedData.get(createCacheObject(sai));
+		return cachedData.get(createCacheObject(sad));
 	}
 
-	public void cacheResult(StaticAnalysisInfo sai, Object result)
+	public void cacheResult(StaticAnalysisData sad, Object result)
 			throws DiSLException {
 
-		cachedData.put(createCacheObject(sai), result);
+		cachedData.put(createCacheObject(sad), result);
 	}
 }

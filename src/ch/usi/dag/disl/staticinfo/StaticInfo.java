@@ -12,7 +12,7 @@ import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
-import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisInfo;
+import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisData;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
@@ -133,11 +133,6 @@ public class StaticInfo {
 				
 				for(String stAnMehodName : snippet.getStaticAnalyses().keySet()) {
 
-					// create static analysis info data
-					StaticAnalysisInfo saInfo = new StaticAnalysisInfo(
-							classNode, methodNode, snippet,
-							snippetMarkings.get(snippet), markedRegion);
-
 					// get static analysis method
 					Method stAnMethod = snippet.getStaticAnalyses().get(
 							stAnMehodName);
@@ -158,9 +153,14 @@ public class StaticInfo {
 					// recast analysis object to interface
 					StaticAnalysis saIntr = (StaticAnalysis) saInst;
 
+					// create static analysis info data
+					StaticAnalysisData saData = new StaticAnalysisData(
+							classNode, methodNode, snippet,
+							snippetMarkings.get(snippet), markedRegion);
+					
 					// compute static data using analysis
 					Object result = 
-						saIntr.computeStaticData(stAnMethod, saInfo);
+						saIntr.computeStaticData(stAnMethod, saData);
 
 					// store the result
 					setSI(snippet, markedRegion, stAnMehodName, result);

@@ -12,6 +12,6 @@ public interface StaticAnalysis {
 	// a) static analysis methods does not have parameters
 	// b) return value can be only basic type (+String)
 	
-	public Object computeStaticData(Method usingMethod, StaticAnalysisInfo sai)
+	public Object computeStaticData(Method usingMethod, StaticAnalysisData sad)
 			throws DiSLException;
 }
