@@ -11,12 +11,12 @@ public class SEAnalysis extends AbstractStaticAnalysis{
 
 	public int getBytecodeNumber() {
 
-		return staticAnalysisInfo.getMarkedRegion().getStart().getOpcode();
+		return staticAnalysisData.getMarkedRegion().getStart().getOpcode();
 	}
 
 	public String getID() {
 
-		AbstractInsnNode instruction = staticAnalysisInfo.getMarkedRegion()
+		AbstractInsnNode instruction = staticAnalysisData.getMarkedRegion()
 				.getStart();
 
 		if (instruction instanceof IincInsnNode) {
@@ -51,7 +51,7 @@ public class SEAnalysis extends AbstractStaticAnalysis{
 
 	public int getIConst() {
 
-		AbstractInsnNode instruction = staticAnalysisInfo.getMarkedRegion()
+		AbstractInsnNode instruction = staticAnalysisData.getMarkedRegion()
 				.getStart();
 		int opcode = instruction.getOpcode();
 

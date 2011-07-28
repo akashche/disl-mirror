@@ -6,18 +6,18 @@ public class StaticContext extends AbstractStaticAnalysis {
 
 	public String getMethodName() {
 
-		return staticAnalysisInfo.getMethodNode().name;
+		return staticAnalysisData.getMethodNode().name;
 	}
 
 	public String getClassName() {
 
-		return staticAnalysisInfo.getClassNode().name;
+		return staticAnalysisData.getClassNode().name;
 	}
 
 	public String getFullName() {
 
-		return staticAnalysisInfo.getClassNode().name
+		return staticAnalysisData.getClassNode().name
 				+ Constants.STATIC_ANALYSIS_METHOD_DELIM
-				+ staticAnalysisInfo.getMethodNode().name;
+				+ staticAnalysisData.getMethodNode().name;
 	}
 }

@@ -6,38 +6,38 @@ import java.util.Map;
 
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
-import ch.usi.dag.disl.staticinfo.analysis.cache.StAnMethodCache;
+import ch.usi.dag.disl.staticinfo.analysis.cache.StaticAnalysisCache;
 
 abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 
-	protected StaticAnalysisData staticAnalysisInfo;
+	protected StaticAnalysisData staticAnalysisData;
 	
-	private Map<String, StAnMethodCache> retValCache = 
-		new HashMap<String, StAnMethodCache>();
+	private Map<String, StaticAnalysisCache> retValCache = 
+		new HashMap<String, StaticAnalysisCache>();
 	
 	protected <T extends StaticAnalysisData> void
 			registerCache(String methodName, Class<T> keyCacheClass) {
 
-		retValCache.put(methodName, new StAnMethodCache(keyCacheClass));
+		retValCache.put(methodName, new StaticAnalysisCache(keyCacheClass));
 	}
 	
 	@Override
 	public Object computeStaticData(Method usingMethod, StaticAnalysisData sad)
 			throws DiSLException {
 
-		staticAnalysisInfo = sad;
+		staticAnalysisData = sad;
 
-		// NOTE: default method cache
-		// default method cache is not needed because for each marking,
+		// NOTE: default cache
+		// some default cache is not needed because for each marked region,
 		// the computation is called only once
 		
 		// resolve specific method cache
-		StAnMethodCache methodCache = retValCache.get(usingMethod.getName());
+		StaticAnalysisCache cache = retValCache.get(usingMethod.getName());
 		
 		// resolve cached data
-		if(methodCache != null) {
+		if(cache != null) {
 
-			Object result = methodCache.getCachedResult(sad);
+			Object result = cache.getCachedResult(sad);
 			
 			// return cache hit
 			if(result != null) {
@@ -51,9 +51,9 @@ abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 			// ... invoke static analysis method
 			Object result = usingMethod.invoke(this);
 
-			if(methodCache != null) {
+			if(cache != null) {
 				// ... cache result
-				methodCache.cacheResult(sad, result);
+				cache.cacheResult(sad, result);
 			}
 			
 			// ... return result

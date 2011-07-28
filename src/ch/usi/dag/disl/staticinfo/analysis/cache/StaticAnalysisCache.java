@@ -7,7 +7,7 @@ import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisData;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
-public class StAnMethodCache {
+public class StaticAnalysisCache {
 
 	private Class<? extends StaticAnalysisData> cacheClass;
 
@@ -16,7 +16,7 @@ public class StAnMethodCache {
 	// - valid class is checked already in constructor
 	private Map<Object, Object> cachedData = new HashMap<Object, Object>();
 
-	public StAnMethodCache(Class<? extends StaticAnalysisData> cacheClass) {
+	public StaticAnalysisCache(Class<? extends StaticAnalysisData> cacheClass) {
 		this.cacheClass = cacheClass;
 	}
 

@@ -4,6 +4,6 @@ public class BytecodeAnalysis extends AbstractStaticAnalysis {
 
 	public int getBytecodeNumber() {
 		
-		return staticAnalysisInfo.getMarkedRegion().getStart().getOpcode();
+		return staticAnalysisData.getMarkedRegion().getStart().getOpcode();
 	}
 }
