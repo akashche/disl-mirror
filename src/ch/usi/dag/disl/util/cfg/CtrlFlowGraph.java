@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.util;
+package ch.usi.dag.disl.util.cfg;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -11,20 +11,9 @@ import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 
+import ch.usi.dag.disl.util.InsnListHelper;
+
 public class CtrlFlowGraph {
-
-	public static class BasicBlock {
-		public AbstractInsnNode entrance;
-		public AbstractInsnNode exit;
-		
-		public List<BasicBlock> successors;
-
-		public BasicBlock(AbstractInsnNode entrance, AbstractInsnNode exit) {
-			this.entrance = entrance;
-			this.exit = exit;
-			this.successors = new LinkedList<BasicBlock>();
-		}
-	}
 
 	private List<BasicBlock> nodes;
 	private List<BasicBlock> connected_nodes;
@@ -59,7 +48,7 @@ public class CtrlFlowGraph {
 	public BasicBlock getBB(AbstractInsnNode entrance) {
 
 		for (int i = 0; i < nodes.size(); i++) {
-			if (nodes.get(i).entrance.equals(entrance)) {
+			if (nodes.get(i).getEntrance().equals(entrance)) {
 				return nodes.get(i);
 			}
 		}
@@ -67,8 +56,8 @@ public class CtrlFlowGraph {
 		return null;
 	}
 
-	// Visit a successor. 
-	// If the basic block, which starts with the input 'node', 
+	// Visit a successor.
+	// If the basic block, which starts with the input 'node',
 	// is not found, return -1;
 	// If the basic block has been visited, then returns 0;
 	// Otherwise return 1.
@@ -83,9 +72,10 @@ public class CtrlFlowGraph {
 		if (connected_nodes.contains(bb)) {
 			return 0;
 		}
-		
-		if (current != null){
-			current.successors.add(bb);
+
+		if (current != null) {
+			current.getSuccessors().add(bb);
+			bb.getPredecessors().add(current);
 		}
 
 		connected_nodes.add(bb);
@@ -94,8 +84,8 @@ public class CtrlFlowGraph {
 
 	// Try to visit a successor. If it is visited, then regards
 	// it as an exit.
-	public void tryVisit(BasicBlock current, AbstractInsnNode node, AbstractInsnNode exit,
-			List<AbstractInsnNode> exits) {
+	public void tryVisit(BasicBlock current, AbstractInsnNode node,
+			AbstractInsnNode exit, List<AbstractInsnNode> exits) {
 		if (tryVisit(current, node) == 0) {
 			exits.add(exit);
 		}
@@ -119,7 +109,8 @@ public class CtrlFlowGraph {
 
 		for (; i < connected_nodes.size(); i++) {
 			BasicBlock current = connected_nodes.get(i);
-			AbstractInsnNode exit = InsnListHelper.skipLabels(current.exit, false);
+			AbstractInsnNode exit = InsnListHelper.skipLabels(current.getExit(),
+					false);
 
 			int opcode = exit.getOpcode();
 
@@ -164,11 +155,18 @@ public class CtrlFlowGraph {
 			}
 
 			default:
-				tryVisit(current, exit.getNext(), exit, exits);
+				if (!(opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)) {
+					tryVisit(current, exit.getNext(), exit, exits);
+				}
+
 				break;
 			}
 		}
-		
+
 		return exits;
+	}
+
+	public List<BasicBlock> getNodes() {
+		return nodes;
 	}
 }

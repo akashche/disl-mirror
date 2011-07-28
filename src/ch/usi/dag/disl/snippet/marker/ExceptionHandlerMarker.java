@@ -7,10 +7,10 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import ch.usi.dag.disl.util.CtrlFlowGraph;
 import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
-public class CatchClauseMarker implements Marker {
+public class ExceptionHandlerMarker implements Marker {
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
@@ -22,6 +22,7 @@ public class CatchClauseMarker implements Marker {
 		cfg.visit(method.instructions.getFirst());
 
 		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
+			
 			List<AbstractInsnNode> exits = cfg.visit(tcb.handler);
 			regions.add(new MarkedRegion(method, InsnListHelper.skipLabels(
 					tcb.handler, true), exits));
