@@ -17,7 +17,7 @@ public class DiSLClass {
 		// this will be called before any processor
 
 		flag = "OMG this is for postCondition";
-		System.out.println(new StaticContext().getMethodName());
+		System.out.println(new StaticContext().thisMethodName());
 	}
 
 	@ProcessorHack.Processor(type = Object.class)
@@ -68,7 +68,7 @@ public class DiSLClass {
 
 	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.*")
 	public static void preCondition(StaticContext ci) {
-		System.out.println("Method " + ci.getMethodName() + ":");
+		System.out.println("Method " + ci.thisMethodName() + ":");
 		System.out.println(flag);
 	}
 	
@@ -76,6 +76,6 @@ public class DiSLClass {
 	public static void postCondition(StaticContext ci) {
 		System.out.println("Again");
 		System.out.println(flag);
-		System.out.println("This is the end of " + ci.getMethodName());
+		System.out.println("This is the end of " + ci.thisMethodName());
 	}
 }

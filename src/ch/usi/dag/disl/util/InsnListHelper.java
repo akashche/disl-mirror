@@ -22,7 +22,7 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 public class InsnListHelper {
 
 	// Create a label node.
-	// TODO remove it when fixed
+	// TODO remove it when LabelNode is fixed in ASM
 	public static LabelNode createLabel() {
 		Label label = new Label();
 		LabelNode labelNode = new LabelNode(label);
@@ -69,16 +69,9 @@ public class InsnListHelper {
 		}
 	}
 
+	// TODO ! remove
 	// Make a clone of an instruction list
 	public static InsnList cloneList(InsnList src) {
-
-		return cloneList(src, src.getFirst(), src.getLast());
-	}
-
-	// NOTE: You should know what you are doing, if you are copying jumps, try,
-	// etc. the code doesn't need to be valid
-	public static InsnList cloneList(InsnList src, AbstractInsnNode from,
-			AbstractInsnNode to) {
 
 		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
 
@@ -93,8 +86,8 @@ public class InsnListHelper {
 		}
 
 		// then copy instructions using clone
-		AbstractInsnNode instr = from;
-		while (instr != to.getNext()) {
+		AbstractInsnNode instr = src.getFirst();
+		while (instr != src.getLast().getNext()) {
 
 			// special case where we put a new label instead of old one
 			if (instr instanceof LabelNode) {

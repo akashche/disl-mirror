@@ -9,11 +9,11 @@ public class DiSLClass {
 	@Before(marker = BodyMarker.class, scope = "TargetClass.this_is_a_method_name", order = 0)
 	public static void precondition(StaticContext ci) {
 		
-		String mid = ci.getMethodName();
+		String mid = ci.thisMethodName();
 		System.out.println(mid);
 		
 		// caching test
-		String mid2 = ci.getMethodName();
+		String mid2 = ci.thisMethodName();
 		System.out.println(mid2);
 	}
 	
@@ -21,7 +21,7 @@ public class DiSLClass {
 	public static void secondPrecondition(StaticContext ci) {
 		
 		// caching test
-		String mid3 = ci.getMethodName();
+		String mid3 = ci.thisMethodName();
 		System.out.println(mid3);
 	}
 }

@@ -18,6 +18,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -40,10 +41,10 @@ import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
-import ch.usi.dag.disl.util.ReflectionHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.InsnListHelper;
 import ch.usi.dag.disl.util.Parameter;
+import ch.usi.dag.disl.util.ReflectionHelper;
 
 /**
  * The parser takes annotated java file as input and creates Snippet classes
@@ -119,7 +120,7 @@ public class SnippetParser {
 				continue;
 			}
 
-			snippets.addAll(parseSnippets(classNode.name, method));
+			snippets.add(parseSnippets(classNode.name, method));
 		}
 	}
 
@@ -199,6 +200,28 @@ public class SnippetParser {
 		return result;
 	}
 
+	private InsnList simpleInsnListClone(InsnList src, AbstractInsnNode from,
+			AbstractInsnNode to) {
+
+		// empty map - we should not encounter labels here
+		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
+		
+		InsnList dst = new InsnList();
+
+		// copy instructions using clone
+		AbstractInsnNode instr = from;
+		while (instr != to.getNext()) {
+
+			dst.add(instr.clone(map));
+
+			instr = instr.getNext();
+		}
+
+		return dst;
+	}
+	
+	// synthetic local var initialization can contain only basic constants
+	// or single method calls
 	private void parseInitCodeForSLV(InsnList origInitCodeIL,
 			Map<String, SyntheticLocalVar> slVars) {
 
@@ -225,8 +248,8 @@ public class SnippetParser {
 				}
 
 				// clone part of the asm code
-				InsnList initASMCode = InsnListHelper.cloneList(origInitCodeIL,
-						firstInitInsn, instr);
+				InsnList initASMCode = 
+					simpleInsnListClone(origInitCodeIL, firstInitInsn, instr);
 
 				// store the code
 				slv.setInitASMCode(initASMCode);
@@ -242,68 +265,67 @@ public class SnippetParser {
 		}
 	}
 
-	private List<Snippet> parseSnippets(String className, MethodNode method)
+	private Snippet parseSnippets(String className, MethodNode method)
 			throws DiSLException {
-
-		List<Snippet> result = new LinkedList<Snippet>();
 
 		if (method.invisibleAnnotations == null) {
 			throw new AnnotParserException("DiSL anottation for method "
 					+ method.name + " is missing");
 		}
 
+		if (method.invisibleAnnotations.size() > 1) {
+			throw new AnnotParserException("Method "
+					+ method.name + " can have only one DiSL anottation");
+		}
+		
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {
 			throw new AnnotParserException("DiSL method " + method.name
 					+ " should be declared as static");
 		}
+		
+		AnnotationNode annotation = method.invisibleAnnotations.get(0);
+		
+		MethodAnnotationData annotData = parseMethodAnnotation(annotation);
 
-		// more annotations on one snippet
-		// supported but we will have multiple snippets ;)
-		for (AnnotationNode annotation : method.invisibleAnnotations) {
-
-			MethodAnnotationData annotData = parseMethodAnnotation(annotation);
-
-			// if this is unknown annotation
-			if (!annotData.isKnown()) {
-				throw new AnnotParserException("Method " + method.name
-						+ " has unsupported DiSL annotation");
-			}
-
-			// ** marker **
-			
-			// get marker class
-			Class<?> markerClass =
-				ReflectionHelper.resolveClass(annotData.getMarker());
-			
-			// try to instantiate marker WITH Parameter as an argument
-			Marker marker = (Marker) ReflectionHelper.tryCreateInstance(
-						markerClass, new Parameter(annotData.getParam())); 
-			
-			// instantiate marker WITHOUT Parameter as an argument
-			// throws exception if it is not possible to create an instance
-			if(marker == null) {
-				marker = (Marker) ReflectionHelper.createInstance(markerClass);
-			}
-			
-			// ** scope **
-			Scope scope = new ScopeImpl(annotData.getScope());
-
-			// ** parse used static analysis **
-			Analysis analysis = parseAnalysis(method.desc);
-			
-			// ** process code **
-			SnippetCode scd = processSnippetCode(className,
-					method.instructions,
-					method.tryCatchBlocks,
-					analysis.getStaticAnalyses(),
-					analysis.usesDynamicAnalysis());
-
-			// whole snippet
-			result.add(new Snippet(annotData.getType(), marker, scope,
-					annotData.getOrder(), scd));
+		// if this is unknown annotation
+		if (!annotData.isKnown()) {
+			throw new AnnotParserException("Method " + method.name
+					+ " has unsupported DiSL annotation");
 		}
 
-		return result;
+		// ** marker **
+		
+		// get marker class
+		Class<?> markerClass =
+			ReflectionHelper.resolveClass(annotData.getMarker());
+		
+		// try to instantiate marker WITH Parameter as an argument
+		Marker marker = (Marker) ReflectionHelper.tryCreateInstance(
+					markerClass, new Parameter(annotData.getParam())); 
+		
+		// instantiate marker WITHOUT Parameter as an argument
+		// throws exception if it is not possible to create an instance
+		if(marker == null) {
+			marker = (Marker) ReflectionHelper.createInstance(markerClass);
+		}
+		
+		// ** scope **
+		Scope scope = new ScopeImpl(annotData.getScope());
+
+		// ** parse used static analysis **
+		Analysis analysis = parseAnalysis(method.desc);
+		
+		// ** process code **
+		SnippetCode scd = processSnippetCode(className,
+				method.name,
+				method.instructions,
+				method.tryCatchBlocks,
+				analysis.getStaticAnalyses(),
+				analysis.usesDynamicAnalysis());
+
+		// whole snippet
+		return new Snippet(annotData.getType(), marker, scope,
+				annotData.getOrder(), scd);
 	}
 
 	// data holder for parseMethodAnnotation methods
@@ -520,19 +542,20 @@ public class SnippetParser {
 		return false;
 	}
 	
-	private SnippetCode processSnippetCode(String className,
+	private SnippetCode processSnippetCode(String className, String methodName,
 			InsnList snippetCode, List<TryCatchBlockNode> tryCatchBlocks,
 			Set<String> knownStAnClasses, boolean usesDynamicAnalysis)
 			throws DiSLException {
 
 		// detect empty stippets
 		if (InsnListHelper.containsOnlyReturn(snippetCode)) {
-			return null;
+			throw new AnnotParserException("Method " + methodName
+					+ " cannot be empty");
 		}
 
-		HashSet<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
+		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
 
-		HashMap<String, Method> staticAnalyses = new HashMap<String, Method>();
+		Map<String, Method> staticAnalyses = new HashMap<String, Method>();
 
 		// create list of synthetic local variables
 		for (AbstractInsnNode instr : snippetCode.toArray()) {
@@ -558,8 +581,8 @@ public class SnippetParser {
 		// TODO ! static analysis checking
 		// arguments (local variables 1, 2, ...) may be used only in method calls
 
-		return new SnippetCode(snippetCode, new LinkedList<TryCatchBlockNode>(
-				tryCatchBlocks), slvList, staticAnalyses, usesDynamicAnalysis);
+		return new SnippetCode(snippetCode, tryCatchBlocks, slvList,
+				staticAnalyses, usesDynamicAnalysis);
 	}
 
 	private String insnUsesSLV(AbstractInsnNode instr, String className) {

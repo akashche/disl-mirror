@@ -50,6 +50,10 @@ public class Snippet implements Comparable<Snippet> {
 		return code;
 	}
 	
+	public int compareTo(Snippet o) {
+		return order - o.getOrder();
+	}
+	
 	public void prepare(boolean useDynamicBypass) {
 		
 		InsnList insnList = code.getInstructions();
@@ -99,9 +103,5 @@ public class Snippet implements Comparable<Snippet> {
 		// TODO add try catch block
 		
 		// TODO add try catch block code
-	}
-	
-	public int compareTo(Snippet o) {
-		return order - o.getOrder();
 	}
 }

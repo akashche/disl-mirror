@@ -2,6 +2,7 @@ package ch.usi.dag.disl.snippet;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +18,6 @@ import ch.usi.dag.disl.util.InsnListHelper;
 
 public class SnippetCode {
 
-	// We are using the implementation of collection class because of
-	// cloning support.
 	private InsnList instructions;
 	private List<TryCatchBlockNode> tryCatchBlocks;
 	private Set<SyntheticLocalVar> referencedSLV;
@@ -57,12 +56,11 @@ public class SnippetCode {
 		return usesDynamicAnalysis;
 	}
 
-	// TODO implement clone
 	public SnippetCode clone() {
 
 		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
 
-		InsnList dst = new InsnList();
+		InsnList newInstructions = new InsnList();
 
 		// First iterate the instruction list and get all the labels
 		for (AbstractInsnNode instr : instructions.toArray()) {
@@ -80,27 +78,30 @@ public class SnippetCode {
 			// special case where we put a new label instead of old one
 			if (instr instanceof LabelNode) {
 
-				dst.add(map.get(instr));
+				newInstructions.add(map.get(instr));
 
 				instr = instr.getNext();
 
 				continue;
 			}
 
-			dst.add(instr.clone(map));
+			newInstructions.add(instr.clone(map));
 
 			instr = instr.getNext();
 		}
 
-		List<TryCatchBlockNode> new_tryCatchBlocks = new LinkedList<TryCatchBlockNode>();
+		List<TryCatchBlockNode> newTryCatchBlocks = 
+			new LinkedList<TryCatchBlockNode>();
 
 		for (TryCatchBlockNode tcb : tryCatchBlocks) {
 
-			new_tryCatchBlocks.add(new TryCatchBlockNode(map.get(tcb.start),
+			newTryCatchBlocks.add(new TryCatchBlockNode(map.get(tcb.start),
 					map.get(tcb.end), map.get(tcb.handler), tcb.type));
 		}
 
-		return new SnippetCode(dst, new_tryCatchBlocks, referencedSLV,
-				staticAnalyses, usesDynamicAnalysis);
+		return new SnippetCode(newInstructions, newTryCatchBlocks,
+				new HashSet<SyntheticLocalVar>(referencedSLV),
+				new HashMap<String, Method>(staticAnalyses),
+				usesDynamicAnalysis);
 	}
 }

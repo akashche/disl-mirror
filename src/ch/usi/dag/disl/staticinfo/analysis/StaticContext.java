@@ -13,20 +13,26 @@ public class StaticContext extends AbstractStaticAnalysis {
 		registerCache("getFullMethodName", MethodCache.class);
 	}
 	
-	public String getClassName() {
+	public String thisClassName() {
 
 		return staticAnalysisData.getClassNode().name;
 	}
 	
-	public String getMethodName() {
+	public String thisMethodName() {
 
 		return staticAnalysisData.getMethodNode().name;
 	}
 
-	public String getFullMethodName() {
+	public String thisMethodFullName() {
 
 		return staticAnalysisData.getClassNode().name
 				+ Constants.STATIC_ANALYSIS_METHOD_DELIM
 				+ staticAnalysisData.getMethodNode().name;
+	}
+	
+	public String thisMethodID() {
+
+		// TODO implement
+		return null;
 	}
 }
