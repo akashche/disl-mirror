@@ -1,15 +1,15 @@
 package ch.usi.dag.disl.snippet;
 
-import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.Set;
-
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
-import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.util.InsnListHelper;
+import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class Snippet implements Comparable<Snippet> {
 
@@ -17,28 +17,17 @@ public class Snippet implements Comparable<Snippet> {
 	protected Marker marker;
 	protected Scope scope;
 	protected int order;
-	protected InsnList asmCode;
-	protected Set<SyntheticLocalVar> syntheticLocalVars;
-	protected Map<String, Method> staticAnalyses;
-	protected boolean usesDynamicAnalysis;
+	protected SnippetCode code;
 	
-	public Snippet(Class<?> annotationClass,
-			Marker marker,
-			Scope scope,
-			int order, InsnList asmCode,
-			Set<SyntheticLocalVar> syntheticLocalVars,
-			Map<String, Method> staticAnalyses,
-			boolean usesDynamicAnalysis) {
+	public Snippet(Class<?> annotationClass, Marker marker, Scope scope,
+			int order, SnippetCode code) {
 		super();
 
 		this.annotationClass = annotationClass;
 		this.marker = marker;
 		this.scope = scope;
 		this.order = order;
-		this.asmCode = asmCode;
-		this.syntheticLocalVars = syntheticLocalVars;
-		this.staticAnalyses = staticAnalyses;
-		this.usesDynamicAnalysis = usesDynamicAnalysis;
+		this.code = code;
 	}
 
 	public Class<?> getAnnotationClass() {
@@ -57,31 +46,59 @@ public class Snippet implements Comparable<Snippet> {
 		return order;
 	}
 
-	public InsnList getAsmCode() {
-		return asmCode;
+	public SnippetCode getCode() {
+		return code;
 	}
 	
-	public Set<SyntheticLocalVar> getSyntheticLocalVars() {
-		return syntheticLocalVars;
-	}
-
-	public Map<String, Method> getStaticAnalyses() {
-		return staticAnalyses;
-	}
-	
-	public boolean usesDynamicAnalysis() {
-		return usesDynamicAnalysis;
-	}
-
 	public void prepare(boolean useDynamicBypass) {
 		
+		InsnList insnList = code.getInstructions();
+		
 		// remove returns in snippet (in asm code)
-		InsnListHelper.removeReturns(asmCode);
+		InsnListHelper.removeReturns(insnList);
 		
 		if(! useDynamicBypass) {
 			return;
 		}
-		// TODO ! dynamic bypass
+
+		// *** dynamic bypass ***
+		
+		// inserts
+		// DynamicBypass.activate();
+		// try {
+		//     ... original code
+		// } finally {
+		//     DynamicBypass.deactivate();
+		// }
+		
+		// create method nodes
+		Type typeDB = Type.getType(DynamicBypass.class);
+		MethodInsnNode mtdActivate = new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+				typeDB.getInternalName(), "activate", "()V");
+		MethodInsnNode mtdDeactivate = new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+				typeDB.getInternalName(), "deactivate", "()V");
+		
+		// add try label at the beginning
+		// TODO fix
+		LabelNode tryBegin = new LabelNode();
+		insnList.insert(tryBegin);
+		
+		// add invocation of activate at the beginning
+		insnList.insert(mtdActivate);
+		
+		// add try label at the end
+		// TODO fix
+		LabelNode tryEnd = new LabelNode();
+		insnList.add(tryEnd);
+		
+		// add invocation of deactivate at the end - normal flow
+		insnList.add(mtdDeactivate);
+		
+		// TODO create try catch block
+		
+		// TODO add try catch block
+		
+		// TODO add try catch block code
 	}
 	
 	public int compareTo(Snippet o) {

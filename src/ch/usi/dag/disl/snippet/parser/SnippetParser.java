@@ -20,6 +20,7 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.ProcessorHack;
 import ch.usi.dag.disl.annotation.After;
@@ -33,6 +34,7 @@ import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.snippet.Snippet;
+import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
 import ch.usi.dag.disl.snippet.scope.ScopeImpl;
@@ -290,14 +292,15 @@ public class SnippetParser {
 			Analysis analysis = parseAnalysis(method.desc);
 			
 			// ** process code **
-			SnippetCodeData scd = processSnippetCode(className,
-					method.instructions, analysis.getStaticAnalyses());
+			SnippetCode scd = processSnippetCode(className,
+					method.instructions,
+					method.tryCatchBlocks,
+					analysis.getStaticAnalyses(),
+					analysis.usesDynamicAnalysis());
 
 			// whole snippet
 			result.add(new Snippet(annotData.getType(), marker, scope,
-					annotData.getOrder(), scd.getAsmCode(), scd
-							.getReferencedSLV(), scd.getStaticAnalyses(),
-							analysis.usesDynamicAnalysis()));
+					annotData.getOrder(), scd));
 		}
 
 		return result;
@@ -517,36 +520,9 @@ public class SnippetParser {
 		return false;
 	}
 	
-	private class SnippetCodeData {
-
-		private InsnList asmCode;
-		private Set<SyntheticLocalVar> referencedSLV;
-		private Map<String, Method> staticAnalyses;
-
-		public SnippetCodeData(InsnList asmCode,
-				Set<SyntheticLocalVar> referencedSLV,
-				Map<String, Method> staticAnalyses) {
-			super();
-			this.asmCode = asmCode;
-			this.referencedSLV = referencedSLV;
-			this.staticAnalyses = staticAnalyses;
-		}
-
-		public InsnList getAsmCode() {
-			return asmCode;
-		}
-
-		public Set<SyntheticLocalVar> getReferencedSLV() {
-			return referencedSLV;
-		}
-
-		public Map<String, Method> getStaticAnalyses() {
-			return staticAnalyses;
-		}
-	}
-
-	private SnippetCodeData processSnippetCode(String className,
-			InsnList snippetCode, Set<String> knownStAnClasses)
+	private SnippetCode processSnippetCode(String className,
+			InsnList snippetCode, List<TryCatchBlockNode> tryCatchBlocks,
+			Set<String> knownStAnClasses, boolean usesDynamicAnalysis)
 			throws DiSLException {
 
 		// clone the instrucition list
@@ -554,7 +530,7 @@ public class SnippetParser {
 
 		// detect empty stippets
 		if (InsnListHelper.containsOnlyReturn(asmCode)) {
-			return new SnippetCodeData(null, null, null);
+			return null;
 		}
 
 		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
@@ -585,7 +561,8 @@ public class SnippetParser {
 		// TODO ! static analysis checking
 		// arguments (local variables 1, 2, ...) may be used only in method calls
 
-		return new SnippetCodeData(asmCode, slvList, staticAnalyses);
+		return new SnippetCode(asmCode, tryCatchBlocks, slvList,
+				staticAnalyses, usesDynamicAnalysis);
 	}
 
 	private String insnUsesSLV(AbstractInsnNode instr, String className) {

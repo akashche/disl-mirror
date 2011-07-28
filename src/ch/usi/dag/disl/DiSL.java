@@ -168,7 +168,7 @@ public class DiSL implements Instrumentation {
 		
 		Set<SyntheticLocalVar> selectedSLV = new HashSet<SyntheticLocalVar>();
 		for(Snippet snippet : snippetMarkings.keySet()) {
-			selectedSLV.addAll(snippet.getSyntheticLocalVars());
+			selectedSLV.addAll(snippet.getCode().getReferencedSLV());
 		}
 		
 		// *** determine if any snippet uses dynamic analysis ***
@@ -176,7 +176,7 @@ public class DiSL implements Instrumentation {
 		boolean usesDynamicAnalysis = false;
 		for(Snippet snippet : snippetMarkings.keySet()) {
 			
-			if(snippet.usesDynamicAnalysis()) {
+			if(snippet.getCode().usesDynamicAnalysis()) {
 				usesDynamicAnalysis = true;
 				break;
 			}

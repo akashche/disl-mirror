@@ -231,6 +231,7 @@ public class Weaver {
 
 	// TODO dynamic analysis
 	// TODO respect initialization type in synthetic local variable
+	// TODO try block weaving
 	public static void instrument(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
@@ -293,10 +294,10 @@ public class Weaver {
 
 		for (Snippet snippet : array) {
 			List<MarkedRegion> regions = snippetMarkings.get(snippet);
-			InsnList ilst = snippet.getAsmCode();
+			InsnList ilst = snippet.getCode().getInstructions();
 
 			// skip snippet with empty code
-			if (snippet.getAsmCode() == null) {
+			if (snippet.getCode() == null) {
 				continue;
 			}
 
@@ -345,7 +346,7 @@ public class Weaver {
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						fixLocalIndex(methodNode, newlst);
 
-						// Create a try-finally clause
+						// Create a try-catch clause
 						LabelNode startLabel = getStartLabel(methodNode,
 								region.getStart());
 						LabelNode endLabel = getEndLabel(methodNode, exit,

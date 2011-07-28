@@ -131,11 +131,12 @@ public class StaticInfo {
 			
 			for(MarkedRegion markedRegion : snippetMarkings.get(snippet)) {
 				
-				for(String stAnMehodName : snippet.getStaticAnalyses().keySet()) {
+				for (String stAnMehodName : 
+					snippet.getCode().getStaticAnalyses().keySet()) {
 
 					// get static analysis method
-					Method stAnMethod = snippet.getStaticAnalyses().get(
-							stAnMehodName);
+					Method stAnMethod = snippet.getCode().getStaticAnalyses()
+							.get(stAnMehodName);
 
 					// get static analysis instance
 					Class<?> methodClass = stAnMethod.getDeclaringClass();
