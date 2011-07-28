@@ -136,7 +136,7 @@ public class ProcessorHack {
 		int max = methodNode.maxLocals;
 
 		for (ArgData data : instrData) {
-			InsnList ilst = AsmHelper.cloneList(data.asmCode);
+			InsnList ilst = AsmHelper.cloneInsnList(data.asmCode);
 			AsmHelper.removeReturns(ilst);
 			AbstractInsnNode temp = null;
 

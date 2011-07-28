@@ -3,12 +3,10 @@ package ch.usi.dag.disl.snippet;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -58,48 +56,10 @@ public class SnippetCode {
 
 	public SnippetCode clone() {
 
-		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
+		Map<LabelNode, LabelNode> map = AsmHelper.createLabelMap(instructions);
 
-		InsnList newInstructions = new InsnList();
-
-		// First iterate the instruction list and get all the labels
-		for (AbstractInsnNode instr : instructions.toArray()) {
-			if (instr instanceof LabelNode) {
-				LabelNode label = AsmHelper.createLabel();
-				map.put((LabelNode) instr, label);
-			}
-		}
-
-		// then copy instructions using clone
-		AbstractInsnNode instr = instructions.getFirst();
-
-		while (instr != null) {
-
-			// special case where we put a new label instead of old one
-			if (instr instanceof LabelNode) {
-
-				newInstructions.add(map.get(instr));
-
-				instr = instr.getNext();
-
-				continue;
-			}
-
-			newInstructions.add(instr.clone(map));
-
-			instr = instr.getNext();
-		}
-
-		List<TryCatchBlockNode> newTryCatchBlocks = 
-			new LinkedList<TryCatchBlockNode>();
-
-		for (TryCatchBlockNode tcb : tryCatchBlocks) {
-
-			newTryCatchBlocks.add(new TryCatchBlockNode(map.get(tcb.start),
-					map.get(tcb.end), map.get(tcb.handler), tcb.type));
-		}
-
-		return new SnippetCode(newInstructions, newTryCatchBlocks,
+		return new SnippetCode(AsmHelper.cloneInsnList(instructions, map),
+				AsmHelper.cloneTryCatchBlocks(tryCatchBlocks, map),
 				new HashSet<SyntheticLocalVar>(referencedSLV),
 				new HashMap<String, Method>(staticAnalyses),
 				usesDynamicAnalysis);

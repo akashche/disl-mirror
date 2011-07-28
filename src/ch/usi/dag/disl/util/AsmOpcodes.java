@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.util;
 
-public enum ASMOpcodes {
+public enum AsmOpcodes {
 
 	// NOTE this opcode list is generated from org.objectweb.asm.Opcodes.java
 	// This list should be in sync with corresponding file which is supplied 
@@ -214,7 +214,7 @@ public enum ASMOpcodes {
 	
 	private int number;
 	
-	ASMOpcodes(int number) {
+	AsmOpcodes(int number) {
 		this.number = number;
 	}
 	

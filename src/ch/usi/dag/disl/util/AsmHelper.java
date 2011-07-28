@@ -30,19 +30,6 @@ public class AsmHelper {
 		return labelNode;
 	}
 
-	public static boolean isReturn(int opcode) {
-		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
-	}
-
-	public static AbstractInsnNode skipLabels(AbstractInsnNode instr,
-			boolean isForward) {
-		while (instr != null && instr.getOpcode() == -1) {
-			instr = isForward ? instr.getNext() : instr.getPrevious();
-		}
-		
-		return instr;
-	}
-
 	public static void removeReturns(InsnList ilst) {
 		// Remove 'return' instruction
 		List<AbstractInsnNode> returns = new LinkedList<AbstractInsnNode>();
@@ -69,23 +56,34 @@ public class AsmHelper {
 		}
 	}
 
-	// TODO ! remove
 	// Make a clone of an instruction list
-	public static InsnList cloneList(InsnList src) {
-
+	public static InsnList cloneInsnList(InsnList src) {
+		
+		Map<LabelNode, LabelNode> map = createLabelMap(src);
+		return cloneInsnList(src, map);
+	}
+	
+	public static Map<LabelNode, LabelNode> createLabelMap(InsnList src) {
+		
 		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
-
-		InsnList dst = new InsnList();
-
-		// First iterate the instruction list and get all the labels
+		
+		// Iterate the instruction list and get all the labels
 		for (AbstractInsnNode instr : src.toArray()) {
 			if (instr instanceof LabelNode) {
 				LabelNode label = new LabelNode(new Label());
 				map.put((LabelNode) instr, label);
 			}
 		}
+		
+		return map;
+	}
+	
+	public static InsnList cloneInsnList(InsnList src,
+			Map<LabelNode, LabelNode> map) {
 
-		// then copy instructions using clone
+		InsnList dst = new InsnList();
+
+		// Copy instructions using clone
 		AbstractInsnNode instr = src.getFirst();
 		while (instr != src.getLast().getNext()) {
 
@@ -106,13 +104,36 @@ public class AsmHelper {
 
 		return dst;
 	}
+	
+	public static List<TryCatchBlockNode> cloneTryCatchBlocks(
+			List<TryCatchBlockNode> src, Map<LabelNode, LabelNode> map) {
 
+		List<TryCatchBlockNode> dst = new LinkedList<TryCatchBlockNode>();
+
+		for (TryCatchBlockNode tcb : src) {
+
+			dst.add(new TryCatchBlockNode(map.get(tcb.start), map.get(tcb.end),
+					map.get(tcb.handler), tcb.type));
+		}
+
+		return dst;
+	}
+
+	public static AbstractInsnNode skipLabels(AbstractInsnNode instr,
+			boolean isForward) {
+		while (instr != null && instr.getOpcode() == -1) {
+			instr = isForward ? instr.getNext() : instr.getPrevious();
+		}
+		
+		return instr;
+	}
+	
 	// Detects if the instruction list contains only return
 	public static boolean containsOnlyReturn(InsnList ilst) {
 
 		return isReturn(ilst.getFirst().getOpcode());
 	}
-
+	
 	// Make sure an instruction has a valid next-instruction.
 	// NOTE that in asm, label might be an AbstractInsnNode. If an instruction
 	// is followed with a label which is the end of an instruction list, then
@@ -129,6 +150,10 @@ public class AsmHelper {
 		}
 
 		return false;
+	}
+	
+	public static boolean isReturn(int opcode) {
+		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
 	}
 
 	public static boolean isBranch(AbstractInsnNode instruction) {

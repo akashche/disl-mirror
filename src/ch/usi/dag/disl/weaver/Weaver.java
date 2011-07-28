@@ -103,7 +103,7 @@ public class Weaver {
 			if (var.getInitASMCode() != null) {
 
 				InsnList newlst = AsmHelper
-						.cloneList(var.getInitASMCode());
+						.cloneInsnList(var.getInitASMCode());
 				methodNode.instructions.insertBefore(first, newlst);
 			}
 

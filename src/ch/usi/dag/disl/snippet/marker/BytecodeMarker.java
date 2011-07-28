@@ -10,7 +10,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
-import ch.usi.dag.disl.util.ASMOpcodes;
+import ch.usi.dag.disl.util.AsmOpcodes;
 import ch.usi.dag.disl.util.Parameter;
 
 public class BytecodeMarker implements Marker {
@@ -29,15 +29,15 @@ public class BytecodeMarker implements Marker {
 			
 			try {
 				
-				ASMOpcodes opcode = 
-					ASMOpcodes.valueOf(instr.trim().toUpperCase());
+				AsmOpcodes opcode = 
+					AsmOpcodes.valueOf(instr.trim().toUpperCase());
 				searchedInstrNums.add(opcode.getNumber());
 			}
 			catch(IllegalArgumentException e) {
 				
 				throw new MarkerException("Instruction \"" + instr +
 						"\" cannot be found. See " +
-						ASMOpcodes.class.getName() +
+						AsmOpcodes.class.getName() +
 						" enum for list of possible instructions");
 			}
 		}
