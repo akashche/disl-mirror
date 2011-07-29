@@ -224,8 +224,8 @@ public class Weaver {
 	}
 
 	// TODO dynamic analysis
-	// TODO respect initialization type in synthetic local variable
-	// TODO try block weaving
+	// TODO respect BEST_EFFORT initialization type in synthetic local variable
+	// TODO try-catch block weaving - bug fix
 	public static void instrument(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,

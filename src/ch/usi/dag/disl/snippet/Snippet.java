@@ -3,8 +3,12 @@ package ch.usi.dag.disl.snippet;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.snippet.marker.Marker;
 import ch.usi.dag.disl.snippet.scope.Scope;
@@ -83,25 +87,52 @@ public class Snippet implements Comparable<Snippet> {
 				typeDB.getInternalName(), "deactivate", "()V");
 		
 		// add try label at the beginning
-		// TODO fix
-		LabelNode tryBegin = new LabelNode();
+		LabelNode tryBegin = AsmHelper.createLabel();
 		insnList.insert(tryBegin);
 		
 		// add invocation of activate at the beginning
 		insnList.insert(mtdActivate);
+
+		// ## try {
+		
+		// ## }
 		
 		// add try label at the end
-		// TODO fix
-		LabelNode tryEnd = new LabelNode();
+		LabelNode tryEnd = AsmHelper.createLabel();
 		insnList.add(tryEnd);
 		
-		// add invocation of deactivate at the end - normal flow
+		// ## after normal flow
+		
+		// add invocation of deactivate - normal flow
 		insnList.add(mtdDeactivate);
 		
-		// TODO create try catch block
+		// normal flow should jump after handler
+		LabelNode handlerEnd = AsmHelper.createLabel();
+		insnList.add(new JumpInsnNode(Opcodes.GOTO, handlerEnd));
+
+		// ## after abnormal flow - exception handler
 		
-		// TODO add try catch block
+		// add handler begin
+		LabelNode handlerBegin = AsmHelper.createLabel();
+		insnList.add(handlerBegin);
 		
-		// TODO add try catch block code
+		// high value - so we don't interfere with some other local  
+		final int LOCAL_VAR_DYNAMIC_BYPASS = 1010101;
+
+		// store exception
+		insnList.add(new IntInsnNode(Opcodes.ASTORE, LOCAL_VAR_DYNAMIC_BYPASS));
+		// add invocation of deactivate - abnormal flow
+		insnList.add(mtdDeactivate);
+		// load exception
+		insnList.add(new IntInsnNode(Opcodes.ALOAD, LOCAL_VAR_DYNAMIC_BYPASS));
+		// throw exception
+		insnList.add(new InsnNode(Opcodes.ATHROW));
+		
+		// add handler end
+		insnList.add(handlerEnd);
+		
+		// ## add handler to the list
+		code.getTryCatchBlocks().add(
+				new TryCatchBlockNode(tryBegin, tryEnd, handlerBegin, null));
 	}
 }
