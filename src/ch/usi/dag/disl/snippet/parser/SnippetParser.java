@@ -279,8 +279,13 @@ public class SnippetParser {
 		}
 		
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {
-			throw new SnippetParserException("DiSL method " + method.name
+			throw new SnippetParserException("Method " + method.name
 					+ " should be declared as static");
+		}
+		
+		if (! Type.getReturnType(method.desc).equals(Type.VOID_TYPE)) {
+			throw new SnippetParserException("Method " + method.name
+					+ " cannot return value");
 		}
 		
 		AnnotationNode annotation = method.invisibleAnnotations.get(0);

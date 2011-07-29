@@ -61,6 +61,8 @@ public class Weaver {
 				src.remove(previous);
 				src.remove(instr);
 			}
+			
+			// TODO ! push null also
 		}
 	}
 
