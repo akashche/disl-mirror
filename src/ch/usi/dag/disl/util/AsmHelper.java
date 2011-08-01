@@ -10,24 +10,133 @@ import java.util.Set;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import ch.usi.dag.disl.exception.DiSLException;
+
 public class AsmHelper {
 
-	// Create a label node.
-	// TODO remove it when LabelNode is fixed in ASM
-	public static LabelNode createLabel() {
-		Label label = new Label();
-		LabelNode labelNode = new LabelNode(label);
-		label.info = labelNode;
-		return labelNode;
+	public static int getIConst(AbstractInsnNode instr) throws DiSLException {
+
+		switch (instr.getOpcode()) {
+		case Opcodes.ICONST_M1:
+			return -1;
+		case Opcodes.ICONST_0:
+			return 0;
+		case Opcodes.ICONST_1:
+			return 1;
+		case Opcodes.ICONST_2:
+			return 2;
+		case Opcodes.ICONST_3:
+			return 3;
+		case Opcodes.ICONST_4:
+			return 4;
+		case Opcodes.ICONST_5:
+			return 5;
+		case Opcodes.BIPUSH:
+			return ((IntInsnNode) instr).operand;
+		default:
+			throw new DiSLException("Not an iconst instrction.");
+		}
+	}
+
+	public static int getParameterIndex(MethodNode method, int par_index)
+			throws DiSLException {
+
+		Type[] types = Type.getArgumentTypes(method.desc);
+
+		if (par_index >= types.length) {
+			throw new DiSLException("Parameter index out of bound");
+		}
+
+		int index = 0;
+
+		for (int i = 0; i < par_index; i++) {
+			
+			if (types[i].equals(Type.DOUBLE_TYPE)
+					|| types[i].equals(Type.LONG_TYPE)) {
+				index += 2;
+			} else {
+				index += 1;
+			}
+		}
+		
+		if ((method.access & Opcodes.ACC_STATIC) == 0) {
+			index += 1;
+		}
+
+		return index;
+	}
+	
+	public static Type getType(AbstractInsnNode instr) {
+
+		switch (instr.getOpcode()) {
+		case Opcodes.GETSTATIC:
+
+			String owner = ((FieldInsnNode) instr).owner;
+
+			if (owner.endsWith("Boolean")) {
+				return Type.BOOLEAN_TYPE;
+			} else if (owner.endsWith("Byte")) {
+				return Type.BYTE_TYPE;
+			} else if (owner.endsWith("Character")) {
+				return Type.CHAR_TYPE;
+			} else if (owner.endsWith("Double")) {
+				return Type.DOUBLE_TYPE;
+			} else if (owner.endsWith("Float")) {
+				return Type.FLOAT_TYPE;
+			} else if (owner.endsWith("Integer")) {
+				return Type.INT_TYPE;
+			} else if (owner.endsWith("Long")) {
+				return Type.LONG_TYPE;
+			} else if (owner.endsWith("Short")) {
+				return Type.SHORT_TYPE;
+			}
+
+			return null;
+
+		case Opcodes.LDC:
+
+			Object tObj = ((LdcInsnNode) instr).cst;
+
+			if (tObj instanceof Type) {
+				return (Type) tObj;
+			} else {
+				return null;
+			}
+
+		default:
+			return null;
+		}
+	}
+	
+	public static AbstractInsnNode remove(InsnList ilst,
+			AbstractInsnNode instr, boolean forward) {
+		AbstractInsnNode ret = forward ? instr.getNext() : instr.getPrevious();
+
+		ilst.remove(instr);
+		return ret;
+	}
+
+	public static AbstractInsnNode removeIf(InsnList ilst,
+			AbstractInsnNode instr, int opcode, boolean forward) {
+
+		if (instr.getOpcode() == opcode) {
+			return remove(ilst, instr, forward);
+		}
+
+		return instr;
 	}
 
 	public static void removeReturns(InsnList ilst) {

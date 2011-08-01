@@ -2,6 +2,7 @@ package ch.usi.dag.disl.util.stack;
 
 import java.util.HashSet;
 
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
@@ -58,6 +59,42 @@ public class StackEntry {
 
 	public int getType() {
 		return type;
+	}
+	
+	public int load() {
+
+		switch (type) {
+		case Type.LONG:
+			return Opcodes.LLOAD;
+		case Type.FLOAT:
+			return Opcodes.FLOAD;
+		case Type.DOUBLE:
+			return Opcodes.DLOAD;
+		case Type.OBJECT:
+			return Opcodes.ALOAD;
+		default:
+			return Opcodes.ILOAD;
+		}
+	}
+	
+	public int store() {
+		
+		switch (type) {
+		case Type.LONG:
+			return Opcodes.LSTORE;
+		case Type.FLOAT:
+			return Opcodes.FSTORE;
+		case Type.DOUBLE:
+			return Opcodes.DSTORE;
+		case Type.OBJECT:
+			return Opcodes.ASTORE;
+		default:
+			return Opcodes.ISTORE;
+		}
+	}
+	
+	public boolean isDorL() {
+		return type == Type.LONG || type == Type.DOUBLE;
 	}
 
 	public HashSet<AbstractInsnNode> getList() {

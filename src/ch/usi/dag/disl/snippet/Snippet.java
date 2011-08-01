@@ -87,7 +87,7 @@ public class Snippet implements Comparable<Snippet> {
 				typeDB.getInternalName(), "deactivate", "()V");
 		
 		// add try label at the beginning
-		LabelNode tryBegin = AsmHelper.createLabel();
+		LabelNode tryBegin = new LabelNode();
 		insnList.insert(tryBegin);
 		
 		// add invocation of activate at the beginning
@@ -98,7 +98,7 @@ public class Snippet implements Comparable<Snippet> {
 		// ## }
 		
 		// add try label at the end
-		LabelNode tryEnd = AsmHelper.createLabel();
+		LabelNode tryEnd = new LabelNode();
 		insnList.add(tryEnd);
 		
 		// ## after normal flow
@@ -107,13 +107,13 @@ public class Snippet implements Comparable<Snippet> {
 		insnList.add(mtdDeactivate);
 		
 		// normal flow should jump after handler
-		LabelNode handlerEnd = AsmHelper.createLabel();
+		LabelNode handlerEnd = new LabelNode();
 		insnList.add(new JumpInsnNode(Opcodes.GOTO, handlerEnd));
 
 		// ## after abnormal flow - exception handler
 		
 		// add handler begin
-		LabelNode handlerBegin = AsmHelper.createLabel();
+		LabelNode handlerBegin = new LabelNode();
 		insnList.add(handlerBegin);
 		
 		// high value - so we don't interfere with some other local  

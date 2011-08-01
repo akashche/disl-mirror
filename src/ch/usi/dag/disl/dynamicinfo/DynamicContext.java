@@ -10,7 +10,7 @@ abstract public class DynamicContext {
 	 * 			Doubles and longs are counted as distance difference 1.
 	 * @param valueType type of the accessed value
 	 */
-	<T> T getStackValue(int distance, Class<T> valueType) {
+	public <T> T getStackValue(int distance, Class<T> valueType) {
 		return null;
 	}
 	
@@ -22,7 +22,7 @@ abstract public class DynamicContext {
 	 * 			Doubles and longs are counted as distance difference 1.
 	 * @param valueType type of the accessed argument
 	 */
-	<T> T getMethodArgumentValue(int index, Class<T> valueType) {
+	public <T> T getMethodArgumentValue(int index, Class<T> valueType) {
 		return null;
 	}
 	
@@ -34,7 +34,7 @@ abstract public class DynamicContext {
 	 * 			Doubles and longs are counted as distance difference 2.
 	 * @param valueType type of the accessed argument
 	 */
-	<T> T getLocalVariableValue(int index, Class<T> valueType) {
+	public <T> T getLocalVariableValue(int index, Class<T> valueType) {
 		return null;
 	}
 }

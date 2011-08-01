@@ -17,6 +17,8 @@ public class CtrlFlowGraph {
 
 	private List<BasicBlock> nodes;
 	private List<BasicBlock> connected_nodes;
+	
+	private List<AbstractInsnNode> seperators;
 
 	// Initialize the control flow graph.
 	public CtrlFlowGraph(MethodNode method) {
@@ -24,8 +26,7 @@ public class CtrlFlowGraph {
 		connected_nodes = new LinkedList<BasicBlock>();
 
 		// Generating basic blocks
-		List<AbstractInsnNode> seperators = AsmHelper.getBasicBlocks(
-				method, false);
+		seperators = AsmHelper.getBasicBlocks(method, false);
 		AbstractInsnNode last = method.instructions.getLast();
 		seperators.add(last);
 
@@ -43,12 +44,20 @@ public class CtrlFlowGraph {
 		}
 	}
 
-	// Get a basic block according to its entrance.
+	// Return a basic block that contains the input instruction.
 	// If not found, return null.
-	public BasicBlock getBB(AbstractInsnNode entrance) {
+	public BasicBlock getBB(AbstractInsnNode instr) {
 
+		while (instr != null) {
+			if (seperators.contains(instr)) {
+				break;
+			}
+
+			instr = instr.getPrevious();
+		}
+		
 		for (int i = 0; i < nodes.size(); i++) {
-			if (nodes.get(i).getEntrance().equals(entrance)) {
+			if (nodes.get(i).getEntrance().equals(instr)) {
 				return nodes.get(i);
 			}
 		}
@@ -69,13 +78,13 @@ public class CtrlFlowGraph {
 			return -1;
 		}
 
-		if (connected_nodes.contains(bb)) {
-			return 0;
-		}
-
 		if (current != null) {
 			current.getSuccessors().add(bb);
 			bb.getPredecessors().add(current);
+		}
+
+		if (connected_nodes.contains(bb)) {
+			return 0;
 		}
 
 		connected_nodes.add(bb);

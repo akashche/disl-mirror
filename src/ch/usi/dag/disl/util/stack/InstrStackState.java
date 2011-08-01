@@ -10,6 +10,8 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 
+import ch.usi.dag.disl.exception.DiSLException;
+
 public class InstrStackState {
 
 	private Stack<StackEntry> entries;
@@ -29,21 +31,26 @@ public class InstrStackState {
 		return state;
 	}
 
-	public boolean merge(InstrStackState state) {
-		boolean flag = false; 
+	public boolean merge(InstrStackState state) throws DiSLException {
+		boolean flag = false;
+		
+		if (entries.size() != state.entries.size()) {
+			throw new DiSLException("Different stack frame!");
+		}
 
-		for (int i = 0; i < Math.min(entries.size(), state.entries.size()); i++) {
+		for (int i = 0; i < entries.size(); i++) {
 
 			StackEntry entry = entries.get(i);
 			StackEntry state_entry = state.entries.get(i);
 
 			if (!(entry.getType() == state_entry.getType())) {
-				throw new RuntimeException("Merge error");
+				throw new DiSLException(
+						"Different type on the same stack depth!");
 			}
 
 			flag = entry.merge(state_entry) | flag;
 		}
-		
+
 		return flag;
 	}
 
@@ -302,7 +309,8 @@ public class InstrStackState {
 		case Opcodes.DUP2: {
 			StackEntry entry_1 = entries.pop();
 
-			if (entry_1.getType() == Type.DOUBLE || entry_1.getType() == Type.LONG) {
+			if (entry_1.getType() == Type.DOUBLE
+					|| entry_1.getType() == Type.LONG) {
 
 				entries.push(entry_1);
 				entries.push(entry_1.clone());
@@ -321,7 +329,8 @@ public class InstrStackState {
 		case Opcodes.DUP2_X1: {
 			StackEntry entry_1 = entries.pop();
 
-			if (entry_1.getType() == Type.DOUBLE || entry_1.getType() == Type.LONG) {
+			if (entry_1.getType() == Type.DOUBLE
+					|| entry_1.getType() == Type.LONG) {
 
 				StackEntry entry_3 = entries.pop();
 				entries.push(entry_1);
@@ -344,11 +353,13 @@ public class InstrStackState {
 		case Opcodes.DUP2_X2: {
 			StackEntry entry_1 = entries.pop();
 
-			if (entry_1.getType() == Type.DOUBLE || entry_1.getType() == Type.LONG) {
+			if (entry_1.getType() == Type.DOUBLE
+					|| entry_1.getType() == Type.LONG) {
 
 				StackEntry entry_3 = entries.pop();
 
-				if (entry_3.getType() == Type.DOUBLE || entry_3.getType() == Type.LONG) {
+				if (entry_3.getType() == Type.DOUBLE
+						|| entry_3.getType() == Type.LONG) {
 
 					entries.push(entry_1);
 					entries.push(entry_3);
@@ -366,7 +377,8 @@ public class InstrStackState {
 			StackEntry entry_2 = entries.pop();
 			StackEntry entry_3 = entries.pop();
 
-			if (entry_1.getType() == Type.DOUBLE || entry_1.getType() == Type.LONG) {
+			if (entry_1.getType() == Type.DOUBLE
+					|| entry_1.getType() == Type.LONG) {
 
 				entries.push(entry_2);
 				entries.push(entry_1);
@@ -425,7 +437,7 @@ public class InstrStackState {
 				entries.pop();
 			}
 
-			int type = Type.getReturnType(((FieldInsnNode) instr).desc)
+			int type = Type.getReturnType(((MethodInsnNode) instr).desc)
 					.getSort();
 
 			if (type != Type.VOID) {
