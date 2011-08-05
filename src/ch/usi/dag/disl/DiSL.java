@@ -26,8 +26,8 @@ public class DiSL implements Instrumentation {
 	final String PROP_DISL_CLASSES = "disl.classes";
 	final String PROP_CLASSES_DELIM = ",";
 	
-	final String DYNAMIC_BYPASS = ",";
-	final String DYNAMIC_BYPASS_TRUE = "yes";
+	final String PROP_DYNAMIC_BYPASS = "disl.dynbypass";
+	final String PROP_DYNAMIC_BYPASS_TRUE = "yes";
 	
 	List<Snippet> snippets;
 
@@ -48,12 +48,12 @@ public class DiSL implements Instrumentation {
 						"Property " + PROP_DISL_CLASSES + " is not defined");
 			}
 			
-			String useDynamicBypassStr = System.getProperty(DYNAMIC_BYPASS);
+			String useDynBypassStr = System.getProperty(PROP_DYNAMIC_BYPASS);
 					
 			boolean useDynamicBypass = false;
-			if(useDynamicBypassStr != null) {
-				useDynamicBypass = useDynamicBypassStr.toLowerCase()
-						.equals(DYNAMIC_BYPASS_TRUE);
+			if(useDynBypassStr != null) {
+				useDynamicBypass = useDynBypassStr.toLowerCase()
+						.equals(PROP_DYNAMIC_BYPASS_TRUE);
 			}
 			
 			List<byte []> compiledClasses = new LinkedList<byte []>();

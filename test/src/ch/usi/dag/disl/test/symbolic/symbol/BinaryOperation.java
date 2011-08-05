@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.test.symbolic.symbol;
 
-import com.sun.xml.internal.ws.org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Opcodes;
 
 import stp.Expr;
 import stp.VC;

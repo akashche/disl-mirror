@@ -1,10 +1,14 @@
 <project name="disl-test" default="compile" basedir=".">
 
 	<property file="../disl.version"/>
+	<property file="../build.properties"/>
 	<property name="disl.jar.path" value="../build/disl-${disl.version}.jar"/>
 	
 	<path id="buildpath">
 		<pathelement location="${disl.jar.path}"/>
+		<pathelement location="../${asm.path}"/>
+		<pathelement location="../${jborat.path}"/>
+		<pathelement location="lib/stp.jar"/>
 	</path>
 
 	<target name="check-disl-jar">

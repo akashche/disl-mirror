@@ -4,7 +4,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -116,16 +115,9 @@ public class Snippet implements Comparable<Snippet> {
 		LabelNode handlerBegin = new LabelNode();
 		insnList.add(handlerBegin);
 		
-		// high value - so we don't interfere with some other local  
-		final int LOCAL_VAR_DYNAMIC_BYPASS = 1010101;
-
-		// store exception
-		insnList.add(new IntInsnNode(Opcodes.ASTORE, LOCAL_VAR_DYNAMIC_BYPASS));
 		// add invocation of deactivate - abnormal flow
 		insnList.add(mtdDeactivate);
-		// load exception
-		insnList.add(new IntInsnNode(Opcodes.ALOAD, LOCAL_VAR_DYNAMIC_BYPASS));
-		// throw exception
+		// throw exception again
 		insnList.add(new InsnNode(Opcodes.ATHROW));
 		
 		// add handler end

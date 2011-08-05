@@ -583,8 +583,11 @@ public class SnippetParser {
 			}
 		}
 		
-		// TODO ! static analysis checking
+		// TODO ! analysis checking
 		// arguments (local variables 1, 2, ...) may be used only in method calls
+		
+		// TODO ! dynamic analysis method argument checking
+		// values of arguments should be only constant values
 
 		return new SnippetCode(snippetCode, tryCatchBlocks, slvList,
 				staticAnalyses, usesDynamicAnalysis);

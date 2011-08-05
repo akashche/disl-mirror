@@ -374,9 +374,9 @@ public class Weaver {
 		sorter.visitEnd();
 	}
 
-	// TODO dynamic analysis
 	// TODO respect BEST_EFFORT initialization type in synthetic local variable
 	// TODO try-catch block weaving - bug fix
+	// TODO dynamic analysis - mind exceptions
 	public static void instrument(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
