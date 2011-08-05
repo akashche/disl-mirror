@@ -80,9 +80,9 @@ public class Snippet implements Comparable<Snippet> {
 		
 		// create method nodes
 		Type typeDB = Type.getType(DynamicBypass.class);
-		MethodInsnNode mtdActivate = new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+		MethodInsnNode mtdActivate = new MethodInsnNode(Opcodes.INVOKESTATIC,
 				typeDB.getInternalName(), "activate", "()V");
-		MethodInsnNode mtdDeactivate = new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+		MethodInsnNode mtdDeactivate = new MethodInsnNode(Opcodes.INVOKESTATIC,
 				typeDB.getInternalName(), "deactivate", "()V");
 		
 		// add try label at the beginning
