@@ -90,7 +90,7 @@ public class Snippet implements Comparable<Snippet> {
 		insnList.insert(tryBegin);
 		
 		// add invocation of activate at the beginning
-		insnList.insert(mtdActivate);
+		insnList.insert(mtdActivate.clone(null));
 
 		// ## try {
 		
@@ -103,7 +103,7 @@ public class Snippet implements Comparable<Snippet> {
 		// ## after normal flow
 		
 		// add invocation of deactivate - normal flow
-		insnList.add(mtdDeactivate);
+		insnList.add(mtdDeactivate.clone(null));
 		
 		// normal flow should jump after handler
 		LabelNode handlerEnd = new LabelNode();
@@ -116,7 +116,7 @@ public class Snippet implements Comparable<Snippet> {
 		insnList.add(handlerBegin);
 		
 		// add invocation of deactivate - abnormal flow
-		insnList.add(mtdDeactivate);
+		insnList.add(mtdDeactivate.clone(null));
 		// throw exception again
 		insnList.add(new InsnNode(Opcodes.ATHROW));
 		
