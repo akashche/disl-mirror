@@ -22,6 +22,11 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.analysis.Analyzer;
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.BasicValue;
+import org.objectweb.asm.tree.analysis.Frame;
+import org.objectweb.asm.tree.analysis.SourceValue;
 
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.AfterReturning;
@@ -35,8 +40,7 @@ import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.util.AsmHelper;
-import ch.usi.dag.disl.util.stack.StackEntry;
-import ch.usi.dag.disl.util.stack.StackSimulator;
+import ch.usi.dag.disl.util.stack.StackUtil;
 
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
@@ -72,8 +76,7 @@ public class Weaver {
 	}
 
 	public static void fixDynamicInfo(Snippet snippet, MarkedRegion region,
-			StackSimulator stack, MethodNode method)
-			throws DiSLException {
+Frame<SourceValue> frame, MethodNode method) throws DiSLException {
 		InsnList src = method.instructions;
 
 		for (AbstractInsnNode instr : src.toArray()) {
@@ -92,45 +95,23 @@ public class Weaver {
 			AbstractInsnNode prev = instr.getPrevious();
 			AbstractInsnNode next = instr.getNext();
 
-			int operand = AsmHelper.getIConst(prev.getPrevious());			
+			int operand = AsmHelper.getIConst(prev.getPrevious());
 			Type t = AsmHelper.getType(prev);
 
-			if (invoke.name.equals("getStackValue")) {
+			if (invoke.name.equals("getStackValue")) {		
+				int sopcode = t.getOpcode(Opcodes.ISTORE);
+				int lopcode = t.getOpcode(Opcodes.ILOAD);
+				SourceValue source = StackUtil.getSource(frame, operand);
 
-				List<AbstractInsnNode> entry = new LinkedList<AbstractInsnNode>();
-				int sopcode = Opcodes.ISTORE, lopcode = Opcodes.ILOAD;
-				boolean isDorL = false;
-
-				if (snippet.getAnnotationClass().equals(Before.class)) {
-					entry.add(region.getStart());
-				} else {
-
-					for (AbstractInsnNode exit : region.getEnds()) {
-
-						if (AsmHelper.isBranch(exit)) {
-							entry.add(exit);
-						} else if (exit.getNext() != null) {
-							entry.add(exit.getNext());
-						}
-					}
-				}
-
-				for (AbstractInsnNode itr : entry) {
-					StackEntry suspects = stack.getStack(itr, operand);
-					sopcode = t.getOpcode(Opcodes.ISTORE);
-					lopcode = t.getOpcode(Opcodes.ILOAD);
-					isDorL = suspects.isDorL();
-
-					for (AbstractInsnNode node : suspects.getList()) {
-						method.instructions.insert(node, new VarInsnNode(
-								sopcode, method.maxLocals));
-						method.instructions.insert(node, new InsnNode(
-								isDorL ? Opcodes.DUP2 : Opcodes.DUP));
-					}
+				for (AbstractInsnNode itr : source.insns) {
+					method.instructions.insert(itr, new VarInsnNode(sopcode,
+							method.maxLocals));
+					method.instructions.insert(itr, new InsnNode(
+							source.size == 2 ? Opcodes.DUP2 : Opcodes.DUP));
 				}
 
 				src.insert(instr, new VarInsnNode(lopcode, method.maxLocals));
-				method.maxLocals += isDorL ? 2 : 1;
+				method.maxLocals += source.size;
 			} else if (invoke.name.equals("getMethodArgumentValue")) {
 
 				method.instructions.insert(
@@ -184,7 +165,7 @@ public class Weaver {
 					if (varInstr.var > max) {
 						max = varInstr.var;
 					}
-					
+
 					break;
 				}
 			}
@@ -314,21 +295,27 @@ public class Weaver {
 		methodNode.instructions.insert(instr, label);
 		return label;
 	}
-	
+
 	public static void initWeavingEnds(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
-			Map<AbstractInsnNode, AbstractInsnNode> weaving_loc_normal,
-			Map<AbstractInsnNode, AbstractInsnNode> weaving_loc_athrow,
+			Map<AbstractInsnNode, AbstractInsnNode> weaving_start,
+			Map<AbstractInsnNode, AbstractInsnNode> weaving_end,
+			Map<AbstractInsnNode, AbstractInsnNode> weaving_athrow,
+			Map<AbstractInsnNode, Integer> stack_start,
+			Map<AbstractInsnNode, Integer> stack_end, 
 			ArrayList<Snippet> array) {
-		
+
+		InsnList instructions = methodNode.instructions;
+		List<LabelNode> instrumented = new LinkedList<LabelNode>();
+
 		for (Snippet snippet : array) {
 
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
 				// initialize of start
 				AbstractInsnNode start = region.getStart();
 
-				if (weaving_loc_normal.get(start) == null) {
-					weaving_loc_normal.put(start, start);
+				if (weaving_start.get(start) == null) {
+					weaving_start.put(start, start);
 				}
 
 				for (AbstractInsnNode end : region.getEnds()) {
@@ -336,29 +323,58 @@ public class Weaver {
 
 						if (start == end) {
 							// Contains only one instruction
-							LabelNode labelNode = new LabelNode();
-							methodNode.instructions.insertBefore(start,
-									labelNode);
-							weaving_loc_normal.put(start, labelNode);
-							weaving_loc_normal.put(end, labelNode);
-							weaving_loc_athrow.put(end, labelNode);
-						} else {
-							// Skip branch instructions and ASM label nodes.
-							AbstractInsnNode prev = end.getPrevious();
-							weaving_loc_normal.put(end, prev);
+							AbstractInsnNode prev = start.getPrevious();
 
+							if (!(prev != null 
+									&& prev instanceof LabelNode 
+									&& instrumented.contains(instrumented))) {
+								LabelNode labelNode = new LabelNode();
+								instrumented.add(labelNode);
+								instructions.insertBefore(start, labelNode);
+								prev = labelNode;
+							}
+
+							weaving_start.put(start, prev);
+							weaving_end.put(end, prev);
+							weaving_athrow.put(end, prev);
+						} else {
+							AbstractInsnNode prev = end.getPrevious();
+							weaving_end.put(end, prev);
+
+							// Skip branch instructions and ASM label nodes.
 							while (prev != start && prev.getOpcode() == -1) {
 								prev = prev.getPrevious();
 							}
 
-							weaving_loc_athrow.put(end, prev);
+							weaving_athrow.put(end, prev);
 						}
 					} else {
 						// this one is not a branch instruction, which
 						// means instruction list can be inserted after
 						// this instruction.
-						weaving_loc_normal.put(end, end);
-						weaving_loc_athrow.put(end, end);
+						weaving_end.put(end, end);
+						weaving_athrow.put(end, end);
+					}
+				}
+			}
+		}
+
+		for (Snippet snippet : array) {
+
+			for (MarkedRegion region : snippetMarkings.get(snippet)) {
+
+				AbstractInsnNode start = region.getStart();
+
+				if (stack_start.get(start) == null) {
+					stack_start.put(start, instructions.indexOf(start));
+				}
+
+				for (AbstractInsnNode end : region.getEnds()) {
+
+					if (AsmHelper.isBranch(end)) {
+						stack_end.put(end, instructions.indexOf(end));
+					} else {
+						stack_end.put(end, instructions.indexOf(end.getNext()));
 					}
 				}
 			}
@@ -384,23 +400,52 @@ public class Weaver {
 			StaticInfo staticInfoHolder, boolean usesDynamicAnalysis)
 			throws DiSLException {
 		// Sort the snippets based on their order
-		Map<AbstractInsnNode, AbstractInsnNode> weaving_loc_normal;
-		Map<AbstractInsnNode, AbstractInsnNode> weaving_loc_athrow;
-		StackSimulator stack = null;
+		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;
+		Map<AbstractInsnNode, AbstractInsnNode> weaving_end;
+		Map<AbstractInsnNode, AbstractInsnNode> weaving_athrow;
+		
+		Map<AbstractInsnNode, Integer> stack_start;
+		Map<AbstractInsnNode, Integer> stack_end;
 
 		ArrayList<Snippet> array = new ArrayList<Snippet>(
 				snippetMarkings.keySet());
 		Collections.sort(array);
 
 		// Prepare for weaving
-		weaving_loc_normal = new HashMap<AbstractInsnNode, AbstractInsnNode>();
-		weaving_loc_athrow = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		weaving_start = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		weaving_end = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		weaving_athrow = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		stack_start = new HashMap<AbstractInsnNode, Integer>();
+		stack_end = new HashMap<AbstractInsnNode, Integer>();
 
-		initWeavingEnds(methodNode, snippetMarkings, weaving_loc_normal,
-				weaving_loc_athrow, array);
+		initWeavingEnds(methodNode, snippetMarkings, weaving_start,
+				weaving_end, weaving_athrow, stack_start, stack_end, array);
+		
+		Analyzer<BasicValue> basicAnalyzer = StackUtil.getBasicAnalyzer();
+
+		try {
+			basicAnalyzer.analyze(classNode.name, methodNode);
+		} catch (AnalyzerException e) {
+			throw new DiSLException("Cause by AnalyzerException : \n"
+					+ e.getMessage());
+		}
+
+		Frame<BasicValue>[] basicFrames = basicAnalyzer.getFrames();
+		
+		Analyzer<SourceValue> sourceAnalyzer = null;
+		Frame<SourceValue>[] sourceFrames = null;
 
 		if (usesDynamicAnalysis) {
-			stack = new StackSimulator(methodNode);
+			sourceAnalyzer = StackUtil.getSourceAnalyzer();
+
+			try {
+				sourceAnalyzer.analyze(classNode.name, methodNode);
+			} catch (AnalyzerException e) {
+				throw new DiSLException("Cause by AnalyzerException : \n"
+						+ e.getMessage());
+			}
+
+			sourceFrames = sourceAnalyzer.getFrames();
 		}
 
 		for (Snippet snippet : array) {
@@ -417,18 +462,32 @@ public class Weaver {
 			// entrance of a region.
 			if (snippet.getAnnotationClass().equals(Before.class)) {
 				for (MarkedRegion region : regions) {
+					
+					AbstractInsnNode loc = weaving_start.get(region
+							.getStart());
+
+					int index = stack_start.get(region.getStart());
+
+					InsnList popAll = StackUtil.enter(basicFrames[index],
+							methodNode.maxLocals);
+					InsnList pushAll = StackUtil.exit(basicFrames[index],
+							methodNode.maxLocals);
+					methodNode.maxLocals += StackUtil.getOffset(basicFrames[index]);
 
 					SnippetCode clone = snippet.getCode().clone();
 					InsnList newlst = clone.getInstructions();
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 					fixLocalIndex(methodNode, newlst);
-					methodNode.instructions.insertBefore(
-							weaving_loc_normal.get(region.getStart()), newlst);
+
+					methodNode.instructions.insertBefore(loc, popAll);
+					methodNode.instructions.insertBefore(loc, newlst);
+					methodNode.instructions.insertBefore(loc, pushAll);
 					methodNode.tryCatchBlocks.addAll(clone.getTryCatchBlocks());
-					
-					if (usesDynamicAnalysis){
-						fixDynamicInfo(snippet, region, stack, methodNode);
+
+					if (usesDynamicAnalysis) {
+						fixDynamicInfo(snippet, region, sourceFrames[index],
+								methodNode);
 					}
 				}
 			}
@@ -441,17 +500,30 @@ public class Weaver {
 
 					for (AbstractInsnNode exit : region.getEnds()) {
 
+						AbstractInsnNode loc = weaving_end.get(exit);
+
+						int index = stack_end.get(exit);
+
+						InsnList popAll = StackUtil.enter(basicFrames[index],
+								methodNode.maxLocals);
+						InsnList pushAll = StackUtil.exit(basicFrames[index],
+								methodNode.maxLocals);
+						methodNode.maxLocals += StackUtil
+								.getOffset(basicFrames[index]);
+
 						SnippetCode clone = code.clone();
 						InsnList newlst = clone.getInstructions();
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						fixLocalIndex(methodNode, newlst);
-						methodNode.instructions.insert(
-								weaving_loc_normal.get(exit), newlst);
+						methodNode.instructions.insert(loc, pushAll);
+						methodNode.instructions.insert(loc, newlst);
+						methodNode.instructions.insert(loc, popAll);
 						methodNode.tryCatchBlocks.addAll(clone
 								.getTryCatchBlocks());
-						
-						if (usesDynamicAnalysis){
-							fixDynamicInfo(snippet, region, stack, methodNode);
+
+						if (usesDynamicAnalysis) {
+							fixDynamicInfo(snippet, region,
+									sourceFrames[index], methodNode);
 						}
 					}
 				}
@@ -476,17 +548,19 @@ public class Weaver {
 						LabelNode startLabel = getStartLabel(methodNode,
 								region.getStart());
 						LabelNode endLabel = getEndLabel(methodNode, exit,
-								weaving_loc_athrow);
+								weaving_athrow);
 
 						methodNode.tryCatchBlocks.add(new TryCatchBlockNode(
 								startLabel, endLabel, endLabel, null));
 						addExceptionHandlerFrame(methodNode, newlst);
 						methodNode.instructions.insert(endLabel, newlst);
 						methodNode.tryCatchBlocks.addAll(clone
-								.getTryCatchBlocks());				
-						
+								.getTryCatchBlocks());
+
 						if (usesDynamicAnalysis) {
-							fixDynamicInfo(snippet, region, stack, methodNode);
+							fixDynamicInfo(snippet, region,
+									sourceFrames[stack_end.get(exit)],
+									methodNode);
 						}
 					}
 				}
@@ -497,5 +571,5 @@ public class Weaver {
 		// TODO ProcessorHack uncomment
 		// static2Local(methodNode, syntheticLocalVars);
 	}
-	
+
 }
