@@ -29,17 +29,10 @@ public class Transformer implements ClassFileTransformer {
 			DiSL disl = new DiSL();
 			disl.initialize();
 			disl.instrument(classNode);
-	
-			
+				
 			ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 			classNode.accept(cw);
 	
-			instrumentedClass = cw.toByteArray();
-			
-			// TODO Remove the two-round computing
-			cr = new ClassReader(instrumentedClass);
-			cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-			cr.accept(cw, ClassReader.SKIP_DEBUG | ClassReader.EXPAND_FRAMES);
 			instrumentedClass = cw.toByteArray();
 			
 			/* now does for every user class - unusable
