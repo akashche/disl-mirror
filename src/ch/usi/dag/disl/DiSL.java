@@ -185,7 +185,7 @@ public class DiSL implements Instrumentation {
 		// *** viewing ***
 		
 		// TODO ! weaver should have two parts, weaving and rewriting
-		Weaver.instrument(methodNode, snippetMarkings,
+		Weaver.instrument(classNode, methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(selectedSLV),
 				staticInfo, usesDynamicAnalysis);
 		

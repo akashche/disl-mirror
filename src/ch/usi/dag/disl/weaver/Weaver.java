@@ -11,6 +11,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.TryCatchBlockSorter;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -377,7 +378,7 @@ public class Weaver {
 	// TODO respect BEST_EFFORT initialization type in synthetic local variable
 	// TODO try-catch block weaving - bug fix
 	// TODO dynamic analysis - mind exceptions
-	public static void instrument(MethodNode methodNode,
+	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
 			StaticInfo staticInfoHolder, boolean usesDynamicAnalysis)

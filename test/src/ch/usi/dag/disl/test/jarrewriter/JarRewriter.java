@@ -18,16 +18,14 @@ import ch.usi.dag.jborat.agent.Instrumentation;
 
 /**
  * Tool to rewrite a jar, with an {@link Instrumentation}
- * Instrumentation should be thread-safe since the rewriting will probably be parallelized ;-)
- * @author pmoret
- *
  */
 public class JarRewriter {
     
-    private final Instrumentation instrumentation;
+    private static final String CLASS_FILE_EXT = ".class";
+	private final Instrumentation instrumentation;
 
     /**
-     * @param instr Defines the Instrumentation used for rewriting classes, it is final.
+     * @param instr Defines the Instrumentation used for rewriting classes
      */
     public JarRewriter(Instrumentation instr) {
         this.instrumentation = instr;
@@ -61,7 +59,7 @@ public class JarRewriter {
 				InputStream jarIn = jarInFile.getInputStream(ze);
 
 				// something else then class
-				if (! entryName.endsWith(".class")) {
+				if (! entryName.endsWith(CLASS_FILE_EXT)) {
 					addEntry(jarOut, entryName, jarIn);
 					continue;
 				}
@@ -70,7 +68,8 @@ public class JarRewriter {
 				// first replace path delim
 				String classname = entryName.replace('/', '.');
 				// cut .class at the end
-				classname = classname.substring(0, entryName.lastIndexOf(".class"));
+				classname = classname.substring(0, 
+						entryName.lastIndexOf(CLASS_FILE_EXT));
 				
 				// TODO why ??
 				if (classname.startsWith("[")) {
@@ -80,26 +79,15 @@ public class JarRewriter {
 
 				try {
 
-					// read the class
-					
-					// FIXME: may not read it whole - length is estimated number 
-					int length = jarIn.available();
-					byte[] originalCode = new byte[length];
-					int bytesRead = 0;
-					while (bytesRead < length) {
-						bytesRead += jarIn.read(originalCode, bytesRead,
-								length - bytesRead);
-					}
-					
 					// crate ASM class node
-					ClassReader cr = new ClassReader(originalCode);
+					ClassReader cr = new ClassReader(jarIn);
 					ClassNode classNode = new ClassNode();
 					cr.accept(classNode, 0);
 					
 					// instrument it
 					instrumentation.instrument(classNode);
 					
-					ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+					ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 					classNode.accept(cw);
 
 					byte[] instrumentedBytes = cw.toByteArray();
