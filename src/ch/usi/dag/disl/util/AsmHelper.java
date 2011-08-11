@@ -23,11 +23,12 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import ch.usi.dag.disl.exception.DiSLException;
+import ch.usi.dag.disl.exception.ASMException;
 
 public class AsmHelper {
 
-	public static int getIConst(AbstractInsnNode instr) throws DiSLException {
+	public static int getIConst(AbstractInsnNode instr)
+			throws ASMException {
 
 		switch (instr.getOpcode()) {
 		case Opcodes.ICONST_M1:
@@ -47,23 +48,23 @@ public class AsmHelper {
 		case Opcodes.BIPUSH:
 			return ((IntInsnNode) instr).operand;
 		default:
-			throw new DiSLException("Not an iconst instrction.");
+			throw new ASMException("Not an iconst instruction.");
 		}
 	}
 
 	public static int getParameterIndex(MethodNode method, int par_index)
-			throws DiSLException {
+			throws ASMException {
 
 		Type[] types = Type.getArgumentTypes(method.desc);
 
 		if (par_index >= types.length) {
-			throw new DiSLException("Parameter index out of bound");
+			throw new ASMException("Parameter index out of bound");
 		}
 
 		int index = 0;
 
 		for (int i = 0; i < par_index; i++) {
-			
+
 			if (types[i].equals(Type.DOUBLE_TYPE)
 					|| types[i].equals(Type.LONG_TYPE)) {
 				index += 2;
@@ -71,14 +72,14 @@ public class AsmHelper {
 				index += 1;
 			}
 		}
-		
+
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {
 			index += 1;
 		}
 
 		return index;
 	}
-	
+
 	public static Type getType(AbstractInsnNode instr) {
 
 		switch (instr.getOpcode()) {
@@ -120,7 +121,7 @@ public class AsmHelper {
 			return null;
 		}
 	}
-	
+
 	public static AbstractInsnNode remove(InsnList ilst,
 			AbstractInsnNode instr, boolean forward) {
 		AbstractInsnNode ret = forward ? instr.getNext() : instr.getPrevious();
@@ -167,15 +168,15 @@ public class AsmHelper {
 
 	// Make a clone of an instruction list
 	public static InsnList cloneInsnList(InsnList src) {
-		
+
 		Map<LabelNode, LabelNode> map = createLabelMap(src);
 		return cloneInsnList(src, map);
 	}
-	
+
 	public static Map<LabelNode, LabelNode> createLabelMap(InsnList src) {
-		
+
 		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
-		
+
 		// Iterate the instruction list and get all the labels
 		for (AbstractInsnNode instr : src.toArray()) {
 			if (instr instanceof LabelNode) {
@@ -183,10 +184,10 @@ public class AsmHelper {
 				map.put((LabelNode) instr, label);
 			}
 		}
-		
+
 		return map;
 	}
-	
+
 	public static InsnList cloneInsnList(InsnList src,
 			Map<LabelNode, LabelNode> map) {
 
@@ -213,7 +214,7 @@ public class AsmHelper {
 
 		return dst;
 	}
-	
+
 	public static List<TryCatchBlockNode> cloneTryCatchBlocks(
 			List<TryCatchBlockNode> src, Map<LabelNode, LabelNode> map) {
 
@@ -233,40 +234,40 @@ public class AsmHelper {
 		while (instr != null && instr.getOpcode() == -1) {
 			instr = isForward ? instr.getNext() : instr.getPrevious();
 		}
-		
+
 		return instr;
 	}
-	
+
 	// Detects if the instruction list contains only return
 	public static boolean containsOnlyReturn(InsnList ilst) {
 
 		return isReturn(ilst.getFirst().getOpcode());
 	}
-	
+
 	// Make sure an instruction has a valid next-instruction.
 	// NOTE that in asm, label might be an AbstractInsnNode. If an instruction
 	// is followed with a label which is the end of an instruction list, then
 	// it has no next instruction.
 	public static boolean hasNext(InsnList instr_lst, int i) {
-		
+
 		if (i < instr_lst.size()) {
-			
+
 			AbstractInsnNode nextInstruction = instr_lst.get(i + 1);
-			
+
 			return nextInstruction == null
-					|| !(nextInstruction.getOpcode() == -1
-					&& nextInstruction.getNext() == null);
+					|| !(nextInstruction.getOpcode() == -1 && nextInstruction
+							.getNext() == null);
 		}
 
 		return false;
 	}
-	
+
 	public static boolean isReturn(int opcode) {
 		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
 	}
 
 	public static boolean isBranch(AbstractInsnNode instruction) {
-		
+
 		int opcode = instruction.getOpcode();
 
 		return instruction instanceof JumpInsnNode
@@ -277,7 +278,7 @@ public class AsmHelper {
 	}
 
 	public static boolean isConditionalBranch(AbstractInsnNode instruction) {
-		
+
 		int opcode = instruction.getOpcode();
 
 		return (instruction instanceof JumpInsnNode && opcode != Opcodes.GOTO);
@@ -286,7 +287,7 @@ public class AsmHelper {
 	// Get basic blocks of the given method node.
 	public static List<AbstractInsnNode> getBasicBlocks(MethodNode method,
 			boolean isPrecise) {
-		
+
 		InsnList instr_lst = method.instructions;
 
 		Set<AbstractInsnNode> bb_begins = new HashSet<AbstractInsnNode>();
@@ -364,7 +365,7 @@ public class AsmHelper {
 
 		switch (instruction.getOpcode()) {
 
-			// NullPointerException, ArrayIndexOutOfBoundsException
+		// NullPointerException, ArrayIndexOutOfBoundsException
 		case Opcodes.BALOAD:
 		case Opcodes.DALOAD:
 		case Opcodes.FALOAD:

@@ -3,7 +3,7 @@ package ch.usi.dag.disl.staticinfo.analysis.cache;
 import java.util.HashMap;
 import java.util.Map;
 
-import ch.usi.dag.disl.exception.DiSLException;
+import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisData;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
@@ -20,20 +20,21 @@ public class StaticAnalysisCache {
 		this.cacheClass = cacheClass;
 	}
 
-	private Object createCacheObject(StaticAnalysisData sad)
-			throws DiSLException {
+	private Object createCacheObject(StaticAnalysisData sad) 
+		throws ReflectionException {
 
 		// create cache object using "copy" constructor
 		return ReflectionHelper.createInstance(cacheClass, sad);
 	}
 
-	public Object getCachedResult(StaticAnalysisData sad) throws DiSLException {
+	public Object getCachedResult(StaticAnalysisData sad)
+		throws ReflectionException {
 		
 		return cachedData.get(createCacheObject(sad));
 	}
 
 	public void cacheResult(StaticAnalysisData sad, Object result)
-			throws DiSLException {
+		throws ReflectionException {
 
 		cachedData.put(createCacheObject(sad), result);
 	}

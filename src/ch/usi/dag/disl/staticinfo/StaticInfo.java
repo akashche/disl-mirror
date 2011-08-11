@@ -8,7 +8,8 @@ import java.util.Map;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.exception.DiSLException;
+import ch.usi.dag.disl.exception.ReflectionException;
+import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
@@ -19,11 +20,11 @@ import ch.usi.dag.disl.util.ReflectionHelper;
 public class StaticInfo {
 
 	class StaticInfoKey {
-		
+
 		private Snippet snippet;
 		private MarkedRegion markedRegion;
 		private String methodID;
-		
+
 		public StaticInfoKey(Snippet snippet, MarkedRegion markedRegion,
 				String methodID) {
 			super();
@@ -31,30 +32,30 @@ public class StaticInfo {
 			this.markedRegion = markedRegion;
 			this.methodID = methodID;
 		}
-		
+
 		@Override
 		public int hashCode() {
-			
+
 			final int prime = 31;
 			int result = 1;
-			
+
 			result = prime * result + getOuterType().hashCode();
-			
+
 			result = prime * result
 					+ ((markedRegion == null) ? 0 : markedRegion.hashCode());
-			
+
 			result = prime * result
 					+ ((methodID == null) ? 0 : methodID.hashCode());
-			
+
 			result = prime * result
 					+ ((snippet == null) ? 0 : snippet.hashCode());
-			
+
 			return result;
 		}
 
 		@Override
 		public boolean equals(Object obj) {
-			
+
 			if (this == obj)
 				return true;
 			if (obj == null)
@@ -72,7 +73,7 @@ public class StaticInfo {
 			} else if (!markedRegion.equals(other.markedRegion)) {
 				return false;
 			}
-			
+
 			if (methodID == null) {
 				if (other.methodID != null) {
 					return false;
@@ -80,7 +81,7 @@ public class StaticInfo {
 			} else if (!methodID.equals(other.methodID)) {
 				return false;
 			}
-			
+
 			if (snippet == null) {
 				if (other.snippet != null) {
 					return false;
@@ -88,7 +89,7 @@ public class StaticInfo {
 			} else if (!snippet.equals(other.snippet)) {
 				return false;
 			}
-			
+
 			return true;
 		}
 
@@ -96,19 +97,18 @@ public class StaticInfo {
 			return StaticInfo.this;
 		}
 	}
-	
-	Map<StaticInfoKey, Object> staticInfoData = 
-		new HashMap<StaticInfoKey, Object>();
-	
+
+	Map<StaticInfoKey, Object> staticInfoData = new HashMap<StaticInfoKey, Object>();
+
 	public StaticInfo(Map<Class<?>, Object> staticAnalysisInstances,
 			ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
-			throws DiSLException {
+			throws ReflectionException, StaticAnalysisException {
 
 		computeStaticInfo(staticAnalysisInstances, classNode, methodNode,
 				snippetMarkings);
 	}
-	
+
 	public Object getSI(Snippet snippet, MarkedRegion markedRegion,
 			String infoClass, String infoMethod) {
 
@@ -125,14 +125,14 @@ public class StaticInfo {
 			Map<Class<?>, Object> staticAnalysisInstances, ClassNode classNode,
 			MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
-			throws DiSLException {
-		
-		for(Snippet snippet : snippetMarkings.keySet()) {
-			
-			for(MarkedRegion markedRegion : snippetMarkings.get(snippet)) {
-				
-				for (String stAnMehodName : 
-					snippet.getCode().getStaticAnalyses().keySet()) {
+			throws ReflectionException, StaticAnalysisException {
+
+		for (Snippet snippet : snippetMarkings.keySet()) {
+
+			for (MarkedRegion markedRegion : snippetMarkings.get(snippet)) {
+
+				for (String stAnMehodName : snippet.getCode()
+						.getStaticAnalyses().keySet()) {
 
 					// get static analysis method
 					Method stAnMethod = snippet.getCode().getStaticAnalyses()
@@ -158,10 +158,10 @@ public class StaticInfo {
 					StaticAnalysisData saData = new StaticAnalysisData(
 							classNode, methodNode, snippet,
 							snippetMarkings.get(snippet), markedRegion);
-					
+
 					// compute static data using analysis
-					Object result = 
-						saIntr.computeStaticData(stAnMethod, saData);
+					Object result = saIntr
+							.computeStaticData(stAnMethod, saData);
 
 					// store the result
 					setSI(snippet, markedRegion, stAnMehodName, result);
@@ -169,7 +169,7 @@ public class StaticInfo {
 			}
 		}
 	}
-	
+
 	private void setSI(Snippet snippet, MarkedRegion markedRegion,
 			String methodID, Object value) {
 

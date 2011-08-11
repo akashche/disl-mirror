@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.exception;
 
-public class DiSLException extends Exception {
+public abstract class DiSLException extends Exception {
 
 	private static final long serialVersionUID = 6916051574250648195L;
 	

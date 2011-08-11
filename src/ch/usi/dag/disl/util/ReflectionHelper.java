@@ -6,43 +6,44 @@ import java.lang.reflect.Method;
 import org.objectweb.asm.Type;
 
 import ch.usi.dag.disl.exception.DiSLException;
+import ch.usi.dag.disl.exception.ReflectionException;
 
 public class ReflectionHelper {
 
 	/**
-	 * Instantiates class using constructor with defined arguments similarly
-	 * to createInstance but returns null instead of exception if the
-	 * instantiation was not successful.
+	 * Instantiates class using constructor with defined arguments similarly to
+	 * createInstance but returns null instead of exception if the instantiation
+	 * was not successful.
 	 * 
-	 * The only exception when exception is thrown is when the constructor
-	 * of the created instance throws DiSLException
+	 * The only exception when exception is thrown is when the constructor of
+	 * the created instance throws DiSLException
 	 * 
 	 * @param classToInstantiate
 	 * @param args
 	 * @return
-	 * @throws DiSLException
+	 * @throws ReflectionException
 	 */
 	public static Object tryCreateInstance(Class<?> classToInstantiate,
-			Object... args) throws DiSLException {
-		
+			Object... args) throws ReflectionException {
+
 		try {
 			return createInstance(classToInstantiate, args);
 		} catch (DiSLException e) {
 
 			// constructor of the created instance throws DiSLException
 			// exception -> propagate it
-			if(e.getCause() != null 
+			if (e.getCause() != null
 					&& e.getCause().getCause() instanceof DiSLException) {
-				
-				throw new DiSLException("Marker error: ",
-						e.getCause().getCause());
+
+				throw new ReflectionException("Marker error: ", e.getCause()
+						.getCause());
 			}
-			
+
 			return null;
 		}
-		
+
 	}
-	
+
 	/**
 	 * Instantiates class using constructor with defined arguments.
 	 * 
@@ -52,47 +53,47 @@ public class ReflectionHelper {
 	 * @throws DiSLException
 	 */
 	public static Object createInstance(Class<?> classToInstantiate,
-			Object... args) throws DiSLException {
-		
+			Object... args) throws ReflectionException {
+
 		try {
-			
+
 			// resolve constructor argument types
 			Class<?>[] argTypes = new Class<?>[args.length];
-			for(int i = 0; i < args.length; ++i) {
+			for (int i = 0; i < args.length; ++i) {
 				argTypes[i] = args[i].getClass();
 			}
-			
+
 			// resolve constructor
-			Constructor<?> constructor =
-				classToInstantiate.getConstructor(argTypes);
-			
+			Constructor<?> constructor = classToInstantiate
+					.getConstructor(argTypes);
+
 			// invoke constructor
 			return constructor.newInstance(args);
-			
+
 		} catch (Exception e) {
-			throw new DiSLException("Class " + classToInstantiate.getName()
-					+ " cannot be instantiated", e);
+			throw new ReflectionException("Class "
+					+ classToInstantiate.getName() + " cannot be instantiated",
+					e);
 		}
 	}
-	
-	public static Class<?> resolveClass(Type asmType) throws DiSLException {
+
+	public static Class<?> resolveClass(Type asmType)
+			throws ReflectionException {
 		try {
 			return Class.forName(asmType.getClassName());
 		} catch (ClassNotFoundException e) {
-			throw new DiSLException("Class " + asmType.getClassName()
+			throw new ReflectionException("Class " + asmType.getClassName()
 					+ " cannot be resolved", e);
 		}
 	}
-	
+
 	public static Method resolveMethod(Class<?> methodOwner, String methodName)
-			throws DiSLException {
-		
+			throws ReflectionException {
+
 		try {
 			return methodOwner.getMethod(methodName);
-		}
-		catch(NoSuchMethodException e) {
-			throw new DiSLException(
-					"Method " + methodName + " in class "
+		} catch (NoSuchMethodException e) {
+			throw new ReflectionException("Method " + methodName + " in class "
 					+ methodOwner.getName() + " cannot be found."
 					+ " Snippet was probably compiled against a modified"
 					+ " (different) class");

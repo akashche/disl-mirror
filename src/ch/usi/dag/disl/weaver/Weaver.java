@@ -33,11 +33,12 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.dynamicinfo.DynamicContext;
-import ch.usi.dag.disl.exception.DiSLException;
+import ch.usi.dag.disl.exception.ASMException;
+import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
+import ch.usi.dag.disl.snippet.localvars.SyntheticLocalVar;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
-import ch.usi.dag.disl.snippet.syntheticlocal.SyntheticLocalVar;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.stack.StackUtil;
@@ -76,7 +77,8 @@ public class Weaver {
 	}
 
 	public static void fixDynamicInfo(Snippet snippet, MarkedRegion region,
-Frame<SourceValue> frame, MethodNode method) throws DiSLException {
+			Frame<SourceValue> frame, MethodNode method)
+			throws ASMException {
 		InsnList src = method.instructions;
 
 		for (AbstractInsnNode instr : src.toArray()) {
@@ -98,7 +100,7 @@ Frame<SourceValue> frame, MethodNode method) throws DiSLException {
 			int operand = AsmHelper.getIConst(prev.getPrevious());
 			Type t = AsmHelper.getType(prev);
 
-			if (invoke.name.equals("getStackValue")) {		
+			if (invoke.name.equals("getStackValue")) {
 				int sopcode = t.getOpcode(Opcodes.ISTORE);
 				int lopcode = t.getOpcode(Opcodes.ILOAD);
 				SourceValue source = StackUtil.getSource(frame, operand);
@@ -302,8 +304,7 @@ Frame<SourceValue> frame, MethodNode method) throws DiSLException {
 			Map<AbstractInsnNode, AbstractInsnNode> weaving_end,
 			Map<AbstractInsnNode, AbstractInsnNode> weaving_athrow,
 			Map<AbstractInsnNode, Integer> stack_start,
-			Map<AbstractInsnNode, Integer> stack_end, 
-			ArrayList<Snippet> array) {
+			Map<AbstractInsnNode, Integer> stack_end, ArrayList<Snippet> array) {
 
 		InsnList instructions = methodNode.instructions;
 		List<LabelNode> instrumented = new LinkedList<LabelNode>();
@@ -325,9 +326,8 @@ Frame<SourceValue> frame, MethodNode method) throws DiSLException {
 							// Contains only one instruction
 							AbstractInsnNode prev = start.getPrevious();
 
-							if (!(prev != null 
-									&& prev instanceof LabelNode 
-									&& instrumented.contains(instrumented))) {
+							if (!(prev != null && prev instanceof LabelNode && instrumented
+									.contains(instrumented))) {
 								LabelNode labelNode = new LabelNode();
 								instrumented.add(labelNode);
 								instructions.insertBefore(start, labelNode);
@@ -398,12 +398,12 @@ Frame<SourceValue> frame, MethodNode method) throws DiSLException {
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
 			StaticInfo staticInfoHolder, boolean usesDynamicAnalysis)
-			throws DiSLException {
+			throws ASMException {
 		// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_end;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_athrow;
-		
+
 		Map<AbstractInsnNode, Integer> stack_start;
 		Map<AbstractInsnNode, Integer> stack_end;
 
@@ -420,18 +420,18 @@ Frame<SourceValue> frame, MethodNode method) throws DiSLException {
 
 		initWeavingEnds(methodNode, snippetMarkings, weaving_start,
 				weaving_end, weaving_athrow, stack_start, stack_end, array);
-		
+
 		Analyzer<BasicValue> basicAnalyzer = StackUtil.getBasicAnalyzer();
 
 		try {
 			basicAnalyzer.analyze(classNode.name, methodNode);
 		} catch (AnalyzerException e) {
-			throw new DiSLException("Cause by AnalyzerException : \n"
+			throw new DiSLFatalException("Cause by AnalyzerException : \n"
 					+ e.getMessage());
 		}
 
 		Frame<BasicValue>[] basicFrames = basicAnalyzer.getFrames();
-		
+
 		Analyzer<SourceValue> sourceAnalyzer = null;
 		Frame<SourceValue>[] sourceFrames = null;
 
@@ -441,7 +441,7 @@ Frame<SourceValue> frame, MethodNode method) throws DiSLException {
 			try {
 				sourceAnalyzer.analyze(classNode.name, methodNode);
 			} catch (AnalyzerException e) {
-				throw new DiSLException("Cause by AnalyzerException : \n"
+				throw new DiSLFatalException("Cause by AnalyzerException : \n"
 						+ e.getMessage());
 			}
 
@@ -462,9 +462,8 @@ Frame<SourceValue> frame, MethodNode method) throws DiSLException {
 			// entrance of a region.
 			if (snippet.getAnnotationClass().equals(Before.class)) {
 				for (MarkedRegion region : regions) {
-					
-					AbstractInsnNode loc = weaving_start.get(region
-							.getStart());
+
+					AbstractInsnNode loc = weaving_start.get(region.getStart());
 
 					int index = stack_start.get(region.getStart());
 
@@ -472,7 +471,8 @@ Frame<SourceValue> frame, MethodNode method) throws DiSLException {
 							methodNode.maxLocals);
 					InsnList pushAll = StackUtil.exit(basicFrames[index],
 							methodNode.maxLocals);
-					methodNode.maxLocals += StackUtil.getOffset(basicFrames[index]);
+					methodNode.maxLocals += StackUtil
+							.getOffset(basicFrames[index]);
 
 					SnippetCode clone = snippet.getCode().clone();
 					InsnList newlst = clone.getInstructions();

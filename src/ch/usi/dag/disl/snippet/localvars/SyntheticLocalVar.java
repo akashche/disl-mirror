@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.snippet.syntheticlocal;
+package ch.usi.dag.disl.snippet.localvars;
 
 import org.objectweb.asm.tree.InsnList;
 
