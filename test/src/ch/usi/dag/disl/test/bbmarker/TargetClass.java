@@ -6,7 +6,7 @@ public class TargetClass {
 		if (branch){
 			System.out.println("true");
 		}else{
-			System.out.println("flase");
+			System.out.println("false");
 		}
 		
 		return;

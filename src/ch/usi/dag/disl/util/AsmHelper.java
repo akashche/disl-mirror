@@ -290,7 +290,15 @@ public class AsmHelper {
 
 		InsnList instr_lst = method.instructions;
 
-		Set<AbstractInsnNode> bb_begins = new HashSet<AbstractInsnNode>();
+		Set<AbstractInsnNode> bb_begins = new HashSet<AbstractInsnNode>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public boolean add(AbstractInsnNode e) {
+				return super.add(skipLabels(e, true));
+			}
+		};
+					
 		bb_begins.add(instr_lst.getFirst());
 
 		for (int i = 0; i < instr_lst.size(); i++) {

@@ -14,6 +14,8 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import ch.usi.dag.disl.util.AsmHelper;
 
 public class CtrlFlowGraph {
+	
+	private MethodNode method;
 
 	private List<BasicBlock> nodes;
 	private List<BasicBlock> connected_nodes;
@@ -22,6 +24,8 @@ public class CtrlFlowGraph {
 
 	// Initialize the control flow graph.
 	public CtrlFlowGraph(MethodNode method) {
+		this.method = method;
+		
 		nodes = new LinkedList<BasicBlock>();
 		connected_nodes = new LinkedList<BasicBlock>();
 
@@ -29,13 +33,13 @@ public class CtrlFlowGraph {
 		seperators = AsmHelper.getBasicBlocks(method, false);
 		AbstractInsnNode last = method.instructions.getLast();
 		seperators.add(last);
-
+		
 		for (int i = 0; i < seperators.size() - 1; i++) {
 
 			AbstractInsnNode start = seperators.get(i);
 			AbstractInsnNode end = seperators.get(i + 1);
 
-			if (end != last) {
+			if (i != seperators.size() - 2) {
 				end = end.getPrevious();
 			}
 
@@ -43,10 +47,29 @@ public class CtrlFlowGraph {
 			nodes.add(new BasicBlock(start, end));
 		}
 	}
+	
+	// Return the index of basic block that contains the input instruction.
+	// If not found, return -1.
+	public int getIndex(AbstractInsnNode instr) {
+
+		instr = AsmHelper.skipLabels(instr, true);
+
+		while (instr != null) {
+			if (seperators.contains(instr)) {
+				return seperators.indexOf(instr);
+			}
+
+			instr = instr.getPrevious();
+		}
+
+		return -1;
+	}
 
 	// Return a basic block that contains the input instruction.
 	// If not found, return null.
 	public BasicBlock getBB(AbstractInsnNode instr) {
+		
+		instr = AsmHelper.skipLabels(instr, true);
 
 		while (instr != null) {
 			if (seperators.contains(instr)) {
@@ -118,8 +141,7 @@ public class CtrlFlowGraph {
 
 		for (; i < connected_nodes.size(); i++) {
 			BasicBlock current = connected_nodes.get(i);
-			AbstractInsnNode exit = AsmHelper.skipLabels(current.getExit(),
-					false);
+			AbstractInsnNode exit = current.getExit();
 
 			int opcode = exit.getOpcode();
 
@@ -164,7 +186,8 @@ public class CtrlFlowGraph {
 			}
 
 			default:
-				if (!(opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)) {
+				if (!((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) 
+						|| opcode == Opcodes.ATHROW)) {
 					tryVisit(current, exit.getNext(), exit, exits);
 				}
 
@@ -173,6 +196,14 @@ public class CtrlFlowGraph {
 		}
 
 		return exits;
+	}
+	
+	public void build() {
+		visit(method.instructions.getFirst());
+
+		for (int i = method.tryCatchBlocks.size() - 1; i >= 0; i--) {
+			visit(method.tryCatchBlocks.get(i).handler);
+		}
 	}
 
 	public List<BasicBlock> getNodes() {
