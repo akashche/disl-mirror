@@ -356,6 +356,7 @@ public class SnippetParser {
 		}
 
 		// ** create unprocessed code holder class **
+		// code is processed after everything is parsed
 		UnprocessedSnippetCode uscd = new UnprocessedSnippetCode(className,
 				method.name, method.instructions, method.tryCatchBlocks,
 				analysis.getStaticAnalyses(), analysis.usesDynamicAnalysis());

@@ -53,10 +53,7 @@ public class Snippet implements Comparable<Snippet> {
 	public void prepare(LocalVars allLVs, boolean useDynamicBypass)
 			throws StaticAnalysisException, ReflectionException {
 
-		code = unprocessedCode.process(allLVs);
+		code = unprocessedCode.process(allLVs, useDynamicBypass);
 		unprocessedCode = null;
-
-		// prepare code
-		code.prepare(useDynamicBypass);
 	}
 }

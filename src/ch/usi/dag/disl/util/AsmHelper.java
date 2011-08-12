@@ -290,10 +290,8 @@ public class AsmHelper {
 	}
 
 	// Get basic blocks of the given method node.
-	public static List<AbstractInsnNode> getBasicBlocks(MethodNode method,
-			boolean isPrecise) {
-
-		InsnList instr_lst = method.instructions;
+	public static List<AbstractInsnNode> getBasicBlocks(InsnList instructions,
+			List<TryCatchBlockNode> tryCatchBlocks, boolean isPrecise) {
 
 		Set<AbstractInsnNode> bb_begins = new HashSet<AbstractInsnNode>() {
 			private static final long serialVersionUID = 1L;
@@ -304,10 +302,10 @@ public class AsmHelper {
 			}
 		};
 					
-		bb_begins.add(instr_lst.getFirst());
+		bb_begins.add(instructions.getFirst());
 
-		for (int i = 0; i < instr_lst.size(); i++) {
-			AbstractInsnNode instruction = instr_lst.get(i);
+		for (int i = 0; i < instructions.size(); i++) {
+			AbstractInsnNode instruction = instructions.get(i);
 			int opcode = instruction.getOpcode();
 
 			switch (instruction.getType()) {
@@ -318,7 +316,7 @@ public class AsmHelper {
 				bb_begins.add(((JumpInsnNode) instruction).label);
 
 				// goto never returns.
-				if (opcode != Opcodes.GOTO && hasNext(instr_lst, i)) {
+				if (opcode != Opcodes.GOTO && hasNext(instructions, i)) {
 					bb_begins.add(instruction.getNext());
 				}
 
@@ -358,14 +356,14 @@ public class AsmHelper {
 			}
 		}
 
-		for (TryCatchBlockNode try_catch_block : method.tryCatchBlocks) {
+		for (TryCatchBlockNode try_catch_block : tryCatchBlocks) {
 			bb_begins.add(try_catch_block.handler);
 		}
 
 		// Sort
 		List<AbstractInsnNode> bb_list = new ArrayList<AbstractInsnNode>();
 
-		for (AbstractInsnNode instruction : instr_lst.toArray()) {
+		for (AbstractInsnNode instruction : instructions.toArray()) {
 			if (bb_begins.contains(instruction)) {
 				bb_list.add(instruction);
 			}

@@ -5,33 +5,40 @@ import java.util.List;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.util.AsmHelper;
 
 public class CtrlFlowGraph {
 	
-	private MethodNode method;
-
+	final private InsnList instructions;
+	final private List<TryCatchBlockNode> tryCatchBlocks;
+	
 	private List<BasicBlock> nodes;
 	private List<BasicBlock> connected_nodes;
 	
 	private List<AbstractInsnNode> seperators;
 
 	// Initialize the control flow graph.
-	public CtrlFlowGraph(MethodNode method) {
-		this.method = method;
+	public CtrlFlowGraph(InsnList instructions,
+			List<TryCatchBlockNode> tryCatchBlocks) {
+
+		this.instructions = instructions;
+		this.tryCatchBlocks = tryCatchBlocks;
 		
 		nodes = new LinkedList<BasicBlock>();
 		connected_nodes = new LinkedList<BasicBlock>();
 
 		// Generating basic blocks
-		seperators = AsmHelper.getBasicBlocks(method, false);
-		AbstractInsnNode last = method.instructions.getLast();
+		seperators = 
+			AsmHelper.getBasicBlocks(instructions, tryCatchBlocks, false);
+		AbstractInsnNode last = instructions.getLast();
 		seperators.add(last);
 		
 		for (int i = 0; i < seperators.size() - 1; i++) {
@@ -46,6 +53,11 @@ public class CtrlFlowGraph {
 			end = AsmHelper.skipLabels(end, false);
 			nodes.add(new BasicBlock(start, end));
 		}
+	}
+	
+	// Initialize the control flow graph.
+	public CtrlFlowGraph(MethodNode method) {
+		this(method.instructions, method.tryCatchBlocks);
 	}
 	
 	// Return the index of basic block that contains the input instruction.
@@ -199,10 +211,10 @@ public class CtrlFlowGraph {
 	}
 	
 	public void build() {
-		visit(method.instructions.getFirst());
+		visit(instructions.getFirst());
 
-		for (int i = method.tryCatchBlocks.size() - 1; i >= 0; i--) {
-			visit(method.tryCatchBlocks.get(i).handler);
+		for (int i = tryCatchBlocks.size() - 1; i >= 0; i--) {
+			visit(tryCatchBlocks.get(i).handler);
 		}
 	}
 

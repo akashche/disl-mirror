@@ -7,10 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
@@ -19,8 +23,11 @@ import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.snippet.localvars.LocalVars;
 import ch.usi.dag.disl.snippet.localvars.SyntheticLocalVar;
 import ch.usi.dag.disl.snippet.localvars.ThreadLocalVar;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
+import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
+import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class UnprocessedSnippetCode {
 
@@ -43,8 +50,10 @@ public class UnprocessedSnippetCode {
 		this.usesDynamicAnalysis = usesDynamicAnalysis;
 	}
 
-	public SnippetCode process(LocalVars allLVs)
+	public SnippetCode process(LocalVars allLVs, boolean useDynamicBypass)
 			throws StaticAnalysisException, ReflectionException {
+
+		// *** CODE ANALYSIS ***
 
 		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
 
@@ -52,7 +61,6 @@ public class UnprocessedSnippetCode {
 
 		Map<String, Method> staticAnalyses = new HashMap<String, Method>();
 
-		// create list of synthetic local variables
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
 			// *** Parse synthetic local variables ***
@@ -85,6 +93,10 @@ public class UnprocessedSnippetCode {
 			}
 		}
 
+		// handled exception check
+		boolean containsHandledException = 
+			containsHandledException(instructions, tryCatchBlocks);
+		
 		// TODO ! analysis checking
 		// arguments (local variables 1, 2, ...) may be used only in method
 		// calls
@@ -92,8 +104,18 @@ public class UnprocessedSnippetCode {
 		// TODO ! dynamic analysis method argument checking
 		// values of arguments should be only constant values
 
+		// *** CODE PROCESSING ***
+		// NOTE: methods are modifying arguments
+
+		// remove returns in snippet (in asm code)
+		AsmHelper.removeReturns(instructions);
+
+		if (!useDynamicBypass) {
+			insertDynamicBypass(instructions, tryCatchBlocks);
+		}
+
 		return new SnippetCode(instructions, tryCatchBlocks, slvList, tlvList,
-				staticAnalyses, usesDynamicAnalysis);
+				staticAnalyses, usesDynamicAnalysis, containsHandledException);
 	}
 
 	/**
@@ -212,5 +234,98 @@ public class UnprocessedSnippetCode {
 				methodInstr.name);
 
 		return new StaticAnalysisMethod(methodID, method);
+	}
+
+	private void insertDynamicBypass(InsnList instructions,
+			List<TryCatchBlockNode> tryCatchBlocks) {
+
+		// inserts
+		// DynamicBypass.activate();
+		// try {
+		// ... original code
+		// } finally {
+		// DynamicBypass.deactivate();
+		// }
+
+		// create method nodes
+		Type typeDB = Type.getType(DynamicBypass.class);
+		MethodInsnNode mtdActivate = new MethodInsnNode(Opcodes.INVOKESTATIC,
+				typeDB.getInternalName(), "activate", "()V");
+		MethodInsnNode mtdDeactivate = new MethodInsnNode(Opcodes.INVOKESTATIC,
+				typeDB.getInternalName(), "deactivate", "()V");
+
+		// add try label at the beginning
+		LabelNode tryBegin = new LabelNode();
+		instructions.insert(tryBegin);
+
+		// add invocation of activate at the beginning
+		instructions.insert(mtdActivate.clone(null));
+
+		// ## try {
+
+		// ## }
+
+		// add try label at the end
+		LabelNode tryEnd = new LabelNode();
+		instructions.add(tryEnd);
+
+		// ## after normal flow
+
+		// add invocation of deactivate - normal flow
+		instructions.add(mtdDeactivate.clone(null));
+
+		// normal flow should jump after handler
+		LabelNode handlerEnd = new LabelNode();
+		instructions.add(new JumpInsnNode(Opcodes.GOTO, handlerEnd));
+
+		// ## after abnormal flow - exception handler
+
+		// add handler begin
+		LabelNode handlerBegin = new LabelNode();
+		instructions.add(handlerBegin);
+
+		// add invocation of deactivate - abnormal flow
+		instructions.add(mtdDeactivate.clone(null));
+		// throw exception again
+		instructions.add(new InsnNode(Opcodes.ATHROW));
+
+		// add handler end
+		instructions.add(handlerEnd);
+
+		// ## add handler to the list
+		tryCatchBlocks.add(new TryCatchBlockNode(tryBegin, tryEnd,
+				handlerBegin, null));
+	}
+
+	/**
+	 * Determines if the code contains handler that handles exception and
+	 * doesn't propagate some exception further.
+	 * 
+	 * This has to be detected because it can cause stack inconsistency that has
+	 * to be handled in the weaver.
+	 */
+	public static boolean containsHandledException(InsnList instructions,
+			List<TryCatchBlockNode> tryCatchBlocks) {
+
+		if (tryCatchBlocks.size() == 0) {
+			return false;
+		}
+
+		// create control flow graph
+		CtrlFlowGraph cfg = new CtrlFlowGraph(instructions, tryCatchBlocks);
+		cfg.visit(instructions.getFirst());
+
+		// check if the control flow continues after exception handler
+		// if it does, exception was handled
+		for (int i = tryCatchBlocks.size() - 1; i >= 0; --i) {
+
+			TryCatchBlockNode tcb = tryCatchBlocks.get(i);
+
+			if (cfg.visit(tcb.handler).size() != 0) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

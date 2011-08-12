@@ -16,8 +16,8 @@ public class BasicBlockMarker implements Marker {
 	public List<MarkedRegion> mark(MethodNode method) {
 
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		List<AbstractInsnNode> seperators = AsmHelper.getBasicBlocks(method,
-				isPrecise);
+		List<AbstractInsnNode> seperators = AsmHelper.getBasicBlocks(
+				method.instructions, method.tryCatchBlocks, isPrecise);
 
 		AbstractInsnNode last = AsmHelper.skipLabels(
 				method.instructions.getLast(), false);
