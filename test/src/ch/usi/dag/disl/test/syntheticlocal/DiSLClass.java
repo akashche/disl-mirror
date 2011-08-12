@@ -8,14 +8,14 @@ import ch.usi.dag.disl.snippet.marker.BodyMarker;
 
 public class DiSLClass {
 	
-	@SyntheticLocal(initialize=Initialize.NEVER)
-	public static String flag; 
+	@SyntheticLocal(initialize=Initialize.ALWAYS)
+	public static String flag = "1";
 	
 	@Before(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 0)
 	public static void precondition() {
 		System.out.println("Precondition!");
 		
-		flag = "1";
+		// flag = "1";
 		
 		if(flag.equals("1")) {
 			System.out.println("Precondition: This should be printed");

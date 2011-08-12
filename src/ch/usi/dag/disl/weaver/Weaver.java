@@ -274,7 +274,7 @@ public class Weaver {
 		AbstractInsnNode instr = ends_after_athrow.get(end);
 
 		// Skip branch instructions, label nodes and line number node.
-		while (instr.getOpcode() == -1 || AsmHelper.isBranch(instr)) {
+		while (AsmHelper.isVirtual(instr) || AsmHelper.isBranch(instr)) {
 			instr = instr.getPrevious();
 		}
 
@@ -342,7 +342,7 @@ public class Weaver {
 							weaving_end.put(end, prev);
 
 							// Skip branch instructions and ASM label nodes.
-							while (prev != start && prev.getOpcode() == -1) {
+							while (prev != start && AsmHelper.isVirtual(prev)) {
 								prev = prev.getPrevious();
 							}
 

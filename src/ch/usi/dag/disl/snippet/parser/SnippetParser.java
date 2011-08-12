@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.snippet.parser;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -17,7 +16,6 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.ProcessorHack;
@@ -232,16 +230,17 @@ public class SnippetParser {
 	private InsnList simpleInsnListClone(InsnList src, AbstractInsnNode from,
 			AbstractInsnNode to) {
 
-		// empty map - we should not encounter labels here
-		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
-
 		InsnList dst = new InsnList();
 
 		// copy instructions using clone
 		AbstractInsnNode instr = from;
 		while (instr != to.getNext()) {
 
-			dst.add(instr.clone(map));
+			// clone only real instructions - labels should not be needed
+			if(! AsmHelper.isVirtual(instr)) {
+			
+				dst.add(instr.clone(null));
+			}
 
 			instr = instr.getNext();
 		}

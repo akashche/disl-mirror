@@ -231,13 +231,18 @@ public class AsmHelper {
 
 	public static AbstractInsnNode skipLabels(AbstractInsnNode instr,
 			boolean isForward) {
-		while (instr != null && instr.getOpcode() == -1) {
+		while (instr != null && isVirtual(instr)) {
 			instr = isForward ? instr.getNext() : instr.getPrevious();
 		}
 
 		return instr;
 	}
 
+	public static boolean isVirtual(AbstractInsnNode instr) {
+		
+		return instr.getOpcode() == -1;
+	}
+	
 	// Detects if the instruction list contains only return
 	public static boolean containsOnlyReturn(InsnList ilst) {
 
@@ -255,8 +260,8 @@ public class AsmHelper {
 			AbstractInsnNode nextInstruction = instr_lst.get(i + 1);
 
 			return nextInstruction == null
-					|| !(nextInstruction.getOpcode() == -1 && nextInstruction
-							.getNext() == null);
+					|| !(isVirtual(nextInstruction)
+							&& nextInstruction.getNext() == null);
 		}
 
 		return false;
