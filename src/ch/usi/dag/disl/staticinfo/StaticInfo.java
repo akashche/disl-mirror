@@ -108,15 +108,32 @@ public class StaticInfo {
 		computeStaticInfo(staticAnalysisInstances, classNode, methodNode,
 				snippetMarkings);
 	}
-
-	public Object getSI(Snippet snippet, MarkedRegion markedRegion,
-			String infoClass, String infoMethod) {
-
+	
+	private StaticInfoKey createStaticInfoKey(Snippet snippet,
+			MarkedRegion markedRegion, String infoClass, String infoMethod) {
+		
 		String methodID = infoClass + Constants.STATIC_ANALYSIS_METHOD_DELIM
 				+ infoMethod;
+		
+		return new StaticInfoKey(snippet, markedRegion, methodID);
+	}
+	
+	public boolean contains(Snippet snippet, MarkedRegion markedRegion,
+			String infoClass, String infoMethod) {
+		
+		StaticInfoKey sik = 
+			createStaticInfoKey(snippet, markedRegion, infoClass, infoMethod);
+		
+		return staticInfoData.containsKey(sik);
+	}
 
-		return staticInfoData.get(new StaticInfoKey(snippet, markedRegion,
-				methodID));
+	public Object get(Snippet snippet, MarkedRegion markedRegion,
+			String infoClass, String infoMethod) {
+
+		StaticInfoKey sik = 
+			createStaticInfoKey(snippet, markedRegion, infoClass, infoMethod);
+		
+		return staticInfoData.get(sik);
 	}
 
 	// Call static analysis for each snippet and each marked region and create

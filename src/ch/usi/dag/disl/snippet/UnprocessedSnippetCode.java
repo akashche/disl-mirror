@@ -43,8 +43,6 @@ public class UnprocessedSnippetCode {
 		this.usesDynamicAnalysis = usesDynamicAnalysis;
 	}
 
-	// TODO ! no DiSL exception
-
 	public SnippetCode process(LocalVars allLVs)
 			throws StaticAnalysisException, ReflectionException {
 

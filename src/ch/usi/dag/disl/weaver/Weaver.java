@@ -62,7 +62,7 @@ public class Weaver {
 			}
 
 			MethodInsnNode invocation = (MethodInsnNode) instr;
-			Object const_var = staticInfoHolder.getSI(snippet, region,
+			Object const_var = staticInfoHolder.get(snippet, region,
 					invocation.owner, invocation.name);
 
 			if (const_var != null) {
