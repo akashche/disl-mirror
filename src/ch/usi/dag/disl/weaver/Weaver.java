@@ -62,17 +62,25 @@ public class Weaver {
 			}
 
 			MethodInsnNode invocation = (MethodInsnNode) instr;
-			Object const_var = staticInfoHolder.get(snippet, region,
-					invocation.owner, invocation.name);
+			
+			if (staticInfoHolder.contains(snippet, region, invocation.owner,
+					invocation.name)) {
 
-			if (const_var != null) {
-				// Insert a ldc instruction and remove the pseudo ones.
-				src.insert(instr, new LdcInsnNode(const_var));
+				Object const_var = staticInfoHolder.get(snippet, region,
+						invocation.owner, invocation.name);
+
+				if (const_var != null) {
+					// Insert a ldc instruction
+					src.insert(instr, new LdcInsnNode(const_var));
+				} else {
+					// push null onto the stack
+					src.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
+				}
+
+				// remove the pseudo instructions
 				src.remove(previous);
 				src.remove(instr);
 			}
-
-			// TODO ! push null also
 		}
 	}
 
@@ -391,7 +399,7 @@ public class Weaver {
 		sorter.visitEnd();
 	}
 
-	// TODO integrate SnippetCode.containsHandledException()
+	// TODO test SnippetCode.containsHandledException()
 	// TODO respect BEST_EFFORT initialization type in synthetic local variable
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
@@ -452,7 +460,7 @@ public class Weaver {
 			SnippetCode code = snippet.getCode();
 
 			// skip snippet with empty code
-			if (snippet.getCode() == null) {
+			if (code == null) {
 				continue;
 			}
 
@@ -463,25 +471,32 @@ public class Weaver {
 				for (MarkedRegion region : regions) {
 
 					AbstractInsnNode loc = weaving_start.get(region.getStart());
-
 					int index = stack_start.get(region.getStart());
 
-					InsnList popAll = StackUtil.enter(basicFrames[index],
-							methodNode.maxLocals);
-					InsnList pushAll = StackUtil.exit(basicFrames[index],
-							methodNode.maxLocals);
-					methodNode.maxLocals += StackUtil
-							.getOffset(basicFrames[index]);
+					if (code.containsHandledException()) {
+						
+						InsnList popAll = StackUtil.enter(basicFrames[index],
+								methodNode.maxLocals);
+						InsnList pushAll = StackUtil.exit(basicFrames[index],
+								methodNode.maxLocals);
+						methodNode.maxLocals += StackUtil
+								.getOffset(basicFrames[index]);
+						
+						AbstractInsnNode temp = pushAll.getFirst();
 
-					SnippetCode clone = snippet.getCode().clone();
+						methodNode.instructions.insertBefore(loc, popAll);
+						methodNode.instructions.insertBefore(loc, pushAll);
+						
+						loc = temp;
+					}
+
+					SnippetCode clone = code.clone();
 					InsnList newlst = clone.getInstructions();
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 					fixLocalIndex(methodNode, newlst);
 
-					methodNode.instructions.insertBefore(loc, popAll);
 					methodNode.instructions.insertBefore(loc, newlst);
-					methodNode.instructions.insertBefore(loc, pushAll);
 					methodNode.tryCatchBlocks.addAll(clone.getTryCatchBlocks());
 
 					if (usesDynamicAnalysis) {
@@ -502,21 +517,29 @@ public class Weaver {
 						AbstractInsnNode loc = weaving_end.get(exit);
 
 						int index = stack_end.get(exit);
+						
+						if (code.containsHandledException()) {
 
-						InsnList popAll = StackUtil.enter(basicFrames[index],
-								methodNode.maxLocals);
-						InsnList pushAll = StackUtil.exit(basicFrames[index],
-								methodNode.maxLocals);
-						methodNode.maxLocals += StackUtil
-								.getOffset(basicFrames[index]);
+							InsnList popAll = StackUtil.enter(
+									basicFrames[index], methodNode.maxLocals);
+							InsnList pushAll = StackUtil.exit(
+									basicFrames[index], methodNode.maxLocals);
+							methodNode.maxLocals += StackUtil
+									.getOffset(basicFrames[index]);
+
+							AbstractInsnNode temp = popAll.getLast();
+
+							methodNode.instructions.insert(loc, pushAll);
+							methodNode.instructions.insert(loc, popAll);
+
+							loc = temp;
+						}
 
 						SnippetCode clone = code.clone();
 						InsnList newlst = clone.getInstructions();
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						fixLocalIndex(methodNode, newlst);
-						methodNode.instructions.insert(loc, pushAll);
 						methodNode.instructions.insert(loc, newlst);
-						methodNode.instructions.insert(loc, popAll);
 						methodNode.tryCatchBlocks.addAll(clone
 								.getTryCatchBlocks());
 
