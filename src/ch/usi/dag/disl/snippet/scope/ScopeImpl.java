@@ -213,14 +213,17 @@ public class ScopeImpl implements Scope {
 		
 		if(paramsWildCard != null) {
 
-			// get last param
-			String lastParamWC = paramsWildCard.get(paramsWildCard.size() - 1);
-			
 			// get parameters and match one by one
 			Type[] parameters = Type.getArgumentTypes(method.desc);
 			
+			// get last param
+			String lastParamWC = null;
+			if(! paramsWildCard.isEmpty()) {
+				lastParamWC = paramsWildCard.get(paramsWildCard.size() - 1);
+			}
+			
 			// if the last param is not PARAM_MATCH_REST then test for equal size
-			if(! lastParamWC.equals(PARAM_MATCH_REST) &&
+			if(! PARAM_MATCH_REST.equals(lastParamWC) &&
 					parameters.length != paramsWildCard.size()) {
 				return false;
 			}

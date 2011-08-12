@@ -37,17 +37,23 @@ public class WildCard {
         // is desired, a simpler character based splitting can be done.
         String [] cards = pattern.split(WILDCARD_PATTERN);
 
-        // first card should be at the beginning
-        int firstIdx = text.indexOf(cards[0]);
-        if(firstIdx != 0) {
-        	return false;
+        if(! pattern.startsWith(WILDCARD_STR)) {
+
+            // first card should be at the beginning
+        	int firstIdx = text.indexOf(cards[0]);
+	        if(firstIdx != 0) {
+	        	return false;
+	        }
         }
         
-        // last card should be at the end
-        String lastCard = cards[cards.length - 1];
-        int lastIdx = text.lastIndexOf(lastCard);
-        if(lastIdx != text.length() - lastCard.length()) {
-        	return false;
+        if(! pattern.endsWith(WILDCARD_STR)) {
+        
+	        // last card should be at the end
+	        String lastCard = cards[cards.length - 1];
+	        int lastIdx = text.lastIndexOf(lastCard);
+	        if(lastIdx != text.length() - lastCard.length()) {
+	        	return false;
+	        }
         }
         
         // Iterate over the cards.

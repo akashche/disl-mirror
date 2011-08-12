@@ -11,7 +11,7 @@ public class DiSLClass {
 	@SyntheticLocal(initialize=Initialize.ALWAYS)
 	public static String flag = "1";
 	
-	@Before(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 0)
+	@Before(marker = BodyMarker.class, scope = "ch.usi.dag.disl.test.syntheticlocal.*.*(boolean)", order = 0)
 	public static void precondition() {
 		System.out.println("Precondition!");
 		

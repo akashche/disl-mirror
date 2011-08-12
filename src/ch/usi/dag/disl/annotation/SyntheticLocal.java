@@ -11,7 +11,7 @@ public @interface SyntheticLocal {
 	
 	// NOTE if you want to change names, you need to change SnippetParser class
 	
-	// NOTE because of weird implementation of annotations in java the defaults
+	// NOTE because of implementation of annotations in java the defaults
 	// are not retrieved from here but from SnippetParser
 	
 	Initialize initialize() default(Initialize.ALWAYS);

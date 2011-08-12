@@ -113,7 +113,7 @@ public class UnprocessedSnippetCode {
 		// remove returns in snippet (in asm code)
 		AsmHelper.removeReturns(instructions);
 
-		if (!useDynamicBypass) {
+		if (useDynamicBypass) {
 			insertDynamicBypass(instructions, tryCatchBlocks);
 		}
 
