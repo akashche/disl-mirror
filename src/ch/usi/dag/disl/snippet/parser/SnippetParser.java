@@ -16,7 +16,9 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.ProcessorHack;
 import ch.usi.dag.disl.annotation.After;
@@ -237,8 +239,8 @@ public class SnippetParser {
 		while (instr != to.getNext()) {
 
 			// clone only real instructions - labels should not be needed
-			if(! AsmHelper.isVirtual(instr)) {
-			
+			if (!AsmHelper.isVirtualInstr(instr)) {
+
 				dst.add(instr.clone(null));
 			}
 
@@ -349,11 +351,19 @@ public class SnippetParser {
 		// ** parse used static analysis **
 		Analysis analysis = parseAnalysis(method.desc);
 
+		// ** checks **
+		
 		// detect empty stippets
 		if (AsmHelper.containsOnlyReturn(method.instructions)) {
 			throw new SnippetParserException("Method " + method.name
 					+ " cannot be empty");
 		}
+
+		// analysis cannot be stored or overwritten
+		usesAnalysisProperly(method.name, method.desc, method.instructions);
+		
+		// dynamic analysis needs directly passed constants
+		passesConstsToDynamicAnalysis(method.name, method.instructions);
 
 		// ** create unprocessed code holder class **
 		// code is processed after everything is parsed
@@ -577,5 +587,107 @@ public class SnippetParser {
 		}
 
 		return false;
+	}
+
+	private void usesAnalysisProperly(String methodName,
+			String methodDescriptor, InsnList instructions)
+			throws SnippetParserException {
+
+		Type[] types = Type.getArgumentTypes(methodDescriptor);
+		int maxArgIndex = 0;
+
+		// count the max index of arguments
+		for (int i = 0; i < types.length; i++) {
+
+			maxArgIndex += AsmHelper.numberOfOccupiedSlots(types[i]);
+		}
+
+		// The following code assumes that all disl advices are static
+		for (AbstractInsnNode instr : instructions.toArray()) {
+
+			switch (instr.getOpcode()) {
+			// test if the analysis is stored somewhere else
+			case Opcodes.ALOAD: {
+
+				int local = ((VarInsnNode) instr).var;
+
+				if (local < maxArgIndex
+						&& instr.getNext().getOpcode() == Opcodes.ASTORE) {
+					throw new SnippetParserException("In advice " + methodName
+							+ " - advice parameter"
+							+ " (analysis) cannot be stored into local"
+							+ " variable");
+				}
+
+				break;
+			}
+				// test if something is stored in the analysis
+			case Opcodes.ASTORE: {
+
+				int local = ((VarInsnNode) instr).var;
+
+				if (local < maxArgIndex) {
+					throw new SnippetParserException("In advice " + methodName
+							+ " - advice parameter"
+							+ " (analysis) cannot overwritten");
+				}
+
+				break;
+			}
+			}
+		}
+	}
+
+	/**
+	 * Checks if dynamic analysis methods contains only
+	 */
+	private void passesConstsToDynamicAnalysis(String methodName,
+			InsnList instructions) throws SnippetParserException {
+
+		for (AbstractInsnNode instr : instructions.toArray()) {
+
+			// it is invocation...
+			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL) {
+				continue;
+			}
+
+			MethodInsnNode invoke = (MethodInsnNode) instr;
+
+			// ... of dynamic analysis
+			if (!invoke.owner
+					.equals(Type.getInternalName(DynamicContext.class))) {
+				continue;
+			}
+
+			AbstractInsnNode secondOperand = instr.getPrevious();
+			AbstractInsnNode firstOperand = secondOperand.getPrevious();
+
+			// first operand test
+			switch (firstOperand.getOpcode()) {
+			case Opcodes.ICONST_M1:
+			case Opcodes.ICONST_0:
+			case Opcodes.ICONST_1:
+			case Opcodes.ICONST_2:
+			case Opcodes.ICONST_3:
+			case Opcodes.ICONST_4:
+			case Opcodes.ICONST_5:
+			case Opcodes.BIPUSH:
+				break;
+
+			default:
+				throw new SnippetParserException("In advice " + methodName
+						+ " - pass the first (pos)"
+						+ " argument of a dynamic context method direcltly."
+						+ " ex: getStackValue(1, int.class)");
+			}
+
+			// second operand test
+			if (AsmHelper.getClassType(secondOperand) == null) {
+				throw new SnippetParserException("In advice " + methodName
+						+ " - pass the second (type)"
+						+ " argument of a dynamic context method direcltly."
+						+ " ex: getStackValue(1, int.class)");
+			}
+		}
 	}
 }

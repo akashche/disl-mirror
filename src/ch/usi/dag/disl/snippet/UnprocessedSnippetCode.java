@@ -16,11 +16,8 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
-import ch.usi.dag.disl.dynamicinfo.DynamicContext;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.snippet.localvars.LocalVars;
@@ -331,94 +328,4 @@ public class UnprocessedSnippetCode {
 
 		return false;
 	}
-
-	public static boolean useConstAnalysis(MethodNode method) {
-		
-		Type[] types = Type.getArgumentTypes(method.desc);
-		int index = 0;		
-		int local = 0;
-
-		for (int i = 0; i < types.length; i++) {
-
-			if (types[i].equals(Type.DOUBLE_TYPE)
-					|| types[i].equals(Type.LONG_TYPE)) {
-				index += 2;
-			} else {
-				index += 1;
-			}
-		}
-		
-		// The following code assumes that all disl advices is static 
-		for (AbstractInsnNode instr : method.instructions.toArray()) {
-
-			switch (instr.getOpcode()) {
-			case Opcodes.ALOAD:
-				
-				local = ((VarInsnNode) instr).var;
-
-				if (local >= 0 && local < index
-						&& instr.getNext().getOpcode() == Opcodes.ASTORE) {
-					return false;
-				}
-
-				break;
-				
-			case Opcodes.ASTORE:
-
-				local = ((VarInsnNode) instr).var;
-
-				if (local >= 0 && local < index) {
-					return false;
-				}
-
-				break;
-				
-			default:
-				continue;
-			}
-		}
-		
-		return true;
-	}
-
-	public static boolean passConstToDynamicAnalysis(InsnList instructions) {
-	
-		for (AbstractInsnNode instr : instructions.toArray()) {
-
-			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL) {
-				continue;
-			}
-
-			MethodInsnNode invoke = (MethodInsnNode) instr;
-
-			if (!invoke.owner
-					.equals(Type.getInternalName(DynamicContext.class))) {
-				continue;
-			}
-			
-			AbstractInsnNode prev = instr.getPrevious();
-			
-			if (AsmHelper.getType(prev) == null) {
-				return false;
-			}
-			
-			switch (prev.getPrevious().getOpcode()) {
-			case Opcodes.ICONST_M1:
-			case Opcodes.ICONST_0:
-			case Opcodes.ICONST_1:
-			case Opcodes.ICONST_2:
-			case Opcodes.ICONST_3:
-			case Opcodes.ICONST_4:
-			case Opcodes.ICONST_5:
-			case Opcodes.BIPUSH:
-				break;
-
-			default:
-				return false;
-			}
-		}
-		
-		return true;
-	}
-
 }

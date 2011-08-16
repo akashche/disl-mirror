@@ -105,8 +105,8 @@ public class Weaver {
 			AbstractInsnNode prev = instr.getPrevious();
 			AbstractInsnNode next = instr.getNext();
 
-			int operand = AsmHelper.getIConst(prev.getPrevious());
-			Type t = AsmHelper.getType(prev);
+			int operand = AsmHelper.getIConstOperand(prev.getPrevious());
+			Type t = AsmHelper.getClassType(prev);
 
 			if (invoke.name.equals("getStackValue")) {
 				int sopcode = t.getOpcode(Opcodes.ISTORE);
@@ -282,7 +282,7 @@ public class Weaver {
 		AbstractInsnNode instr = ends_after_athrow.get(end);
 
 		// Skip branch instructions, label nodes and line number node.
-		while (AsmHelper.isVirtual(instr) || AsmHelper.isBranch(instr)) {
+		while (AsmHelper.isVirtualInstr(instr) || AsmHelper.isBranch(instr)) {
 			instr = instr.getPrevious();
 		}
 
@@ -350,7 +350,7 @@ public class Weaver {
 							weaving_end.put(end, prev);
 
 							// Skip branch instructions and ASM label nodes.
-							while (prev != start && AsmHelper.isVirtual(prev)) {
+							while (prev != start && AsmHelper.isVirtualInstr(prev)) {
 								prev = prev.getPrevious();
 							}
 

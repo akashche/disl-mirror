@@ -170,7 +170,7 @@ public class ScopeImpl implements Scope {
 		
 		// -- match class --
 		
-		// TODO handling of ..* and .* in class mathing 
+		// TODO handling of ..* and .* in class matching 
 		// if wildcard does not include ".." matched class can have only so many
 		// dots as wildcard
 		// if wildcard has ".." replace it with . and match
@@ -188,7 +188,7 @@ public class ScopeImpl implements Scope {
 		}
 
 		if(classWildCard.indexOf(NOT_HANDLE_SUBPACKAGES) != -1) {
-			// TODO if dots not metches return
+			// TODO if dots not matches return
 		}
 		
 		// TODO you should also take care about number of dots

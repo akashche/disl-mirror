@@ -27,7 +27,7 @@ import ch.usi.dag.disl.exception.ASMException;
 
 public class AsmHelper {
 
-	public static int getIConst(AbstractInsnNode instr)
+	public static int getIConstOperand(AbstractInsnNode instr)
 			throws ASMException {
 
 		switch (instr.getOpcode()) {
@@ -52,6 +52,15 @@ public class AsmHelper {
 		}
 	}
 
+	public static int numberOfOccupiedSlots(Type type) {
+	
+		if (type.equals(Type.DOUBLE_TYPE) || type.equals(Type.LONG_TYPE)) {
+			return 2;
+		}
+		
+		return 1;
+	}
+	
 	public static int getParameterIndex(MethodNode method, int par_index)
 			throws ASMException {
 
@@ -65,12 +74,7 @@ public class AsmHelper {
 
 		for (int i = 0; i < par_index; i++) {
 
-			if (types[i].equals(Type.DOUBLE_TYPE)
-					|| types[i].equals(Type.LONG_TYPE)) {
-				index += 2;
-			} else {
-				index += 1;
-			}
+			index += numberOfOccupiedSlots(types[i]);
 		}
 
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {
@@ -80,9 +84,13 @@ public class AsmHelper {
 		return index;
 	}
 
-	public static Type getType(AbstractInsnNode instr) {
+	/**
+	 * Returns type if the int.class or String.class construct is used
+	 */
+	public static Type getClassType(AbstractInsnNode instr) {
 
 		switch (instr.getOpcode()) {
+		// type for basic class types int, float,...
 		case Opcodes.GETSTATIC:
 
 			String owner = ((FieldInsnNode) instr).owner;
@@ -107,19 +115,21 @@ public class AsmHelper {
 
 			return null;
 
+		// type for object types String,...
 		case Opcodes.LDC:
 
 			Object tObj = ((LdcInsnNode) instr).cst;
 
 			if (tObj instanceof Type) {
 				return (Type) tObj;
-			} else {
-				return null;
 			}
+			
+			return null;
 
 		default:
 			return null;
 		}
+
 	}
 
 	public static AbstractInsnNode remove(InsnList ilst,
@@ -231,14 +241,14 @@ public class AsmHelper {
 
 	public static AbstractInsnNode skipLabels(AbstractInsnNode instr,
 			boolean isForward) {
-		while (instr != null && isVirtual(instr)) {
+		while (instr != null && isVirtualInstr(instr)) {
 			instr = isForward ? instr.getNext() : instr.getPrevious();
 		}
 
 		return instr;
 	}
 
-	public static boolean isVirtual(AbstractInsnNode instr) {
+	public static boolean isVirtualInstr(AbstractInsnNode instr) {
 		
 		return instr.getOpcode() == -1;
 	}
@@ -246,7 +256,13 @@ public class AsmHelper {
 	// Detects if the instruction list contains only return
 	public static boolean containsOnlyReturn(InsnList ilst) {
 
-		return isReturn(ilst.getFirst().getOpcode());
+		AbstractInsnNode instr = ilst.getFirst();
+		
+		while(instr != null && isVirtualInstr(instr)) {
+			instr = instr.getNext();
+		}
+		
+		return isReturn(instr.getOpcode());
 	}
 
 	// Make sure an instruction has a valid next-instruction.
@@ -260,7 +276,7 @@ public class AsmHelper {
 			AbstractInsnNode nextInstruction = instr_lst.get(i + 1);
 
 			return nextInstruction == null
-					|| !(isVirtual(nextInstruction)
+					|| !(isVirtualInstr(nextInstruction)
 							&& nextInstruction.getNext() == null);
 		}
 
