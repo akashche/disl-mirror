@@ -13,6 +13,10 @@ public class TargetClass {
 		
 		System.out.println("not branched");
 	}
+	
+	public void empty() {
+		
+	}
 
 	public static void main(String[] args) {
 		TargetClass t = new TargetClass();

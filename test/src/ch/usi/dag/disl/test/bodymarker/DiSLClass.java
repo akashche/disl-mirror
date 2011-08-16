@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.test.bodymarker;
 
+import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.snippet.marker.BodyMarker;
@@ -35,5 +36,10 @@ public class DiSLClass {
 	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.print(boolean)", order = 3)
 	public static void postcondition2() {
 		System.out.println("Postcondition2!");
+	}
+	
+	@After(marker = BodyMarker.class, scope = "TargetClass.empty", order=0)
+	public static void emptypostcondition() {
+		System.out.println("..");
 	}
 }
