@@ -17,6 +17,7 @@ import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.localvars.SyntheticLocalVar;
+import ch.usi.dag.disl.snippet.localvars.ThreadLocalVar;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.snippet.parser.SnippetParser;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
@@ -166,12 +167,14 @@ public class DiSL implements Instrumentation {
 
 		// *** select synthetic local vars ***
 
-		// we need list of synthetic locals that are actively used in selected
-		// (marked) snippets
+		// we need list of synthetic and thread locals that are actively used in
+		// selected (marked) snippets
 
 		Set<SyntheticLocalVar> selectedSLV = new HashSet<SyntheticLocalVar>();
+		Set<ThreadLocalVar> selectedTLV = new HashSet<ThreadLocalVar>();
 		for (Snippet snippet : snippetMarkings.keySet()) {
 			selectedSLV.addAll(snippet.getCode().getReferencedSLV());
+			selectedTLV.addAll(snippet.getCode().getReferencedTLV());
 		}
 
 		// *** determine if any snippet uses dynamic analysis ***
@@ -189,8 +192,9 @@ public class DiSL implements Instrumentation {
 
 		// TODO ! weaver should have two parts, weaving and rewriting
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
-				new LinkedList<SyntheticLocalVar>(selectedSLV), staticInfo,
-				usesDynamicAnalysis);
+				new LinkedList<SyntheticLocalVar>(selectedSLV),
+				new LinkedList<ThreadLocalVar>(selectedTLV),
+				staticInfo, usesDynamicAnalysis);
 
 		// TODO ProcessorHack remove
 		ProcessorHack.instrument(classNode, methodNode,

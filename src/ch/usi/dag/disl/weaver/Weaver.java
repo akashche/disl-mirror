@@ -38,6 +38,7 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.snippet.localvars.SyntheticLocalVar;
+import ch.usi.dag.disl.snippet.localvars.ThreadLocalVar;
 import ch.usi.dag.disl.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.util.AsmHelper;
@@ -404,8 +405,8 @@ public class Weaver {
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
-			StaticInfo staticInfoHolder, boolean usesDynamicAnalysis)
-			throws ASMException {
+			LinkedList<ThreadLocalVar> linkedList, StaticInfo staticInfoHolder,
+			boolean usesDynamicAnalysis) throws ASMException {
 		// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_end;
