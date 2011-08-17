@@ -97,13 +97,6 @@ public class UnprocessedSnippetCode {
 		boolean containsHandledException = 
 			containsHandledException(instructions, tryCatchBlocks);
 		
-		// TODO ! analysis checking
-		// arguments (local variables 1, 2, ...) may be used only in method
-		// calls
-
-		// TODO ! dynamic analysis method argument checking
-		// values of arguments should be only constant values
-
 		// *** CODE PROCESSING ***
 		// NOTE: methods are modifying arguments
 

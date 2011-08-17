@@ -9,6 +9,4 @@ public @interface ThreadLocal {
 	// are not retrieved from here but from SnippetParser
 	
 	boolean inheritable() default(false);
-	// TODO ! default value should be parsed from asm code
-	String defaultVal() default("");
 }

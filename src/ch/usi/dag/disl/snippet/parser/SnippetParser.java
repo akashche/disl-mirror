@@ -359,10 +359,12 @@ public class SnippetParser {
 					+ " cannot be empty");
 		}
 
-		// analysis cannot be stored or overwritten
+		// analysis arguments (local variables 1, 2, ...) cannot be stored or
+		// overwritten, may be used only in method calls
 		usesAnalysisProperly(method.name, method.desc, method.instructions);
 		
-		// dynamic analysis needs directly passed constants
+		// values of dynamic analysis method arguments should be directly passed
+		// constants
 		passesConstsToDynamicAnalysis(method.name, method.instructions);
 
 		// ** create unprocessed code holder class **
