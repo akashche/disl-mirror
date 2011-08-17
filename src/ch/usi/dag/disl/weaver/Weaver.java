@@ -296,23 +296,15 @@ public class Weaver {
 	// Return a predecessor label of the input 'start'.
 	public static LabelNode getStartLabel(MethodNode methodNode,
 			AbstractInsnNode start) {
-		// Return start if it is a label.
-		if (start instanceof LabelNode) {
-			return (LabelNode) start;
-		}
-
-		// Or Return start.previous if the previous node of
-		// start is a label.
-		AbstractInsnNode previous = start.getPrevious();
-
-		if (previous != null && previous instanceof LabelNode) {
-			return (LabelNode) previous;
-		}
-
-		// Otherwise, create a label before start and return it.
 		LabelNode label = new LabelNode();
 
-		methodNode.instructions.insertBefore(start, label);
+		// Return start if it is a label.
+		if (start instanceof LabelNode) {
+			methodNode.instructions.insert(start, label);
+		} else {
+			methodNode.instructions.insertBefore(start, label);
+		}
+
 		return label;
 	}
 
