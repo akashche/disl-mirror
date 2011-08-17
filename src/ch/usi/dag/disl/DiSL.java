@@ -45,6 +45,7 @@ public class DiSL implements Instrumentation {
 		// report every exception within our code - don't let anyone mask it
 		try {
 
+			// TODO replace with jar support
 			String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
 
 			if (classesToCompile == null) {
@@ -62,7 +63,7 @@ public class DiSL implements Instrumentation {
 
 			List<byte[]> compiledClasses = new LinkedList<byte[]>();
 
-			// TODO replace for real compiler
+			// TODO replace with jar support
 			CompilerStub compiler = new CompilerStub();
 
 			// *** compile DiSL classes ***

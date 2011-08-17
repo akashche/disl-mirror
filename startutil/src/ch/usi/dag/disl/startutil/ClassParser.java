@@ -125,7 +125,7 @@ public class ClassParser {
 
 	private static void setTLVDefaultValues(ClassNode classNode,
 			List<ThreadLocalVar> result) {
-		// TODO ! parse dafault value from static inti code
+
 		MethodNode methodNode = null;
 
 		for (MethodNode method : classNode.methods) {

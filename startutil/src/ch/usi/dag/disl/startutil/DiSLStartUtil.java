@@ -12,44 +12,42 @@ public class DiSLStartUtil {
 
 	public static void main(String[] args) {
 
-    	try {
-		
+		try {
+
+			// TODO create more general tool - ant task?
+			// a) creates jar from DiSL classes + support classes
+			//  - outputs jar file and within manifest with DiSL classes
+			// b1) creates thread local jar using jborat util
+			// b2) runs jborat + disl
+			
 			// gather all DiSL classes
 			List<String> dislClasses = new LinkedList<String>();
-			
-	    	int i = 0;
-	    	while (i < args.length) {
-	    		
-	    		dislClasses.add(args[i]);
-	    		++i;
-	    	}
-	    	
-	    	// TODO jar file support - manifest with DiSL classes
-	    	
-	    	// TODO java file support (compilation support)
-	    	
-    	    // parse thread local vars
-    	    List<ThreadLocalVar> tlv = new LinkedList<ThreadLocalVar>();
-    	    for(String dislClass : dislClasses) {
-    	    	
-    	    	File dcFile = new File(dislClass);
-    	    	
-    	    	tlv.addAll(ClassParser.usedTLV(dcFile));
-    	    }
 
-	    	// read properties file
-	    	Properties properties = new Properties();
-    	    properties.load(new FileInputStream(DISL_PROPERTIES));
-    	    
-    	    // TODO ! jborat util invocation
-    	    
-    	    // TODO ! put DiSL classes on class path
-    	    
-    	    // TODO ! jborat + DiSL invocation
-    	    
-    	} catch (Throwable e) {
-    		e.printStackTrace();
-    	}
+			int i = 0;
+			while (i < args.length) {
+
+				dislClasses.add(args[i]);
+				++i;
+			}
+
+			// parse thread local vars
+			List<ThreadLocalVar> tlv = new LinkedList<ThreadLocalVar>();
+			for (String dislClass : dislClasses) {
+
+				File dcFile = new File(dislClass);
+
+				tlv.addAll(ClassParser.usedTLV(dcFile));
+			}
+
+			// read properties file
+			Properties properties = new Properties();
+			properties.load(new FileInputStream(DISL_PROPERTIES));
+
+			// TODO ! use extend thread utility
+
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
 	}
 
 }
