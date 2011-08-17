@@ -44,6 +44,9 @@ public class DiSLStartUtil {
 			properties.load(new FileInputStream(DISL_PROPERTIES));
 
 			// TODO ! use extend thread utility
+			//  - usage of dynamic bypass is specified in DISL_PROPERTIES file
+			//   - as additional fields
+			//  - also other needed consts there
 
 		} catch (Throwable e) {
 			e.printStackTrace();

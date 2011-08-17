@@ -29,6 +29,8 @@ import ch.usi.dag.disl.util.stack.StackUtil;
 
 public class ClassParser {
 
+	private static final String STATIC_INIT_METHOD = "<clinit>";
+
 	public static List<ThreadLocalVar> usedTLV(File dislClassFile)
 			throws FileNotFoundException, IOException, ClassParserException {
 
@@ -124,13 +126,14 @@ public class ClassParser {
 	}
 
 	private static void setTLVDefaultValues(ClassNode classNode,
-			List<ThreadLocalVar> result) {
+			List<ThreadLocalVar> tlvs) throws ClassParserException {
 
 		MethodNode methodNode = null;
 
+		// search for static init
 		for (MethodNode method : classNode.methods) {
 
-			if (method.name.equals("<clinit>")) {
+			if (method.name.equals(STATIC_INIT_METHOD)) {
 				methodNode = method;
 				break;
 			}
@@ -140,6 +143,7 @@ public class ClassParser {
 			return;
 		}
 
+		// crate analyzer
 		Analyzer<SourceValue> analyzer = StackUtil.getSourceAnalyzer();
 
 		try {
@@ -150,35 +154,45 @@ public class ClassParser {
 
 		Frame<SourceValue>[] frames = analyzer.getFrames();
 
-		for (ThreadLocalVar var : result) {
-
+		// for each thread local variable
+		for (ThreadLocalVar var : tlvs) {
+			
+			// analyze instructions in each frame
+			// one frame should cover one field initialization
 			for (int i = 0; i < frames.length; i++) {
 
 				AbstractInsnNode instr = methodNode.instructions.get(i);
 
+				// if the last instruction puts some value into the field
 				if (instr.getOpcode() != Opcodes.PUTSTATIC) {
 					continue;
 				}
 
 				FieldInsnNode fin = (FieldInsnNode) instr;
 
+				// and the field is our thread local var
 				if (!fin.name.equals(var.getName())) {
 					continue;
 				}
 
+				// get the instruction that put the field value on the stack 
 				Set<AbstractInsnNode> sources = frames[i].getStack(frames[i]
 						.getStackSize() - 1).insns;
 
 				if (sources.size() != 1) {
-					continue;
+					throw new ClassParserException("Thread local variable "
+							+ var.getName()
+							+ " can be initialized only by single constant");
 				}
 
 				AbstractInsnNode source = sources.iterator().next();
 
+				// analyze oppcode and set the proper default value
 				switch (source.getOpcode()) {
-				case Opcodes.ACONST_NULL:
-					var.setDefaultValue("null");
-					break;
+				// not supported
+				//case Opcodes.ACONST_NULL:
+				//	var.setDefaultValue("null");
+				//	break;
 
 				case Opcodes.ICONST_M1:
 					var.setDefaultValue("-1");
@@ -240,7 +254,8 @@ public class ClassParser {
 
 				case Opcodes.BIPUSH:
 				case Opcodes.SIPUSH:
-					var.setDefaultValue("" + ((IntInsnNode) source).operand);
+					var.setDefaultValue(Integer.toString(
+							((IntInsnNode) source).operand));
 					break;
 
 				case Opcodes.LDC:
@@ -248,7 +263,9 @@ public class ClassParser {
 					break;
 
 				default:
-					break;
+					throw new ClassParserException("Initialization is not"
+							+ " defined for thread local variable "
+							+ var.getName());
 				}
 
 				break;
