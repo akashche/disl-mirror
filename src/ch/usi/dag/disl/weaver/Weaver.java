@@ -184,6 +184,45 @@ public class Weaver {
 
 		methodNode.maxLocals = max + 1;
 	}
+	
+	public static void threadlocal_translate(MethodNode methodNode,
+			List<ThreadLocalVar> threadLocalVars) {
+
+		InsnList instructions = methodNode.instructions;
+
+		for (AbstractInsnNode instr : instructions.toArray()) {
+
+			int opcode = instr.getOpcode();
+
+			// Only field instructions will be transformed.
+			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
+
+				FieldInsnNode field_instr = (FieldInsnNode) instr;
+				String id = field_instr.owner + SyntheticLocalVar.NAME_DELIM
+						+ field_instr.name;
+
+				// Check if it is a thread local
+
+				for (ThreadLocalVar var : threadLocalVars) {
+
+					if (!id.equals(var.getID())) {
+						continue;
+					}
+
+					int new_opcode = (opcode == Opcodes.GETSTATIC) ? 
+							Opcodes.GETFIELD : Opcodes.PUTFIELD;
+
+					instructions.insertBefore(instr, new MethodInsnNode(
+							Opcodes.INVOKESTATIC, "java/lang/Thread",
+							"currentThread", "()Ljava/lang/Thread;"));
+					instructions.insertBefore(instr, new FieldInsnNode(
+							new_opcode, "java/lang/Thread", field_instr.name,
+							field_instr.desc));
+					instructions.remove(instr);
+				}
+			}
+		}
+	}
 
 	// Transform static fields to synthetic local
 	// NOTE that the field maxLocals of the method node will be automatically
@@ -191,9 +230,11 @@ public class Weaver {
 	public static void static2Local(MethodNode methodNode,
 			List<SyntheticLocalVar> syntheticLocalVars) {
 
+		InsnList instructions = methodNode.instructions;
+
 		// Extract the 'id' field in each synthetic local
 		List<String> id_set = new LinkedList<String>();
-		AbstractInsnNode first = methodNode.instructions.getFirst();
+		AbstractInsnNode first = instructions.getFirst();
 
 		// Initialization
 		for (SyntheticLocalVar var : syntheticLocalVars) {
@@ -201,14 +242,14 @@ public class Weaver {
 			if (var.getInitASMCode() != null) {
 
 				InsnList newlst = AsmHelper.cloneInsnList(var.getInitASMCode());
-				methodNode.instructions.insertBefore(first, newlst);
+				instructions.insertBefore(first, newlst);
 			}
 
 			id_set.add(var.getID());
 		}
 
 		// Scan for FIELD instructions and replace with local load/store.
-		for (AbstractInsnNode instr : methodNode.instructions.toArray()) {
+		for (AbstractInsnNode instr : instructions.toArray()) {
 			int opcode = instr.getOpcode();
 
 			// Only field instructions will be transformed.
@@ -231,8 +272,8 @@ public class Weaver {
 								: Opcodes.ISTORE);
 				VarInsnNode insn = new VarInsnNode(new_opcode,
 						methodNode.maxLocals + index);
-				methodNode.instructions.insertBefore(instr, insn);
-				methodNode.instructions.remove(instr);
+				instructions.insertBefore(instr, insn);
+				instructions.remove(instr);
 			}
 		}
 
@@ -278,15 +319,7 @@ public class Weaver {
 	// Return a successor label of weaving location corresponding to
 	// the input 'end'.
 	public static LabelNode getEndLabel(MethodNode methodNode,
-			AbstractInsnNode end,
-			Map<AbstractInsnNode, AbstractInsnNode> ends_after_athrow) {
-		AbstractInsnNode instr = ends_after_athrow.get(end);
-
-		// Skip branch instructions, label nodes and line number node.
-		while (AsmHelper.isVirtualInstr(instr) || AsmHelper.isBranch(instr)) {
-			instr = instr.getPrevious();
-		}
-
+			AbstractInsnNode instr) {
 		// For those instruction that might fall through, there should
 		// be a 'GOTO' instruction to separate from the exception handler.
 		if (AsmHelper.isConditionalBranch(instr) || !AsmHelper.isBranch(instr)) {
@@ -296,8 +329,6 @@ public class Weaver {
 
 			JumpInsnNode jump = new JumpInsnNode(Opcodes.GOTO, branch);
 			methodNode.instructions.insert(instr, jump);
-			ends_after_athrow.put(end, instr);
-
 			instr = jump;
 		}
 
@@ -318,6 +349,12 @@ public class Weaver {
 		InsnList instructions = methodNode.instructions;
 		List<LabelNode> instrumented = new LinkedList<LabelNode>();
 
+		List<LabelNode> tcb_ends = new LinkedList<LabelNode>();
+
+		for (TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
+			tcb_ends.add(tcb.end);
+		}
+
 		for (Snippet snippet : array) {
 
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
@@ -329,14 +366,18 @@ public class Weaver {
 				}
 
 				for (AbstractInsnNode end : region.getEnds()) {
-					if (AsmHelper.isBranch(end)) {
 
-						if (start == end) {
+					AbstractInsnNode wend = AsmHelper.skipLabels(end, false);
+
+					if (AsmHelper.isBranch(wend)) {
+
+						AbstractInsnNode prev = wend.getPrevious();
+
+						if (start == wend) {
 							// Contains only one instruction
-							AbstractInsnNode prev = start.getPrevious();
+							if (!(prev != null && prev instanceof LabelNode && 
+									instrumented.contains(prev))) {
 
-							if (!(prev != null && prev instanceof LabelNode && instrumented
-									.contains(instrumented))) {
 								LabelNode labelNode = new LabelNode();
 								instrumented.add(labelNode);
 								instructions.insertBefore(start, labelNode);
@@ -347,11 +388,19 @@ public class Weaver {
 							weaving_end.put(end, prev);
 							weaving_athrow.put(end, prev);
 						} else {
-							AbstractInsnNode prev = end.getPrevious();
 							weaving_end.put(end, prev);
 
-							// Skip branch instructions and ASM label nodes.
-							while (prev != start && AsmHelper.isVirtualInstr(prev)) {
+							while (tcb_ends.contains(prev)) {
+
+								if (prev == start) {
+
+									LabelNode labelNode = new LabelNode();
+									instrumented.add(labelNode);
+									instructions.insert(start, labelNode);
+									prev = labelNode;
+									break;
+								}
+
 								prev = prev.getPrevious();
 							}
 
@@ -569,9 +618,9 @@ public class Weaver {
 
 						// Create a try-catch clause
 						LabelNode startLabel = getStartLabel(methodNode,
-								region.getStart());
-						LabelNode endLabel = getEndLabel(methodNode, exit,
-								weaving_athrow);
+								weaving_start.get(region.getStart()));
+						LabelNode endLabel = getEndLabel(methodNode,
+								weaving_athrow.get(exit));
 
 						methodNode.tryCatchBlocks.add(new TryCatchBlockNode(
 								startLabel, endLabel, endLabel, null));
