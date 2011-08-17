@@ -87,55 +87,55 @@ public class StaticContext extends AbstractStaticAnalysis {
 	public boolean isClassAbstract() {
 
 		int access = staticAnalysisData.getClassNode().access;
-		return (access & Opcodes.ACC_ABSTRACT) == 0;
+		return (access & Opcodes.ACC_ABSTRACT) != 0;
 	}
 	
 	public boolean isClassAnnotation() {
 
 		int access = staticAnalysisData.getClassNode().access;
-		return (access & Opcodes.ACC_ANNOTATION) == 0;
+		return (access & Opcodes.ACC_ANNOTATION) != 0;
 	}
 
 	public boolean isClassEnum() {
 
 		int access = staticAnalysisData.getClassNode().access;
-		return (access & Opcodes.ACC_ENUM) == 0;
+		return (access & Opcodes.ACC_ENUM) != 0;
 	}
 	
 	public boolean isClassFinal() {
 
 		int access = staticAnalysisData.getClassNode().access;
-		return (access & Opcodes.ACC_FINAL) == 0;
+		return (access & Opcodes.ACC_FINAL) != 0;
 	}
 	
 	public boolean isClassInterface() {
 
 		int access = staticAnalysisData.getClassNode().access;
-		return (access & Opcodes.ACC_INTERFACE) == 0;
+		return (access & Opcodes.ACC_INTERFACE) != 0;
 	}
 	
 	public boolean isClassPrivate() {
 
 		int access = staticAnalysisData.getClassNode().access;
-		return (access & Opcodes.ACC_PRIVATE) == 0;
+		return (access & Opcodes.ACC_PRIVATE) != 0;
 	}
 	
 	public boolean isClassProtected() {
 
 		int access = staticAnalysisData.getClassNode().access;
-		return (access & Opcodes.ACC_PROTECTED) == 0;
+		return (access & Opcodes.ACC_PROTECTED) != 0;
 	}
 	
 	public boolean isClassPublic() {
 
 		int access = staticAnalysisData.getClassNode().access;
-		return (access & Opcodes.ACC_PUBLIC) == 0;
+		return (access & Opcodes.ACC_PUBLIC) != 0;
 	}
 	
 	public boolean isClassSynthetic() {
 
 		int access = staticAnalysisData.getClassNode().access;
-		return (access & Opcodes.ACC_SYNTHETIC) == 0;
+		return (access & Opcodes.ACC_SYNTHETIC) != 0;
 	}
 	
 	// *** Method ***
@@ -160,48 +160,48 @@ public class StaticContext extends AbstractStaticAnalysis {
 	public boolean isMethodBridge() {
 		
 		int access = staticAnalysisData.getMethodNode().access;
-		return (access & Opcodes.ACC_BRIDGE) == 0;
+		return (access & Opcodes.ACC_BRIDGE) != 0;
 	}
 	
 	public boolean isMethodFinal() {
 		
 		int access = staticAnalysisData.getMethodNode().access;
-		return (access & Opcodes.ACC_FINAL) == 0;
+		return (access & Opcodes.ACC_FINAL) != 0;
 	}
 	
 	public boolean isMethodPrivate() {
 		
 		int access = staticAnalysisData.getMethodNode().access;
-		return (access & Opcodes.ACC_PRIVATE) == 0;
+		return (access & Opcodes.ACC_PRIVATE) != 0;
 	}
 	
 	public boolean isMethodProtected() {
 		
 		int access = staticAnalysisData.getMethodNode().access;
-		return (access & Opcodes.ACC_PROTECTED) == 0;
+		return (access & Opcodes.ACC_PROTECTED) != 0;
 	}
 	
 	public boolean isMethodPublic() {
 		
 		int access = staticAnalysisData.getMethodNode().access;
-		return (access & Opcodes.ACC_PUBLIC) == 0;
+		return (access & Opcodes.ACC_PUBLIC) != 0;
 	}
 	
 	public boolean isMethodStatic() {
 		
 		int access = staticAnalysisData.getMethodNode().access;
-		return (access & Opcodes.ACC_STATIC) == 0;
+		return (access & Opcodes.ACC_STATIC) != 0;
 	}
 	
 	public boolean isMethodSynchronized() {
 		
 		int access = staticAnalysisData.getMethodNode().access;
-		return (access & Opcodes.ACC_SYNCHRONIZED) == 0;
+		return (access & Opcodes.ACC_SYNCHRONIZED) != 0;
 	}
 	
 	public boolean isMethodVarArgs() {
 		
 		int access = staticAnalysisData.getMethodNode().access;
-		return (access & Opcodes.ACC_VARARGS) == 0;
+		return (access & Opcodes.ACC_VARARGS) != 0;
 	}
 }
