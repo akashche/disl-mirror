@@ -12,11 +12,11 @@ public class Snippet implements Comparable<Snippet> {
 	protected Marker marker;
 	protected Scope scope;
 	protected int order;
-	protected UnprocessedSnippetCode unprocessedCode;
+	protected SnippetUnprocessedCode unprocessedCode;
 	protected SnippetCode code;
 
 	public Snippet(Class<?> annotationClass, Marker marker, Scope scope,
-			int order, UnprocessedSnippetCode unprocessedCode) {
+			int order, SnippetUnprocessedCode unprocessedCode) {
 		super();
 
 		this.annotationClass = annotationClass;

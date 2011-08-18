@@ -11,13 +11,24 @@ import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
 
 public class Code {
 
-	protected InsnList instructions;
-	protected List<TryCatchBlockNode> tryCatchBlocks;
-	protected Set<SyntheticLocalVar> referencedSLV;
-	protected Set<ThreadLocalVar> referencedTLV;
+	private InsnList instructions;
+	private List<TryCatchBlockNode> tryCatchBlocks;
+	private Set<SyntheticLocalVar> referencedSLV;
+	private Set<ThreadLocalVar> referencedTLV;
 	// the code contains handler that handles exception and doesn't propagate
 	// it further - can cause stack inconsistency that has to be handled
-	protected boolean containsHandledException;
+	private boolean containsHandledException;
+
+	public Code(InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
+			Set<SyntheticLocalVar> referencedSLV,
+			Set<ThreadLocalVar> referencedTLV, boolean containsHandledException) {
+		super();
+		this.instructions = instructions;
+		this.tryCatchBlocks = tryCatchBlocks;
+		this.referencedSLV = referencedSLV;
+		this.referencedTLV = referencedTLV;
+		this.containsHandledException = containsHandledException;
+	}
 	
 	public InsnList getInstructions() {
 		return instructions;

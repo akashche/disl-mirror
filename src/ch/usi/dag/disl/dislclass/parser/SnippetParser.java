@@ -30,7 +30,7 @@ import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
-import ch.usi.dag.disl.dislclass.snippet.UnprocessedSnippetCode;
+import ch.usi.dag.disl.dislclass.snippet.SnippetUnprocessedCode;
 import ch.usi.dag.disl.dislclass.snippet.marker.Marker;
 import ch.usi.dag.disl.dislclass.snippet.scope.Scope;
 import ch.usi.dag.disl.dislclass.snippet.scope.ScopeImpl;
@@ -112,7 +112,7 @@ public class SnippetParser {
 				continue;
 			}
 
-			// TODO ProcessorHack remove
+			// TODO ! ProcessorHack remove
 			if (method.name.startsWith("processor")) {
 
 				ProcessorHack.parseProcessor(classNode.name, method);
@@ -271,10 +271,9 @@ public class SnippetParser {
 
 				SyntheticLocalVar slv = slVars.get(wholeFieldName);
 
+				// something else then synthetic local var
 				if (slv == null) {
-					throw new DiSLFatalException(
-							"Initialization of static field " + wholeFieldName
-									+ " found, but no such field declared");
+					continue;
 				}
 
 				// clone part of the asm code
@@ -369,8 +368,8 @@ public class SnippetParser {
 
 		// ** create unprocessed code holder class **
 		// code is processed after everything is parsed
-		UnprocessedSnippetCode uscd = new UnprocessedSnippetCode(className,
-				method.name, method.instructions, method.tryCatchBlocks,
+		SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(
+				method.instructions, method.tryCatchBlocks,
 				analysis.getStaticAnalyses(), analysis.usesDynamicAnalysis());
 
 		// whole snippet

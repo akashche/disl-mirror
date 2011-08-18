@@ -2,7 +2,6 @@ package ch.usi.dag.disl.dislclass.snippet;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,7 +9,6 @@ import java.util.Set;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -18,70 +16,47 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import ch.usi.dag.disl.dislclass.code.Code;
+import ch.usi.dag.disl.dislclass.code.UnprocessedCode;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
-import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
-import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
-import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
-import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
-public class UnprocessedSnippetCode {
+public class SnippetUnprocessedCode extends UnprocessedCode {
 
-	String className;
-	String methodName;
-	InsnList instructions;
-	List<TryCatchBlockNode> tryCatchBlocks;
-	Set<String> declaredStaticAnalyses;
-	boolean usesDynamicAnalysis;
+	protected Set<String> declaredStaticAnalyses;
+	protected boolean usesDynamicAnalysis;
 
-	public UnprocessedSnippetCode(String className, String methodName,
-			InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
+	public SnippetUnprocessedCode(InsnList instructions,
+			List<TryCatchBlockNode> tryCatchBlocks,
 			Set<String> declaredStaticAnalyses, boolean usesDynamicAnalysis) {
-		super();
-		this.className = className;
-		this.methodName = methodName;
-		this.instructions = instructions;
-		this.tryCatchBlocks = tryCatchBlocks;
+		
+		super(instructions, tryCatchBlocks);
 		this.declaredStaticAnalyses = declaredStaticAnalyses;
 		this.usesDynamicAnalysis = usesDynamicAnalysis;
 	}
 
+
 	public SnippetCode process(LocalVars allLVs, boolean useDynamicBypass)
 			throws StaticAnalysisException, ReflectionException {
-
+		
+		// process code
+		Code code = super.process(allLVs);
+		
+		// process snippet code
+		
 		// *** CODE ANALYSIS ***
-
-		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
-
-		Set<ThreadLocalVar> tlvList = new HashSet<ThreadLocalVar>();
-
+		
+		InsnList instructions = code.getInstructions();
+		List<TryCatchBlockNode> tryCatchBlocks = code.getTryCatchBlocks();
+		
 		Map<String, Method> staticAnalyses = new HashMap<String, Method>();
-
+		
 		for (AbstractInsnNode instr : instructions.toArray()) {
-
-			// *** Parse synthetic local variables ***
-
-			SyntheticLocalVar slv = insnUsesField(instr,
-					allLVs.getSyntheticLocals());
-
-			if (slv != null) {
-				slvList.add(slv);
-				continue;
-			}
-
-			// *** Parse synthetic local variables ***
-
-			ThreadLocalVar tlv = insnUsesField(instr, allLVs.getThreadLocals());
-
-			if (tlv != null) {
-				tlvList.add(tlv);
-				continue;
-			}
-
+			
 			// *** Parse static analysis methods in use ***
 
 			StaticAnalysisMethod anlMtd = insnInvokesStaticAnalysis(
@@ -92,54 +67,18 @@ public class UnprocessedSnippetCode {
 				continue;
 			}
 		}
-
-		// handled exception check
-		boolean containsHandledException = 
-			containsHandledException(instructions, tryCatchBlocks);
 		
 		// *** CODE PROCESSING ***
 		// NOTE: methods are modifying arguments
-
-		// remove returns in snippet (in asm code)
-		AsmHelper.removeReturns(instructions);
-
+		
 		if (useDynamicBypass) {
 			insertDynamicBypass(instructions, tryCatchBlocks);
 		}
-
-		return new SnippetCode(instructions, tryCatchBlocks, slvList, tlvList,
-				staticAnalyses, usesDynamicAnalysis, containsHandledException);
-	}
-
-	/**
-	 * Determines if the instruction uses some field defined in
-	 * allPossibleFieldNames map. If the field is found in supplied map, the
-	 * corresponding mapped object is returned.
-	 * 
-	 * @param <T>
-	 *            type of the return value
-	 * @param instr
-	 *            instruction to test
-	 * @param allPossibleFieldNames
-	 *            map with all possible field names as keys
-	 * @return object from a map, that corresponds with matched field name
-	 */
-	private <T> T insnUsesField(AbstractInsnNode instr,
-			Map<String, T> allPossibleFieldNames) {
-
-		// check - instruction uses field
-		if (!(instr instanceof FieldInsnNode)) {
-			return null;
-		}
-
-		FieldInsnNode fieldInstr = (FieldInsnNode) instr;
-
-		// get whole name of the field
-		String wholeFieldName = fieldInstr.owner + SyntheticLocalVar.NAME_DELIM
-				+ fieldInstr.name;
-
-		// check - it is SyntheticLocal variable (it's defined in snippet)
-		return allPossibleFieldNames.get(wholeFieldName);
+		
+		return new SnippetCode(instructions, tryCatchBlocks,
+				code.getReferencedSLV(), code.getReferencedTLV(),
+				code.containsHandledException(), staticAnalyses,
+				usesDynamicAnalysis);
 	}
 
 	class StaticAnalysisMethod {
@@ -288,37 +227,5 @@ public class UnprocessedSnippetCode {
 		// ## add handler to the list
 		tryCatchBlocks.add(new TryCatchBlockNode(tryBegin, tryEnd,
 				handlerBegin, null));
-	}
-
-	/**
-	 * Determines if the code contains handler that handles exception and
-	 * doesn't propagate some exception further.
-	 * 
-	 * This has to be detected because it can cause stack inconsistency that has
-	 * to be handled in the weaver.
-	 */
-	public static boolean containsHandledException(InsnList instructions,
-			List<TryCatchBlockNode> tryCatchBlocks) {
-
-		if (tryCatchBlocks.size() == 0) {
-			return false;
-		}
-
-		// create control flow graph
-		CtrlFlowGraph cfg = new CtrlFlowGraph(instructions, tryCatchBlocks);
-		cfg.visit(instructions.getFirst());
-
-		// check if the control flow continues after exception handler
-		// if it does, exception was handled
-		for (int i = tryCatchBlocks.size() - 1; i >= 0; --i) {
-
-			TryCatchBlockNode tcb = tryCatchBlocks.get(i);
-
-			if (cfg.visit(tcb.handler).size() != 0) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 }

@@ -11,7 +11,6 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
-import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.dislclass.parser.SnippetParser;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
@@ -148,7 +147,8 @@ public class DiSL implements Instrumentation {
 		List<MarkedRegion> allMarkings = new LinkedList<MarkedRegion>();
 
 		// markings according to snippets for viewing
-		Map<Snippet, List<MarkedRegion>> snippetMarkings = new HashMap<Snippet, List<MarkedRegion>>();
+		Map<Snippet, List<MarkedRegion>> snippetMarkings = 
+			new HashMap<Snippet, List<MarkedRegion>>();
 
 		for (Snippet snippet : matchedSnippets) {
 
@@ -168,14 +168,11 @@ public class DiSL implements Instrumentation {
 
 		// *** select synthetic local vars ***
 
-		// we need list of synthetic and thread locals that are actively used in
-		// selected (marked) snippets
-
+		// we need list of synthetic locals that are actively used in selected
+		// (marked) snippets
 		Set<SyntheticLocalVar> selectedSLV = new HashSet<SyntheticLocalVar>();
-		Set<ThreadLocalVar> selectedTLV = new HashSet<ThreadLocalVar>();
 		for (Snippet snippet : snippetMarkings.keySet()) {
 			selectedSLV.addAll(snippet.getCode().getReferencedSLV());
-			selectedTLV.addAll(snippet.getCode().getReferencedTLV());
 		}
 
 		// *** determine if any snippet uses dynamic analysis ***
@@ -194,10 +191,9 @@ public class DiSL implements Instrumentation {
 		// TODO ! weaver should have two parts, weaving and rewriting
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(selectedSLV),
-				new LinkedList<ThreadLocalVar>(selectedTLV),
 				staticInfo, usesDynamicAnalysis);
 
-		// TODO ProcessorHack remove
+		// TODO ! ProcessorHack remove
 		ProcessorHack.instrument(classNode, methodNode,
 				new LinkedList<SyntheticLocalVar>(selectedSLV));
 

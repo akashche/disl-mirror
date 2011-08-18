@@ -13,7 +13,7 @@ public class ClassParser {
 
 	public void parse(byte[] classAsBytes) throws SnippetParserException,
 			ReflectionException, ScopeParserException, StaticAnalysisException {
-		// TODO  ! processor - use snippet parser and processor parser
+		// TODO ! processor - use snippet parser and processor parser
 		//  decide according to processor annotation at class
 	}
 	

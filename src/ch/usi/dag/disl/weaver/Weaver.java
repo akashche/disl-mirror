@@ -33,7 +33,6 @@ import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
 import ch.usi.dag.disl.dislclass.annotation.AfterThrowing;
 import ch.usi.dag.disl.dislclass.annotation.Before;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
-import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.SnippetCode;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
@@ -185,45 +184,6 @@ public class Weaver {
 		methodNode.maxLocals = max + 1;
 	}
 	
-	public static void threadlocal_translate(MethodNode methodNode,
-			List<ThreadLocalVar> threadLocalVars) {
-
-		InsnList instructions = methodNode.instructions;
-
-		for (AbstractInsnNode instr : instructions.toArray()) {
-
-			int opcode = instr.getOpcode();
-
-			// Only field instructions will be transformed.
-			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
-
-				FieldInsnNode field_instr = (FieldInsnNode) instr;
-				String id = field_instr.owner + SyntheticLocalVar.NAME_DELIM
-						+ field_instr.name;
-
-				// Check if it is a thread local
-
-				for (ThreadLocalVar var : threadLocalVars) {
-
-					if (!id.equals(var.getID())) {
-						continue;
-					}
-
-					int new_opcode = (opcode == Opcodes.GETSTATIC) ? 
-							Opcodes.GETFIELD : Opcodes.PUTFIELD;
-
-					instructions.insertBefore(instr, new MethodInsnNode(
-							Opcodes.INVOKESTATIC, "java/lang/Thread",
-							"currentThread", "()Ljava/lang/Thread;"));
-					instructions.insertBefore(instr, new FieldInsnNode(
-							new_opcode, "java/lang/Thread", field_instr.name,
-							field_instr.desc));
-					instructions.remove(instr);
-				}
-			}
-		}
-	}
-
 	// Transform static fields to synthetic local
 	// NOTE that the field maxLocals of the method node will be automatically
 	// updated.
@@ -446,7 +406,7 @@ public class Weaver {
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
-			LinkedList<ThreadLocalVar> linkedList, StaticInfo staticInfoHolder,
+			StaticInfo staticInfoHolder,
 			boolean usesDynamicAnalysis) throws ASMException {
 		// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;
@@ -632,7 +592,7 @@ public class Weaver {
 		}
 
 		sortTryCatchBlocks(methodNode);
-		// TODO ProcessorHack uncomment
+		// TODO ! ProcessorHack uncomment
 		// static2Local(methodNode, syntheticLocalVars);
 	}
 

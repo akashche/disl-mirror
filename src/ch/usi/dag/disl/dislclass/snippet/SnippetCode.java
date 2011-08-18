@@ -27,18 +27,15 @@ public class SnippetCode extends Code {
 			List<TryCatchBlockNode> tryCatchBlocks,
 			Set<SyntheticLocalVar> referencedSLV,
 			Set<ThreadLocalVar> referencedTLV,
+			boolean containsHandledException,
 			Map<String, Method> staticAnalyses,
-			boolean usesDynamicAnalysis,
-			boolean containsHandledException
+			boolean usesDynamicAnalysis
 			) {
-		super();
-		this.instructions = instructions;
-		this.tryCatchBlocks = tryCatchBlocks;
-		this.referencedSLV = referencedSLV;
-		this.referencedTLV = referencedTLV;
+		
+		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
+				containsHandledException);
 		this.staticAnalyses = staticAnalyses;
 		this.usesDynamicAnalysis = usesDynamicAnalysis;
-		this.containsHandledException = containsHandledException;
 	}
 
 	public Map<String, Method> getStaticAnalyses() {
@@ -51,14 +48,15 @@ public class SnippetCode extends Code {
 	
 	public SnippetCode clone() {
 
-		Map<LabelNode, LabelNode> map = AsmHelper.createLabelMap(instructions);
+		Map<LabelNode, LabelNode> map = 
+			AsmHelper.createLabelMap(getInstructions());
 
-		return new SnippetCode(AsmHelper.cloneInsnList(instructions, map),
-				AsmHelper.cloneTryCatchBlocks(tryCatchBlocks, map),
-				new HashSet<SyntheticLocalVar>(referencedSLV),
-				new HashSet<ThreadLocalVar>(referencedTLV),
+		return new SnippetCode(AsmHelper.cloneInsnList(getInstructions(), map),
+				AsmHelper.cloneTryCatchBlocks(getTryCatchBlocks(), map),
+				new HashSet<SyntheticLocalVar>(getReferencedSLV()),
+				new HashSet<ThreadLocalVar>(getReferencedTLV()),
+				containsHandledException(),
 				new HashMap<String, Method>(staticAnalyses),
-				usesDynamicAnalysis,
-				containsHandledException);
+				usesDynamicAnalysis);
 	}
 }
