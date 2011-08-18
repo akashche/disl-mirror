@@ -9,7 +9,6 @@ import java.util.Map;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.TryCatchBlockSorter;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -257,14 +256,7 @@ public class Weaver {
 	public static LabelNode getStartLabel(MethodNode methodNode,
 			AbstractInsnNode start) {
 		LabelNode label = new LabelNode();
-
-		// Return start if it is a label.
-		if (start instanceof LabelNode) {
-			methodNode.instructions.insert(start, label);
-		} else {
-			methodNode.instructions.insertBefore(start, label);
-		}
-
+		methodNode.instructions.insertBefore(start, label);
 		return label;
 	}
 
@@ -312,6 +304,7 @@ public class Weaver {
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
 				// initialize of start
 				AbstractInsnNode start = region.getStart();
+				AbstractInsnNode wstart = AsmHelper.skipLabels(start, true);
 
 				if (weaving_start.get(start) == null) {
 					weaving_start.put(start, start);
@@ -325,7 +318,7 @@ public class Weaver {
 
 						AbstractInsnNode prev = wend.getPrevious();
 
-						if (start == wend) {
+						if (wstart == wend) {
 							// Contains only one instruction
 							if (!(prev != null && prev instanceof LabelNode && 
 									instrumented.contains(prev))) {
@@ -394,8 +387,8 @@ public class Weaver {
 	// Sort the try-catch blocks of the method according to the
 	// length of each block.
 	public static void sortTryCatchBlocks(MethodNode method) {
-		TryCatchBlockSorter sorter = new TryCatchBlockSorter(null,
-				method.access, method.name, method.desc, method.signature, null);
+		AdvancedSorter sorter = new AdvancedSorter(null, method.access,
+				method.name, method.desc, method.signature, null);
 		sorter.instructions = method.instructions;
 		sorter.tryCatchBlocks = method.tryCatchBlocks;
 		sorter.visitEnd();
