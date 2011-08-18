@@ -4,11 +4,11 @@ import java.util.Stack;
 
 import org.objectweb.asm.Opcodes;
 
-import ch.usi.dag.disl.annotation.AfterReturning;
-import ch.usi.dag.disl.annotation.Before;
-import ch.usi.dag.disl.annotation.SyntheticLocal;
-import ch.usi.dag.disl.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.snippet.marker.BytecodeMarker;
+import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
+import ch.usi.dag.disl.dislclass.annotation.Before;
+import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
+import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
+import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
 import ch.usi.dag.disl.test.symbolic.symbol.BinaryOperation;
 import ch.usi.dag.disl.test.symbolic.symbol.Constraint;
 import ch.usi.dag.disl.test.symbolic.symbol.IConstValue;

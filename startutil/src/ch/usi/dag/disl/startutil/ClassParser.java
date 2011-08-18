@@ -72,7 +72,7 @@ public class ClassParser {
 
 			// skip, it it is not thread local
 			if (! annotationType.equals(Type
-					.getType(ch.usi.dag.disl.annotation.ThreadLocal.class))) {
+					.getType(ch.usi.dag.disl.dislclass.annotation.ThreadLocal.class))) {
 
 				continue;
 			}
@@ -267,8 +267,6 @@ public class ClassParser {
 							+ " defined for thread local variable "
 							+ var.getName());
 				}
-
-				break;
 			}
 		}
 	}

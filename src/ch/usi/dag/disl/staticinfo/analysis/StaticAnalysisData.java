@@ -5,8 +5,8 @@ import java.util.List;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.dislclass.snippet.Snippet;
+import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 
 public class StaticAnalysisData {
 

@@ -24,6 +24,4 @@ public class Parameter {
 	public String[] getMultipleValues() {
 		return value.split(delim);
 	}
-	
-	// TODO add methods getValueAs ... Int, Float, Boolean,...
 }
