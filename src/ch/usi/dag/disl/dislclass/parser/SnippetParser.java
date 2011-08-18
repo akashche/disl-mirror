@@ -132,12 +132,12 @@ public class SnippetParser {
 
 			if (field.invisibleAnnotations == null) {
 				throw new SnippetParserException("DiSL annotation for field "
-						+ field.name + " is missing");
+						+ className + "." + field.name + " is missing");
 			}
 
 			if (field.invisibleAnnotations.size() > 1) {
-				throw new SnippetParserException("Field " + field.name
-						+ " may have only one anotation");
+				throw new SnippetParserException("Field " + className + "."
+						+ field.name + " may have only one anotation");
 			}
 
 			AnnotationNode annotation = (AnnotationNode) field.invisibleAnnotations
@@ -146,8 +146,9 @@ public class SnippetParser {
 			Type annotationType = Type.getType(annotation.desc);
 
 			// thread local
-			if (annotationType.equals(Type
-					.getType(ch.usi.dag.disl.dislclass.annotation.ThreadLocal.class))) {
+			if (annotationType
+					.equals(Type
+							.getType(ch.usi.dag.disl.dislclass.annotation.ThreadLocal.class))) {
 
 				ThreadLocalVar tlv = parseThreadLocal(className, field,
 						annotation);
@@ -168,8 +169,8 @@ public class SnippetParser {
 				continue;
 			}
 
-			throw new SnippetParserException("Field " + field.name
-					+ " has unsupported DiSL annotation");
+			throw new SnippetParserException("Field " + className + "."
+					+ field.name + " has unsupported DiSL annotation");
 		}
 
 		return result;
@@ -180,8 +181,8 @@ public class SnippetParser {
 
 		// check if field is static
 		if ((field.access & Opcodes.ACC_STATIC) == 0) {
-			throw new SnippetParserException("Field " + field.name
-					+ " declared as ThreadLocal but is not static");
+			throw new SnippetParserException("Field " + className + "."
+					+ field.name + " declared as ThreadLocal but is not static");
 		}
 
 		// here we can ignore annotation parsing - already done by start utility
@@ -194,8 +195,8 @@ public class SnippetParser {
 
 		// check if field is static
 		if ((field.access & Opcodes.ACC_STATIC) == 0) {
-			throw new SnippetParserException("Field " + field.name
-					+ " declared as SyntheticLocal but is not static");
+			throw new SnippetParserException("Field " + field.name + className
+					+ "." + " declared as SyntheticLocal but is not static");
 		}
 
 		// default val for init
@@ -220,7 +221,7 @@ public class SnippetParser {
 				}
 
 				throw new DiSLFatalException("Unknow field " + name
-						+ " in annotation at " + field.name
+						+ " in annotation at " + className + "." + field.name
 						+ ". This may happen if annotation class is changed"
 						+ " but parser is not.");
 			}
@@ -300,22 +301,22 @@ public class SnippetParser {
 
 		if (method.invisibleAnnotations == null) {
 			throw new SnippetParserException("DiSL anottation for method "
-					+ method.name + " is missing");
+					+ className + "." + method.name + " is missing");
 		}
 
 		if (method.invisibleAnnotations.size() > 1) {
-			throw new SnippetParserException("Method " + method.name
-					+ " can have only one DiSL anottation");
+			throw new SnippetParserException("Method " + className + "."
+					+ method.name + " can have only one DiSL anottation");
 		}
 
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {
-			throw new SnippetParserException("Method " + method.name
-					+ " should be declared as static");
+			throw new SnippetParserException("Method " + className + "."
+					+ method.name + " should be declared as static");
 		}
 
 		if (!Type.getReturnType(method.desc).equals(Type.VOID_TYPE)) {
-			throw new SnippetParserException("Method " + method.name
-					+ " cannot return value");
+			throw new SnippetParserException("Method " + className + "."
+					+ method.name + " cannot return value");
 		}
 
 		AnnotationNode annotation = method.invisibleAnnotations.get(0);
@@ -324,8 +325,8 @@ public class SnippetParser {
 
 		// if this is unknown annotation
 		if (!annotData.isKnown()) {
-			throw new SnippetParserException("Method " + method.name
-					+ " has unsupported DiSL annotation");
+			throw new SnippetParserException("Method " + className + "."
+					+ method.name + " has unsupported DiSL annotation");
 		}
 
 		// ** marker **
@@ -351,25 +352,27 @@ public class SnippetParser {
 		Analysis analysis = parseAnalysis(method.desc);
 
 		// ** checks **
-		
+
 		// detect empty stippets
 		if (AsmHelper.containsOnlyReturn(method.instructions)) {
-			throw new SnippetParserException("Method " + method.name
-					+ " cannot be empty");
+			throw new SnippetParserException("Method " + className + "."
+					+ method.name + " cannot be empty");
 		}
 
 		// analysis arguments (local variables 1, 2, ...) cannot be stored or
 		// overwritten, may be used only in method calls
-		usesAnalysisProperly(method.name, method.desc, method.instructions);
-		
+		usesAnalysisProperly(className, method.name, method.desc,
+				method.instructions);
+
 		// values of dynamic analysis method arguments should be directly passed
 		// constants
-		passesConstsToDynamicAnalysis(method.name, method.instructions);
+		passesConstsToDynamicAnalysis(className, method.name,
+				method.instructions);
 
 		// ** create unprocessed code holder class **
 		// code is processed after everything is parsed
-		SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(
-				method.instructions, method.tryCatchBlocks,
+		SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(className,
+				method.name, method.instructions, method.tryCatchBlocks,
 				analysis.getStaticAnalyses(), analysis.usesDynamicAnalysis());
 
 		// whole snippet
@@ -555,7 +558,7 @@ public class SnippetParser {
 			if (!implementsStaticAnalysis(argClass)) {
 				throw new StaticAnalysisException(argClass.getName()
 						+ " does not implement StaticAnalysis interface and"
-						+ " cannot be used as disl method parameter");
+						+ " cannot be used as advice method parameter");
 			}
 
 			knownStAn.add(argType.getInternalName());
@@ -590,7 +593,7 @@ public class SnippetParser {
 		return false;
 	}
 
-	private void usesAnalysisProperly(String methodName,
+	private void usesAnalysisProperly(String className, String methodName,
 			String methodDescriptor, InsnList instructions)
 			throws SnippetParserException {
 
@@ -614,8 +617,8 @@ public class SnippetParser {
 
 				if (local < maxArgIndex
 						&& instr.getNext().getOpcode() == Opcodes.ASTORE) {
-					throw new SnippetParserException("In advice " + methodName
-							+ " - advice parameter"
+					throw new SnippetParserException("In advice " + className
+							+ "." + methodName + " - advice parameter"
 							+ " (analysis) cannot be stored into local"
 							+ " variable");
 				}
@@ -628,8 +631,8 @@ public class SnippetParser {
 				int local = ((VarInsnNode) instr).var;
 
 				if (local < maxArgIndex) {
-					throw new SnippetParserException("In advice " + methodName
-							+ " - advice parameter"
+					throw new SnippetParserException("In advice " + className
+							+ "." + methodName + " - advice parameter"
 							+ " (analysis) cannot overwritten");
 				}
 
@@ -642,8 +645,9 @@ public class SnippetParser {
 	/**
 	 * Checks if dynamic analysis methods contains only
 	 */
-	private void passesConstsToDynamicAnalysis(String methodName,
-			InsnList instructions) throws SnippetParserException {
+	private void passesConstsToDynamicAnalysis(String className,
+			String methodName, InsnList instructions)
+			throws SnippetParserException {
 
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
@@ -676,16 +680,16 @@ public class SnippetParser {
 				break;
 
 			default:
-				throw new SnippetParserException("In advice " + methodName
-						+ " - pass the first (pos)"
+				throw new SnippetParserException("In advice " + className + "."
+						+ methodName + " - pass the first (pos)"
 						+ " argument of a dynamic context method direcltly."
 						+ " ex: getStackValue(1, int.class)");
 			}
 
 			// second operand test
 			if (AsmHelper.getClassType(secondOperand) == null) {
-				throw new SnippetParserException("In advice " + methodName
-						+ " - pass the second (type)"
+				throw new SnippetParserException("In advice " + className + "."
+						+ methodName + " - pass the second (type)"
 						+ " argument of a dynamic context method direcltly."
 						+ " ex: getStackValue(1, int.class)");
 			}

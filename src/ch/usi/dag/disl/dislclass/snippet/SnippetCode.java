@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -18,10 +19,9 @@ import ch.usi.dag.disl.util.AsmHelper;
 
 public class SnippetCode extends Code {
 
-
-	protected Map<String, Method> staticAnalyses;
-	protected boolean usesDynamicAnalysis;
-
+	private Map<String, Method> staticAnalyses;
+	private boolean usesDynamicAnalysis;
+	private Map<AbstractInsnNode, ProcessorInvocation> invokedProcessors; 
 
 	public SnippetCode(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks,
@@ -29,13 +29,15 @@ public class SnippetCode extends Code {
 			Set<ThreadLocalVar> referencedTLV,
 			boolean containsHandledException,
 			Map<String, Method> staticAnalyses,
-			boolean usesDynamicAnalysis
+			boolean usesDynamicAnalysis,
+			Map<AbstractInsnNode, ProcessorInvocation> invokedProcessors
 			) {
 		
 		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
 				containsHandledException);
 		this.staticAnalyses = staticAnalyses;
 		this.usesDynamicAnalysis = usesDynamicAnalysis;
+		this.invokedProcessors = invokedProcessors;
 	}
 
 	public Map<String, Method> getStaticAnalyses() {
@@ -46,6 +48,10 @@ public class SnippetCode extends Code {
 		return usesDynamicAnalysis;
 	}
 	
+	public Map<AbstractInsnNode, ProcessorInvocation> getInvokedProcessors() {
+		return invokedProcessors;
+	}
+	
 	public SnippetCode clone() {
 
 		Map<LabelNode, LabelNode> map = 
@@ -53,10 +59,11 @@ public class SnippetCode extends Code {
 
 		return new SnippetCode(AsmHelper.cloneInsnList(getInstructions(), map),
 				AsmHelper.cloneTryCatchBlocks(getTryCatchBlocks(), map),
-				new HashSet<SyntheticLocalVar>(getReferencedSLV()),
-				new HashSet<ThreadLocalVar>(getReferencedTLV()),
+				new HashSet<SyntheticLocalVar>(getReferencedSLVs()),
+				new HashSet<ThreadLocalVar>(getReferencedTLVs()),
 				containsHandledException(),
 				new HashMap<String, Method>(staticAnalyses),
-				usesDynamicAnalysis);
+				usesDynamicAnalysis,
+				invokedProcessors);
 	}
 }

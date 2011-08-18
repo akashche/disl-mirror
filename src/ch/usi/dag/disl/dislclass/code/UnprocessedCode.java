@@ -33,8 +33,8 @@ public class UnprocessedCode {
 		this.tryCatchBlocks = tryCatchBlocks;
 	}
 
-		public Code process(LocalVars allLVs)
-			throws StaticAnalysisException, ReflectionException {
+	public Code process(LocalVars allLVs) throws StaticAnalysisException,
+			ReflectionException {
 
 		// *** CODE ANALYSIS ***
 
@@ -119,7 +119,7 @@ public class UnprocessedCode {
 	 * This has to be detected because it can cause stack inconsistency that has
 	 * to be handled in the weaver.
 	 */
-	public static boolean containsHandledException(InsnList instructions,
+	private boolean containsHandledException(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks) {
 
 		if (tryCatchBlocks.size() == 0) {
@@ -144,7 +144,7 @@ public class UnprocessedCode {
 		return false;
 	}
 
-	public static void translateThreadLocalVars(InsnList instructions,
+	private void translateThreadLocalVars(InsnList instructions,
 			Set<ThreadLocalVar> threadLocalVars) {
 
 		// generate set of ids - better lookup

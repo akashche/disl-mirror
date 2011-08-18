@@ -2,7 +2,6 @@ package ch.usi.dag.disl.dislclass.snippet;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,14 +16,16 @@ import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.dislclass.code.Code;
 import ch.usi.dag.disl.dislclass.code.UnprocessedCode;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
+import ch.usi.dag.disl.dislclass.processor.Processor;
+import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.processor.ProcApplyType;
 import ch.usi.dag.disl.processor.Processors;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
@@ -32,36 +33,44 @@ import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class SnippetUnprocessedCode extends UnprocessedCode {
 
-	protected Set<String> declaredStaticAnalyses;
-	protected boolean usesDynamicAnalysis;
+	private String className;
+	private String methodName;
+	private Set<String> declaredStaticAnalyses;
+	private boolean usesDynamicAnalysis;
 
-	public SnippetUnprocessedCode(InsnList instructions,
-			List<TryCatchBlockNode> tryCatchBlocks,
+	public SnippetUnprocessedCode(String className, String methodName,
+			InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
 			Set<String> declaredStaticAnalyses, boolean usesDynamicAnalysis) {
-		
+
 		super(instructions, tryCatchBlocks);
+		this.className = className;
+		this.methodName = methodName;
 		this.declaredStaticAnalyses = declaredStaticAnalyses;
 		this.usesDynamicAnalysis = usesDynamicAnalysis;
 	}
 
+	public SnippetCode process(LocalVars allLVs,
+			Map<Class<?>, Processor> processors, boolean useDynamicBypass)
+			throws StaticAnalysisException, ReflectionException,
+			ProcessorException {
 
-	public SnippetCode process(LocalVars allLVs, boolean useDynamicBypass)
-			throws StaticAnalysisException, ReflectionException {
-		
 		// process code
 		Code code = super.process(allLVs);
-		
+
 		// process snippet code
-		
+
 		// *** CODE ANALYSIS ***
-		
+
 		InsnList instructions = code.getInstructions();
 		List<TryCatchBlockNode> tryCatchBlocks = code.getTryCatchBlocks();
-		
+
 		Map<String, Method> staticAnalyses = new HashMap<String, Method>();
-		
+
+		Map<AbstractInsnNode, ProcessorInvocation> invokedProcessors =
+			new HashMap<AbstractInsnNode, ProcessorInvocation>();
+
 		for (AbstractInsnNode instr : instructions.toArray()) {
-			
+
 			// *** Parse static analysis methods in use ***
 
 			StaticAnalysisMethod anlMtd = insnInvokesStaticAnalysis(
@@ -71,19 +80,29 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 				staticAnalyses.put(anlMtd.getId(), anlMtd.getRefM());
 				continue;
 			}
+
+			// *** Parse processors in use ***
+
+			ProcessorInfo processor = insnInvokesProcessor(instr, processors);
+
+			if (processor != null) {
+				invokedProcessors.put(processor.getLocation(),
+						processor.getProcInvoke());
+				continue;
+			}
 		}
-		
+
 		// *** CODE PROCESSING ***
 		// NOTE: methods are modifying arguments
-		
+
 		if (useDynamicBypass) {
 			insertDynamicBypass(instructions, tryCatchBlocks);
 		}
-		
+
 		return new SnippetCode(instructions, tryCatchBlocks,
-				code.getReferencedSLV(), code.getReferencedTLV(),
+				code.getReferencedSLVs(), code.getReferencedTLVs(),
 				code.containsHandledException(), staticAnalyses,
-				usesDynamicAnalysis);
+				usesDynamicAnalysis, invokedProcessors);
 	}
 
 	class StaticAnalysisMethod {
@@ -173,6 +192,96 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		return new StaticAnalysisMethod(methodID, method);
 	}
 
+	private class ProcessorInfo {
+
+		private AbstractInsnNode location;
+		private ProcessorInvocation procInvoke;
+
+		public ProcessorInfo(AbstractInsnNode location,
+				ProcessorInvocation procInvoke) {
+			super();
+			this.location = location;
+			this.procInvoke = procInvoke;
+		}
+
+		public AbstractInsnNode getLocation() {
+			return location;
+		}
+
+		public ProcessorInvocation getProcInvoke() {
+			return procInvoke;
+		}
+	}
+
+	private ProcessorInfo insnInvokesProcessor(AbstractInsnNode instr,
+			Map<Class<?>, Processor> processors) throws ProcessorException,
+			ReflectionException {
+
+		final String APPLY_METHOD = "apply";
+
+		// check method invocation
+		if (!(instr instanceof MethodInsnNode)) {
+			return null;
+		}
+
+		MethodInsnNode min = (MethodInsnNode) instr;
+
+		// check if the invocation is processor invocation
+		if (!(min.owner.equals(Type.getInternalName(Processors.class)) && min.name
+				.equals(APPLY_METHOD))) {
+			return null;
+		}
+
+		// resolve load parameter instruction
+		AbstractInsnNode secondParam = instr.getPrevious();
+		AbstractInsnNode firstParam = secondParam.getPrevious();
+
+		// first parameter has to be loaded by LDC
+		if (firstParam == null || firstParam.getOpcode() != Opcodes.LDC) {
+			throw new ProcessorException("In advice " + className + "."
+					+ methodName + " - pass the first (class)"
+					+ " argument of a ProcessorMethod.apply method direcltly."
+					+ " ex: ProcessorMethod.apply(ProcessorMethod.class,"
+					+ " ProcApplyType.IN_METHOD)");
+		}
+
+		// second parameter has to be loaded by GETSTATIC
+		if (secondParam == null || secondParam.getOpcode() != Opcodes.GETSTATIC) {
+			throw new ProcessorException("In advice " + className + "."
+					+ methodName + " - pass the second (type)"
+					+ " argument of a ProcessorMethod.apply method direcltly."
+					+ " ex: ProcessorMethod.apply(ProcessorMethod.class,"
+					+ " ProcApplyType.IN_METHOD)");
+		}
+
+		Object processorASMType = ((LdcInsnNode) firstParam).cst;
+
+		if (! (processorASMType instanceof Type)) {
+			throw new ProcessorException("In advice " + className + "."
+					+ methodName + " - unsupported processor type "
+					+ processorASMType.getClass().toString());
+		}
+
+		ProcApplyType procApplyType = ProcApplyType
+				.valueOf(((FieldInsnNode) secondParam).name);
+
+		Class<?> processorClass = ReflectionHelper
+				.resolveClass((Type) processorASMType);
+
+		Processor processor = processors.get(processorClass);
+		
+		if(processor == null) {
+			throw new ProcessorException("In advice " + className + "."
+					+ methodName + " - unknow processor used: "
+					+ processorClass.getClass().toString());
+		}
+
+		ProcessorInvocation prcInv = new ProcessorInvocation(processor,
+				procApplyType);
+
+		return new ProcessorInfo(instr, prcInv);
+	}
+
 	private void insertDynamicBypass(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks) {
 
@@ -233,58 +342,4 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		tryCatchBlocks.add(new TryCatchBlockNode(tryBegin, tryEnd,
 				handlerBegin, null));
 	}
-	
-	public static class ProcessorInfo {
-		public AbstractInsnNode loc;
-		public Type clazz;
-		public String type;
-	}
-
-	public static List<ProcessorInfo> detect(MethodNode method) {
-
-		List<ProcessorInfo> processors = new LinkedList<ProcessorInfo>();
-
-		for (AbstractInsnNode instr : method.instructions.toArray()) {
-
-			if (!(instr instanceof MethodInsnNode)) {
-				continue;
-			}
-
-			MethodInsnNode min = (MethodInsnNode) instr;
-
-			if (!(min.owner.equals(Type.getInternalName(Processors.class)) && min.name
-					.equals("apply"))) {
-				continue;
-			}
-
-			ProcessorInfo processor = new ProcessorInfo();
-			AbstractInsnNode prev = instr.getPrevious();
-
-			if (prev == null || prev.getOpcode() != Opcodes.GETSTATIC) {
-				continue;
-			}
-
-			processor.type = ((FieldInsnNode) prev).name;
-
-			AbstractInsnNode pprev = prev.getPrevious();
-
-			if (pprev == null || pprev.getOpcode() != Opcodes.LDC) {
-				continue;
-			}
-
-			Object clazz = ((LdcInsnNode) pprev).cst;
-
-			if (!(clazz instanceof Type)) {
-				continue;
-			}
-
-			processor.clazz = (Type) clazz;
-			processor.loc = pprev;
-
-			processors.add(processor);
-		}
-
-		return processors;
-	}
-	
 }

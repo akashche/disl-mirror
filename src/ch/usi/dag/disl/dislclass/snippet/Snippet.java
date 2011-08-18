@@ -1,8 +1,12 @@
 package ch.usi.dag.disl.dislclass.snippet;
 
+import java.util.Map;
+
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
+import ch.usi.dag.disl.dislclass.processor.Processor;
 import ch.usi.dag.disl.dislclass.snippet.marker.Marker;
 import ch.usi.dag.disl.dislclass.snippet.scope.Scope;
+import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
 
@@ -50,10 +54,11 @@ public class Snippet implements Comparable<Snippet> {
 		return order - o.getOrder();
 	}
 
-	public void prepare(LocalVars allLVs, boolean useDynamicBypass)
-			throws StaticAnalysisException, ReflectionException {
+	public void init(LocalVars allLVs, Map<Class<?>, Processor> processors,
+			boolean useDynamicBypass) throws StaticAnalysisException,
+			ReflectionException, ProcessorException {
 
-		code = unprocessedCode.process(allLVs, useDynamicBypass);
+		code = unprocessedCode.process(allLVs, processors, useDynamicBypass);
 		unprocessedCode = null;
 	}
 }

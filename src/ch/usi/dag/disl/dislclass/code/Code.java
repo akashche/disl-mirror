@@ -13,20 +13,21 @@ public class Code {
 
 	private InsnList instructions;
 	private List<TryCatchBlockNode> tryCatchBlocks;
-	private Set<SyntheticLocalVar> referencedSLV;
-	private Set<ThreadLocalVar> referencedTLV;
+	private Set<SyntheticLocalVar> referencedSLVs;
+	private Set<ThreadLocalVar> referencedTLVs;
 	// the code contains handler that handles exception and doesn't propagate
 	// it further - can cause stack inconsistency that has to be handled
 	private boolean containsHandledException;
 
 	public Code(InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
-			Set<SyntheticLocalVar> referencedSLV,
-			Set<ThreadLocalVar> referencedTLV, boolean containsHandledException) {
+			Set<SyntheticLocalVar> referencedSLVs,
+			Set<ThreadLocalVar> referencedTLVs,
+			boolean containsHandledException) {
 		super();
 		this.instructions = instructions;
 		this.tryCatchBlocks = tryCatchBlocks;
-		this.referencedSLV = referencedSLV;
-		this.referencedTLV = referencedTLV;
+		this.referencedSLVs = referencedSLVs;
+		this.referencedTLVs = referencedTLVs;
 		this.containsHandledException = containsHandledException;
 	}
 	
@@ -38,12 +39,12 @@ public class Code {
 		return tryCatchBlocks;
 	}
 
-	public Set<SyntheticLocalVar> getReferencedSLV() {
-		return referencedSLV;
+	public Set<SyntheticLocalVar> getReferencedSLVs() {
+		return referencedSLVs;
 	}
 	
-	public Set<ThreadLocalVar> getReferencedTLV() {
-		return referencedTLV;
+	public Set<ThreadLocalVar> getReferencedTLVs() {
+		return referencedTLVs;
 	}
 
 	public boolean containsHandledException() {

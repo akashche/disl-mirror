@@ -11,7 +11,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
-import ch.usi.dag.disl.dislclass.parser.SnippetParser;
+import ch.usi.dag.disl.dislclass.parser.ClassParser;
+import ch.usi.dag.disl.dislclass.processor.Processor;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.ASMException;
@@ -75,17 +76,22 @@ public class DiSL implements Instrumentation {
 			// - create snippets
 			// - create static analysis methods
 
-			SnippetParser parser = new SnippetParser();
+			ClassParser parser = new ClassParser();
 
 			for (byte[] classAsBytes : compiledClasses) {
 				parser.parse(classAsBytes);
 			}
 
+			// initialize processors
+			Map<Class<?>, Processor> processors = parser.getProcessors();
+			for(Processor processor : processors.values()) {
+				processor.init(parser.getAllLocalVars());
+			}
+			
 			// initialize snippets
-			snippets = parser.getSnippets();
-
-			for (Snippet snippet : snippets) {
-				snippet.prepare(parser.getAllLocalVars(), useDynamicBypass);
+			for (Snippet snippet : parser.getSnippets()) {
+				snippet.init(parser.getAllLocalVars(), processors,
+						useDynamicBypass);
 			}
 
 			// TODO put checker here
@@ -172,7 +178,7 @@ public class DiSL implements Instrumentation {
 		// (marked) snippets
 		Set<SyntheticLocalVar> selectedSLV = new HashSet<SyntheticLocalVar>();
 		for (Snippet snippet : snippetMarkings.keySet()) {
-			selectedSLV.addAll(snippet.getCode().getReferencedSLV());
+			selectedSLV.addAll(snippet.getCode().getReferencedSLVs());
 		}
 
 		// *** determine if any snippet uses dynamic analysis ***
@@ -185,6 +191,10 @@ public class DiSL implements Instrumentation {
 				break;
 			}
 		}
+		
+		// *** prepare processors ***
+
+		// TODO ! processors prepare
 
 		// *** viewing ***
 
