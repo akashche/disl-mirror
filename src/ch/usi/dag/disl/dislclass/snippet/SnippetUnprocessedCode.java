@@ -2,6 +2,7 @@ package ch.usi.dag.disl.dislclass.snippet;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -9,11 +10,14 @@ import java.util.Set;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.dislclass.code.Code;
@@ -21,6 +25,7 @@ import ch.usi.dag.disl.dislclass.code.UnprocessedCode;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.processor.Processors;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
@@ -228,4 +233,58 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		tryCatchBlocks.add(new TryCatchBlockNode(tryBegin, tryEnd,
 				handlerBegin, null));
 	}
+	
+	public static class ProcessorInfo {
+		public AbstractInsnNode loc;
+		public Type clazz;
+		public String type;
+	}
+
+	public static List<ProcessorInfo> detect(MethodNode method) {
+
+		List<ProcessorInfo> processors = new LinkedList<ProcessorInfo>();
+
+		for (AbstractInsnNode instr : method.instructions.toArray()) {
+
+			if (!(instr instanceof MethodInsnNode)) {
+				continue;
+			}
+
+			MethodInsnNode min = (MethodInsnNode) instr;
+
+			if (!(min.owner.equals(Type.getInternalName(Processors.class)) && min.name
+					.equals("apply"))) {
+				continue;
+			}
+
+			ProcessorInfo processor = new ProcessorInfo();
+			AbstractInsnNode prev = instr.getPrevious();
+
+			if (prev == null || prev.getOpcode() != Opcodes.GETSTATIC) {
+				continue;
+			}
+
+			processor.type = ((FieldInsnNode) prev).name;
+
+			AbstractInsnNode pprev = prev.getPrevious();
+
+			if (pprev == null || pprev.getOpcode() != Opcodes.LDC) {
+				continue;
+			}
+
+			Object clazz = ((LdcInsnNode) pprev).cst;
+
+			if (!(clazz instanceof Type)) {
+				continue;
+			}
+
+			processor.clazz = (Type) clazz;
+			processor.loc = pprev;
+
+			processors.add(processor);
+		}
+
+		return processors;
+	}
+	
 }
