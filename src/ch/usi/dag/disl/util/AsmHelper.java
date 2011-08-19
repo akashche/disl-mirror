@@ -14,6 +14,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
@@ -23,12 +24,11 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import ch.usi.dag.disl.exception.ASMException;
+import ch.usi.dag.disl.exception.DiSLFatalException;
 
 public class AsmHelper {
 
-	public static int getIConstOperand(AbstractInsnNode instr)
-			throws ASMException {
+	public static int getIConstOperand(AbstractInsnNode instr) {
 
 		switch (instr.getOpcode()) {
 		case Opcodes.ICONST_M1:
@@ -48,7 +48,29 @@ public class AsmHelper {
 		case Opcodes.BIPUSH:
 			return ((IntInsnNode) instr).operand;
 		default:
-			throw new ASMException("Not an iconst instruction.");
+			throw new DiSLFatalException("Parameter index out of bound");
+		}
+	}
+	
+	public static AbstractInsnNode getIConstInstr(int iconst) {
+
+		switch (iconst) {
+		case -1:
+			return new InsnNode(Opcodes.ICONST_M1);
+		case 0:
+			return new InsnNode(Opcodes.ICONST_0);
+		case 1:
+			return new InsnNode(Opcodes.ICONST_1);
+		case 2:
+			return new InsnNode(Opcodes.ICONST_2);
+		case 3:
+			return new InsnNode(Opcodes.ICONST_3);
+		case 4:
+			return new InsnNode(Opcodes.ICONST_4);
+		case 5:
+			return new InsnNode(Opcodes.ICONST_5);
+		default:
+			return new IntInsnNode(Opcodes.BIPUSH, iconst);
 		}
 	}
 
@@ -61,13 +83,12 @@ public class AsmHelper {
 		return 1;
 	}
 	
-	public static int getParameterIndex(MethodNode method, int par_index)
-			throws ASMException {
+	public static int getParameterIndex(MethodNode method, int par_index) {
 
 		Type[] types = Type.getArgumentTypes(method.desc);
 
 		if (par_index >= types.length) {
-			throw new ASMException("Parameter index out of bound");
+			throw new DiSLFatalException("Parameter index out of bound");
 		}
 
 		int index = 0;

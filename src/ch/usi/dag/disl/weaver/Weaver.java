@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -31,14 +32,17 @@ import ch.usi.dag.disl.dislclass.annotation.After;
 import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
 import ch.usi.dag.disl.dislclass.annotation.AfterThrowing;
 import ch.usi.dag.disl.dislclass.annotation.Before;
+import ch.usi.dag.disl.dislclass.code.Code;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.SnippetCode;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.dynamicinfo.DynamicContext;
-import ch.usi.dag.disl.exception.ASMException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.processor.ProcessorApplyType;
 import ch.usi.dag.disl.processor.generator.PIResolver;
+import ch.usi.dag.disl.processor.generator.ProcInstance;
+import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.stack.StackUtil;
@@ -85,8 +89,7 @@ public class Weaver {
 	}
 
 	public static void fixDynamicInfo(Snippet snippet, MarkedRegion region,
-			Frame<SourceValue> frame, MethodNode method)
-			throws ASMException {
+			Frame<SourceValue> frame, MethodNode method) {
 		InsnList src = method.instructions;
 
 		for (AbstractInsnNode instr : src.toArray()) {
@@ -184,6 +187,116 @@ public class Weaver {
 		methodNode.maxLocals = max + 1;
 	}
 	
+	public static InsnList procInMethod(MethodNode method,
+			ProcInstance processor) {
+		InsnList ilist = new InsnList();
+
+		for (ProcMethodInstance processorMethod : processor.getMethods()) {
+
+			Code code = processorMethod.getCode().clone();
+			InsnList instructions = code.getInstructions();
+			Type type = processorMethod.getArgType().getASMType();
+
+			AbstractInsnNode start = instructions.getFirst();
+			instructions.insertBefore(start,
+					AsmHelper.getIConstInstr(processorMethod.getArgPos()));
+			instructions
+					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 0));
+			
+			instructions.insertBefore(start,
+					AsmHelper.getIConstInstr(processorMethod.getArgsCount()));
+			instructions
+					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 1));
+
+			VarInsnNode target = new VarInsnNode(
+					type.getOpcode(Opcodes.ISTORE), 2);
+			instructions.insertBefore(start, target);
+
+			fixLocalIndex(method, instructions);
+
+			instructions.insertBefore(
+					target,
+					new VarInsnNode(type.getOpcode(Opcodes.ILOAD), AsmHelper
+							.getParameterIndex(method,
+									processorMethod.getArgPos())));
+			
+			ilist.add(instructions);
+			method.tryCatchBlocks.addAll(code.getTryCatchBlocks());
+		}
+
+		return ilist;
+	}
+	
+	public static InsnList procBeforeInvoke(MethodNode method,
+			ProcInstance processor, Frame<SourceValue> frame) {
+		
+		InsnList ilist = new InsnList();
+
+		for (ProcMethodInstance processorMethod : processor.getMethods()) {
+
+			Code code = processorMethod.getCode().clone();
+			InsnList instructions = code.getInstructions();
+
+			int pos = processorMethod.getArgsCount() - 1
+					- processorMethod.getArgPos();
+			SourceValue source = StackUtil.getSource(frame, pos);
+			
+			
+			AbstractInsnNode start = instructions.getFirst();
+			instructions.insertBefore(start,
+					AsmHelper.getIConstInstr(processorMethod.getArgPos()));
+			instructions
+					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 0));
+			
+			instructions.insertBefore(start,
+					AsmHelper.getIConstInstr(processorMethod.getArgsCount()));
+			instructions
+					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 1));
+
+			Type type = processorMethod.getArgType().getASMType();
+			int sopcode = type.getOpcode(Opcodes.ISTORE);
+
+			for (AbstractInsnNode itr : source.insns) {
+				method.instructions.insert(itr, new VarInsnNode(sopcode,
+						method.maxLocals + 2));
+				method.instructions.insert(itr, new InsnNode(
+						type.getSize() == 2 ? Opcodes.DUP2 : Opcodes.DUP));
+			}
+
+			fixLocalIndex(method, instructions);
+			ilist.add(instructions);
+			method.tryCatchBlocks.addAll(code.getTryCatchBlocks());
+		}
+
+		return ilist;
+	}
+
+	public static void weavingProcessor(MethodNode methodNode,
+			PIResolver piResolver, Snippet snippet, MarkedRegion region,
+			InsnList newlst, Set<Integer> set, AbstractInsnNode[] array,
+			Frame<SourceValue> frame) {
+		
+		for (int index : set) {
+
+			AbstractInsnNode instr = array[index];
+			ProcInstance processor = piResolver.get(snippet, region, index);
+
+			if (processor.getProcApplyType() == 
+				ProcessorApplyType.BEFORE_INVOCATION) {
+
+				newlst.insert(instr,
+						procBeforeInvoke(methodNode, processor, frame));
+			} else {
+
+				newlst.insert(instr, procInMethod(methodNode, processor));
+			}
+
+			newlst.remove(instr.getPrevious().getPrevious());
+			newlst.remove(instr.getPrevious());
+			newlst.remove(instr);
+		}
+	}
+
 	// Transform static fields to synthetic local
 	// NOTE that the field maxLocals of the method node will be automatically
 	// updated.
@@ -401,7 +514,7 @@ public class Weaver {
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
 			StaticInfo staticInfoHolder, boolean usesDynamicAnalysis,
-			PIResolver piResolver) throws ASMException {
+			PIResolver piResolver) {
 		// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_end;
@@ -488,9 +601,14 @@ public class Weaver {
 
 					SnippetCode clone = code.clone();
 					InsnList newlst = clone.getInstructions();
+					AbstractInsnNode[] instr_array = newlst.toArray();
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 					fixLocalIndex(methodNode, newlst);
+										
+					weavingProcessor(methodNode, piResolver, snippet, region,
+							newlst, code.getInvokedProcessors().keySet(),
+							instr_array, sourceFrames[index]);
 
 					methodNode.instructions.insertBefore(loc, newlst);
 					methodNode.tryCatchBlocks.addAll(clone.getTryCatchBlocks());
@@ -533,8 +651,16 @@ public class Weaver {
 
 						SnippetCode clone = code.clone();
 						InsnList newlst = clone.getInstructions();
+						AbstractInsnNode[] instr_array = newlst.toArray();
+						
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						fixLocalIndex(methodNode, newlst);
+						
+						weavingProcessor(methodNode, piResolver, snippet,
+								region, newlst, code.getInvokedProcessors()
+										.keySet(), instr_array,
+								sourceFrames[index]);
+						
 						methodNode.instructions.insert(loc, newlst);
 						methodNode.tryCatchBlocks.addAll(clone
 								.getTryCatchBlocks());
@@ -557,10 +683,19 @@ public class Weaver {
 
 					for (AbstractInsnNode exit : region.getEnds()) {
 
+						int index = stack_end.get(exit);
+						
 						SnippetCode clone = code.clone();
 						InsnList newlst = clone.getInstructions();
+						AbstractInsnNode[] instr_array = newlst.toArray();
+						
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						fixLocalIndex(methodNode, newlst);
+						
+						weavingProcessor(methodNode, piResolver, snippet,
+								region, newlst, code.getInvokedProcessors()
+										.keySet(), instr_array,
+								sourceFrames[index]);
 
 						// Create a try-catch clause
 						LabelNode startLabel = getStartLabel(methodNode,
@@ -577,8 +712,7 @@ public class Weaver {
 
 						if (usesDynamicAnalysis) {
 							fixDynamicInfo(snippet, region,
-									sourceFrames[stack_end.get(exit)],
-									methodNode);
+									sourceFrames[index], methodNode);
 						}
 					}
 				}

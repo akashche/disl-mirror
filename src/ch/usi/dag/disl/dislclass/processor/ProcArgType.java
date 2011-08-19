@@ -17,7 +17,7 @@ public enum ProcArgType {
 	OBJECT,
 	STRING;
 	
-	Type getASMType() {
+	public Type getASMType() {
 		
 		switch(this) {
 		case BOOLEAN:
