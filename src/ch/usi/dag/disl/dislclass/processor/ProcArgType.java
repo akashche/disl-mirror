@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.dislclass.processor;
 
-public enum ProcessorArgType {
+public enum ProcArgType {
 
 	BOOLEAN,
 	BYTE,

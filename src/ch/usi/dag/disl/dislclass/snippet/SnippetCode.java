@@ -21,7 +21,7 @@ public class SnippetCode extends Code {
 
 	private Map<String, Method> staticAnalyses;
 	private boolean usesDynamicAnalysis;
-	private Map<AbstractInsnNode, ProcessorInvocation> invokedProcessors; 
+	private Map<AbstractInsnNode, ProcInvocation> invokedProcessors; 
 
 	public SnippetCode(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks,
@@ -30,7 +30,7 @@ public class SnippetCode extends Code {
 			boolean containsHandledException,
 			Map<String, Method> staticAnalyses,
 			boolean usesDynamicAnalysis,
-			Map<AbstractInsnNode, ProcessorInvocation> invokedProcessors
+			Map<AbstractInsnNode, ProcInvocation> invokedProcessors
 			) {
 		
 		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
@@ -48,7 +48,7 @@ public class SnippetCode extends Code {
 		return usesDynamicAnalysis;
 	}
 	
-	public Map<AbstractInsnNode, ProcessorInvocation> getInvokedProcessors() {
+	public Map<AbstractInsnNode, ProcInvocation> getInvokedProcessors() {
 		return invokedProcessors;
 	}
 	

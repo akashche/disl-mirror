@@ -6,23 +6,29 @@ import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
 
-public class Processor {
+public class Proc {
 
-	private List<ProcessorMethod> methods;
+	private String name;
+	private List<ProcMethod> methods;
 
-	public Processor(List<ProcessorMethod> methods) {
+	public Proc(String name, List<ProcMethod> methods) {
 		super();
+		this.name = name;
 		this.methods = methods;
 	}
 
-	public List<ProcessorMethod> getMethods() {
+	public String getName() {
+		return name;
+	}
+	
+	public List<ProcMethod> getMethods() {
 		return methods;
 	}
 	
 	public void init(LocalVars allLVs) throws StaticAnalysisException,
 			ReflectionException {
 		
-		for(ProcessorMethod method : methods) {
+		for(ProcMethod method : methods) {
 			method.init(allLVs);
 		}
 	}

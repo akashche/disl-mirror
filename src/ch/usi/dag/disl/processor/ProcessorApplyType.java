@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.processor;
 
-public enum ProcApplyType {
+public enum ProcessorApplyType {
 
 	INSIDE_METHOD,
 	BEFORE_INVOCATION

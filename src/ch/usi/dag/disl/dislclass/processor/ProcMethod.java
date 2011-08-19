@@ -6,19 +6,19 @@ import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
 
-public class ProcessorMethod {
+public class ProcMethod {
 
-	private ProcessorArgType type;
+	private ProcArgType type;
 	private UnprocessedCode unprocessedCode;
 	private Code code;
 	
-	public ProcessorMethod(ProcessorArgType type, UnprocessedCode unprocessedCode) {
+	public ProcMethod(ProcArgType type, UnprocessedCode unprocessedCode) {
 		super();
 		this.type = type;
 		this.unprocessedCode = unprocessedCode;
 	}
 	
-	public ProcessorArgType getType() {
+	public ProcArgType getType() {
 		return type;
 	}
 

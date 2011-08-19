@@ -12,18 +12,19 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.parser.ClassParser;
-import ch.usi.dag.disl.dislclass.processor.Processor;
-import ch.usi.dag.disl.dislclass.snippet.ProcessorInvocation;
+import ch.usi.dag.disl.dislclass.processor.Proc;
+import ch.usi.dag.disl.dislclass.snippet.ProcInvocation;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.ASMException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.InitException;
+import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
-import ch.usi.dag.disl.processor.ProcApplyType;
+import ch.usi.dag.disl.processor.ProcessorApplyType;
 import ch.usi.dag.disl.processor.generator.PIResolver;
-import ch.usi.dag.disl.processor.generator.ProcessorGenerator;
+import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
@@ -87,14 +88,14 @@ public class DiSL implements Instrumentation {
 			}
 
 			// initialize processors
-			Map<Class<?>, Processor> processors = parser.getProcessors();
-			for(Processor processor : processors.values()) {
+			Map<Class<?>, Proc> processors = parser.getProcessors();
+			for (Proc processor : processors.values()) {
 				processor.init(parser.getAllLocalVars());
 			}
-			
+
 			// initialize snippets
 			snippets = parser.getSnippets();
-			
+
 			for (Snippet snippet : snippets) {
 				snippet.init(parser.getAllLocalVars(), processors,
 						useDynamicBypass);
@@ -126,12 +127,10 @@ public class DiSL implements Instrumentation {
 	 *            class that will be instrumented
 	 * @param methodNode
 	 *            method in the classNode argument, that will be instrumented
-	 * @throws StaticAnalysisException
-	 * @throws ReflectionException
-	 * @throws ASMException
 	 */
 	private void instrumentMethod(ClassNode classNode, MethodNode methodNode)
-			throws ReflectionException, StaticAnalysisException, ASMException {
+			throws ReflectionException, StaticAnalysisException, ASMException,
+			ProcessorException {
 
 		// TODO create finite-state machine if possible
 
@@ -159,8 +158,7 @@ public class DiSL implements Instrumentation {
 		List<MarkedRegion> allMarkings = new LinkedList<MarkedRegion>();
 
 		// markings according to snippets for viewing
-		Map<Snippet, List<MarkedRegion>> snippetMarkings = 
-			new HashMap<Snippet, List<MarkedRegion>>();
+		Map<Snippet, List<MarkedRegion>> snippetMarkings = new HashMap<Snippet, List<MarkedRegion>>();
 
 		for (Snippet snippet : matchedSnippets) {
 
@@ -181,14 +179,14 @@ public class DiSL implements Instrumentation {
 		// *** used synthetic local vars in snippets ***
 		// weaver needs list of synthetic locals that are actively used in
 		// selected (matched) snippets
-		
+
 		Set<SyntheticLocalVar> usedSLVs = new HashSet<SyntheticLocalVar>();
 		for (Snippet snippet : snippetMarkings.keySet()) {
 			usedSLVs.addAll(snippet.getCode().getReferencedSLVs());
 		}
 
 		// *** determine if any snippet uses dynamic analysis
-		//     or any snippet contains processor that has to access stack ***
+		// or any snippet contains processor that has to access stack ***
 		// this determines if weaver should do stack computation
 
 		boolean usesDynamicAnalysis = false;
@@ -199,31 +197,34 @@ public class DiSL implements Instrumentation {
 				usesDynamicAnalysis = true;
 				break;
 			}
-			
+
 			// processor has to access stack
-			for(ProcessorInvocation prcInv :
-				snippet.getCode().getInvokedProcessors().values()) {
-				
-				if(prcInv.getProcApplyType() == ProcApplyType.BEFORE_INVOCATION) {
+			for (ProcInvocation prcInv : snippet.getCode()
+					.getInvokedProcessors().values()) {
+
+				if (prcInv.getProcApplyType() == ProcessorApplyType.BEFORE_INVOCATION) {
 					usesDynamicAnalysis = true;
 					break;
 				}
 			}
 		}
-		
+
 		// *** prepare processors ***
 
-		PIResolver piResolver = ProcessorGenerator.compute(snippetMarkings);
+		String fullMethodName = classNode.name + "." + methodNode.name;
+
+		PIResolver piResolver = new ProcGenerator().compute(fullMethodName,
+				methodNode, snippetMarkings);
 
 		// *** used synthetic local vars in processors ***
 		// TODO ! processor - include SLVs from processors into usedSLV
-		
+
 		// *** viewing ***
 
 		// TODO ! weaver should have two parts, weaving and rewriting
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
-				new LinkedList<SyntheticLocalVar>(usedSLVs),
-				staticInfo, usesDynamicAnalysis, piResolver);
+				new LinkedList<SyntheticLocalVar>(usedSLVs), staticInfo,
+				usesDynamicAnalysis, piResolver);
 
 		// TODO ! ProcessorHack remove
 		ProcessorHack.instrument(classNode, methodNode,

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
-import ch.usi.dag.disl.dislclass.processor.Processor;
+import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.ScopeParserException;
@@ -32,8 +32,8 @@ public class ClassParser {
 		return snippetParser.getSnippets();
 	}
 	
-	public Map<Class<?>, Processor> getProcessors() {
+	public Map<Class<?>, Proc> getProcessors() {
 		// TODO ! processor
-		return new HashMap<Class<?>, Processor>();
+		return new HashMap<Class<?>, Proc>();
 	}
 }

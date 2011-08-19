@@ -21,12 +21,12 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import ch.usi.dag.disl.dislclass.code.Code;
 import ch.usi.dag.disl.dislclass.code.UnprocessedCode;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
-import ch.usi.dag.disl.dislclass.processor.Processor;
+import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
-import ch.usi.dag.disl.processor.ProcApplyType;
-import ch.usi.dag.disl.processor.Processors;
+import ch.usi.dag.disl.processor.ProcessorApplyType;
+import ch.usi.dag.disl.processor.Processor;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
@@ -50,7 +50,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	}
 
 	public SnippetCode process(LocalVars allLVs,
-			Map<Class<?>, Processor> processors, boolean useDynamicBypass)
+			Map<Class<?>, Proc> processors, boolean useDynamicBypass)
 			throws StaticAnalysisException, ReflectionException,
 			ProcessorException {
 
@@ -66,8 +66,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		Map<String, Method> staticAnalyses = new HashMap<String, Method>();
 
-		Map<AbstractInsnNode, ProcessorInvocation> invokedProcessors =
-			new HashMap<AbstractInsnNode, ProcessorInvocation>();
+		Map<AbstractInsnNode, ProcInvocation> invokedProcessors =
+			new HashMap<AbstractInsnNode, ProcInvocation>();
 
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
@@ -195,10 +195,10 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	private class ProcessorInfo {
 
 		private AbstractInsnNode location;
-		private ProcessorInvocation procInvoke;
+		private ProcInvocation procInvoke;
 
 		public ProcessorInfo(AbstractInsnNode location,
-				ProcessorInvocation procInvoke) {
+				ProcInvocation procInvoke) {
 			super();
 			this.location = location;
 			this.procInvoke = procInvoke;
@@ -208,13 +208,13 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 			return location;
 		}
 
-		public ProcessorInvocation getProcInvoke() {
+		public ProcInvocation getProcInvoke() {
 			return procInvoke;
 		}
 	}
 
 	private ProcessorInfo insnInvokesProcessor(AbstractInsnNode instr,
-			Map<Class<?>, Processor> processors) throws ProcessorException,
+			Map<Class<?>, Proc> processors) throws ProcessorException,
 			ReflectionException {
 
 		final String APPLY_METHOD = "apply";
@@ -227,7 +227,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		MethodInsnNode min = (MethodInsnNode) instr;
 
 		// check if the invocation is processor invocation
-		if (!(min.owner.equals(Type.getInternalName(Processors.class)) && min.name
+		if (!(min.owner.equals(Type.getInternalName(Processor.class)) && min.name
 				.equals(APPLY_METHOD))) {
 			return null;
 		}
@@ -240,18 +240,18 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		if (firstParam == null || firstParam.getOpcode() != Opcodes.LDC) {
 			throw new ProcessorException("In advice " + className + "."
 					+ methodName + " - pass the first (class)"
-					+ " argument of a ProcessorMethod.apply method direcltly."
-					+ " ex: ProcessorMethod.apply(ProcessorMethod.class,"
-					+ " ProcApplyType.INSIDE_METHOD)");
+					+ " argument of a ProcMethod.apply method direcltly."
+					+ " ex: ProcMethod.apply(ProcMethod.class,"
+					+ " ProcessorApplyType.INSIDE_METHOD)");
 		}
 
 		// second parameter has to be loaded by GETSTATIC
 		if (secondParam == null || secondParam.getOpcode() != Opcodes.GETSTATIC) {
 			throw new ProcessorException("In advice " + className + "."
 					+ methodName + " - pass the second (type)"
-					+ " argument of a ProcessorMethod.apply method direcltly."
-					+ " ex: ProcessorMethod.apply(ProcessorMethod.class,"
-					+ " ProcApplyType.INSIDE_METHOD)");
+					+ " argument of a ProcMethod.apply method direcltly."
+					+ " ex: ProcMethod.apply(ProcMethod.class,"
+					+ " ProcessorApplyType.INSIDE_METHOD)");
 		}
 
 		Object processorASMType = ((LdcInsnNode) firstParam).cst;
@@ -262,13 +262,13 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 					+ processorASMType.getClass().toString());
 		}
 
-		ProcApplyType procApplyType = ProcApplyType
+		ProcessorApplyType procApplyType = ProcessorApplyType
 				.valueOf(((FieldInsnNode) secondParam).name);
 
 		Class<?> processorClass = ReflectionHelper
 				.resolveClass((Type) processorASMType);
 
-		Processor processor = processors.get(processorClass);
+		Proc processor = processors.get(processorClass);
 		
 		if(processor == null) {
 			throw new ProcessorException("In advice " + className + "."
@@ -276,7 +276,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 					+ processorClass.getClass().toString());
 		}
 
-		ProcessorInvocation prcInv = new ProcessorInvocation(processor,
+		ProcInvocation prcInv = new ProcInvocation(processor,
 				procApplyType);
 
 		return new ProcessorInfo(instr, prcInv);

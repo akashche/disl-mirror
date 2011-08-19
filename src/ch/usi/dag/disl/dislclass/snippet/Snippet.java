@@ -3,7 +3,7 @@ package ch.usi.dag.disl.dislclass.snippet;
 import java.util.Map;
 
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
-import ch.usi.dag.disl.dislclass.processor.Processor;
+import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.dislclass.snippet.marker.Marker;
 import ch.usi.dag.disl.dislclass.snippet.scope.Scope;
 import ch.usi.dag.disl.exception.ProcessorException;
@@ -54,7 +54,7 @@ public class Snippet implements Comparable<Snippet> {
 		return order - o.getOrder();
 	}
 
-	public void init(LocalVars allLVs, Map<Class<?>, Processor> processors,
+	public void init(LocalVars allLVs, Map<Class<?>, Proc> processors,
 			boolean useDynamicBypass) throws StaticAnalysisException,
 			ReflectionException, ProcessorException {
 
