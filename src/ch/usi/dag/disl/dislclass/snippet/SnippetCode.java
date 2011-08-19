@@ -20,6 +20,8 @@ public class SnippetCode extends Code {
 
 	private Map<String, Method> staticAnalyses;
 	private boolean usesDynamicAnalysis;
+	// integer (key) is an index of an instruction in snippet code that invokes
+	// processor
 	private Map<Integer, ProcInvocation> invokedProcessors; 
 
 	public SnippetCode(InsnList instructions,
