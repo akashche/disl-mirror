@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -21,7 +20,7 @@ public class SnippetCode extends Code {
 
 	private Map<String, Method> staticAnalyses;
 	private boolean usesDynamicAnalysis;
-	private Map<AbstractInsnNode, ProcInvocation> invokedProcessors; 
+	private Map<Integer, ProcInvocation> invokedProcessors; 
 
 	public SnippetCode(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks,
@@ -30,7 +29,7 @@ public class SnippetCode extends Code {
 			boolean containsHandledException,
 			Map<String, Method> staticAnalyses,
 			boolean usesDynamicAnalysis,
-			Map<AbstractInsnNode, ProcInvocation> invokedProcessors
+			Map<Integer, ProcInvocation> invokedProcessors
 			) {
 		
 		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
@@ -48,7 +47,7 @@ public class SnippetCode extends Code {
 		return usesDynamicAnalysis;
 	}
 	
-	public Map<AbstractInsnNode, ProcInvocation> getInvokedProcessors() {
+	public Map<Integer, ProcInvocation> getInvokedProcessors() {
 		return invokedProcessors;
 	}
 	
@@ -64,6 +63,6 @@ public class SnippetCode extends Code {
 				containsHandledException(),
 				new HashMap<String, Method>(staticAnalyses),
 				usesDynamicAnalysis,
-				invokedProcessors);
+				new HashMap<Integer, ProcInvocation>(invokedProcessors));
 	}
 }

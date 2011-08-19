@@ -11,5 +11,7 @@ public enum ProcArgType {
 	LONG,
 	SHORT,
 	STRING,
-	OBJECT
+	OBJECT;
+	
+	// TODO ! processors - conversion from (to) type
 }

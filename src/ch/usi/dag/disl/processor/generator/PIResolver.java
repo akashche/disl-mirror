@@ -3,39 +3,37 @@ package ch.usi.dag.disl.processor.generator;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.objectweb.asm.tree.AbstractInsnNode;
-
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 
 public class PIResolver {
 
 	private Map<ResolverKey, ProcInstance> piStore = 
-		new HashMap<PIResolver.ResolverKey, ProcInstance>();
+		new HashMap<ResolverKey, ProcInstance>();
 	
 	private class ResolverKey {
 		
 		private Snippet snippet;
 		private MarkedRegion markedRegion;
-		private AbstractInsnNode instr;
+		private int instrPos;
 		
 		public ResolverKey(Snippet snippet, MarkedRegion markedRegion,
-				AbstractInsnNode instr) {
+				int instrPos) {
 			super();
 			this.snippet = snippet;
 			this.markedRegion = markedRegion;
-			this.instr = instr;
+			this.instrPos = instrPos;
 		}
 
 		@Override
 		public int hashCode() {
-
+			
 			final int prime = 31;
 			int result = 1;
 			
 			result = prime * result + getOuterType().hashCode();
 			
-			result = prime * result + ((instr == null) ? 0 : instr.hashCode());
+			result = prime * result + instrPos;
 			
 			result = prime * result
 					+ ((markedRegion == null) ? 0 : markedRegion.hashCode());
@@ -59,14 +57,10 @@ public class PIResolver {
 				return false;
 			
 			ResolverKey other = (ResolverKey) obj;
-			
 			if (!getOuterType().equals(other.getOuterType()))
 				return false;
 			
-			if (instr == null) {
-				if (other.instr != null)
-					return false;
-			} else if (!instr.equals(other.instr))
+			if (instrPos != other.instrPos)
 				return false;
 			
 			if (markedRegion == null) {
@@ -90,17 +84,17 @@ public class PIResolver {
 	}
 	
 	public ProcInstance get(Snippet snippet, MarkedRegion markedRegion,
-			AbstractInsnNode instr) {
+			int instrPos) {
 
-		ResolverKey key = new ResolverKey(snippet, markedRegion, instr);
+		ResolverKey key = new ResolverKey(snippet, markedRegion, instrPos);
 		
 		return piStore.get(key);
 	}
 
 	public void set(Snippet snippet, MarkedRegion markedRegion,
-			AbstractInsnNode instr, ProcInstance processorInstance) {
+			int instrPos, ProcInstance processorInstance) {
 
-		ResolverKey key = new ResolverKey(snippet, markedRegion, instr);
+		ResolverKey key = new ResolverKey(snippet, markedRegion, instrPos);
 		
 		piStore.put(key, processorInstance);
 	}
