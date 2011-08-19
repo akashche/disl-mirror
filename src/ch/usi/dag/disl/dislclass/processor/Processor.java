@@ -8,7 +8,7 @@ import ch.usi.dag.disl.exception.StaticAnalysisException;
 
 public class Processor {
 
-	List<ProcessorMethod> methods;
+	private List<ProcessorMethod> methods;
 
 	public Processor(List<ProcessorMethod> methods) {
 		super();

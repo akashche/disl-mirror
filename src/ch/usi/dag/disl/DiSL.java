@@ -20,6 +20,8 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.processor.generator.PIResolver;
+import ch.usi.dag.disl.processor.generator.ProcessorGenerator;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
@@ -194,14 +196,14 @@ public class DiSL implements Instrumentation {
 		
 		// *** prepare processors ***
 
-		// TODO ! processors prepare
+		PIResolver piResolver = ProcessorGenerator.compute(snippetMarkings);
 
 		// *** viewing ***
 
 		// TODO ! weaver should have two parts, weaving and rewriting
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(selectedSLV),
-				staticInfo, usesDynamicAnalysis);
+				staticInfo, usesDynamicAnalysis, piResolver);
 
 		// TODO ! ProcessorHack remove
 		ProcessorHack.instrument(classNode, methodNode,

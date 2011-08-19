@@ -12,12 +12,12 @@ import ch.usi.dag.disl.exception.StaticAnalysisException;
 
 public class Snippet implements Comparable<Snippet> {
 
-	protected Class<?> annotationClass;
-	protected Marker marker;
-	protected Scope scope;
-	protected int order;
-	protected SnippetUnprocessedCode unprocessedCode;
-	protected SnippetCode code;
+	private Class<?> annotationClass;
+	private Marker marker;
+	private Scope scope;
+	private int order;
+	private SnippetUnprocessedCode unprocessedCode;
+	private SnippetCode code;
 
 	public Snippet(Class<?> annotationClass, Marker marker, Scope scope,
 			int order, SnippetUnprocessedCode unprocessedCode) {
