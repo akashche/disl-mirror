@@ -13,6 +13,7 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.parser.ClassParser;
 import ch.usi.dag.disl.dislclass.processor.Processor;
+import ch.usi.dag.disl.dislclass.snippet.ProcessorInvocation;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.ASMException;
@@ -20,6 +21,7 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.processor.ProcApplyType;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcessorGenerator;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
@@ -176,23 +178,36 @@ public class DiSL implements Instrumentation {
 		StaticInfo staticInfo = new StaticInfo(staticAnalysisInstances,
 				classNode, methodNode, snippetMarkings);
 
-		// *** select synthetic local vars ***
-
-		// we need list of synthetic locals that are actively used in selected
-		// (marked) snippets
-		Set<SyntheticLocalVar> selectedSLV = new HashSet<SyntheticLocalVar>();
+		// *** used synthetic local vars in snippets ***
+		// weaver needs list of synthetic locals that are actively used in
+		// selected (matched) snippets
+		
+		Set<SyntheticLocalVar> usedSLVs = new HashSet<SyntheticLocalVar>();
 		for (Snippet snippet : snippetMarkings.keySet()) {
-			selectedSLV.addAll(snippet.getCode().getReferencedSLVs());
+			usedSLVs.addAll(snippet.getCode().getReferencedSLVs());
 		}
 
-		// *** determine if any snippet uses dynamic analysis ***
+		// *** determine if any snippet uses dynamic analysis
+		//     or any snippet contains processor that has to access stack ***
+		// this determines if weaver should do stack computation
 
 		boolean usesDynamicAnalysis = false;
 		for (Snippet snippet : snippetMarkings.keySet()) {
 
+			// snipet uses dynamic analysis
 			if (snippet.getCode().usesDynamicAnalysis()) {
 				usesDynamicAnalysis = true;
 				break;
+			}
+			
+			// processor has to access stack
+			for(ProcessorInvocation prcInv :
+				snippet.getCode().getInvokedProcessors().values()) {
+				
+				if(prcInv.getProcApplyType() == ProcApplyType.BEFORE_INVOCATION) {
+					usesDynamicAnalysis = true;
+					break;
+				}
 			}
 		}
 		
@@ -200,16 +215,19 @@ public class DiSL implements Instrumentation {
 
 		PIResolver piResolver = ProcessorGenerator.compute(snippetMarkings);
 
+		// *** used synthetic local vars in processors ***
+		// TODO ! processor - include SLVs from processors into usedSLV
+		
 		// *** viewing ***
 
 		// TODO ! weaver should have two parts, weaving and rewriting
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
-				new LinkedList<SyntheticLocalVar>(selectedSLV),
+				new LinkedList<SyntheticLocalVar>(usedSLVs),
 				staticInfo, usesDynamicAnalysis, piResolver);
 
 		// TODO ! ProcessorHack remove
 		ProcessorHack.instrument(classNode, methodNode,
-				new LinkedList<SyntheticLocalVar>(selectedSLV));
+				new LinkedList<SyntheticLocalVar>(usedSLVs));
 
 		// TODO just for debugging
 		System.out.println("--- instumentation of " + classNode.name + "."

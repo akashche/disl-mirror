@@ -2,6 +2,6 @@ package ch.usi.dag.disl.processor;
 
 public enum ProcApplyType {
 
-	IN_METHOD,
-	BEFORE_METHOD
+	INSIDE_METHOD,
+	BEFORE_INVOCATION
 }

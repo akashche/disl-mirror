@@ -242,7 +242,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 					+ methodName + " - pass the first (class)"
 					+ " argument of a ProcessorMethod.apply method direcltly."
 					+ " ex: ProcessorMethod.apply(ProcessorMethod.class,"
-					+ " ProcApplyType.IN_METHOD)");
+					+ " ProcApplyType.INSIDE_METHOD)");
 		}
 
 		// second parameter has to be loaded by GETSTATIC
@@ -251,7 +251,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 					+ methodName + " - pass the second (type)"
 					+ " argument of a ProcessorMethod.apply method direcltly."
 					+ " ex: ProcessorMethod.apply(ProcessorMethod.class,"
-					+ " ProcApplyType.IN_METHOD)");
+					+ " ProcApplyType.INSIDE_METHOD)");
 		}
 
 		Object processorASMType = ((LdcInsnNode) firstParam).cst;

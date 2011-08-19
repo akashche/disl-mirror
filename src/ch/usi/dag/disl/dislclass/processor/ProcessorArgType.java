@@ -10,5 +10,6 @@ public enum ProcessorArgType {
 	INT,
 	LONG,
 	SHORT,
+	STRING,
 	OBJECT
 }
