@@ -91,7 +91,9 @@ public class DiSL implements Instrumentation {
 			}
 			
 			// initialize snippets
-			for (Snippet snippet : parser.getSnippets()) {
+			snippets = parser.getSnippets();
+			
+			for (Snippet snippet : snippets) {
 				snippet.init(parser.getAllLocalVars(), processors,
 						useDynamicBypass);
 			}
