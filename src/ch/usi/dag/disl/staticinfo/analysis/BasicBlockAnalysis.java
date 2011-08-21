@@ -35,4 +35,13 @@ public class BasicBlockAnalysis extends AbstractStaticAnalysis {
 				staticAnalysisData.getMethodNode());
 		return cfg.getIndex(staticAnalysisData.getMarkedRegion().getStart());
 	}
+	
+	public boolean isFirstOfLoop() {
+
+		CtrlFlowGraph cfg = new CtrlFlowGraph(
+				staticAnalysisData.getMethodNode());
+		cfg.build();
+		return cfg.getBB(staticAnalysisData.getMarkedRegion().getStart())
+				.isLoop();
+	}
 }

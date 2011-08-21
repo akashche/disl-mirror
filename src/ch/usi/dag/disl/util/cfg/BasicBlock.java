@@ -6,17 +6,35 @@ import java.util.Set;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 public class BasicBlock {
+	private int index;
 	private AbstractInsnNode entrance;
 	private AbstractInsnNode exit;
 
 	private Set<BasicBlock> predecessors;
 	private Set<BasicBlock> successors;
+	private Set<BasicBlock> joins;
+	
+	private Set<BasicBlock> dominators;
+	
+	private boolean loop;
 
-	public BasicBlock(AbstractInsnNode entrance, AbstractInsnNode exit) {
+	public BasicBlock(int index, AbstractInsnNode entrance,
+			AbstractInsnNode exit) {
+		this.index = index;
 		this.entrance = entrance;
 		this.exit = exit;
-		this.successors = new HashSet<BasicBlock>();
-		this.predecessors = new HashSet<BasicBlock>();
+
+		successors = new HashSet<BasicBlock>();
+		predecessors = new HashSet<BasicBlock>();
+		joins = new HashSet<BasicBlock>();
+		
+		dominators = new HashSet<BasicBlock>();
+		
+		loop = false;
+	}
+
+	public int getIndex() {
+		return index;
 	}
 
 	public AbstractInsnNode getEntrance() {
@@ -34,4 +52,21 @@ public class BasicBlock {
 	public Set<BasicBlock> getSuccessors() {
 		return successors;
 	}
+
+	public Set<BasicBlock> getJoins() {
+		return joins;
+	}
+
+	public Set<BasicBlock> getDominators() {
+		return dominators;
+	}
+
+	public void setLoop(boolean loop) {
+		this.loop = loop;
+	}
+
+	public boolean isLoop() {
+		return loop;
+	}
+
 }
