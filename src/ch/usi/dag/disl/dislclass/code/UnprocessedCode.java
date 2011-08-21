@@ -10,6 +10,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
@@ -156,42 +157,58 @@ public class UnprocessedCode {
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
 			int opcode = instr.getOpcode();
+			
+			if (opcode != Opcodes.GETSTATIC && opcode != Opcodes.PUTSTATIC) {
+				continue;
+			}
+			
+			FieldInsnNode fieldInstr = (FieldInsnNode) instr;
+			String fieldId = fieldInstr.owner + ThreadLocalVar.NAME_DELIM
+					+ fieldInstr.name;
+			
+			if (! tlvIDs.contains(fieldId)) {
+				continue;
+			}
+			
+			final String threadInternalName = 
+				Type.getType(Thread.class).getInternalName();
+			
+			final String currentThreadMethod = "currentThread";
+			
+			final String currentThreadMethodDesc = 
+				"()L" + threadInternalName + ";";
+
+			// insert currentThread method invocation
+			instructions.insertBefore(instr, new MethodInsnNode(
+					Opcodes.INVOKESTATIC, threadInternalName,
+					currentThreadMethod, currentThreadMethodDesc));
 
 			// Only field instructions will be transformed
-			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
+			if (opcode == Opcodes.GETSTATIC) {
+				// insert new field access
+				instructions.insertBefore(instr, new FieldInsnNode(
+						Opcodes.GETFIELD, threadInternalName, fieldInstr.name,
+						fieldInstr.desc));
 
-				FieldInsnNode fieldInstr = (FieldInsnNode) instr;
-				String fieldId = fieldInstr.owner + ThreadLocalVar.NAME_DELIM
-						+ fieldInstr.name;
-
-				if (! tlvIDs.contains(fieldId)) {
-					continue;
+			} else if (opcode == Opcodes.PUTSTATIC) {
+								
+				if (Type.getType(fieldInstr.desc).getSize() == 1) {
+					instructions
+							.insertBefore(instr, new InsnNode(Opcodes.SWAP));
+				} else {
+					instructions.insertBefore(instr, new InsnNode(
+							Opcodes.DUP_X2));
+					instructions.insertBefore(instr, new InsnNode(Opcodes.POP));
 				}
 
-				final String threadInternalName = 
-					Type.getType(Thread.class).getInternalName();
-				
-				final String currentThreadMethod = "currentThread";
-				
-				final String currentThreadMethodDesc = 
-					"()L" + threadInternalName + ";";
-				
-				// insert currentThread method invocation
-				instructions.insertBefore(instr, new MethodInsnNode(
-						Opcodes.INVOKESTATIC, threadInternalName,
-						currentThreadMethod, currentThreadMethodDesc));
-
-				// insert new field access (get or put)
-				int fieldOpcode = (opcode == Opcodes.GETSTATIC) ? 
-						Opcodes.GETFIELD : Opcodes.PUTFIELD;
-				
+				// insert new field access
 				instructions.insertBefore(instr, new FieldInsnNode(
-						fieldOpcode, threadInternalName, fieldInstr.name,
+						Opcodes.PUTFIELD, threadInternalName, fieldInstr.name,
 						fieldInstr.desc));
-				
-				// remove translated instruction
-				instructions.remove(instr);
 			}
+
+			// remove translated instruction
+			instructions.remove(instr);
 		}
 	}
 }
