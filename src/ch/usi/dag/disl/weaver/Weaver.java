@@ -551,18 +551,16 @@ public class Weaver {
 		Analyzer<SourceValue> sourceAnalyzer = null;
 		Frame<SourceValue>[] sourceFrames = null;
 
-		if (usesDynamicAnalysis) {
-			sourceAnalyzer = StackUtil.getSourceAnalyzer();
+		sourceAnalyzer = StackUtil.getSourceAnalyzer();
 
-			try {
-				sourceAnalyzer.analyze(classNode.name, methodNode);
-			} catch (AnalyzerException e) {
-				throw new DiSLFatalException("Cause by AnalyzerException : \n"
-						+ e.getMessage());
-			}
-
-			sourceFrames = sourceAnalyzer.getFrames();
+		try {
+			sourceAnalyzer.analyze(classNode.name, methodNode);
+		} catch (AnalyzerException e) {
+			throw new DiSLFatalException("Cause by AnalyzerException : \n"
+					+ e.getMessage());
 		}
+
+		sourceFrames = sourceAnalyzer.getFrames();
 
 		for (Snippet snippet : array) {
 			List<MarkedRegion> regions = snippetMarkings.get(snippet);
