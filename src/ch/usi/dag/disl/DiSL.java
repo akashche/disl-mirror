@@ -16,7 +16,6 @@ import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.dislclass.snippet.ProcInvocation;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
-import ch.usi.dag.disl.exception.ASMException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
@@ -129,7 +128,7 @@ public class DiSL implements Instrumentation {
 	 *            method in the classNode argument, that will be instrumented
 	 */
 	private void instrumentMethod(ClassNode classNode, MethodNode methodNode)
-			throws ReflectionException, StaticAnalysisException, ASMException,
+			throws ReflectionException, StaticAnalysisException,
 			ProcessorException {
 
 		// TODO create finite-state machine if possible
