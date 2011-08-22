@@ -513,8 +513,7 @@ public class Weaver {
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
-			StaticInfo staticInfoHolder, boolean usesDynamicAnalysis,
-			PIResolver piResolver) {
+			StaticInfo staticInfoHolder, PIResolver piResolver) {
 		// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_end;
@@ -611,10 +610,8 @@ public class Weaver {
 					methodNode.instructions.insertBefore(loc, newlst);
 					methodNode.tryCatchBlocks.addAll(clone.getTryCatchBlocks());
 
-					if (usesDynamicAnalysis) {
-						fixDynamicInfo(snippet, region, sourceFrames[index],
-								methodNode);
-					}
+					fixDynamicInfo(snippet, region, sourceFrames[index],
+							methodNode);
 				}
 			}
 
@@ -663,10 +660,8 @@ public class Weaver {
 						methodNode.tryCatchBlocks.addAll(clone
 								.getTryCatchBlocks());
 
-						if (usesDynamicAnalysis) {
-							fixDynamicInfo(snippet, region,
-									sourceFrames[index], methodNode);
-						}
+						fixDynamicInfo(snippet, region, sourceFrames[index],
+								methodNode);
 					}
 				}
 			}
@@ -708,10 +703,8 @@ public class Weaver {
 						methodNode.tryCatchBlocks.addAll(clone
 								.getTryCatchBlocks());
 
-						if (usesDynamicAnalysis) {
-							fixDynamicInfo(snippet, region,
-									sourceFrames[index], methodNode);
-						}
+						fixDynamicInfo(snippet, region, sourceFrames[index],
+								methodNode);
 					}
 				}
 			}

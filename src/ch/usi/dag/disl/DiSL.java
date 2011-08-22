@@ -13,7 +13,6 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.parser.ClassParser;
 import ch.usi.dag.disl.dislclass.processor.Proc;
-import ch.usi.dag.disl.dislclass.snippet.ProcInvocation;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.DiSLFatalException;
@@ -21,7 +20,6 @@ import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
-import ch.usi.dag.disl.processor.ProcessorApplyType;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
@@ -184,30 +182,6 @@ public class DiSL implements Instrumentation {
 			usedSLVs.addAll(snippet.getCode().getReferencedSLVs());
 		}
 
-		// *** determine if any snippet uses dynamic analysis
-		// or any snippet contains processor that has to access stack ***
-		// this determines if weaver should do stack computation
-
-		boolean usesDynamicAnalysis = false;
-		for (Snippet snippet : snippetMarkings.keySet()) {
-
-			// snipet uses dynamic analysis
-			if (snippet.getCode().usesDynamicAnalysis()) {
-				usesDynamicAnalysis = true;
-				break;
-			}
-
-			// processor has to access stack
-			for (ProcInvocation prcInv : snippet.getCode()
-					.getInvokedProcessors().values()) {
-
-				if (prcInv.getProcApplyType() == ProcessorApplyType.BEFORE_INVOCATION) {
-					usesDynamicAnalysis = true;
-					break;
-				}
-			}
-		}
-
 		// *** prepare processors ***
 
 		String fullMethodName = classNode.name + "." + methodNode.name;
@@ -223,7 +197,7 @@ public class DiSL implements Instrumentation {
 		// TODO ! weaver should have two parts, weaving and rewriting
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(usedSLVs), staticInfo,
-				usesDynamicAnalysis, piResolver);
+				piResolver);
 
 		// TODO ! ProcessorHack remove
 		ProcessorHack.instrument(classNode, methodNode,
@@ -236,6 +210,8 @@ public class DiSL implements Instrumentation {
 
 	public void instrument(ClassNode classNode) {
 
+		System.out.println("Call for instrumentation: " + classNode.name);
+		
 		if (snippets == null) {
 			throw new DiSLFatalException("DiSL was not initialized");
 		}

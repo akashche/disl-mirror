@@ -157,8 +157,9 @@ public class UnprocessedCode {
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
 			int opcode = instr.getOpcode();
-			
-			if (opcode != Opcodes.GETSTATIC && opcode != Opcodes.PUTSTATIC) {
+
+			// test if it is static field instruction
+			if (!(opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC)) {
 				continue;
 			}
 			
@@ -166,6 +167,7 @@ public class UnprocessedCode {
 			String fieldId = fieldInstr.owner + ThreadLocalVar.NAME_DELIM
 					+ fieldInstr.name;
 			
+			// test if it is thread local variable
 			if (! tlvIDs.contains(fieldId)) {
 				continue;
 			}
@@ -183,19 +185,29 @@ public class UnprocessedCode {
 					Opcodes.INVOKESTATIC, threadInternalName,
 					currentThreadMethod, currentThreadMethodDesc));
 
-			// Only field instructions will be transformed
 			if (opcode == Opcodes.GETSTATIC) {
+
 				// insert new field access
 				instructions.insertBefore(instr, new FieldInsnNode(
 						Opcodes.GETFIELD, threadInternalName, fieldInstr.name,
 						fieldInstr.desc));
+			} 
+			
+			if (opcode == Opcodes.PUTSTATIC) {
 
-			} else if (opcode == Opcodes.PUTSTATIC) {
-								
+				// we need to invoke putfield which has an opposite order of
+				// arguments on a stack, than we have now
+				//  - so we need to rearrange the arguments
+				// - there is no easier general solution unless, we want to
+				// track, where the value was pushed on a stack and put
+				// currentThread invocation before it
 				if (Type.getType(fieldInstr.desc).getSize() == 1) {
+					
+					// rearrange for single size operand
 					instructions
 							.insertBefore(instr, new InsnNode(Opcodes.SWAP));
 				} else {
+					// rearrange for double size operand
 					instructions.insertBefore(instr, new InsnNode(
 							Opcodes.DUP_X2));
 					instructions.insertBefore(instr, new InsnNode(Opcodes.POP));

@@ -58,11 +58,21 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		Code code = super.process(allLVs);
 
 		// process snippet code
-
-		// *** CODE ANALYSIS ***
-
+		
 		InsnList instructions = code.getInstructions();
 		List<TryCatchBlockNode> tryCatchBlocks = code.getTryCatchBlocks();
+		
+		// *** CODE PROCESSING ***
+		// !NOTE ! : Code processing has to be done before "processors in use"
+		// analysis otherwise the instruction reference produced by this
+		// analysis may be wrong
+		// NOTE: methods are modifying arguments
+
+		if (useDynamicBypass) {
+			insertDynamicBypass(instructions, tryCatchBlocks);
+		}
+
+		// *** CODE ANALYSIS ***
 
 		Map<String, Method> staticAnalyses = new HashMap<String, Method>();
 
@@ -85,6 +95,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 			}
 
 			// *** Parse processors in use ***
+			// no other modifications to the code should be done before weaving
+			// otherwise, produced instruction reference can be invalid
 
 			ProcessorInfo processor = 
 				insnInvokesProcessor(instr, i, processors);
@@ -94,13 +106,6 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 						processor.getProcInvoke());
 				continue;
 			}
-		}
-
-		// *** CODE PROCESSING ***
-		// NOTE: methods are modifying arguments
-
-		if (useDynamicBypass) {
-			insertDynamicBypass(instructions, tryCatchBlocks);
 		}
 
 		return new SnippetCode(instructions, tryCatchBlocks,

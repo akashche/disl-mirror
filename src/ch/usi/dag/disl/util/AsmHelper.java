@@ -74,15 +74,6 @@ public class AsmHelper {
 		}
 	}
 
-	public static int numberOfOccupiedSlots(Type type) {
-	
-		if (type.equals(Type.DOUBLE_TYPE) || type.equals(Type.LONG_TYPE)) {
-			return 2;
-		}
-		
-		return 1;
-	}
-	
 	public static int getParameterIndex(MethodNode method, int par_index) {
 
 		Type[] types = Type.getArgumentTypes(method.desc);
@@ -95,7 +86,8 @@ public class AsmHelper {
 
 		for (int i = 0; i < par_index; i++) {
 
-			index += numberOfOccupiedSlots(types[i]);
+			// add number of occupied slots
+			index += types[i].getSize();
 		}
 
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {

@@ -603,7 +603,8 @@ public class SnippetParser {
 		// count the max index of arguments
 		for (int i = 0; i < types.length; i++) {
 
-			maxArgIndex += AsmHelper.numberOfOccupiedSlots(types[i]);
+			// add number of occupied slots
+			maxArgIndex += types[i].getSize();
 		}
 
 		// The following code assumes that all disl advices are static
