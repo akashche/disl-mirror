@@ -318,6 +318,7 @@ public class Weaver {
 		AbstractInsnNode first = instructions.getFirst();
 
 		// Initialization
+		// TODO implement NEVER & BESTEFFORT
 		for (SyntheticLocalVar var : syntheticLocalVars) {
 
 			if (var.getInitASMCode() != null) {
@@ -346,8 +347,7 @@ public class Weaver {
 						break;
 					}
 
-					// TODO for long/double it should increased by 2. 
-					index++;
+					index += var.getType().getSize();
 					count++;
 				}
 
