@@ -13,6 +13,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -181,6 +182,14 @@ public class Weaver {
 
 					break;
 				}
+			} else if (instr instanceof IincInsnNode){
+				
+				IincInsnNode iinc = (IincInsnNode) instr;
+				iinc.var += methodNode.maxLocals;
+
+				if (iinc.var > max) {
+					max = iinc.var;
+				}
 			}
 		}
 
@@ -306,7 +315,6 @@ public class Weaver {
 		InsnList instructions = methodNode.instructions;
 
 		// Extract the 'id' field in each synthetic local
-		List<String> id_set = new LinkedList<String>();
 		AbstractInsnNode first = instructions.getFirst();
 
 		// Initialization
@@ -317,8 +325,6 @@ public class Weaver {
 				InsnList newlst = AsmHelper.cloneInsnList(var.getInitASMCode());
 				instructions.insertBefore(first, newlst);
 			}
-
-			id_set.add(var.getID());
 		}
 
 		// Scan for FIELD instructions and replace with local load/store.
@@ -331,9 +337,21 @@ public class Weaver {
 				FieldInsnNode field_instr = (FieldInsnNode) instr;
 				String id = field_instr.owner + SyntheticLocalVar.NAME_DELIM
 						+ field_instr.name;
-				int index = id_set.indexOf(id);
+				
+				int index = 0, count = 0;
+				
+				for (SyntheticLocalVar var : syntheticLocalVars){
+					
+					if (id.equals(var.getID())){
+						break;
+					}
 
-				if (index == -1) {
+					// TODO for long/double it should increased by 2. 
+					index++;
+					count++;
+				}
+
+				if (count == syntheticLocalVars.size()) {
 					// Not contained in the synthetic locals.
 					continue;
 				}
