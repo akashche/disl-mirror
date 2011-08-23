@@ -5,9 +5,9 @@ import java.util.Map;
 
 public class LocalVars {
 
-	Map<String, SyntheticLocalVar> syntheticLocals = 
+	private Map<String, SyntheticLocalVar> syntheticLocals = 
 		new HashMap<String, SyntheticLocalVar>();
-	Map<String, ThreadLocalVar> threadLocals = 
+	private Map<String, ThreadLocalVar> threadLocals = 
 		new HashMap<String, ThreadLocalVar>();
 
 	public Map<String, SyntheticLocalVar> getSyntheticLocals() {

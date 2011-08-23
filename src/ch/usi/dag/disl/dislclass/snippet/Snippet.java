@@ -2,6 +2,8 @@ package ch.usi.dag.disl.dislclass.snippet;
 
 import java.util.Map;
 
+import org.objectweb.asm.Type;
+
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.dislclass.snippet.marker.Marker;
@@ -54,7 +56,7 @@ public class Snippet implements Comparable<Snippet> {
 		return order - o.getOrder();
 	}
 
-	public void init(LocalVars allLVs, Map<Class<?>, Proc> processors,
+	public void init(LocalVars allLVs, Map<Type, Proc> processors,
 			boolean useDynamicBypass) throws StaticAnalysisException,
 			ReflectionException, ProcessorException {
 

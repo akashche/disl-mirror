@@ -50,7 +50,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	}
 
 	public SnippetCode process(LocalVars allLVs,
-			Map<Class<?>, Proc> processors, boolean useDynamicBypass)
+			Map<Type, Proc> processors, boolean useDynamicBypass)
 			throws StaticAnalysisException, ReflectionException,
 			ProcessorException {
 
@@ -222,7 +222,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	}
 
 	private ProcessorInfo insnInvokesProcessor(AbstractInsnNode instr, int i,
-			Map<Class<?>, Proc> processors) throws ProcessorException,
+			Map<Type, Proc> processors) throws ProcessorException,
 			ReflectionException {
 
 		final String APPLY_METHOD = "apply";
@@ -262,26 +262,25 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 					+ " ProcessorApplyType.INSIDE_METHOD)");
 		}
 
-		Object processorASMType = ((LdcInsnNode) firstParam).cst;
+		Object asmType = ((LdcInsnNode) firstParam).cst;
 
-		if (!(processorASMType instanceof Type)) {
+		if (!(asmType instanceof Type)) {
 			throw new ProcessorException("In advice " + className + "."
 					+ methodName + " - unsupported processor type "
-					+ processorASMType.getClass().toString());
+					+ asmType.getClass().toString());
 		}
 
+		Type processorType = (Type) asmType;
+		
 		ProcessorApplyType procApplyType = ProcessorApplyType
 				.valueOf(((FieldInsnNode) secondParam).name);
 
-		Class<?> processorClass = ReflectionHelper
-				.resolveClass((Type) processorASMType);
-
-		Proc processor = processors.get(processorClass);
+		Proc processor = processors.get(processorType);
 
 		if (processor == null) {
 			throw new ProcessorException("In advice " + className + "."
 					+ methodName + " - unknow processor used: "
-					+ processorClass.getClass().toString());
+					+ processorType.getClassName());
 		}
 
 		ProcInvocation prcInv = new ProcInvocation(processor, procApplyType);

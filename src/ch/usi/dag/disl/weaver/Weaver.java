@@ -508,7 +508,6 @@ public class Weaver {
 		sorter.visitEnd();
 	}
 
-	// TODO test SnippetCode.containsHandledException()
 	// TODO respect BEST_EFFORT initialization type in synthetic local variable
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
@@ -711,8 +710,7 @@ public class Weaver {
 		}
 
 		sortTryCatchBlocks(methodNode);
-		// TODO ! ProcessorHack uncomment
-		// static2Local(methodNode, syntheticLocalVars);
+		static2Local(methodNode, syntheticLocalVars);
 	}
 
 }

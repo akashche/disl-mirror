@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -87,7 +88,7 @@ public class DiSL implements Instrumentation {
 			}
 
 			// initialize processors
-			Map<Class<?>, Proc> processors = parser.getProcessors();
+			Map<Type, Proc> processors = parser.getProcessors();
 			for (Proc processor : processors.values()) {
 				processor.init(parser.getAllLocalVars());
 			}
@@ -208,10 +209,6 @@ public class DiSL implements Instrumentation {
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(usedSLVs), staticInfo,
 				piResolver);
-
-		// TODO ! ProcessorHack remove
-		ProcessorHack.instrument(classNode, methodNode,
-				new LinkedList<SyntheticLocalVar>(usedSLVs));
 
 		// TODO just for debugging
 		System.out.println("--- instumentation of " + classNode.name + "."
