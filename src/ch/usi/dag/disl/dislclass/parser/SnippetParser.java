@@ -10,6 +10,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -26,12 +27,14 @@ import ch.usi.dag.disl.dislclass.snippet.scope.Scope;
 import ch.usi.dag.disl.dislclass.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.dynamicinfo.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.exception.SnippetParserException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.Parameter;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
@@ -47,26 +50,55 @@ public class SnippetParser extends AbstractParser {
 		return snippets;
 	}
 	
+	public void parse(ClassNode classNode) throws ParserException,
+			SnippetParserException, ReflectionException, ScopeParserException,
+			StaticAnalysisException {
+
+		// NOTE: this method can be called many times
+
+		// process local variables
+		processLocalVars(classNode);
+
+		for (MethodNode method : classNode.methods) {
+
+			// skip the constructor
+			if (method.name.equals(Constants.CONSTRUCTOR_NAME)) {
+				continue;
+			}
+
+			// skip static initializer
+			if (method.name.equals(Constants.STATIC_INIT_NAME)) {
+				continue;
+			}
+
+			snippets.add(parseSnippet(classNode.name, method));
+		}
+	}
+	
 	// parse snippet
-	protected void parseMethodContent(String className, MethodNode method)
+	private Snippet parseSnippet(String className, MethodNode method)
 			throws SnippetParserException, ReflectionException,
 			ScopeParserException, StaticAnalysisException {
 
+		// check annotation
 		if (method.invisibleAnnotations == null) {
 			throw new SnippetParserException("DiSL anottation for method "
 					+ className + "." + method.name + " is missing");
 		}
 
+		// check only one annotation
 		if (method.invisibleAnnotations.size() > 1) {
 			throw new SnippetParserException("Method " + className + "."
 					+ method.name + " can have only one DiSL anottation");
 		}
 
+		// check static
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {
 			throw new SnippetParserException("Method " + className + "."
 					+ method.name + " should be declared as static");
 		}
 
+		// check return type
 		if (!Type.getReturnType(method.desc).equals(Type.VOID_TYPE)) {
 			throw new SnippetParserException("Method " + className + "."
 					+ method.name + " cannot return value");
@@ -106,7 +138,7 @@ public class SnippetParser extends AbstractParser {
 
 		// ** checks **
 
-		// detect empty stippets
+		// detect empty snippets
 		if (AsmHelper.containsOnlyReturn(method.instructions)) {
 			throw new SnippetParserException("Method " + className + "."
 					+ method.name + " cannot be empty");
@@ -128,9 +160,9 @@ public class SnippetParser extends AbstractParser {
 				method.name, method.instructions, method.tryCatchBlocks,
 				analysis.getStaticAnalyses(), analysis.usesDynamicAnalysis());
 
-		// add whole snippet
-		snippets.add(new Snippet(annotData.getType(), marker, scope,
-				annotData.getOrder(), uscd));
+		// return whole snippet
+		return new Snippet(annotData.getType(), marker, scope,
+				annotData.getOrder(), uscd);
 	}
 
 	// data holder for parseMethodAnnotation methods

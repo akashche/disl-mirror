@@ -1,25 +1,30 @@
 package ch.usi.dag.disl.dislclass.localvar;
 
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
 
 import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
 
-public class SyntheticLocalVar {
+public class SyntheticLocalVar extends AbstractLocalVar {
 
-	public final static String NAME_DELIM = ".";
-	
-	private String className;
-	private String fieldName;
-	private InsnList initASMCode;
+	private Type type;
 	private SyntheticLocal.Initialize initialize;
+	private InsnList initASMCode;
 	
-	public SyntheticLocalVar(String className, String fieldName, 
+	public SyntheticLocalVar(String className, String fieldName, Type type, 
 			SyntheticLocal.Initialize initialize) {
 		
-		super();
-		this.className = className;
-		this.fieldName = fieldName;
+		super(className, fieldName);
+		this.type = type;
 		this.initialize = initialize;
+	}
+	
+	public Type getType() {
+		return type;
+	}
+	
+	public SyntheticLocal.Initialize getInitialize() {
+		return initialize;
 	}
 	
 	public InsnList getInitASMCode() {
@@ -28,13 +33,5 @@ public class SyntheticLocalVar {
 
 	public void setInitASMCode(InsnList initASMCode) {
 		this.initASMCode = initASMCode;
-	}
-
-	public SyntheticLocal.Initialize getInitialize() {
-		return initialize;
-	}
-	
-	public String getID() {
-		return className + NAME_DELIM + fieldName;
 	}
 }

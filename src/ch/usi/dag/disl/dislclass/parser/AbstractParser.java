@@ -18,7 +18,6 @@ import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.util.AsmHelper;
@@ -34,33 +33,6 @@ public abstract class AbstractParser {
 	public LocalVars getAllLocalVars() {
 		return allLocalVars;
 	}
-	
-	public void parse(ClassNode classNode) throws DiSLException {
-
-		// NOTE: this method can be called many times
-
-		// process local variables
-		processLocalVars(classNode);
-
-		for (MethodNode method : classNode.methods) {
-
-			// skip the constructor
-			if (method.name.equals(Constants.CONSTRUCTOR_NAME)) {
-				continue;
-			}
-
-			// skip static initializer
-			if (method.name.equals(Constants.STATIC_INIT_NAME)) {
-				continue;
-			}
-
-			parseMethodContent(classNode.name, method);
-		}
-	}
-	
-	// parser should implement this method
-	protected abstract void parseMethodContent(String className,
-			MethodNode method) throws DiSLException;
 	
 	// ****************************************
 	// Local Variables Parsing and Processing
@@ -199,7 +171,10 @@ public abstract class AbstractParser {
 			}
 		}
 
-		return new SyntheticLocalVar(className, field.name, slvInit);
+		// field type
+		Type fieldType = Type.getType(field.desc);
+		
+		return new SyntheticLocalVar(className, field.name, fieldType, slvInit);
 	}
 	
 	// synthetic local var initialization can contain only basic constants

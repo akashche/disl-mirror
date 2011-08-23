@@ -12,15 +12,21 @@ import ch.usi.dag.disl.dislclass.annotation.Processor;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
-import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.ParserException;
+import ch.usi.dag.disl.exception.ProcessorParserException;
+import ch.usi.dag.disl.exception.ReflectionException;
+import ch.usi.dag.disl.exception.ScopeParserException;
+import ch.usi.dag.disl.exception.SnippetParserException;
+import ch.usi.dag.disl.exception.StaticAnalysisException;
 
 public class ClassParser {
 
 	SnippetParser snippetParser = new SnippetParser();
 	ProcessorParser processorParser = new ProcessorParser();
 	
-	public void parse(byte[] classAsBytes) throws DiSLException {
+	public void parse(byte[] classAsBytes) throws ParserException,
+			SnippetParserException, ReflectionException, ScopeParserException,
+			StaticAnalysisException, ProcessorParserException {
 
 		// prepare class node
 		ClassReader cr = new ClassReader(classAsBytes);
