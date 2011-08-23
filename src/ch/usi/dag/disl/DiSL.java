@@ -22,6 +22,8 @@ import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcGenerator;
+import ch.usi.dag.disl.processor.generator.ProcInstance;
+import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
@@ -190,7 +192,15 @@ public class DiSL implements Instrumentation {
 				methodNode, snippetMarkings);
 
 		// *** used synthetic local vars in processors ***
-		// TODO ! processor - include SLVs from processors into usedSLV
+		
+		// include SLVs from processor methods into usedSLV
+		for(ProcInstance pi : piResolver.getAllProcInstances()) {
+			
+			for(ProcMethodInstance pmi : pi.getMethods()) {
+				
+				usedSLVs.addAll(pmi.getCode().getReferencedSLVs());
+			}
+		}
 
 		// *** viewing ***
 

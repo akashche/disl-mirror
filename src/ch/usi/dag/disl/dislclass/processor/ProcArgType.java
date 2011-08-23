@@ -46,7 +46,7 @@ public enum ProcArgType {
 		}
 	}
 	
-	public ProcArgType valueOf(Type type) {
+	public static ProcArgType valueOf(Type type) {
 		
 		if(type == null) {
 			throw new DiSLFatalException("Conversion from null not defined");

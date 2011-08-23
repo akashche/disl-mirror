@@ -11,6 +11,8 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.dislclass.processor.Proc;
+import ch.usi.dag.disl.dislclass.processor.ProcArgType;
+import ch.usi.dag.disl.dislclass.processor.ProcMethod;
 import ch.usi.dag.disl.dislclass.snippet.ProcInvocation;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.SnippetCode;
@@ -139,7 +141,18 @@ public class ProcGenerator {
 	private ProcMethodInstance createMethodInstance(int argPos, int argsCount,
 			Type argType, Proc processor) {
 
-		// TODO ! processors - implement
+		// traverse all methods and find the proper one
+		for (ProcMethod method : processor.getMethods()) {
+			
+			ProcArgType methodArgType = ProcArgType.valueOf(argType);
+			
+			if(methodArgType == method.getType()) {
+				return new ProcMethodInstance(argPos, argsCount, methodArgType,
+						method.getCode());
+			}
+		}
+		
+		// no method with suitable type found
 		return null;
 	}
 }

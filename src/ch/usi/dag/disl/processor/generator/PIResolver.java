@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.processor.generator;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -97,5 +98,9 @@ public class PIResolver {
 		ResolverKey key = new ResolverKey(snippet, markedRegion, instrPos);
 		
 		piStore.put(key, processorInstance);
+	}
+	
+	public Collection<ProcInstance> getAllProcInstances() {
+		return piStore.values();
 	}
 }
