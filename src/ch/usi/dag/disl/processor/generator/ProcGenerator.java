@@ -15,7 +15,6 @@ import ch.usi.dag.disl.dislclass.processor.ProcArgType;
 import ch.usi.dag.disl.dislclass.processor.ProcMethod;
 import ch.usi.dag.disl.dislclass.snippet.ProcInvocation;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
-import ch.usi.dag.disl.dislclass.snippet.SnippetCode;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ProcessorException;
@@ -57,7 +56,6 @@ public class ProcGenerator {
 
 					case BEFORE_INVOCATION: {
 						prcInst = computeBeforeInvocation(fullMethodName,
-								instrPos, snippet.getCode(),
 								prcInv.getProcessor());
 						break;
 					}
@@ -95,11 +93,10 @@ public class ProcGenerator {
 	}
 
 	private ProcInstance computeBeforeInvocation(String fullMethodName,
-			Integer instrPos, SnippetCode code, Proc processor)
-			throws ProcessorException {
+			Proc processor) throws ProcessorException {
 
-		// get instruction from snippet code
-		AbstractInsnNode instr = code.getInstructions().toArray()[instrPos];
+		// TODO ! processor - get instruction from method code
+		AbstractInsnNode instr = null;
 
 		// check - method invocation
 		if (!(instr instanceof MethodInsnNode)) {
