@@ -55,9 +55,14 @@ public class ProcessorParser extends AbstractParser {
 			methods.add(parseProcessorMethod(classNode.name, method));
 		}
 		
-		// TODO ! processors - test
-		processors.put(Type.getType(classNode.name),
-				new Proc(classNode.name, methods));
+		if(methods.isEmpty()) {
+			throw new ProcessorParserException("Processor class "
+					+ classNode.name + " should contain methods");
+		}
+		
+		Type processorClassType = Type.getType("L" + classNode.name + ";"); 
+		
+		processors.put(processorClassType, new Proc(classNode.name, methods));
 	}
 	
 	private ProcMethod parseProcessorMethod(String className, MethodNode method)
@@ -111,13 +116,13 @@ public class ProcessorParser extends AbstractParser {
 		// first position argument has to be integer
 		if(! Type.INT_TYPE.equals(argTypes[0])) {
 			throw new ProcessorParserException("In method " + methodID + ": " +
-					"First (position) processor method argument has to be int.");
+					"First (position) processor method argument has to be int");
 		}
 		
 		// second count argument has to be integer
 		if(! Type.INT_TYPE.equals(argTypes[1])) {
 			throw new ProcessorParserException("In method " + methodID + ": " +
-					"Second (count) processor method argument has to be int.");
+					"Second (count) processor method argument has to be int");
 		}
 		
 		ProcArgType result = ProcArgType.valueOf(argTypes[2]);

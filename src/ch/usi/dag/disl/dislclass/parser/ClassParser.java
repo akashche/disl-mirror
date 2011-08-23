@@ -39,6 +39,7 @@ public class ClassParser {
 		// *** snippet ***
 		if (classNode.invisibleAnnotations == null) {
 			snippetParser.parse(classNode);
+			return;
 		}
 
 		// *** processor ***

@@ -1,81 +1,37 @@
 package ch.usi.dag.disl.test.processor;
 
-import ch.usi.dag.disl.ProcessorHack;
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
 import ch.usi.dag.disl.dislclass.annotation.Before;
 import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
+import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
+import ch.usi.dag.disl.processor.Processor;
+import ch.usi.dag.disl.processor.ProcessorApplyType;
 import ch.usi.dag.disl.staticinfo.analysis.StaticContext;
 
 public class DiSLClass {
 
 	@SyntheticLocal
-	static String flag;
+	public static String flag = "Start";
 
-	@ProcessorHack.Processor(type = void.class)
-	public static void processor1() {
-		// this will be called before any processor
-
-		flag = "OMG this is for postCondition";
-		System.out.println(new StaticContext().thisMethodName());
-	}
-
-	@ProcessorHack.Processor(type = Object.class)
-	public static void processor2(int a, int b, Object c) {
-		System.out.println("processor for object");
-		System.out.println(a);
-		System.out.println(b);
-		System.out.println(c);
-		System.out.println("--------------------");
-	}
-
-	@ProcessorHack.Processor(type = int.class)
-	public static void processor3(int a, int b, int c) {
-		System.out.println("processor for int");
-		System.out.println(a);
-		System.out.println(b);
-		System.out.println(c);
-		System.out.println("--------------------");
-	}
-
-	@ProcessorHack.Processor(type = long.class)
-	public static void processor4(int a, int b, long c) {
-		System.out.println("processor for long");
-		System.out.println(a);
-		System.out.println(b);
-		System.out.println(c);
-		System.out.println("--------------------");
-	}
-
-	@ProcessorHack.Processor(type = double.class)
-	public static void processor5(int a, int b, double c) {
-		System.out.println("processor for double");
-		System.out.println(a);
-		System.out.println(b);
-		System.out.println(c);
-		System.out.println("--------------------");
+	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.method*")
+	public static void insideMethod(StaticContext ci) {
+		
+		System.out.println("(In) Method " + ci.thisMethodName() + ": ");
+		System.out.println(flag);
+		
+		Processor.apply(ProcessorTest.class, ProcessorApplyType.INSIDE_METHOD);
+		
+		System.out.println(flag);
+		System.out.println(ProcessorTest.flag);
 	}
 	
-
-	@ProcessorHack.Processor(type = String.class)
-	public static void processor6(int a, int b, String c) {
-		System.out.println("processor for String");
-		System.out.println(a);
-		System.out.println(b);
-		System.out.println(c);
-		System.out.println("--------------------");
-	}
-
-	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.*")
-	public static void preCondition(StaticContext ci) {
-		System.out.println("Method " + ci.thisMethodName() + ":");
-		System.out.println(flag);
-	}
-	
-	@AfterReturning(marker = BodyMarker.class, order = 1, scope = "TargetClass.*")
-	public static void postCondition(StaticContext ci) {
-		System.out.println("Again");
-		System.out.println(flag);
-		System.out.println("This is the end of " + ci.thisMethodName());
+	@Before(marker = BytecodeMarker.class, param="invokevirtual", order = 0, scope = "TargetClass.main")
+	public static void beforeInvocation(StaticContext ci) {
+		
+		System.out.println("(Before) Method " + ci.thisMethodName() + ": ");
+		
+		Processor.apply(ProcessorTest.class, ProcessorApplyType.BEFORE_INVOCATION);
+		
+		System.out.println(ProcessorTest.flag);
 	}
 }

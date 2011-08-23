@@ -93,13 +93,18 @@ public class DiSL implements Instrumentation {
 				processor.init(parser.getAllLocalVars());
 			}
 
-			// initialize snippets
-			snippets = parser.getSnippets();
+			List<Snippet> parsedSnippets = parser.getSnippets();
 
-			for (Snippet snippet : snippets) {
+			// initialize snippets
+			for (Snippet snippet : parsedSnippets) {
 				snippet.init(parser.getAllLocalVars(), processors,
 						useDynamicBypass);
 			}
+			
+			// initialize snippets variable
+			//  - this is set when everything is ok
+			//  - it serves as initialization flag
+			snippets = parsedSnippets;
 
 			// TODO put checker here
 			// like After should catch normal and abnormal execution

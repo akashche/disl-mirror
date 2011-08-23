@@ -46,8 +46,7 @@ public class ProcGenerator {
 
 					ProcInstance prcInst = null;
 
-					// NOTE: the result is automatically inserted into
-					// PIResolver
+					// handle apply type
 					switch (prcInv.getProcApplyType()) {
 
 					case INSIDE_METHOD: {
@@ -68,8 +67,10 @@ public class ProcGenerator {
 								"Proc computation not defined");
 					}
 
-					// add result to processor instance resolver
-					piResolver.set(snippet, markedRegion, instrPos, prcInst);
+					if(prcInst != null) {
+						// add result to processor instance resolver
+						piResolver.set(snippet, markedRegion, instrPos, prcInst);
+					}
 				}
 			}
 		}
@@ -135,12 +136,19 @@ public class ProcGenerator {
 
 		}
 
+		if(procMethodInstances.isEmpty()) {
+			return null;
+		}
+
+		// create new processor instance
 		return new ProcInstance(procApplyType, procMethodInstances);
 	}
 
 	private ProcMethodInstance createMethodInstance(int argPos, int argsCount,
 			Type argType, Proc processor) {
 
+		// TODO ! processors - arrays
+		
 		// traverse all methods and find the proper one
 		for (ProcMethod method : processor.getMethods()) {
 			
