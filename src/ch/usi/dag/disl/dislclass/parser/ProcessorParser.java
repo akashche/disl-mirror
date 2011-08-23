@@ -82,7 +82,8 @@ public class ProcessorParser extends AbstractParser {
 		}
 		
 		// ** parse processor method arguments **
-		ProcArgType methodArgType = parseProcMethodArgs(method.desc);
+		ProcArgType methodArgType = parseProcMethodArgs(
+				className + "." + method.name, method.desc);
 		
 		// ** create unprocessed code holder class **
 		// code is processed after everything is parsed
@@ -94,9 +95,43 @@ public class ProcessorParser extends AbstractParser {
 
 	}
 
-	private ProcArgType parseProcMethodArgs(String desc) {
+	private ProcArgType parseProcMethodArgs(String methodID, String methodDesc)
+			throws ProcessorParserException {
 
-		// TODO ! processors - implement
-		return null;
+		final int PM_ARGS_COUNT = 3;
+		
+		Type[] argTypes = Type.getArgumentTypes(methodDesc);
+		
+		if(argTypes.length != PM_ARGS_COUNT) {
+			throw new ProcessorParserException(
+					"Processor method should have " + PM_ARGS_COUNT
+					+ " arguments.");
+		}
+		
+		// first position argument has to be integer
+		if(! Type.INT_TYPE.equals(argTypes[0])) {
+			throw new ProcessorParserException("In method " + methodID + ": " +
+					"First (position) processor method argument has to be int.");
+		}
+		
+		// second count argument has to be integer
+		if(! Type.INT_TYPE.equals(argTypes[1])) {
+			throw new ProcessorParserException("In method " + methodID + ": " +
+					"Second (count) processor method argument has to be int.");
+		}
+		
+		ProcArgType result = ProcArgType.valueOf(argTypes[2]);
+		
+		// if the ProcArgType is converted to OBJECT, test that third argument
+		// is really Object.class - nothing else is allowed
+		if(result == ProcArgType.OBJECT
+				&& ! Type.getType(Object.class).equals(argTypes[2])) {
+			
+			throw new ProcessorParserException("In method " + methodID + ": " +
+					"Only basic types, Object and String are allowed as the" +
+					" third parameter");
+		}
+		
+		return result;
 	}
 }
