@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.test.processor;
+
 public class TargetClass {
+	
 	public void method1() {
 		System.out.println("This is the body of TargetClass.method1");
 	}
@@ -15,6 +17,10 @@ public class TargetClass {
 	public void method3(long l, double d, Object obj) {
 		System.out.println("This is the body of TargetClass.method3-1");
 	}
+	
+	public void method4(String[] sa, int[] ia) {
+		System.out.println("This is the body of TargetClass.method4");
+	}
 
 	public static void main(String[] args) {
 		TargetClass t = new TargetClass();
@@ -22,5 +28,6 @@ public class TargetClass {
 		t.method2(1, 2, 3);
 		t.method3("object", "string");
 		t.method3(1, 2, "object");
+		t.method4(new String[1], new int[1]);
 	}
 }

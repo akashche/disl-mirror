@@ -155,12 +155,10 @@ public class ProcGenerator {
 	private ProcMethodInstance createMethodInstance(int argPos, int argsCount,
 			Type argType, Proc processor) {
 
-		// TODO ! processors - arrays
+		ProcArgType methodArgType = ProcArgType.valueOf(argType);
 		
 		// traverse all methods and find the proper one
 		for (ProcMethod method : processor.getMethods()) {
-			
-			ProcArgType methodArgType = ProcArgType.valueOf(argType);
 			
 			if(methodArgType == method.getType()) {
 				return new ProcMethodInstance(argPos, argsCount, methodArgType,

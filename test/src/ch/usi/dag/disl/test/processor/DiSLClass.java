@@ -13,7 +13,7 @@ public class DiSLClass {
 	@SyntheticLocal
 	public static String flag = "Start";
 
-	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.method*")
+	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.*")
 	public static void insideMethod(StaticContext ci) {
 		
 		System.out.println("(In) Method " + ci.thisMethodName() + ": ");
