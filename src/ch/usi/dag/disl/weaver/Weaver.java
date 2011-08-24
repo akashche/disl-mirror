@@ -34,6 +34,7 @@ import ch.usi.dag.disl.dislclass.annotation.After;
 import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
 import ch.usi.dag.disl.dislclass.annotation.AfterThrowing;
 import ch.usi.dag.disl.dislclass.annotation.Before;
+import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal.Initialize;
 import ch.usi.dag.disl.dislclass.code.Code;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
@@ -250,8 +251,7 @@ public class Weaver {
 			int pos = processorMethod.getArgsCount() - 1
 					- processorMethod.getArgPos();
 			SourceValue source = StackUtil.getSource(frame, pos);
-			
-			
+
 			AbstractInsnNode start = instructions.getFirst();
 			instructions.insertBefore(start,
 					AsmHelper.getIConstInstr(processorMethod.getArgPos()));
@@ -323,9 +323,13 @@ public class Weaver {
 		AbstractInsnNode first = instructions.getFirst();
 
 		// Initialization
-		// TODO implement NEVER & BESTEFFORT
+		// TODO implement BESTEFFORT
 		for (SyntheticLocalVar var : syntheticLocalVars) {
 
+			if (var.getInitialize() == Initialize.NEVER) {
+				continue;
+			}
+			
 			if (var.getInitASMCode() != null) {
 
 				InsnList newlst = AsmHelper.cloneInsnList(var.getInitASMCode());
@@ -377,8 +381,6 @@ public class Weaver {
 						Opcodes.PUTSTATIC, var.getOwner(), var.getName(),  
 						type.getDescriptor()));
 			}
-			
-			System.out.println("stl: "+var.getID());
 		}
 
 		// Scan for FIELD instructions and replace with local load/store.
