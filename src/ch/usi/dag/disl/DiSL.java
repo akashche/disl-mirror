@@ -1,5 +1,6 @@
 package ch.usi.dag.disl;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -12,6 +13,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.dislclass.loader.ClassByteLoader;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.parser.ClassParser;
 import ch.usi.dag.disl.dislclass.processor.Proc;
@@ -33,9 +35,6 @@ import ch.usi.dag.jborat.agent.Instrumentation;
 // TODO javadoc comment all
 public class DiSL implements Instrumentation {
 
-	final String PROP_DISL_CLASSES = "disl.classes";
-	final String PROP_CLASSES_DELIM = ",";
-
 	final String PROP_DYNAMIC_BYPASS = "disl.dynbypass";
 	final String PROP_DYNAMIC_BYPASS_TRUE = "yes";
 
@@ -51,14 +50,6 @@ public class DiSL implements Instrumentation {
 		// report every exception within our code - don't let anyone mask it
 		try {
 
-			// TODO replace with jar support
-			String classesToCompile = System.getProperty(PROP_DISL_CLASSES);
-
-			if (classesToCompile == null) {
-				throw new InitException("Property " + PROP_DISL_CLASSES
-						+ " is not defined");
-			}
-
 			String useDynBypassStr = System.getProperty(PROP_DYNAMIC_BYPASS);
 
 			boolean useDynamicBypass = false;
@@ -67,25 +58,22 @@ public class DiSL implements Instrumentation {
 						PROP_DYNAMIC_BYPASS_TRUE);
 			}
 
-			List<byte[]> compiledClasses = new LinkedList<byte[]>();
-
-			// TODO replace with jar support
-			CompilerStub compiler = new CompilerStub();
-
-			// *** compile DiSL classes ***
-			for (String file : classesToCompile.split(PROP_CLASSES_DELIM)) {
-
-				compiledClasses.add(compiler.compile(file));
+			List<InputStream> dislClasses = ClassByteLoader.loadDiSLClasses();
+			
+			if(dislClasses == null) {
+				throw new InitException("Cannot load DiSL classes. Please set" +
+						" the property " + ClassByteLoader.DISL_CLASSES
+						+ " or supply " + ClassByteLoader.INSTR_JAR);
 			}
 
-			// *** parse compiled classes ***
+			// *** parse disl classes ***
 			// - create snippets
 			// - create static analysis methods
 
 			ClassParser parser = new ClassParser();
 
-			for (byte[] classAsBytes : compiledClasses) {
-				parser.parse(classAsBytes);
+			for (InputStream classIS : dislClasses) {
+				parser.parse(classIS);
 			}
 
 			// initialize processors
@@ -142,8 +130,6 @@ public class DiSL implements Instrumentation {
 		if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
 			return;
 		}
-		
-		// TODO create finite-state machine if possible
 		
 		// *** match snippet scope ***
 
@@ -216,7 +202,6 @@ public class DiSL implements Instrumentation {
 
 		// *** viewing ***
 
-		// TODO ! weaver should have two parts, weaving and rewriting
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(usedSLVs), staticInfo,
 				piResolver);

@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.dislclass.parser;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -24,12 +26,12 @@ public class ClassParser {
 	SnippetParser snippetParser = new SnippetParser();
 	ProcessorParser processorParser = new ProcessorParser();
 	
-	public void parse(byte[] classAsBytes) throws ParserException,
+	public void parse(InputStream is) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
-			StaticAnalysisException, ProcessorParserException {
+			StaticAnalysisException, ProcessorParserException, IOException {
 
 		// prepare class node
-		ClassReader cr = new ClassReader(classAsBytes);
+		ClassReader cr = new ClassReader(is);
 		ClassNode classNode = new ClassNode();
 		cr.accept(classNode, 0);
 
