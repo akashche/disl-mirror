@@ -131,6 +131,11 @@ public class DiSL implements Instrumentation {
 			return;
 		}
 		
+		// skip native methods
+		if ((methodNode.access & Opcodes.ACC_NATIVE) != 0) {
+			return;
+		}
+		
 		// *** match snippet scope ***
 
 		List<Snippet> matchedSnippets = new LinkedList<Snippet>();
