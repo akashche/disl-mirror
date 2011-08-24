@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -137,8 +138,13 @@ public class DiSL implements Instrumentation {
 			throws ReflectionException, StaticAnalysisException,
 			ProcessorException {
 
+		// skip abstract methods
+		if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
+			return;
+		}
+		
 		// TODO create finite-state machine if possible
-
+		
 		// *** match snippet scope ***
 
 		List<Snippet> matchedSnippets = new LinkedList<Snippet>();
