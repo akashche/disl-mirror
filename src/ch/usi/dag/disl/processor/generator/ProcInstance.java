@@ -12,6 +12,7 @@ public class ProcInstance {
 	public ProcInstance(ProcessorApplyType procApplyType,
 			List<ProcMethodInstance> methods) {
 		super();
+		this.procApplyType = procApplyType;
 		this.methods = methods;
 	}
 
