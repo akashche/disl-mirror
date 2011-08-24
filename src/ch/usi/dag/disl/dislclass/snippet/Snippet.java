@@ -60,7 +60,8 @@ public class Snippet implements Comparable<Snippet> {
 			boolean useDynamicBypass) throws StaticAnalysisException,
 			ReflectionException, ProcessorException {
 
-		code = unprocessedCode.process(allLVs, processors, useDynamicBypass);
+		code = unprocessedCode.process(allLVs, processors, marker,
+				useDynamicBypass);
 		unprocessedCode = null;
 	}
 }

@@ -56,7 +56,7 @@ public class ProcGenerator {
 
 					case BEFORE_INVOCATION: {
 						prcInst = computeBeforeInvocation(fullMethodName,
-								prcInv.getProcessor());
+								markedRegion, prcInv.getProcessor());
 						break;
 					}
 
@@ -93,10 +93,21 @@ public class ProcGenerator {
 	}
 
 	private ProcInstance computeBeforeInvocation(String fullMethodName,
-			Proc processor) throws ProcessorException {
+			MarkedRegion markedRegion, Proc processor)
+			throws ProcessorException {
 
-		// TODO ! processor - get instruction from method code
-		AbstractInsnNode instr = null;
+		// NOTE: SnippetUnprocessedCode checks that BEFORE_INVOCATION is
+		// used only with BytecodeMarker
+		
+		// because it is BytecodeMarker, it should have only one end 
+		if(markedRegion.getEnds().size() > 1) {
+			throw new DiSLFatalException(
+					"Expected only one end in marked region");
+		}
+		
+		// get instruction from the method code
+		// the method invocation is the instruction marked as end
+		AbstractInsnNode instr = markedRegion.getEnds().get(0);
 
 		// check - method invocation
 		if (!(instr instanceof MethodInsnNode)) {

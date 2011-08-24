@@ -22,6 +22,8 @@ import ch.usi.dag.disl.dislclass.code.Code;
 import ch.usi.dag.disl.dislclass.code.UnprocessedCode;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.dislclass.processor.Proc;
+import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
+import ch.usi.dag.disl.dislclass.snippet.marker.Marker;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticAnalysisException;
@@ -50,7 +52,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	}
 
 	public SnippetCode process(LocalVars allLVs,
-			Map<Type, Proc> processors, boolean useDynamicBypass)
+			Map<Type, Proc> processors, Marker marker, boolean useDynamicBypass)
 			throws StaticAnalysisException, ReflectionException,
 			ProcessorException {
 
@@ -99,7 +101,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 			// otherwise, produced instruction reference can be invalid
 
 			ProcessorInfo processor = 
-				insnInvokesProcessor(instr, i, processors);
+				insnInvokesProcessor(instr, i, processors, marker);
 
 			if (processor != null) {
 				invokedProcessors.put(processor.getInstrPos(),
@@ -222,8 +224,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	}
 
 	private ProcessorInfo insnInvokesProcessor(AbstractInsnNode instr, int i,
-			Map<Type, Proc> processors) throws ProcessorException,
-			ReflectionException {
+			Map<Type, Proc> processors, Marker marker)
+			throws ProcessorException, ReflectionException {
 
 		final String APPLY_METHOD = "apply";
 
@@ -235,8 +237,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		MethodInsnNode min = (MethodInsnNode) instr;
 
 		// check if the invocation is processor invocation
-		if (!(min.owner.equals(Type.getInternalName(Processor.class)) && min.name
-				.equals(APPLY_METHOD))) {
+		if (!(min.owner.equals(Type.getInternalName(Processor.class))
+				&& min.name.equals(APPLY_METHOD))) {
 			return null;
 		}
 
@@ -274,6 +276,16 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		
 		ProcessorApplyType procApplyType = ProcessorApplyType
 				.valueOf(((FieldInsnNode) secondParam).name);
+		
+		// if the processor apply type is BEFORE_INVOCATION
+		// the only allowed marker is BytecodeMarker
+		if(ProcessorApplyType.BEFORE_INVOCATION.equals(procApplyType)
+				&& marker.getClass() != BytecodeMarker.class) {
+			throw new ProcessorException(
+					"Processor applied in mode BEFORE_INVOCATION in method "
+					+ className + "." + methodName
+					+ " can be used only with BytecodeMarker");
+		}
 
 		Proc processor = processors.get(processorType);
 
