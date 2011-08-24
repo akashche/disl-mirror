@@ -284,11 +284,15 @@ public class Weaver {
 			PIResolver piResolver, Snippet snippet, MarkedRegion region,
 			InsnList newlst, Set<Integer> set, AbstractInsnNode[] array,
 			Frame<SourceValue> frame) {
-		
+				
 		for (int index : set) {
 
 			AbstractInsnNode instr = array[index];
 			ProcInstance processor = piResolver.get(snippet, region, index);
+			
+			if (processor == null){
+				continue;
+			}
 
 			if (processor.getProcApplyType() == 
 				ProcessorApplyType.BEFORE_INVOCATION) {
