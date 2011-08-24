@@ -117,17 +117,10 @@ public class Weaver {
 			if (invoke.name.equals("getStackValue")) {
 				int sopcode = t.getOpcode(Opcodes.ISTORE);
 				int lopcode = t.getOpcode(Opcodes.ILOAD);
-				SourceValue source = StackUtil.getSource(frame, operand);
-
-				for (AbstractInsnNode itr : source.insns) {
-					method.instructions.insert(itr, new VarInsnNode(sopcode,
-							method.maxLocals));
-					method.instructions.insert(itr, new InsnNode(
-							source.size == 2 ? Opcodes.DUP2 : Opcodes.DUP));
-				}
+				int size = dupStack(frame, method, operand, sopcode);
 
 				src.insert(instr, new VarInsnNode(lopcode, method.maxLocals));
-				method.maxLocals += source.size;
+				method.maxLocals += size;
 			} else if (invoke.name.equals("getMethodArgumentValue")) {
 
 				method.instructions.insert(
@@ -142,13 +135,68 @@ public class Weaver {
 
 			src.remove(instr);
 
-			prev = AsmHelper.remove(src, prev, false);
-			prev = AsmHelper.remove(src, prev, false);
-			prev = AsmHelper.removeIf(src, prev, Opcodes.ALOAD, false);
+			for (int i = 0; i < 3; i++) {
+				instr = prev;
+				prev = prev.getPrevious();
+				src.remove(instr);
+			}
 
-			next = AsmHelper.removeIf(src, next, Opcodes.CHECKCAST, true);
-			next = AsmHelper.removeIf(src, next, Opcodes.INVOKEVIRTUAL, true);
+			if (next.getOpcode() == Opcodes.CHECKCAST) {
+				instr = next;
+				next = next.getNext();
+				src.remove(instr);
+
+				if (next.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+					src.remove(next);
+				}
+			}
 		}
+	}
+
+	private static int dupStack(Frame<SourceValue> frame,
+			MethodNode method, int operand, int sopcode) {
+		SourceValue source = StackUtil.getSource(frame, operand);
+
+		for (AbstractInsnNode itr : source.insns) {
+
+			switch (itr.getOpcode()) {
+
+			case Opcodes.DUP2:
+				if (source.size != 1) {
+					break;
+				}
+
+				dupStack(frame, method, operand + 2, sopcode);
+				continue;
+
+			case Opcodes.DUP2_X1:
+				if (source.size != 1) {
+					break;
+				}
+
+				dupStack(frame, method, operand + 3, sopcode);
+				continue;
+
+			case Opcodes.DUP2_X2:
+				if (source.size != 1) {
+					break;
+				}
+
+				SourceValue x2 = StackUtil.getSource(frame, operand + 2);
+				dupStack(frame, method, operand + (4 - x2.size), sopcode);
+				continue;
+
+			default:
+				break;
+			}
+			
+			method.instructions.insert(itr, new VarInsnNode(sopcode,
+					method.maxLocals));
+			method.instructions.insert(itr, new InsnNode(
+					source.size == 2 ? Opcodes.DUP2 : Opcodes.DUP));
+		}
+		
+		return source.size;
 	}
 
 	// Fix the stack operand index of each stack-based instruction

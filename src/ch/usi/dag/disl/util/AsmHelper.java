@@ -145,24 +145,6 @@ public class AsmHelper {
 
 	}
 
-	public static AbstractInsnNode remove(InsnList ilst,
-			AbstractInsnNode instr, boolean forward) {
-		AbstractInsnNode ret = forward ? instr.getNext() : instr.getPrevious();
-
-		ilst.remove(instr);
-		return ret;
-	}
-
-	public static AbstractInsnNode removeIf(InsnList ilst,
-			AbstractInsnNode instr, int opcode, boolean forward) {
-
-		if (instr.getOpcode() == opcode) {
-			return remove(ilst, instr, forward);
-		}
-
-		return instr;
-	}
-
 	public static void removeReturns(InsnList ilst) {
 		// Remove 'return' instruction
 		List<AbstractInsnNode> returns = new LinkedList<AbstractInsnNode>();
