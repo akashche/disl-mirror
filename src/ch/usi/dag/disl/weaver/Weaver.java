@@ -22,6 +22,7 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
@@ -329,7 +330,55 @@ public class Weaver {
 
 				InsnList newlst = AsmHelper.cloneInsnList(var.getInitASMCode());
 				instructions.insertBefore(first, newlst);
+			} else {
+				
+				Type type = var.getType();
+				
+				switch ( type.getSort()) {
+				case Type.ARRAY:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.ACONST_NULL));	
+					instructions.insertBefore(first, new TypeInsnNode(
+							Opcodes.CHECKCAST,  type.getDescriptor()));
+					break;
+					
+				case Type.BOOLEAN:
+				case Type.BYTE:
+				case Type.CHAR:
+				case Type.INT:
+				case Type.SHORT:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.ICONST_0));
+					break;
+					
+				case Type.DOUBLE:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.DCONST_0));
+					break;
+					
+				case Type.FLOAT:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.FCONST_0));
+					break;
+					
+				case Type.LONG:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.LCONST_0));
+					break;
+					
+				case Type.OBJECT:
+				default:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.ACONST_NULL));
+					break;
+				}
+
+				instructions.insertBefore(first, new FieldInsnNode(
+						Opcodes.PUTSTATIC, var.getOwner(), var.getName(),  
+						type.getDescriptor()));
 			}
+			
+			System.out.println("stl: "+var.getID());
 		}
 
 		// Scan for FIELD instructions and replace with local load/store.

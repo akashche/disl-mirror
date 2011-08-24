@@ -16,4 +16,12 @@ public abstract class AbstractLocalVar {
 	public String getID() {
 		return className + NAME_DELIM + fieldName;
 	}
+	
+	public String getOwner() {
+		return className;
+	}
+
+	public String getName() {
+		return fieldName;
+	}
 }
