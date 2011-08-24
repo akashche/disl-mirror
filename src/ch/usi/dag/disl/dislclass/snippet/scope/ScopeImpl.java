@@ -8,7 +8,6 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.ScopeParserException;
-import ch.usi.dag.disl.util.WildCard;
 
 public class ScopeImpl implements Scope {
 

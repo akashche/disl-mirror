@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.util;
+package ch.usi.dag.disl.dislclass.snippet.scope;
 
 public class WildCard {
 

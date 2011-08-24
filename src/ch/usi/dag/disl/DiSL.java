@@ -228,8 +228,6 @@ public class DiSL implements Instrumentation {
 
 	public void instrument(ClassNode classNode) {
 
-		System.out.println("Call for instrumentation: " + classNode.name);
-		
 		if (snippets == null) {
 			throw new DiSLFatalException("DiSL was not initialized");
 		}

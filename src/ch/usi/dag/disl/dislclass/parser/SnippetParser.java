@@ -23,6 +23,7 @@ import ch.usi.dag.disl.dislclass.annotation.Before;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.SnippetUnprocessedCode;
 import ch.usi.dag.disl.dislclass.snippet.marker.Marker;
+import ch.usi.dag.disl.dislclass.snippet.marker.Parameter;
 import ch.usi.dag.disl.dislclass.snippet.scope.Scope;
 import ch.usi.dag.disl.dislclass.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.dynamicinfo.DynamicContext;
@@ -35,7 +36,6 @@ import ch.usi.dag.disl.exception.StaticAnalysisException;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
-import ch.usi.dag.disl.util.Parameter;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
 /**

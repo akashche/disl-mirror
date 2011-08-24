@@ -11,7 +11,6 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.util.AsmOpcodes;
-import ch.usi.dag.disl.util.Parameter;
 
 public class BytecodeMarker implements Marker {
 
