@@ -291,18 +291,16 @@ public class Weaver {
 			AbstractInsnNode instr = array[index];
 			ProcInstance processor = piResolver.get(snippet, region, index);
 			
-			if (processor == null){
-				continue;
-			}
+			if (processor != null) {
+				if (processor.getProcApplyType() == 
+					ProcessorApplyType.BEFORE_INVOCATION) {
 
-			if (processor.getProcApplyType() == 
-				ProcessorApplyType.BEFORE_INVOCATION) {
+					newlst.insert(instr,
+							procBeforeInvoke(methodNode, processor, frame));
+				} else {
 
-				newlst.insert(instr,
-						procBeforeInvoke(methodNode, processor, frame));
-			} else {
-
-				newlst.insert(instr, procInMethod(methodNode, processor));
+					newlst.insert(instr, procInMethod(methodNode, processor));
+				}
 			}
 
 			newlst.remove(instr.getPrevious().getPrevious());
