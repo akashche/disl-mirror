@@ -16,16 +16,24 @@ import ch.usi.dag.disl.exception.InitException;
 public abstract class ClassByteLoader {
 
 	private static final String MANIFEST = "META-INF/MANIFEST.MF";
-
-	public static final String INSTR_JAR = "dislinstr.jar";
 	
-	public static final String DISL_CLASSES = "disl.classes";
+	public static final String PROP_DISL_CLASSES = "disl.classes";
+	
+	public static final String ATTR_DISL_CLASSES = "DiSL-Classes";
 	public static final String DISL_CLASSES_DELIM = ":";
 	
-	// TODO ! jar support - add jar dependency
-	// TODO ! jar support - create ant task for test compilation
-	// TODO ! jar support - create processor manifest
-	// TODO ! jar support - test
+	// How to use jar support
+	// 1) Create jar with a name specified in build.properties (instr.jar.name)
+	// 2) Include manifest file that contains names of all used DiSL classes
+	//     - for the name of the manifest attribute see ATTR_DISL_CLASSES
+	// Jar should contain all additional classes needed for instrumentation
+	// like Markers, Static analyses, ...
+	//
+	// NOTE: Example of the usage is processor test case
+	// To build the jar for the processor test case go to the test directory
+	// and call "ant package -Dtest.name=processor"
+	// To run the test case with the instrumentation located in jar call
+	// "./run-pkg.sh processor"
 	
 	public static List<InputStream> loadDiSLClasses()
 			throws InitException {
@@ -48,7 +56,7 @@ public abstract class ClassByteLoader {
 	private static List<InputStream> loadClassesFromProperty()
 			throws IOException {
 		
-		String classesList = System.getProperty(DISL_CLASSES);
+		String classesList = System.getProperty(PROP_DISL_CLASSES);
 		
 		if ( (classesList != null) && (! classesList.isEmpty()) ) {
 			
@@ -105,7 +113,7 @@ public abstract class ClassByteLoader {
 			// contains disl classes
 			if(attrs != null) {
 				
-				String dislClasses = attrs.getValue(DISL_CLASSES);
+				String dislClasses = attrs.getValue(ATTR_DISL_CLASSES);
 				
 				if(dislClasses != null) {
 					return dislClasses;

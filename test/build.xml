@@ -13,8 +13,8 @@
 
 	<target name="check-disl-jar">
 		<available file="${disl.jar.path}" property="disl.jar.present"/>
-	    </target>
-	
+	</target>
+
 	<target name="report-missing-jar" depends="check-disl-jar" unless="disl.jar.present">
 		<fail message="DiSL jar not found at ${disl.jar.path}. Build DiSL first!" />
 	</target> 
@@ -25,13 +25,34 @@
 			<classpath refid="buildpath"/>
 		</javac>
 	</target>
-	
+
 	<target name="agent" description="create simple agent jar file" >
 		<mkdir dir="build"/>
 		<jar jarfile="build/agent-light.jar">
 			<manifest>
-			<attribute name="Premain-Class" value="ch.usi.dag.disl.test.agent.Agent"/>
+				<attribute name="Premain-Class" value="ch.usi.dag.disl.test.agent.Agent"/>
 			</manifest>
+		</jar>
+	</target>
+
+	<target name="check-test-property">
+		<condition property="test.set">
+			<isset property="test.name"/>
+		</condition>
+	</target>
+
+	<target name="report-missing-property" depends="check-test-property" unless="test.set">
+		<fail message="Property test.name is not set. Set it using -Dtest.name=value" />
+	</target>
+
+	<property name="test.path" value="ch/usi/dag/disl/test/${test.name}"/>
+
+	<target name="package" depends="report-missing-property" description="create instrumentation package for specified test">
+		<jar jarfile="../build/${instr.jar.name}"
+		     basedir="./bin"
+		     includes="${test.path}/*"
+		     excludes="${test.path}/TargetClass.class ${test.path}/MANIFEST.MF"
+		     manifest="./src/${test.path}/MANIFEST.MF">
 		</jar>
 	</target>
 

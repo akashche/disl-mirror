@@ -11,7 +11,11 @@
 
 	<target name="package" depends="compile">
 		<mkdir dir="build"/>
-		<jar basedir="bin" destfile="build/disl-${disl.version}.jar"/>
+		<jar basedir="bin" destfile="build/disl-${disl.version}.jar">
+			 <manifest>
+				<attribute name="Class-Path" value="${instr.jar.name}"/>
+			</manifest>
+		</jar>
 	</target>
 
 

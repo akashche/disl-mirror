@@ -62,8 +62,9 @@ public class DiSL implements Instrumentation {
 			
 			if(dislClasses == null) {
 				throw new InitException("Cannot load DiSL classes. Please set" +
-						" the property " + ClassByteLoader.DISL_CLASSES
-						+ " or supply " + ClassByteLoader.INSTR_JAR);
+						" the property " + ClassByteLoader.PROP_DISL_CLASSES
+						+ " or supply jar with DiSL classes"
+						+ " and proper manifest");
 			}
 
 			// *** parse disl classes ***
