@@ -152,6 +152,11 @@ public class StaticContext extends AbstractStaticAnalysis {
 				+ staticAnalysisData.getMethodNode().name;
 	}
 	
+	public String thisMethodDescriptor() {
+		
+		return staticAnalysisData.getMethodNode().desc;
+	}
+	
 	public String thisMethodSignature() {
 		
 		return staticAnalysisData.getMethodNode().signature;
