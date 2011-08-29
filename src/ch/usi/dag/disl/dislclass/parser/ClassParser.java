@@ -33,8 +33,9 @@ public class ClassParser {
 		// prepare class node
 		ClassReader cr = new ClassReader(is);
 		ClassNode classNode = new ClassNode();
-		cr.accept(classNode, 0);
-
+		
+		cr.accept(classNode, ClassReader.SKIP_FRAMES);
+		
 		// decide according to processor annotation if it is a snippet or
 		// processor
 		
