@@ -4,7 +4,7 @@ import ch.usi.dag.disl.dislclass.code.Code;
 import ch.usi.dag.disl.dislclass.code.UnprocessedCode;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 
 public class ProcMethod {
 
@@ -26,7 +26,7 @@ public class ProcMethod {
 		return code;
 	}
 
-	public void init(LocalVars allLVs) throws StaticAnalysisException,
+	public void init(LocalVars allLVs) throws StaticInfoException,
 			ReflectionException {
 
 		code = unprocessedCode.process(allLVs);

@@ -26,7 +26,7 @@ import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
 import ch.usi.dag.disl.dislclass.snippet.marker.Marker;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 import ch.usi.dag.disl.processor.ProcessorApplyType;
 import ch.usi.dag.disl.processor.Processor;
 import ch.usi.dag.disl.util.Constants;
@@ -53,7 +53,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 	public SnippetCode process(LocalVars allLVs,
 			Map<Type, Proc> processors, Marker marker, boolean useDynamicBypass)
-			throws StaticAnalysisException, ReflectionException,
+			throws StaticInfoException, ReflectionException,
 			ProcessorException {
 
 		// process code
@@ -138,7 +138,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 	private StaticAnalysisMethod insnInvokesStaticAnalysis(
 			Set<String> knownStAnClasses, AbstractInsnNode instr,
-			Set<String> knownMethods) throws StaticAnalysisException,
+			Set<String> knownMethods) throws StaticInfoException,
 			ReflectionException {
 
 		// check - instruction invokes method
@@ -162,7 +162,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		Type[] methodArguments = asmMethod.getArgumentTypes();
 
 		if (methodArguments.length != 0) {
-			throw new StaticAnalysisException("Static analysis method "
+			throw new StaticInfoException("Static analysis method "
 					+ methodInstr.name + " in the class " + methodInstr.owner
 					+ " shouldn't have a parameter.");
 		}
@@ -180,7 +180,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 				|| methodReturn.equals(Type.SHORT_TYPE) || methodReturn
 				.equals(Type.getType(String.class)))) {
 
-			throw new StaticAnalysisException("Static analysis method "
+			throw new StaticInfoException("Static analysis method "
 					+ methodInstr.name + " in the class " + methodInstr.owner
 					+ " can have only basic type or String as a return type.");
 		}

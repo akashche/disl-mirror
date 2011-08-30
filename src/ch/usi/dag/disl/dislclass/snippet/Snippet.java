@@ -10,7 +10,7 @@ import ch.usi.dag.disl.dislclass.snippet.marker.Marker;
 import ch.usi.dag.disl.dislclass.snippet.scope.Scope;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 
 public class Snippet implements Comparable<Snippet> {
 
@@ -57,7 +57,7 @@ public class Snippet implements Comparable<Snippet> {
 	}
 
 	public void init(LocalVars allLVs, Map<Type, Proc> processors,
-			boolean useDynamicBypass) throws StaticAnalysisException,
+			boolean useDynamicBypass) throws StaticInfoException,
 			ReflectionException, ProcessorException {
 
 		code = unprocessedCode.process(allLVs, processors, marker,

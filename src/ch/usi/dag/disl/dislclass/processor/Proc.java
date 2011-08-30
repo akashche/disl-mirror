@@ -4,7 +4,7 @@ import java.util.List;
 
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 
 public class Proc {
 
@@ -25,7 +25,7 @@ public class Proc {
 		return methods;
 	}
 	
-	public void init(LocalVars allLVs) throws StaticAnalysisException,
+	public void init(LocalVars allLVs) throws StaticInfoException,
 			ReflectionException {
 		
 		for(ProcMethod method : methods) {

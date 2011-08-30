@@ -32,7 +32,7 @@ import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.exception.SnippetParserException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
@@ -52,7 +52,7 @@ public class SnippetParser extends AbstractParser {
 	
 	public void parse(ClassNode classNode) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
-			StaticAnalysisException {
+			StaticInfoException {
 
 		// NOTE: this method can be called many times
 
@@ -78,7 +78,7 @@ public class SnippetParser extends AbstractParser {
 	// parse snippet
 	private Snippet parseSnippet(String className, MethodNode method)
 			throws SnippetParserException, ReflectionException,
-			ScopeParserException, StaticAnalysisException {
+			ScopeParserException, StaticInfoException {
 
 		// check annotation
 		if (method.invisibleAnnotations == null) {
@@ -324,7 +324,7 @@ public class SnippetParser extends AbstractParser {
 	}
 
 	private Analysis parseAnalysis(String methodDesc)
-			throws ReflectionException, StaticAnalysisException {
+			throws ReflectionException, StaticInfoException {
 
 		Set<String> knownStAn = new HashSet<String>();
 		boolean usesDynamicAnalysis = false;
@@ -341,7 +341,7 @@ public class SnippetParser extends AbstractParser {
 
 			// static analysis should implement analysis interface
 			if (!implementsStaticAnalysis(argClass)) {
-				throw new StaticAnalysisException(argClass.getName()
+				throw new StaticInfoException(argClass.getName()
 						+ " does not implement StaticAnalysis interface and"
 						+ " cannot be used as advice method parameter");
 			}

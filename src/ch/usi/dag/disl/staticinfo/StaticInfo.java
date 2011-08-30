@@ -11,7 +11,7 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysis;
 import ch.usi.dag.disl.staticinfo.analysis.StaticAnalysisData;
 import ch.usi.dag.disl.util.Constants;
@@ -103,7 +103,7 @@ public class StaticInfo {
 	public StaticInfo(Map<Class<?>, Object> staticAnalysisInstances,
 			ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
-			throws ReflectionException, StaticAnalysisException {
+			throws ReflectionException, StaticInfoException {
 
 		computeStaticInfo(staticAnalysisInstances, classNode, methodNode,
 				snippetMarkings);
@@ -142,7 +142,7 @@ public class StaticInfo {
 			Map<Class<?>, Object> staticAnalysisInstances, ClassNode classNode,
 			MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
-			throws ReflectionException, StaticAnalysisException {
+			throws ReflectionException, StaticInfoException {
 
 		for (Snippet snippet : snippetMarkings.keySet()) {
 

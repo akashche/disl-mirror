@@ -18,7 +18,7 @@ import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
@@ -34,7 +34,7 @@ public class UnprocessedCode {
 		this.tryCatchBlocks = tryCatchBlocks;
 	}
 
-	public Code process(LocalVars allLVs) throws StaticAnalysisException,
+	public Code process(LocalVars allLVs) throws StaticInfoException,
 			ReflectionException {
 
 		// *** CODE ANALYSIS ***

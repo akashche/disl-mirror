@@ -31,6 +31,7 @@ public class StaticContext extends AbstractStaticAnalysis {
 		
 		registerCache("thisMethodName", MethodCache.class);
 		registerCache("thisMethodFullName", MethodCache.class);
+		registerCache("thisMethodDescriptor", MethodCache.class);
 		registerCache("thisMethodSignature", MethodCache.class);
 		registerCache("isMethodBridge", MethodCache.class);
 		registerCache("isMethodFinal", MethodCache.class);

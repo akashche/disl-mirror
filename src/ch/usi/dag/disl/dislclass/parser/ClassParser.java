@@ -19,7 +19,7 @@ import ch.usi.dag.disl.exception.ProcessorParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.exception.SnippetParserException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 
 public class ClassParser {
 
@@ -28,7 +28,7 @@ public class ClassParser {
 	
 	public void parse(InputStream is) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
-			StaticAnalysisException, ProcessorParserException, IOException {
+			StaticInfoException, ProcessorParserException, IOException {
 
 		// prepare class node
 		ClassReader cr = new ClassReader(is);

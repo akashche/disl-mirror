@@ -23,7 +23,7 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
@@ -124,7 +124,7 @@ public class DiSL implements Instrumentation {
 	 *            method in the classNode argument, that will be instrumented
 	 */
 	private void instrumentMethod(ClassNode classNode, MethodNode methodNode)
-			throws ReflectionException, StaticAnalysisException,
+			throws ReflectionException, StaticInfoException,
 			ProcessorException {
 
 		// skip abstract methods

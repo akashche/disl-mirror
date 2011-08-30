@@ -5,14 +5,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticInfoException;
 import ch.usi.dag.disl.staticinfo.analysis.cache.StaticAnalysisCache;
 
 abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 
 	protected StaticAnalysisData staticAnalysisData;
 
-	private Map<String, StaticAnalysisCache> retValCache = new HashMap<String, StaticAnalysisCache>();
+	private Map<String, StaticAnalysisCache> retValCache =
+		new HashMap<String, StaticAnalysisCache>();
 
 	protected <T extends StaticAnalysisData> void registerCache(
 			String methodName, Class<T> keyCacheClass) {
@@ -22,7 +23,7 @@ abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 
 	@Override
 	public Object computeStaticData(Method usingMethod, StaticAnalysisData sad)
-			throws ReflectionException, StaticAnalysisException {
+			throws ReflectionException, StaticInfoException {
 
 		staticAnalysisData = sad;
 
@@ -59,7 +60,7 @@ abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 			return result;
 
 		} catch (Exception e) {
-			throw new StaticAnalysisException(
+			throw new StaticInfoException(
 					"Invocation of static analysis method "
 							+ usingMethod.getName() + " failed", e);
 		}
