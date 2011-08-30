@@ -107,9 +107,6 @@ public class DiSL implements Instrumentation {
 			reportError(e);
 			// TODO just for debugging
 			e.printStackTrace();
-		} catch (Throwable e) {
-			// unexpected exception, just print stack trace
-			e.printStackTrace();
 		}
 	}
 
