@@ -20,8 +20,10 @@ import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ParserException;
+import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.ReflectionHelper;
 
 /**
  * Parses DiSL class with local variables
@@ -240,5 +242,16 @@ public abstract class AbstractParser {
 		}
 
 		return dst;
+	}
+	
+	public static Object getGuard(Type guardType) throws ReflectionException {
+		
+		if(guardType == null) {
+			return null;
+		}
+		
+		Class<?> guardClass = ReflectionHelper.resolveClass(guardType);
+
+		return ReflectionHelper.createInstance(guardClass);
 	}
 }

@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -18,13 +19,55 @@ import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ProcessorException;
+import ch.usi.dag.disl.guard.ProcessorGuard;
+import ch.usi.dag.disl.guard.ProcessorMethodGuard;
 import ch.usi.dag.disl.processor.ProcessorApplyType;
 
 public class ProcGenerator {
 
 	Map<Proc, ProcInstance> insideMethodPIs = new HashMap<Proc, ProcInstance>();
 
-	public PIResolver compute(String fullMethodName, MethodNode methodNode,
+	private class PMGuardData {
+		
+		private ClassNode classNode;
+		private MethodNode methodNode;
+		private Snippet snippet;
+		private MarkedRegion markedRegion;
+		private ProcInvocation prcInv;
+		
+		public PMGuardData(ClassNode classNode, MethodNode methodNode,
+				Snippet snippet, MarkedRegion markedRegion,
+				ProcInvocation prcInv) {
+			super();
+			this.classNode = classNode;
+			this.methodNode = methodNode;
+			this.snippet = snippet;
+			this.markedRegion = markedRegion;
+			this.prcInv = prcInv;
+		}
+
+		public ClassNode getClassNode() {
+			return classNode;
+		}
+
+		public MethodNode getMethodNode() {
+			return methodNode;
+		}
+
+		public Snippet getSnippet() {
+			return snippet;
+		}
+
+		public MarkedRegion getMarkedRegion() {
+			return markedRegion;
+		}
+
+		public ProcInvocation getPrcInv() {
+			return prcInv;
+		}
+	}
+	
+	public PIResolver compute(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
 			throws ProcessorException {
 
@@ -43,20 +86,33 @@ public class ProcGenerator {
 
 					ProcInvocation prcInv = invokedProcs.get(instrPos);
 
+					Proc processor = prcInv.getProcessor();
+					ProcessorGuard prcGuard = processor.getGuard();
+
+					// evaluate processor guard
+					if(prcGuard != null && ! prcGuard.isApplicable(classNode,
+							methodNode, snippet, markedRegion, prcInv)) {
+						// if not applicable - skipp
+						continue;
+					}
+					
 					ProcInstance prcInst = null;
+					PMGuardData pmgd = new PMGuardData(classNode, methodNode,
+							snippet, markedRegion, prcInv);
 
 					// handle apply type
 					switch (prcInv.getProcApplyType()) {
 
 					case INSIDE_METHOD: {
 						prcInst = computeInsideMethod(methodNode,
-								prcInv.getProcessor());
+								prcInv.getProcessor(), pmgd);
 						break;
 					}
 
 					case BEFORE_INVOCATION: {
-						prcInst = computeBeforeInvocation(fullMethodName,
-								markedRegion, prcInv.getProcessor());
+						prcInst = computeBeforeInvocation(
+								classNode.name + "." + methodNode.name,
+								markedRegion, prcInv.getProcessor(), pmgd);
 						break;
 					}
 
@@ -64,7 +120,7 @@ public class ProcGenerator {
 						throw new DiSLFatalException(
 								"Proc computation not defined");
 					}
-
+					
 					if(prcInst != null) {
 						// add result to processor instance resolver
 						piResolver.set(snippet, markedRegion, instrPos, prcInst);
@@ -77,7 +133,7 @@ public class ProcGenerator {
 	}
 
 	private ProcInstance computeInsideMethod(MethodNode methodNode,
-			Proc processor) {
+			Proc processor, PMGuardData pmgd) {
 
 		// all instances of inside method processor will be the same
 		// if we have one, we can use it multiple times
@@ -86,14 +142,14 @@ public class ProcGenerator {
 
 		if (procInst == null) {
 			procInst = createProcInstance(ProcessorApplyType.INSIDE_METHOD,
-					methodNode.desc, processor);
+					methodNode.desc, processor, pmgd);
 		}
 
 		return procInst;
 	}
 
 	private ProcInstance computeBeforeInvocation(String fullMethodName,
-			MarkedRegion markedRegion, Proc processor)
+			MarkedRegion markedRegion, Proc processor, PMGuardData pmgd)
 			throws ProcessorException {
 
 		// NOTE: SnippetUnprocessedCode checks that BEFORE_INVOCATION is
@@ -119,11 +175,11 @@ public class ProcGenerator {
 		MethodInsnNode methodInvocation = (MethodInsnNode) instr;
 
 		return createProcInstance(ProcessorApplyType.BEFORE_INVOCATION,
-				methodInvocation.desc, processor);
+				methodInvocation.desc, processor, pmgd);
 	}
 
 	private ProcInstance createProcInstance(ProcessorApplyType procApplyType,
-			String methodDesc, Proc processor) {
+			String methodDesc, Proc processor, PMGuardData pmgd) {
 
 		List<ProcMethodInstance> procMethodInstances = 
 			new LinkedList<ProcMethodInstance>();
@@ -135,7 +191,7 @@ public class ProcGenerator {
 		for (int i = 0; i < argTypeArray.length; ++i) {
 
 			ProcMethodInstance pmi = createMethodInstance(i,
-					argTypeArray.length, argTypeArray[i], processor);
+					argTypeArray.length, argTypeArray[i], processor, pmgd);
 
 			// if processor method was created, add it
 			if (pmi != null) {
@@ -153,7 +209,7 @@ public class ProcGenerator {
 	}
 
 	private ProcMethodInstance createMethodInstance(int argPos, int argsCount,
-			Type argType, Proc processor) {
+			Type argType, Proc processor, PMGuardData pmgd) {
 
 		ProcArgType methodArgType = ProcArgType.valueOf(argType);
 		
@@ -161,12 +217,32 @@ public class ProcGenerator {
 		for (ProcMethod method : processor.getMethods()) {
 			
 			if(methodArgType == method.getType()) {
-				return new ProcMethodInstance(argPos, argsCount, methodArgType,
-						method.getCode());
+				
+				ProcMethodInstance pmi = new ProcMethodInstance(argPos,
+						argsCount, methodArgType, method.getCode());
+				
+				return evaluateProcessorMethodGuard(method.getGuard(), pmgd,
+						pmi, argType);
 			}
 		}
 		
 		// no method with suitable type found
 		return null;
+	}
+
+	private ProcMethodInstance evaluateProcessorMethodGuard(
+			ProcessorMethodGuard guard, PMGuardData pmgd,
+			ProcMethodInstance pmi, Type exactType) {
+
+		// evaluate processor method guard
+		if(guard != null && ! guard.isApplicable(pmgd.getClassNode(),
+				pmgd.getMethodNode(), pmgd.getSnippet(), pmgd.getMarkedRegion(),
+				pmgd.getPrcInv(), pmi, exactType)) {
+			
+			// if not applicable
+			return null;
+		}
+		
+		return pmi;
 	}
 }

@@ -24,6 +24,7 @@ import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticInfoException;
+import ch.usi.dag.disl.guard.SnippetGuard;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
@@ -154,22 +155,25 @@ public class DiSL implements Instrumentation {
 
 		// *** create markings ***
 
-		// all markings in one list for static analysis
-		List<MarkedRegion> allMarkings = new LinkedList<MarkedRegion>();
-
 		// markings according to snippets for viewing
-		Map<Snippet, List<MarkedRegion>> snippetMarkings = new HashMap<Snippet, List<MarkedRegion>>();
+		Map<Snippet, List<MarkedRegion>> snippetMarkings =
+			new HashMap<Snippet, List<MarkedRegion>>();
 
 		for (Snippet snippet : matchedSnippets) {
 
 			// marking
 			List<MarkedRegion> marking = snippet.getMarker().mark(methodNode);
 
-			// add to lists
-			allMarkings.addAll(marking);
-			snippetMarkings.put(snippet, marking);
+			// select markings according to snippet guard
+			List<MarkedRegion> selectedMarking =
+				selectMarkingWithGuard(snippet, marking, classNode, methodNode);
+			
+			// add to map
+			if(! selectedMarking.isEmpty()) {
+				snippetMarkings.put(snippet, selectedMarking);
+			}
 		}
-
+		
 		// *** compute static info ***
 
 		// prepares StaticInfo class (computes static analysis)
@@ -187,9 +191,7 @@ public class DiSL implements Instrumentation {
 
 		// *** prepare processors ***
 
-		String fullMethodName = classNode.name + "." + methodNode.name;
-
-		PIResolver piResolver = new ProcGenerator().compute(fullMethodName,
+		PIResolver piResolver = new ProcGenerator().compute(classNode,
 				methodNode, snippetMarkings);
 
 		// *** used synthetic local vars in processors ***
@@ -212,6 +214,32 @@ public class DiSL implements Instrumentation {
 		// TODO just for debugging
 		System.out.println("--- instumentation of " + classNode.name + "."
 				+ methodNode.name);
+	}
+
+	private List<MarkedRegion> selectMarkingWithGuard(Snippet snippet,
+			List<MarkedRegion> marking,
+			ClassNode classNode,
+			MethodNode methodNode) {
+		
+		SnippetGuard guard = snippet.getGuard();
+		
+		if(guard == null) {
+			return marking;
+		}
+
+		List<MarkedRegion> selectedMarking = new LinkedList<MarkedRegion>();
+
+		// check guard for each marking
+		for(MarkedRegion markedRegion : marking) {
+
+			if(guard.isApplicable(classNode, methodNode, snippet, 
+					markedRegion)) {
+
+				selectedMarking.add(markedRegion);
+			}
+		}
+		
+		return selectedMarking;
 	}
 
 	public void instrument(ClassNode classNode) {
