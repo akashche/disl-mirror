@@ -158,7 +158,8 @@ public class SnippetParser extends AbstractParser {
 		// code is processed after everything is parsed
 		SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(className,
 				method.name, method.instructions, method.tryCatchBlocks,
-				analysis.getStaticAnalyses(), analysis.usesDynamicAnalysis());
+				analysis.getStaticAnalyses(), analysis.usesDynamicAnalysis(),
+				annotData.isDynamicBypass());
 
 		// return whole snippet
 		return new Snippet(annotData.getType(), marker, scope,
@@ -174,21 +175,22 @@ public class SnippetParser extends AbstractParser {
 		private String param;
 		private String scope;
 		private int order;
+		private boolean dynamicBypass;
 
 		public MethodAnnotationData() {
 			this.known = false;
 		}
 
 		public MethodAnnotationData(Class<?> type, Type marker, String param,
-				String scope, int order) {
+				String scope, int order, boolean dynamicBypass) {
 			super();
-
 			this.known = true;
 			this.type = type;
 			this.marker = marker;
 			this.param = param;
 			this.scope = scope;
 			this.order = order;
+			this.dynamicBypass = dynamicBypass;
 		}
 
 		public boolean isKnown() {
@@ -213,6 +215,10 @@ public class SnippetParser extends AbstractParser {
 
 		public int getOrder() {
 			return order;
+		}
+
+		public boolean isDynamicBypass() {
+			return dynamicBypass;
 		}
 	}
 
@@ -257,6 +263,7 @@ public class SnippetParser extends AbstractParser {
 		String param = ""; // default
 		String scope = null;
 		Integer order = 100; // default
+		Boolean dynamicBypass = false; // default
 
 		while (it.hasNext()) {
 
@@ -285,6 +292,12 @@ public class SnippetParser extends AbstractParser {
 				order = (Integer) it.next();
 				continue;
 			}
+			
+			if (name.equals("dynamicBypass")) {
+
+				dynamicBypass = (Boolean) it.next();
+				continue;
+			}
 
 			throw new DiSLFatalException("Unknow field " + name
 					+ " in annotation " + type.toString()
@@ -300,7 +313,7 @@ public class SnippetParser extends AbstractParser {
 					+ " parser is not.");
 		}
 
-		return new MethodAnnotationData(type, marker, param, scope, order);
+		return new MethodAnnotationData(type, marker, param, scope, order, dynamicBypass);
 	}
 
 	private class Analysis {

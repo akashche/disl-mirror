@@ -13,4 +13,7 @@ public @interface Before {
 	String param() default ""; // cannot be null :(
 	String scope();
 	int order() default 100;
+	// NOTE if the DiSL property disl.dynbypass is set to yes, dynamic bypass is
+	// automatically enabled for each snippet
+	boolean dynamicBypass() default false;
 }

@@ -50,11 +50,11 @@ public class DiSL implements Instrumentation {
 		// report every exception within our code - don't let anyone mask it
 		try {
 
-			String useDynBypassStr = System.getProperty(PROP_DYNAMIC_BYPASS);
+			String allDynBypassStr = System.getProperty(PROP_DYNAMIC_BYPASS);
 
-			boolean useDynamicBypass = false;
-			if (useDynBypassStr != null) {
-				useDynamicBypass = useDynBypassStr.toLowerCase().equals(
+			boolean allDynamicBypass = false;
+			if (allDynBypassStr != null) {
+				allDynamicBypass = allDynBypassStr.toLowerCase().equals(
 						PROP_DYNAMIC_BYPASS_TRUE);
 			}
 
@@ -88,7 +88,7 @@ public class DiSL implements Instrumentation {
 			// initialize snippets
 			for (Snippet snippet : parsedSnippets) {
 				snippet.init(parser.getAllLocalVars(), processors,
-						useDynamicBypass);
+						allDynamicBypass);
 			}
 			
 			// initialize snippets variable

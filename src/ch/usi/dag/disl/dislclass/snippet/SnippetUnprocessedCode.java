@@ -39,20 +39,22 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	private String methodName;
 	private Set<String> declaredStaticAnalyses;
 	private boolean usesDynamicAnalysis;
+	private boolean dynamicBypass;
 
 	public SnippetUnprocessedCode(String className, String methodName,
 			InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
-			Set<String> declaredStaticAnalyses, boolean usesDynamicAnalysis) {
-
+			Set<String> declaredStaticAnalyses, boolean usesDynamicAnalysis,
+			boolean dynamicBypass) {
 		super(instructions, tryCatchBlocks);
 		this.className = className;
 		this.methodName = methodName;
 		this.declaredStaticAnalyses = declaredStaticAnalyses;
 		this.usesDynamicAnalysis = usesDynamicAnalysis;
+		this.dynamicBypass = dynamicBypass;
 	}
 
 	public SnippetCode process(LocalVars allLVs,
-			Map<Type, Proc> processors, Marker marker, boolean useDynamicBypass)
+			Map<Type, Proc> processors, Marker marker, boolean allDynamicBypass)
 			throws StaticInfoException, ReflectionException,
 			ProcessorException {
 
@@ -70,7 +72,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		// analysis may be wrong
 		// NOTE: methods are modifying arguments
 
-		if (useDynamicBypass) {
+		if (allDynamicBypass || dynamicBypass) {
 			insertDynamicBypass(instructions, tryCatchBlocks);
 		}
 
