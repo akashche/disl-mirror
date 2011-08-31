@@ -40,6 +40,12 @@ public class BytecodeMarker implements Marker {
 						" enum for list of possible instructions");
 			}
 		}
+		
+		if(searchedInstrNums.isEmpty()) {
+			throw new MarkerException("Bytecode marker cannot operate without" +
+					" selected instructions. Pass instruction list using" +
+					" \"param\" annotation attribute.");
+		}
 	}
 
 	@Override

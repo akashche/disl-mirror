@@ -94,31 +94,35 @@ public class ProcessorParser extends AbstractParser {
 		}
 	}
 	
+	// TODO ! create general parser
 	private ProcessorAnnotationData parseProcessorAnnot(ClassNode classNode) {
 
 		// there is only one annotation - processor annotation
 		AnnotationNode annotation = 
 			(AnnotationNode) classNode.invisibleAnnotations.get(0);
 		
-		Iterator<?> it = annotation.values.iterator();
-
 		Type guard = null; // default
-
-		while (it.hasNext()) {
-
-			String name = (String) it.next();
-
-			if (name.equals("guard")) {
-
-				guard = (Type) it.next();
-				continue;
+		
+		if(annotation.values != null) {
+		
+			Iterator<?> it = annotation.values.iterator();
+	
+			while (it.hasNext()) {
+	
+				String name = (String) it.next();
+	
+				if (name.equals("guard")) {
+	
+					guard = (Type) it.next();
+					continue;
+				}
+	
+				throw new DiSLFatalException("Unknow field " + name
+						+ " in annotation "
+						+ Type.getType(annotation.desc).toString()
+						+ ". This may happen if annotation class is changed but"
+						+ " parser is not.");
 			}
-
-			throw new DiSLFatalException("Unknow field " + name
-					+ " in annotation "
-					+ Type.getType(annotation.desc).toString()
-					+ ". This may happen if annotation class is changed but"
-					+ " parser is not.");
 		}
 
 		return new ProcessorAnnotationData(guard);
@@ -214,6 +218,11 @@ public class ProcessorParser extends AbstractParser {
 
 		private Type guard;
 
+		// no annotation constructor
+		public MethodAnnotationsData() {
+			
+		}
+		
 		public MethodAnnotationsData(Type guard) {
 			super();
 			this.guard = guard;
@@ -232,8 +241,7 @@ public class ProcessorParser extends AbstractParser {
 		
 		// check annotation
 		if (invisibleAnnotations == null) {
-			throw new ProcessorParserException("DiSL anottation for method "
-					+ fullMethodName + " is missing");
+			return new MethodAnnotationsData();
 		}
 
 		// check only one annotation
@@ -256,13 +264,12 @@ public class ProcessorParser extends AbstractParser {
 				+ " has unsupported DiSL annotation");
 	}
 
-	// TODO ! create general parser
 	private MethodAnnotationsData parseMethodAnnotFields(
 			AnnotationNode annotation) {
 
-		Iterator<?> it = annotation.values.iterator();
-
 		Type guard = null; // default
+		
+		Iterator<?> it = annotation.values.iterator();
 
 		while (it.hasNext()) {
 

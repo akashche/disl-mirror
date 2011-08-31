@@ -9,5 +9,5 @@ public @interface Guarded {
 	// NOTE because of implementation of annotations in java the defaults
 	// are not retrieved from here but from SnippetParser
 
-	Class<? extends ProcessorMethodGuard> guard() default ProcessorMethodGuard.class; // cannot be null :(
+	Class<? extends ProcessorMethodGuard> guard();
 }

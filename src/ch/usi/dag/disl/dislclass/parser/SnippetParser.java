@@ -28,6 +28,7 @@ import ch.usi.dag.disl.dislclass.snippet.scope.Scope;
 import ch.usi.dag.disl.dislclass.snippet.scope.ScopeImpl;
 import ch.usi.dag.disl.dynamicinfo.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.ScopeParserException;
@@ -53,7 +54,7 @@ public class SnippetParser extends AbstractParser {
 	
 	public void parse(ClassNode classNode) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
-			StaticInfoException {
+			StaticInfoException, MarkerException {
 
 		// NOTE: this method can be called many times
 
@@ -79,7 +80,7 @@ public class SnippetParser extends AbstractParser {
 	// parse snippet
 	private Snippet parseSnippet(String className, MethodNode method)
 			throws SnippetParserException, ReflectionException,
-			ScopeParserException, StaticInfoException {
+			ScopeParserException, StaticInfoException, MarkerException {
 
 		// check annotation
 		if (method.invisibleAnnotations == null) {
@@ -111,20 +112,8 @@ public class SnippetParser extends AbstractParser {
 			parseMethodAnnotation(className + "." + method.name, annotation);
 
 		// ** marker **
-
-		// get marker class
-		Class<?> markerClass = 
-			ReflectionHelper.resolveClass(annotData.getMarker());
-
-		// try to instantiate marker WITH Parameter as an argument
-		Marker marker = (Marker) ReflectionHelper.tryCreateInstance(
-				markerClass, new Parameter(annotData.getParam()));
-
-		// instantiate marker WITHOUT Parameter as an argument
-		// throws exception if it is not possible to create an instance
-		if (marker == null) {
-			marker = (Marker) ReflectionHelper.createInstance(markerClass);
-		}
+		Marker marker = 
+			getMarker(annotData.getMarker(), annotData.getMarkerParam());
 
 		// ** scope **
 		Scope scope = new ScopeImpl(annotData.getScope());
@@ -170,18 +159,19 @@ public class SnippetParser extends AbstractParser {
 
 		private Class<?> type;
 		private Type marker;
-		private String param;
+		private String markerParam;
 		private String scope;
 		private Type guard;
 		private int order;
 		private boolean dynamicBypass;
 
-		public MethodAnnotationData(Class<?> type, Type marker, String param,
-				String scope, Type guard, int order, boolean dynamicBypass) {
+		public MethodAnnotationData(Class<?> type, Type marker,
+				String markerParam, String scope, Type guard, int order,
+				boolean dynamicBypass) {
 			super();
 			this.type = type;
 			this.marker = marker;
-			this.param = param;
+			this.markerParam = markerParam;
 			this.scope = scope;
 			this.guard = guard;
 			this.order = order;
@@ -196,8 +186,8 @@ public class SnippetParser extends AbstractParser {
 			return marker;
 		}
 
-		public String getParam() {
-			return param;
+		public String getMarkerParam() {
+			return markerParam;
 		}
 
 		public String getScope() {
@@ -253,7 +243,7 @@ public class SnippetParser extends AbstractParser {
 		Iterator<?> it = annotation.values.iterator();
 
 		Type marker = null;
-		String param = ""; // default
+		String param = null; // default
 		String scope = null;
 		Type guard = null; // default
 		Integer order = 100; // default
@@ -305,8 +295,7 @@ public class SnippetParser extends AbstractParser {
 					+ " parser is not.");
 		}
 
-		if (marker == null || param == null || scope == null || order == null
-				|| dynamicBypass == null) {
+		if (marker == null || scope == null) {
 
 			throw new DiSLFatalException("Missing field in annotation "
 					+ type.toString()
@@ -316,6 +305,46 @@ public class SnippetParser extends AbstractParser {
 
 		return new MethodAnnotationData(type, marker, param, scope, guard,
 				order, dynamicBypass);
+	}
+	
+	private Marker getMarker(Type markerType, String markerParam)
+			throws ReflectionException, MarkerException {
+		
+		// get marker class
+		Class<?> markerClass = ReflectionHelper.resolveClass(markerType);
+
+		// instantiate marker WITHOUT Parameter as an argument
+		if(markerParam == null) {
+			try {
+				return (Marker) ReflectionHelper.createInstance(markerClass);
+			}
+			catch(ReflectionException e) {
+				
+				if(e.getCause() instanceof NoSuchMethodException) {
+					throw new MarkerException("Marker " + markerClass.getName()
+							+ " requires \"param\" annotation attribute"
+							+ " declared",
+							e);
+				}
+				
+				throw e;
+			}
+		}
+
+		// try to instantiate marker WITH Parameter as an argument
+		try {
+			return (Marker) ReflectionHelper.createInstance(markerClass,
+					new Parameter(markerParam));
+		}
+		catch(ReflectionException e) {
+			
+			if(e.getCause() instanceof NoSuchMethodException) {
+				throw new MarkerException("Marker " + markerClass.getName()
+						+ " does not support \"param\" attribute", e);
+			}
+			
+			throw e;
+		}
 	}
 
 	private class Analysis {

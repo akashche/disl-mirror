@@ -14,6 +14,7 @@ import ch.usi.dag.disl.dislclass.annotation.Processor;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
+import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ProcessorParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
@@ -28,7 +29,8 @@ public class ClassParser {
 	
 	public void parse(InputStream is) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
-			StaticInfoException, ProcessorParserException, IOException {
+			StaticInfoException, ProcessorParserException, IOException,
+			MarkerException {
 
 		// prepare class node
 		ClassReader cr = new ClassReader(is);

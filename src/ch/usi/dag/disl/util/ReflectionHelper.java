@@ -11,40 +11,6 @@ import ch.usi.dag.disl.exception.ReflectionException;
 public class ReflectionHelper {
 
 	/**
-	 * Instantiates class using constructor with defined arguments similarly to
-	 * createInstance but returns null instead of exception if the instantiation
-	 * was not successful.
-	 * 
-	 * The only exception when exception is thrown is when the constructor of
-	 * the created instance throws DiSLException
-	 * 
-	 * @param classToInstantiate
-	 * @param args
-	 * @return
-	 * @throws ReflectionException
-	 */
-	public static Object tryCreateInstance(Class<?> classToInstantiate,
-			Object... args) throws ReflectionException {
-
-		try {
-			return createInstance(classToInstantiate, args);
-		} catch (DiSLException e) {
-
-			// constructor of the created instance throws DiSLException
-			// exception -> propagate it
-			if (e.getCause() != null
-					&& e.getCause().getCause() instanceof DiSLException) {
-
-				throw new ReflectionException("Marker error: ", e.getCause()
-						.getCause());
-			}
-
-			return null;
-		}
-
-	}
-
-	/**
 	 * Instantiates class using constructor with defined arguments.
 	 * 
 	 * @param classToInstantiate
