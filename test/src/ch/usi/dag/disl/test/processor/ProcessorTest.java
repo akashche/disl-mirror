@@ -18,6 +18,10 @@ public class ProcessorTest {
 		
 		DiSLClass.flag = "OMG this is for the End";
 	}
+	
+	public static void objPM2(int a, int b, Object c) {
+		System.out.println("processor for object 2");
+	}
 
 	public static void intPM(int a, int b, int c) {
 		System.out.println("processor for int");

@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.dislclass.parser;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -113,17 +114,21 @@ public class ProcessorParser extends AbstractParser {
 					 + " cannot be empty");
 		}
 		
+		// ** parse processor method arguments **
+		ProcArgType methodArgType = parseProcMethodArgs(
+				className + "." + method.name, method.desc);
+
+		EnumSet<ProcArgType> allTypes = EnumSet.of(methodArgType);
+		
 		// ** parse processor method annotation **
 		ProcMethodAnnotationsData pmad = 
 			parseMethodAnnotations(fullMethodName, method.invisibleAnnotations);
 
+		// TODO ! add process also
+		
 		// ** guard **
 		ProcessorMethodGuard guard = 
 			(ProcessorMethodGuard) ParserHelper.getGuard(pmad.guard);
-		
-		// ** parse processor method arguments **
-		ProcArgType methodArgType = parseProcMethodArgs(
-				className + "." + method.name, method.desc);
 		
 		// ** create unprocessed code holder class **
 		// code is processed after everything is parsed
@@ -131,7 +136,7 @@ public class ProcessorParser extends AbstractParser {
 				method.tryCatchBlocks);
 
 		// return whole processor method
-		return new ProcMethod(methodArgType, guard, ucd);
+		return new ProcMethod(allTypes, guard, ucd);
 
 	}
 

@@ -35,9 +35,7 @@ public class Transformer implements ClassFileTransformer {
 	
 			instrumentedClass = cw.toByteArray();
 			
-			/* now does for every user class - unusable
-			 * unable to track wheter is modified or not
-			 */
+			// TODO enable after jborat interface change
 			/*
 			// print class 
 			TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));

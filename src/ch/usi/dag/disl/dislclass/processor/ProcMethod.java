@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.dislclass.processor;
 
+import java.util.EnumSet;
+
 import ch.usi.dag.disl.dislclass.code.Code;
 import ch.usi.dag.disl.dislclass.code.UnprocessedCode;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
@@ -9,21 +11,21 @@ import ch.usi.dag.disl.guard.ProcessorMethodGuard;
 
 public class ProcMethod {
 
-	private ProcArgType type;
+	private EnumSet<ProcArgType> types;
 	private ProcessorMethodGuard guard;
 	private UnprocessedCode unprocessedCode;
 	private Code code;
 
-	public ProcMethod(ProcArgType type, ProcessorMethodGuard guard,
+	public ProcMethod(EnumSet<ProcArgType> types, ProcessorMethodGuard guard,
 			UnprocessedCode unprocessedCode) {
 		super();
-		this.type = type;
+		this.types = types;
 		this.guard = guard;
 		this.unprocessedCode = unprocessedCode;
 	}
 
-	public ProcArgType getType() {
-		return type;
+	public EnumSet<ProcArgType> getTypes() {
+		return types;
 	}
 
 	public ProcessorMethodGuard getGuard() {

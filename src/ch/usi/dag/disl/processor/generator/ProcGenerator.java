@@ -187,17 +187,13 @@ public class ProcGenerator {
 		// get argument types
 		Type[] argTypeArray = Type.getArgumentTypes(methodDesc);
 		
-		// create processor method for each argument if applicable
+		// create processor method instances for each argument if applicable
 		for (int i = 0; i < argTypeArray.length; ++i) {
 
-			ProcMethodInstance pmi = createMethodInstance(i,
+			List<ProcMethodInstance> pmis = createMethodInstances(i,
 					argTypeArray.length, argTypeArray[i], processor, pmgd);
 
-			// if processor method was created, add it
-			if (pmi != null) {
-				procMethodInstances.add(pmi);
-			}
-
+			procMethodInstances.addAll(pmis);
 		}
 
 		if(procMethodInstances.isEmpty()) {
@@ -208,41 +204,45 @@ public class ProcGenerator {
 		return new ProcInstance(procApplyType, procMethodInstances);
 	}
 
-	private ProcMethodInstance createMethodInstance(int argPos, int argsCount,
-			Type argType, Proc processor, PMGuardData pmgd) {
+	private List<ProcMethodInstance> createMethodInstances(int argPos,
+			int argsCount, Type argType, Proc processor, PMGuardData pmgd) {
 
 		ProcArgType methodArgType = ProcArgType.valueOf(argType);
 		
-		// traverse all methods and find the proper one
+		List<ProcMethodInstance> result = new LinkedList<ProcMethodInstance>();
+		
+		// traverse all methods and find the proper ones
 		for (ProcMethod method : processor.getMethods()) {
 			
-			if(methodArgType == method.getType()) {
+			// check argument type
+			if(method.getTypes().contains(methodArgType)) {
 				
 				ProcMethodInstance pmi = new ProcMethodInstance(argPos,
 						argsCount, methodArgType, method.getCode());
-				
-				return evaluateProcessorMethodGuard(method.getGuard(), pmgd,
-						pmi, argType);
+
+				// chech guard
+				if(isPMGuardApplicable(method.getGuard(), pmgd, pmi, argType)) {
+
+					// add method
+					result.add(pmi);
+				}
 			}
 		}
 		
-		// no method with suitable type found
-		return null;
+		return result;
 	}
 
-	private ProcMethodInstance evaluateProcessorMethodGuard(
+	private boolean isPMGuardApplicable(
 			ProcessorMethodGuard guard, PMGuardData pmgd,
 			ProcMethodInstance pmi, Type exactType) {
 
-		// evaluate processor method guard
-		if(guard != null && ! guard.isApplicable(pmgd.getClassNode(),
-				pmgd.getMethodNode(), pmgd.getSnippet(), pmgd.getMarkedRegion(),
-				pmgd.getPrcInv(), pmi, exactType)) {
-			
-			// if not applicable
-			return null;
+		if(guard == null) {
+			return true;
 		}
 		
-		return pmi;
+		// evaluate processor method guard
+		return guard.isApplicable(pmgd.getClassNode(), pmgd.getMethodNode(),
+				pmgd.getSnippet(), pmgd.getMarkedRegion(), pmgd.getPrcInv(),
+				pmi, exactType);
 	}
 }
