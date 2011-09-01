@@ -16,11 +16,10 @@ public class ProcessorTest {
 	}
 	
 	@Guarded(guard=GuardNo.class)
-	public static void stringPM(int a, int b, String[] c) {
-		System.out.println("processor for String array");
+	public static void stringPM(int a, int b, int c) {
+		System.out.println("processor for int");
 		System.out.println(a);
 		System.out.println(b);
-		System.out.println(c.length);
 		System.out.println("--------------------");
 	}
 }

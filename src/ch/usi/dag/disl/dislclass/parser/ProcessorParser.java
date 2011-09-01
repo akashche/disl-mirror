@@ -1,7 +1,6 @@
 package ch.usi.dag.disl.dislclass.parser;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,16 +36,28 @@ public class ProcessorParser extends AbstractParser {
 		return processors;
 	}
 	
+	// data holder for AnnotationParser
+	private static class ProcessorAnnotationData {
+
+		public Type guard = null; // default
+	}
+	
 	public void parse(ClassNode classNode) throws ParserException,
 			ProcessorParserException, ReflectionException {
 
 		// NOTE: this method can be called many times
 
+		// there is only one annotation - processor annotation
+		AnnotationNode annotation = 
+			(AnnotationNode) classNode.invisibleAnnotations.get(0);
+		
 		// parse processor annotation
-		ProcessorAnnotationData pad = parseProcessorAnnot(classNode);
+		ProcessorAnnotationData pad = ParserHelper.parseAnnotation(annotation,
+				new ProcessorAnnotationData());
 
 		// ** guard **
-		ProcessorGuard guard = (ProcessorGuard) getGuard(pad.getGuard());
+		ProcessorGuard guard = 
+			(ProcessorGuard) ParserHelper.getGuard(pad.guard);
 		
 		// ** local variables **
 		processLocalVars(classNode);
@@ -79,55 +90,6 @@ public class ProcessorParser extends AbstractParser {
 				new Proc(classNode.name, guard, methods));
 	}
 	
-	// data holder for parseMethodAnnotation methods
-	private class ProcessorAnnotationData {
-
-		public ProcessorAnnotationData(Type guard) {
-			super();
-			this.guard = guard;
-		}
-
-		private Type guard;
-
-		public Type getGuard() {
-			return guard;
-		}
-	}
-	
-	// TODO ! create general parser
-	private ProcessorAnnotationData parseProcessorAnnot(ClassNode classNode) {
-
-		// there is only one annotation - processor annotation
-		AnnotationNode annotation = 
-			(AnnotationNode) classNode.invisibleAnnotations.get(0);
-		
-		Type guard = null; // default
-		
-		if(annotation.values != null) {
-		
-			Iterator<?> it = annotation.values.iterator();
-	
-			while (it.hasNext()) {
-	
-				String name = (String) it.next();
-	
-				if (name.equals("guard")) {
-	
-					guard = (Type) it.next();
-					continue;
-				}
-	
-				throw new DiSLFatalException("Unknow field " + name
-						+ " in annotation "
-						+ Type.getType(annotation.desc).toString()
-						+ ". This may happen if annotation class is changed but"
-						+ " parser is not.");
-			}
-		}
-
-		return new ProcessorAnnotationData(guard);
-	}
-
 	private ProcMethod parseProcessorMethod(String className, MethodNode method)
 			throws ProcessorParserException, ReflectionException {
 
@@ -152,12 +114,12 @@ public class ProcessorParser extends AbstractParser {
 		}
 		
 		// ** parse processor method annotation **
-		MethodAnnotationsData mad = 
+		ProcMethodAnnotationsData pmad = 
 			parseMethodAnnotations(fullMethodName, method.invisibleAnnotations);
 
 		// ** guard **
 		ProcessorMethodGuard guard = 
-			(ProcessorMethodGuard) getGuard(mad.getGuard());
+			(ProcessorMethodGuard) ParserHelper.getGuard(pmad.guard);
 		
 		// ** parse processor method arguments **
 		ProcArgType methodArgType = parseProcMethodArgs(
@@ -214,26 +176,12 @@ public class ProcessorParser extends AbstractParser {
 	}
 	
 	// data holder for parseMethodAnnotation methods
-	private class MethodAnnotationsData {
+	private static class ProcMethodAnnotationsData {
 
-		private Type guard;
-
-		// no annotation constructor
-		public MethodAnnotationsData() {
-			
-		}
-		
-		public MethodAnnotationsData(Type guard) {
-			super();
-			this.guard = guard;
-		}
-		
-		public Type getGuard() {
-			return guard;
-		}
+		public Type guard = null;
 	}
 
-	private MethodAnnotationsData parseMethodAnnotations(String fullMethodName,
+	private ProcMethodAnnotationsData parseMethodAnnotations(String fullMethodName,
 			List<AnnotationNode> invisibleAnnotations)
 			throws ProcessorParserException {
 
@@ -241,7 +189,7 @@ public class ProcessorParser extends AbstractParser {
 		
 		// check annotation
 		if (invisibleAnnotations == null) {
-			return new MethodAnnotationsData();
+			return new ProcMethodAnnotationsData();
 		}
 
 		// check only one annotation
@@ -264,30 +212,20 @@ public class ProcessorParser extends AbstractParser {
 				+ " has unsupported DiSL annotation");
 	}
 
-	private MethodAnnotationsData parseMethodAnnotFields(
+	private ProcMethodAnnotationsData parseMethodAnnotFields(
 			AnnotationNode annotation) {
 
-		Type guard = null; // default
+		ProcMethodAnnotationsData pmad = ParserHelper.parseAnnotation(
+				annotation, new ProcMethodAnnotationsData());
 		
-		Iterator<?> it = annotation.values.iterator();
+		if(pmad.guard == null) {
 
-		while (it.hasNext()) {
-
-			String name = (String) it.next();
-
-			if (name.equals("guard")) {
-
-				guard = (Type) it.next();
-				continue;
-			}
-
-			throw new DiSLFatalException("Unknow field " + name
-					+ " in annotation "
+			throw new DiSLFatalException("Missing attribute in annotation "
 					+ Type.getType(annotation.desc).toString()
 					+ ". This may happen if annotation class is changed but"
-					+ " parser is not.");
+					+ " data holder class is not.");
 		}
-
-		return new MethodAnnotationsData(guard);
+		
+		return pmad;
 	}
 }

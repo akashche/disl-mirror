@@ -13,11 +13,10 @@ public class ProcessorTest2 {
 		System.out.println("--------------------");
 	}
 	
-	public static void stringPM(int a, int b, String[] c) {
-		System.out.println("disabled processor for String array");
+	public static void stringPM(int a, int b, int c) {
+		System.out.println("disabled processor for int");
 		System.out.println(a);
 		System.out.println(b);
-		System.out.println(c.length);
 		System.out.println("--------------------");
 	}
 }

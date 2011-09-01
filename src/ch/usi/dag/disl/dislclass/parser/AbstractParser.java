@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.dislclass.parser;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -18,12 +17,9 @@ import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ParserException;
-import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
-import ch.usi.dag.disl.util.ReflectionHelper;
 
 /**
  * Parses DiSL class with local variables
@@ -135,6 +131,12 @@ public abstract class AbstractParser {
 		return new ThreadLocalVar(className, field.name);
 	}
 
+	private static class SLAnnotaionData {
+		
+		// see code below for default
+		public String[] initialize = null;
+	}
+	
 	private SyntheticLocalVar parseSyntheticLocal(String className,
 			FieldNode field, AnnotationNode annotation)
 			throws ParserException {
@@ -145,34 +147,20 @@ public abstract class AbstractParser {
 					+ "." + " declared as SyntheticLocal but is not static");
 		}
 
+		// parse annotation data
+		SLAnnotaionData slad = ParserHelper.parseAnnotation(annotation, 
+				new SLAnnotaionData());
+		
 		// default val for init
 		SyntheticLocal.Initialize slvInit = SyntheticLocal.Initialize.ALWAYS;
-
-		if (annotation.values != null) {
-
-			Iterator<?> it = annotation.values.iterator();
-
-			while (it.hasNext()) {
-
-				String name = (String) it.next();
-
-				if (name.equals("initialize")) {
-
-					// parse enum from string
-					// first is class and second is enum value
-					String[] slvInitStr = (String[]) it.next();
-					slvInit = SyntheticLocal.Initialize.valueOf(slvInitStr[1]);
-
-					continue;
-				}
-
-				throw new DiSLFatalException("Unknow field " + name
-						+ " in annotation at " + className + "." + field.name
-						+ ". This may happen if annotation class is changed"
-						+ " but parser is not.");
-			}
+		
+		if(slad.initialize != null) {
+			// initialize array
+			//  - first value is class name
+			//  - second value is value name
+			slvInit = SyntheticLocal.Initialize.valueOf(slad.initialize[1]);
 		}
-
+		
 		// field type
 		Type fieldType = Type.getType(field.desc);
 		
@@ -242,16 +230,5 @@ public abstract class AbstractParser {
 		}
 
 		return dst;
-	}
-	
-	public static Object getGuard(Type guardType) throws ReflectionException {
-		
-		if(guardType == null) {
-			return null;
-		}
-		
-		Class<?> guardClass = ReflectionHelper.resolveClass(guardType);
-
-		return ReflectionHelper.createInstance(guardClass);
 	}
 }

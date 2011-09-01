@@ -27,7 +27,7 @@ public class ProcGenerator {
 
 	Map<Proc, ProcInstance> insideMethodPIs = new HashMap<Proc, ProcInstance>();
 
-	private class PMGuardData {
+	private static class PMGuardData {
 		
 		private ClassNode classNode;
 		private MethodNode methodNode;

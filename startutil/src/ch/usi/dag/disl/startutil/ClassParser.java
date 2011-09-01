@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +24,7 @@ import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
+import ch.usi.dag.disl.dislclass.parser.ParserHelper;
 import ch.usi.dag.disl.util.stack.StackUtil;
 
 public class ClassParser {
@@ -85,6 +85,11 @@ public class ClassParser {
 		return result;
 	}
 
+	private static class TLAnnotationData {
+		
+		public boolean inheritable = false; // default
+	}
+	
 	private static ThreadLocalVar parseThreadLocal(FieldNode field,
 			AnnotationNode annotation) throws ClassParserException {
 
@@ -94,35 +99,13 @@ public class ClassParser {
 					+ " declared as ThreadLocal but is not static");
 		}
 
-		// default vals for init
-		boolean inheritable = false;
-
-		if (annotation.values != null) {
-
-			Iterator<?> it = annotation.values.iterator();
-
-			while (it.hasNext()) {
-
-				String name = (String) it.next();
-
-				if (name.equals("inheritable")) {
-
-					inheritable = (Boolean) it.next();
-
-					continue;
-				}
-
-				throw new RuntimeException("Unknow field " + name
-						+ " in annotation at " + field.name
-						+ ". This may happen if annotation class is changed"
-						+ " but parser is not.");
-			}
-		}
+		TLAnnotationData tlad = ParserHelper.parseAnnotation(annotation,
+				new TLAnnotationData());
 
 		Type fieldType = Type.getType(field.desc);
 		
 		// default value will be set later on
-		return new ThreadLocalVar(field.name, fieldType, inheritable);
+		return new ThreadLocalVar(field.name, fieldType, tlad.inheritable);
 	}
 
 	private static void setTLVDefaultValues(ClassNode classNode,

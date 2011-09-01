@@ -205,7 +205,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		return new StaticAnalysisMethod(methodID, method);
 	}
 
-	private class ProcessorInfo {
+	private static class ProcessorInfo {
 
 		private Integer instrPos;
 		private ProcInvocation procInvoke;

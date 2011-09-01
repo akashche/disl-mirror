@@ -12,7 +12,7 @@ public class PIResolver {
 	private Map<ResolverKey, ProcInstance> piStore = 
 		new HashMap<ResolverKey, ProcInstance>();
 	
-	private class ResolverKey {
+	private static class ResolverKey {
 		
 		private Snippet snippet;
 		private MarkedRegion markedRegion;
@@ -31,8 +31,6 @@ public class PIResolver {
 			
 			final int prime = 31;
 			int result = 1;
-			
-			result = prime * result + getOuterType().hashCode();
 			
 			result = prime * result + instrPos;
 			
@@ -58,8 +56,6 @@ public class PIResolver {
 				return false;
 			
 			ResolverKey other = (ResolverKey) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
 			
 			if (instrPos != other.instrPos)
 				return false;
@@ -77,10 +73,6 @@ public class PIResolver {
 				return false;
 			
 			return true;
-		}
-
-		private PIResolver getOuterType() {
-			return PIResolver.this;
 		}
 	}
 	

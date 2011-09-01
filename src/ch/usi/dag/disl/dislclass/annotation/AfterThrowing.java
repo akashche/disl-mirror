@@ -5,10 +5,11 @@ import ch.usi.dag.disl.guard.SnippetGuard;
 
 public @interface AfterThrowing {
 	
-	// NOTE if you want to change names, you need to change SnippetParser class
+	// NOTE if you want to change names, you need to change 
+	// SnippetParser.SnippetAnnotationData class
 	
 	// NOTE because of implementation of annotations in java the defaults
-	// are not retrieved from here but from SnippetParser
+	// are not retrieved from here but from class mentioned above
 	
 	Class<? extends Marker> marker();
 	String param() default ""; // cannot be null :(

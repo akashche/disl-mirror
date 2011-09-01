@@ -1,7 +1,6 @@
 package ch.usi.dag.disl.dislclass.parser;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -108,18 +107,19 @@ public class SnippetParser extends AbstractParser {
 
 		AnnotationNode annotation = method.invisibleAnnotations.get(0);
 
-		MethodAnnotationData annotData = 
+		SnippetAnnotationData annotData = 
 			parseMethodAnnotation(className + "." + method.name, annotation);
 
 		// ** marker **
 		Marker marker = 
-			getMarker(annotData.getMarker(), annotData.getMarkerParam());
+			getMarker(annotData.marker, annotData.param);
 
 		// ** scope **
-		Scope scope = new ScopeImpl(annotData.getScope());
+		Scope scope = new ScopeImpl(annotData.scope);
 
 		// ** guard **
-		SnippetGuard guard = (SnippetGuard) getGuard(annotData.getGuard());
+		SnippetGuard guard = 
+			(SnippetGuard) ParserHelper.getGuard(annotData.guard);
 		
 		// ** parse used static analysis **
 		Analysis analysis = parseAnalysis(method.desc);
@@ -147,67 +147,14 @@ public class SnippetParser extends AbstractParser {
 		SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(className,
 				method.name, method.instructions, method.tryCatchBlocks,
 				analysis.getStaticAnalyses(), analysis.usesDynamicAnalysis(),
-				annotData.isDynamicBypass());
+				annotData.dynamicBypass);
 
 		// return whole snippet
-		return new Snippet(annotData.getType(), marker, scope, guard,
-				annotData.getOrder(), uscd);
+		return new Snippet(annotData.type, marker, scope, guard,
+				annotData.order, uscd);
 	}
 
-	// data holder for parseMethodAnnotation methods
-	private class MethodAnnotationData {
-
-		private Class<?> type;
-		private Type marker;
-		private String markerParam;
-		private String scope;
-		private Type guard;
-		private int order;
-		private boolean dynamicBypass;
-
-		public MethodAnnotationData(Class<?> type, Type marker,
-				String markerParam, String scope, Type guard, int order,
-				boolean dynamicBypass) {
-			super();
-			this.type = type;
-			this.marker = marker;
-			this.markerParam = markerParam;
-			this.scope = scope;
-			this.guard = guard;
-			this.order = order;
-			this.dynamicBypass = dynamicBypass;
-		}
-
-		public Class<?> getType() {
-			return type;
-		}
-
-		public Type getMarker() {
-			return marker;
-		}
-
-		public String getMarkerParam() {
-			return markerParam;
-		}
-
-		public String getScope() {
-			return scope;
-		}
-
-		public Type getGuard() {
-			return guard;
-		}
-
-		public int getOrder() {
-			return order;
-		}
-
-		public boolean isDynamicBypass() {
-			return dynamicBypass;
-		}
-	}
-
-	private MethodAnnotationData parseMethodAnnotation(String fullMethodName,
+	private SnippetAnnotationData parseMethodAnnotation(String fullMethodName,
 			AnnotationNode annotation) throws SnippetParserException {
 
 		Type annotationType = Type.getType(annotation.desc);
@@ -237,74 +184,39 @@ public class SnippetParser extends AbstractParser {
 				+ " has unsupported DiSL annotation");
 	}
 
-	private MethodAnnotationData parseMethodAnnotFields(Class<?> type,
+	// data holder for AnnotationParser
+	private static class SnippetAnnotationData {
+
+		public Class<?> type;
+		
+		// annotation values
+		public Type marker = null;
+		public String param = null; // default
+		public String scope = null;
+		public Type guard = null; // default
+		public int order = 100; // default
+		public boolean dynamicBypass = false; // default
+		
+		public SnippetAnnotationData(Class<?> type) {
+			this.type = type;
+		}
+	}
+	
+	private SnippetAnnotationData parseMethodAnnotFields(Class<?> type,
 			AnnotationNode annotation) {
 
-		Iterator<?> it = annotation.values.iterator();
+		SnippetAnnotationData sad = ParserHelper.parseAnnotation(annotation,
+				new SnippetAnnotationData(type));
+		
+		if (sad.marker == null || sad.scope == null) {
 
-		Type marker = null;
-		String param = null; // default
-		String scope = null;
-		Type guard = null; // default
-		Integer order = 100; // default
-		Boolean dynamicBypass = false; // default
-
-		while (it.hasNext()) {
-
-			String name = (String) it.next();
-
-			if (name.equals("marker")) {
-
-				marker = (Type) it.next();
-				continue;
-			}
-
-			if (name.equals("param")) {
-
-				param = (String) it.next();
-				continue;
-			}
-
-			if (name.equals("scope")) {
-
-				scope = (String) it.next();
-				continue;
-			}
-			
-			if (name.equals("guard")) {
-
-				guard = (Type) it.next();
-				continue;
-			}
-
-			if (name.equals("order")) {
-
-				order = (Integer) it.next();
-				continue;
-			}
-			
-			if (name.equals("dynamicBypass")) {
-
-				dynamicBypass = (Boolean) it.next();
-				continue;
-			}
-
-			throw new DiSLFatalException("Unknow field " + name
-					+ " in annotation " + type.toString()
-					+ ". This may happen if annotation class is changed but"
-					+ " parser is not.");
-		}
-
-		if (marker == null || scope == null) {
-
-			throw new DiSLFatalException("Missing field in annotation "
+			throw new DiSLFatalException("Missing attribute in annotation "
 					+ type.toString()
 					+ ". This may happen if annotation class is changed but"
-					+ " parser is not.");
+					+ " data holder class is not.");
 		}
 
-		return new MethodAnnotationData(type, marker, param, scope, guard,
-				order, dynamicBypass);
+		return sad;
 	}
 	
 	private Marker getMarker(Type markerType, String markerParam)
@@ -347,7 +259,7 @@ public class SnippetParser extends AbstractParser {
 		}
 	}
 
-	private class Analysis {
+	private static class Analysis {
 
 		private Set<String> staticAnalyses;
 		private boolean usesDynamicAnalysis;

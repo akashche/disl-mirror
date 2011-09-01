@@ -9,10 +9,11 @@ public @interface SyntheticLocal {
 		ALWAYS, NEVER, BEST_EFFORT 
 	}
 	
-	// NOTE if you want to change names, you need to change SnippetParser class
+	// NOTE if you want to change names, you need to change 
+	// AbstractParser.SLAnnotaionData class
 	
 	// NOTE because of implementation of annotations in java the defaults
-	// are not retrieved from here but from SnippetParser
+	// are not retrieved from here but from class mentioned above
 	
 	Initialize initialize() default(Initialize.ALWAYS);
 }
