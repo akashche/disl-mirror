@@ -8,6 +8,7 @@
 		<pathelement location="${disl.jar.path}"/>
 		<pathelement location="../${asm.path}"/>
 		<pathelement location="../${jborat.path}"/>
+		<pathelement location="../${jborat-runtime.path}"/>
 		<pathelement location="lib/stp.jar"/>
 	</path>
 
@@ -23,8 +24,16 @@
 		<mkdir dir="bin"/>
 		<javac  srcdir="src" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath"/>
+			<compilerarg value="-Xbootclasspath/p:lib/Thread_test.jar"/>
 		</javac>
 	</target>
+
+         <target name="extendThread">
+             <java fork="true" classpath="../${asm.path}:../${jborat.path}" classname="ch.usi.dag.jborat.tools.thread.ExtendThread" failonerror="true">
+                        <arg line="lib/Thread_test.jar  'currentAnalysis:Lch/usi/dag/disl/test/senseo/runtime/Analysis;:null:false,threadLocalCCTNode:Lch/usi/dag/disl/test/jp2/runtime/CCTNode;:null:false,bytecodeIndex:I:0:false,counter:I:0:false,bypass:Z:false:false'"/>
+
+                </java>
+        </target>
 
 	<target name="agent" description="create simple agent jar file" >
 		<mkdir dir="build"/>
@@ -48,10 +57,15 @@
 	<property name="test.path" value="ch/usi/dag/disl/test/${test.name}"/>
 
 	<target name="package" depends="report-missing-property" description="create instrumentation package for specified test">
+	        <jar jarfile="lib/${user.runtime.jar.name}"
+		     basedir="./bin"
+		     includes="${test.path}/runtime/**">
+		</jar>
+		<delete dir="./bin/${test.path}/runtime"/>
 		<jar jarfile="../build/${instr.jar.name}"
 		     basedir="./bin"
 		     includes="${test.path}/*"
-		     excludes="${test.path}/TargetClass.class ${test.path}/MANIFEST.MF"
+		     excludes="${test.path}/runtime ${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF"
 		     manifest="./src/${test.path}/MANIFEST.MF">
 		</jar>
 	</target>
