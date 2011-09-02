@@ -275,7 +275,7 @@ public class Weaver {
 			if (typeName != null) {
 				instructions.insertBefore(start, new LdcInsnNode(typeName));
 				instructions.insertBefore(start, new VarInsnNode(
-						Opcodes.ASTORE, 3));
+						Opcodes.ASTORE, 2 + type.getSize()));
 			}
 			
 			fixLocalIndex(method, instructions);
@@ -323,6 +323,8 @@ public class Weaver {
 
 			for (AbstractInsnNode itr : source.insns) {
 				method.instructions.insert(itr, new VarInsnNode(sopcode,
+						// TRICK: the value has to be set properly because
+						// method code will be not adjusted by fixLocalIndex
 						method.maxLocals + 2));
 				method.instructions.insert(itr, new InsnNode(
 						type.getSize() == 2 ? Opcodes.DUP2 : Opcodes.DUP));
@@ -332,7 +334,7 @@ public class Weaver {
 			if (typeName != null) {
 				instructions.insertBefore(start, new LdcInsnNode(typeName));
 				instructions.insertBefore(start, new VarInsnNode(
-						Opcodes.ASTORE, 3));
+						Opcodes.ASTORE, 2 + type.getSize()));
 			}
 
 			fixLocalIndex(method, instructions);
