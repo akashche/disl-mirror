@@ -219,31 +219,31 @@ public class Weaver {
 				case Opcodes.LSTORE:
 				case Opcodes.DSTORE:
 
-					if ((varInstr.var + 1) > max) {
-						max = varInstr.var + 1;
+					if ((varInstr.var + 2) > max) {
+						max = varInstr.var + 2;
 					}
 
 					break;
 
 				default:
-					if (varInstr.var > max) {
-						max = varInstr.var;
+					if ((varInstr.var + 1) > max) {
+						max = varInstr.var + 1;
 					}
 
 					break;
 				}
-			} else if (instr instanceof IincInsnNode){
-				
+			} else if (instr instanceof IincInsnNode) {
+
 				IincInsnNode iinc = (IincInsnNode) instr;
 				iinc.var += methodNode.maxLocals;
 
-				if (iinc.var > max) {
-					max = iinc.var;
+				if ((iinc.var + 1) > max) {
+					max = iinc.var + 1;
 				}
 			}
 		}
 
-		methodNode.maxLocals = max + 1;
+		methodNode.maxLocals = max;
 	}
 	
 	public static InsnList procInMethod(MethodNode method,
