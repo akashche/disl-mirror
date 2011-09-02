@@ -17,8 +17,8 @@ public class TryClauseMarker implements Marker {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		
 		for (TryCatchBlockNode tcb : method.tryCatchBlocks){
-			AbstractInsnNode start = AsmHelper.skipLabels(tcb.start, true);
-			AbstractInsnNode end = AsmHelper.skipLabels(tcb.end, false);
+			AbstractInsnNode start = AsmHelper.skipVirualInsns(tcb.start, true);
+			AbstractInsnNode end = AsmHelper.skipVirualInsns(tcb.end, false);
 			
 			regions.add(new MarkedRegion(method, start, end));
 		}

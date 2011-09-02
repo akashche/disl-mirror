@@ -237,7 +237,7 @@ public class AsmHelper {
 		return dst;
 	}
 
-	public static AbstractInsnNode skipLabels(AbstractInsnNode instr,
+	public static AbstractInsnNode skipVirualInsns(AbstractInsnNode instr,
 			boolean isForward) {
 		
 		while (instr != null && isVirtualInstr(instr)) {

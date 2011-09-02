@@ -553,7 +553,7 @@ public class Weaver {
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
 				// initialize of start
 				AbstractInsnNode start = region.getStart();
-				AbstractInsnNode wstart = AsmHelper.skipLabels(start, true);
+				AbstractInsnNode wstart = AsmHelper.skipVirualInsns(start, true);
 
 				if (weaving_start.get(start) == null) {
 					weaving_start.put(start, start);
@@ -561,7 +561,7 @@ public class Weaver {
 
 				for (AbstractInsnNode end : region.getEnds()) {
 
-					AbstractInsnNode wend = AsmHelper.skipLabels(end, false);
+					AbstractInsnNode wend = AsmHelper.skipVirualInsns(end, false);
 
 					if (AsmHelper.isBranch(wend)) {
 

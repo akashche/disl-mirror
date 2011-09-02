@@ -24,7 +24,7 @@ public class ExceptionHandlerMarker implements Marker {
 		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
 			
 			List<AbstractInsnNode> exits = cfg.visit(tcb.handler);
-			regions.add(new MarkedRegion(method, AsmHelper.skipLabels(
+			regions.add(new MarkedRegion(method, AsmHelper.skipVirualInsns(
 					tcb.handler, true), exits));
 		}
 

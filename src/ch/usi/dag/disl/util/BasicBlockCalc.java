@@ -20,17 +20,27 @@ public class BasicBlockCalc {
 	// NOTE that in asm, label might be an AbstractInsnNode. If an instruction
 	// is followed with a label which is the end of an instruction list, then
 	// it has no next instruction.
-	public static boolean hasNext(InsnList instr_lst, int i) {
-
-		if (i < instr_lst.size()) {
-
-			AbstractInsnNode nextInstruction = instr_lst.get(i + 1);
-
-			return nextInstruction == null
-					|| !(AsmHelper.isVirtualInstr(nextInstruction)
-							&& nextInstruction.getNext() == null);
+	public static boolean hasNextNonVirtInstr(InsnList instrLst, int i) {
+		
+		int nextInstrIndex = i + 1;
+		
+		// not valid next index
+		if (nextInstrIndex >= instrLst.size()) {
+			return false;
 		}
 
+		AbstractInsnNode nextInstruction = instrLst.get(nextInstrIndex);
+
+		// is non-virtual instruction later in a list ?
+		while(nextInstruction != null) {
+			
+			if(! AsmHelper.isVirtualInstr(nextInstruction)) {
+				return true;
+			}
+			
+			nextInstruction = nextInstruction.getNext();
+		}
+		
 		return false;
 	}
 	
@@ -38,18 +48,20 @@ public class BasicBlockCalc {
 	public static List<AbstractInsnNode> getAll(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks, boolean isPrecise) {
 
-		Set<AbstractInsnNode> bb_begins = new HashSet<AbstractInsnNode>() {
+		// add method automatically skips all the labels
+		Set<AbstractInsnNode> bbStarts = new HashSet<AbstractInsnNode>() {
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public boolean add(AbstractInsnNode e) {
-				return super.add(AsmHelper.skipLabels(e, true));
+				return super.add(AsmHelper.skipVirualInsns(e, true));
 			}
 		};
 					
-		bb_begins.add(instructions.getFirst());
+		bbStarts.add(instructions.getFirst());
 
 		for (int i = 0; i < instructions.size(); i++) {
+			
 			AbstractInsnNode instruction = instructions.get(i);
 			int opcode = instruction.getOpcode();
 
@@ -58,11 +70,12 @@ public class BasicBlockCalc {
 				// Covers IFEQ, IFNE, IFLT, IFGE, IFGT, IFLE, IF_ICMPEQ,
 				// IF_ICMPNE, IF_ICMPLT, IF_ICMPGE, IF_ICMPGT, IF_ICMPLE,
 				// IF_ACMPEQ, IF_ACMPNE, GOTO, JSR, IFNULL, and IFNONNULL.
-				bb_begins.add(((JumpInsnNode) instruction).label);
+				bbStarts.add(((JumpInsnNode) instruction).label);
 
-				// goto never returns.
-				if (opcode != Opcodes.GOTO && hasNext(instructions, i)) {
-					bb_begins.add(instruction.getNext());
+				// goto never returns
+				if (opcode != Opcodes.GOTO &&
+						hasNextNonVirtInstr(instructions, i)) {
+					bbStarts.add(instruction.getNext());
 				}
 
 				break;
@@ -73,10 +86,10 @@ public class BasicBlockCalc {
 				LookupSwitchInsnNode lsin = (LookupSwitchInsnNode) instruction;
 
 				for (LabelNode label : lsin.labels) {
-					bb_begins.add(label);
+					bbStarts.add(label);
 				}
 
-				bb_begins.add(lsin.dflt);
+				bbStarts.add(lsin.dflt);
 				break;
 			}
 
@@ -85,10 +98,10 @@ public class BasicBlockCalc {
 				TableSwitchInsnNode tsin = (TableSwitchInsnNode) instruction;
 
 				for (LabelNode label : tsin.labels) {
-					bb_begins.add(label);
+					bbStarts.add(label);
 				}
 
-				bb_begins.add(tsin.dflt);
+				bbStarts.add(tsin.dflt);
 				break;
 			}
 
@@ -97,23 +110,25 @@ public class BasicBlockCalc {
 			}
 
 			if (isPrecise && AsmHelper.mightThrowException(instruction)) {
-				bb_begins.add(instruction.getNext());
+				bbStarts.add(instruction.getNext());
 			}
 		}
 
-		for (TryCatchBlockNode try_catch_block : tryCatchBlocks) {
-			bb_begins.add(try_catch_block.handler);
+		// add also starts of the handlers
+		for (TryCatchBlockNode tryCatchBlock : tryCatchBlocks) {
+			bbStarts.add(tryCatchBlock.handler);
 		}
 
-		// Sort
-		List<AbstractInsnNode> bb_list = new ArrayList<AbstractInsnNode>();
+		// sort starting instructions
+		List<AbstractInsnNode> bbSortedList = new ArrayList<AbstractInsnNode>();
 
 		for (AbstractInsnNode instruction : instructions.toArray()) {
-			if (bb_begins.contains(instruction)) {
-				bb_list.add(instruction);
+			
+			if (bbStarts.contains(instruction)) {
+				bbSortedList.add(instruction);
 			}
 		}
 
-		return bb_list;
+		return bbSortedList;
 	}
 }

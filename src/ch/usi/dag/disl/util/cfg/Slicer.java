@@ -54,7 +54,7 @@ public class Slicer {
 			flags[index] = instructions.get(index) instanceof LabelNode;
 		}
 
-		from = AsmHelper.skipLabels(from, false);
+		from = AsmHelper.skipVirualInsns(from, false);
 
 		List<AbstractInsnNode> ilist = new LinkedList<AbstractInsnNode>();
 

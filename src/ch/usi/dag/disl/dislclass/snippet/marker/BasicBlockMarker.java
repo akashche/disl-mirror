@@ -20,7 +20,7 @@ public class BasicBlockMarker implements Marker {
 		List<AbstractInsnNode> seperators = BasicBlockCalc.getAll(
 				method.instructions, method.tryCatchBlocks, isPrecise);
 
-		AbstractInsnNode last = AsmHelper.skipLabels(
+		AbstractInsnNode last = AsmHelper.skipVirualInsns(
 				method.instructions.getLast(), false);
 
 		seperators.add(last);
@@ -34,7 +34,7 @@ public class BasicBlockMarker implements Marker {
 				end = end.getPrevious();
 			}
 
-			regions.add(new MarkedRegion(method, start, AsmHelper.skipLabels(
+			regions.add(new MarkedRegion(method, start, AsmHelper.skipVirualInsns(
 					end, false)));
 		}
 

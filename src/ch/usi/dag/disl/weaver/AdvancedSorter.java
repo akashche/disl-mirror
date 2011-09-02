@@ -27,7 +27,7 @@ public class AdvancedSorter extends TryCatchBlockSorter {
 			}
 
 			private int blockLength(TryCatchBlockNode block) {
-				int startidx = instructions.indexOf(AsmHelper.skipLabels(
+				int startidx = instructions.indexOf(AsmHelper.skipVirualInsns(
 						block.start, true));
 				int endidx = instructions.indexOf(block.end);
 				return endidx - startidx;
