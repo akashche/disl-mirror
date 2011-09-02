@@ -15,8 +15,7 @@ public enum ProcArgType {
 	INT,
 	LONG,
 	SHORT,
-	OBJECT,
-	STRING;
+	OBJECT;
 	
 	public Type getASMType() {
 		
@@ -39,8 +38,6 @@ public enum ProcArgType {
 			return Type.SHORT_TYPE;
 		case OBJECT:
 			return Type.getType(Object.class);
-		case STRING:
-			return Type.getType(String.class);
 		default:
 			throw new DiSLFatalException("Conversion from "
 					+ this.getClass().toString() + " to asm Type not defined");
@@ -83,10 +80,6 @@ public enum ProcArgType {
 		
 		if(Type.SHORT_TYPE.equals(type)) {
 			return SHORT;
-		}
-		
-		if(Type.getType(String.class).equals(type)) {
-			return STRING;
 		}
 		
 		if(Type.OBJECT == type.getSort()) {

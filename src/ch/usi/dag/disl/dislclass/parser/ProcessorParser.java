@@ -181,7 +181,7 @@ public class ProcessorParser extends AbstractParser {
 				&& ! Type.getType(Object.class).equals(argTypes[2])) {
 			
 			throw new ProcessorParserException("In method " + methodID + ": " +
-					"Only basic types, Object and String are allowed as the" +
+					"Only basic types and Object are allowed as the" +
 					" third parameter");
 		}
 		

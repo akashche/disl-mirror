@@ -6,5 +6,6 @@
 	<classpathentry kind="lib" path="/DiSL/lib/jborat.jar"/>
 	<classpathentry kind="lib" path="/DiSL/lib/asm-debug-all-4.0_RC1.jar"/>
 	<classpathentry kind="lib" path="lib/stp.jar"/>
+	<classpathentry kind="lib" path="/DiSL/lib/jborat-runtime.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
