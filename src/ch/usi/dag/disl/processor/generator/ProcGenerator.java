@@ -219,8 +219,12 @@ public class ProcGenerator {
 				
 				ProcMethodInstance pmi = new ProcMethodInstance(argPos,
 						argsCount, methodArgType, method.getCode());
+				
+				if(method.insertTypeName()) {
+					pmi.setArgTypeName(argType.getInternalName());
+				}
 
-				// chech guard
+				// check guard
 				if(isPMGuardApplicable(method.getGuard(), pmgd, pmi, argType)) {
 
 					// add method

@@ -25,10 +25,10 @@ public class DiSLClass {
 		System.out.println(ProcessorTest.flag);
 	}
 	
-	@Before(marker = BytecodeMarker.class, param="invokevirtual", order = 0, scope = "TargetClass.main")
+	@Before(marker = BytecodeMarker.class, param="invokevirtual", order = 0, scope = "TargetClass.*")
 	public static void beforeInvocation(StaticContext ci) {
 		
-		System.out.println("(Before) Method " + ci.thisMethodName() + ": ");
+		System.out.println("(Before) Method : ");
 		
 		Processor.apply(ProcessorTest.class, ProcessorApplyType.BEFORE_INVOCATION);
 		

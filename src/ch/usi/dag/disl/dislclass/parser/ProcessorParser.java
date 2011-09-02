@@ -117,18 +117,19 @@ public class ProcessorParser extends AbstractParser {
 		}
 		
 		// ** parse processor method arguments **
-		ProcArgType methodArgType = parseProcMethodArgs(
+		PMArgData pmArgData = parseProcMethodArgs(
 				className + "." + method.name, method.desc);
 
 		// all processed types - add method type
-		EnumSet<ProcArgType> allProcessedTypes = EnumSet.of(methodArgType);
+		EnumSet<ProcArgType> allProcessedTypes = 
+			EnumSet.of(pmArgData.getType());
 		
 		// ** parse processor method annotation **
 		ProcMethodAnnotationsData pmad = 
 			parseMethodAnnotations(fullMethodName, method.invisibleAnnotations);
 
 		// check if process also annotation contains only valid types
-		checkProcessAlsoSetValidity(fullMethodName, methodArgType,
+		checkProcessAlsoSetValidity(fullMethodName, pmArgData.getType(),
 				pmad.processAlsoTypes);
 		
 		// add types from process also annotation
@@ -144,21 +145,45 @@ public class ProcessorParser extends AbstractParser {
 				method.tryCatchBlocks);
 
 		// return whole processor method
-		return new ProcMethod(allProcessedTypes, guard, ucd);
+		return new ProcMethod(allProcessedTypes, pmArgData.insertTypeName(),
+				guard, ucd);
 
 	}
 
-	private ProcArgType parseProcMethodArgs(String methodID, String methodDesc)
+	private static class PMArgData {
+		
+		private ProcArgType type;
+		private boolean insertTypeName;
+		
+		public PMArgData(ProcArgType type, boolean insertTypeName) {
+			super();
+			this.type = type;
+			this.insertTypeName = insertTypeName;
+		}
+
+		public ProcArgType getType() {
+			return type;
+		}
+
+		public boolean insertTypeName() {
+			return insertTypeName;
+		}
+	}
+	
+	private PMArgData parseProcMethodArgs(String methodID, String methodDesc)
 			throws ProcessorParserException {
 
-		final int PM_ARGS_COUNT = 3;
+		final int PM_ARGS_STD_COUNT = 3;
+		
+		final int PM_ARGS_OBJ_MAX_COUNT = 4;
 		
 		Type[] argTypes = Type.getArgumentTypes(methodDesc);
 		
-		if(argTypes.length != PM_ARGS_COUNT) {
+		// not == because of PM_ARGS_OBJ_MAX_COUNT
+		if(argTypes.length < PM_ARGS_STD_COUNT) {
 			throw new ProcessorParserException(
-					"Processor method should have " + PM_ARGS_COUNT
-					+ " arguments.");
+					"Processor method " + methodID +  " should have at least "
+					+ PM_ARGS_STD_COUNT + " arguments.");
 		}
 		
 		// first position argument has to be integer
@@ -173,11 +198,11 @@ public class ProcessorParser extends AbstractParser {
 					"Second (count) processor method argument has to be int");
 		}
 		
-		ProcArgType result = ProcArgType.valueOf(argTypes[2]);
+		ProcArgType argType = ProcArgType.valueOf(argTypes[2]);
 		
 		// if the ProcArgType is converted to OBJECT, test that third argument
 		// is really Object.class - nothing else is allowed
-		if(result == ProcArgType.OBJECT
+		if(argType == ProcArgType.OBJECT
 				&& ! Type.getType(Object.class).equals(argTypes[2])) {
 			
 			throw new ProcessorParserException("In method " + methodID + ": " +
@@ -185,7 +210,43 @@ public class ProcessorParser extends AbstractParser {
 					" third parameter");
 		}
 		
-		return result;
+		// ** non object arg types **
+		
+		if(argType != ProcArgType.OBJECT) {
+
+			// argument count test
+			if(argTypes.length != PM_ARGS_STD_COUNT) {
+				throw new ProcessorParserException("Processor method "
+						+ methodID + " should have "
+						+ PM_ARGS_STD_COUNT + " arguments.");
+			}
+			
+			return new PMArgData(argType, false);
+		}
+
+		// ** object arg type **
+		
+		// no additional argument
+		if(argTypes.length == PM_ARGS_STD_COUNT) {
+			return new PMArgData(argType, false);
+		}
+		
+		// object type argument
+		if(argTypes.length == PM_ARGS_OBJ_MAX_COUNT) {
+			
+			// last argument in object processor (type) has to be String
+			if(! Type.getType(String.class).equals(argTypes[3])) {
+				throw new ProcessorParserException("In method " + methodID
+						+ ": Last argument in object processor (type) has to"
+						+ " be String");
+			}
+			
+			return new PMArgData(argType, true);
+		}
+		
+		throw new ProcessorParserException("Processor method "
+				+ methodID + " should have at most "
+				+ PM_ARGS_OBJ_MAX_COUNT + " arguments.");
 	}
 	
 	// data holder for parseMethodAnnotation methods

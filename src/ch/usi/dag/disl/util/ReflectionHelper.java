@@ -43,10 +43,14 @@ public class ReflectionHelper {
 		}
 	}
 
+	private static String asmNameToJavaName(String asmClassName) {
+		return asmClassName.replace('/', '.');
+	}
+	
 	public static Class<?> resolveClass(Type asmType)
 			throws ReflectionException {
 		try {
-			return Class.forName(asmType.getClassName());
+			return Class.forName(asmNameToJavaName(asmType.getInternalName()));
 		} catch (ClassNotFoundException e) {
 			throw new ReflectionException("Class " + asmType.getClassName()
 					+ " cannot be resolved", e);

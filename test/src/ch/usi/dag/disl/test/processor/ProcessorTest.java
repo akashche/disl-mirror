@@ -21,8 +21,9 @@ public class ProcessorTest {
 		DiSLClass.flag = "OMG this is for the End";
 	}
 	
-	public static void objPM2(int a, int b, Object c) {
+	public static void objPM2(int a, int b, Object c, String type) {
 		System.out.println("processor for object 2");
+		System.out.println(type);
 	}
 
 	@ProcessAlso(types={Type.SHORT, Type.BYTE, Type.BOOLEAN})

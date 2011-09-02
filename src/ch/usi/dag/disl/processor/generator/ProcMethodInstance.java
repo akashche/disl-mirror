@@ -9,10 +9,11 @@ public class ProcMethodInstance {
 	private int argPos;
 	private int argsCount;
 	private ProcArgType argType;
+	private String argTypeName;
 	private Code code;
 	
-	public ProcMethodInstance(int argPos, int argsCount,
-			ProcArgType argType, Code code) {
+	public ProcMethodInstance(int argPos, int argsCount, ProcArgType argType,
+			Code code) {
 		super();
 		this.argPos = argPos;
 		this.argsCount = argsCount;
@@ -32,6 +33,14 @@ public class ProcMethodInstance {
 		return argType;
 	}
 
+	public String getArgTypeName() {
+		return argTypeName;
+	}
+
+	public void setArgTypeName(String argTypeName) {
+		this.argTypeName = argTypeName;
+	}
+	
 	// Note: Code is NOT cloned for each instance of ProcMethodInstance.
 	// If the weaver does not rely on this, we can reuse processor instances
 	// which can save us some computation

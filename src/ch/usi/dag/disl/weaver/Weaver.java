@@ -271,6 +271,13 @@ public class Weaver {
 					type.getOpcode(Opcodes.ISTORE), 2);
 			instructions.insertBefore(start, target);
 
+			String typeName = processorMethod.getArgTypeName();
+			if (typeName != null) {
+				instructions.insertBefore(start, new LdcInsnNode(typeName));
+				instructions.insertBefore(start, new VarInsnNode(
+						Opcodes.ASTORE, 3));
+			}
+			
 			fixLocalIndex(method, instructions);
 
 			instructions.insertBefore(
@@ -319,6 +326,13 @@ public class Weaver {
 						method.maxLocals + 2));
 				method.instructions.insert(itr, new InsnNode(
 						type.getSize() == 2 ? Opcodes.DUP2 : Opcodes.DUP));
+			}
+			
+			String typeName = processorMethod.getArgTypeName();
+			if (typeName != null) {
+				instructions.insertBefore(start, new LdcInsnNode(typeName));
+				instructions.insertBefore(start, new VarInsnNode(
+						Opcodes.ASTORE, 3));
 			}
 
 			fixLocalIndex(method, instructions);
