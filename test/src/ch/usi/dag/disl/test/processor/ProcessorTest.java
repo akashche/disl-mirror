@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.test.processor;
 
+import ch.usi.dag.disl.dislclass.annotation.ProcessAlso;
+import ch.usi.dag.disl.dislclass.annotation.ProcessAlso.Type;
 import ch.usi.dag.disl.dislclass.annotation.Processor;
 import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
 
@@ -23,6 +25,7 @@ public class ProcessorTest {
 		System.out.println("processor for object 2");
 	}
 
+	@ProcessAlso(types={Type.SHORT, Type.BYTE, Type.BOOLEAN})
 	public static void intPM(int a, int b, int c) {
 		System.out.println("processor for int");
 		System.out.println(a);

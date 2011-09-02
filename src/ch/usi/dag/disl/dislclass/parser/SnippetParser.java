@@ -205,8 +205,8 @@ public class SnippetParser extends AbstractParser {
 	private SnippetAnnotationData parseMethodAnnotFields(Class<?> type,
 			AnnotationNode annotation) {
 
-		SnippetAnnotationData sad = ParserHelper.parseAnnotation(annotation,
-				new SnippetAnnotationData(type));
+		SnippetAnnotationData sad = new SnippetAnnotationData(type);
+		ParserHelper.parseAnnotation(sad, annotation);
 		
 		if (sad.marker == null || sad.scope == null) {
 

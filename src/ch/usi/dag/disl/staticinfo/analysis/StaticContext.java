@@ -1,13 +1,22 @@
 package ch.usi.dag.disl.staticinfo.analysis;
 
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.dislclass.snippet.Snippet;
+import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.staticinfo.analysis.cache.ClassCache;
 import ch.usi.dag.disl.staticinfo.analysis.cache.MethodCache;
 import ch.usi.dag.disl.util.Constants;
 
 public class StaticContext extends AbstractStaticAnalysis {
 
+	public StaticContext(ClassNode classNode, MethodNode methodNode,
+			Snippet snippet, MarkedRegion markedRegion) {
+		super(classNode, methodNode, snippet, markedRegion);
+	}
+	
 	public StaticContext() {
 		
 		registerCache("thisClassName", ClassCache.class);
@@ -41,7 +50,7 @@ public class StaticContext extends AbstractStaticAnalysis {
 		registerCache("isMethodStatic", MethodCache.class);
 		registerCache("isMethodSynchronized", MethodCache.class);
 		registerCache("isMethodVarArgs", MethodCache.class);
-	}
+	}	
 	
 	// *** Class ***
 

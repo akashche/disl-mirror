@@ -4,6 +4,11 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
+
+import ch.usi.dag.disl.dislclass.snippet.Snippet;
+import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticInfoException;
 import ch.usi.dag.disl.staticinfo.analysis.cache.StaticAnalysisCache;
@@ -15,6 +20,26 @@ abstract public class AbstractStaticAnalysis implements StaticAnalysis {
 	private Map<String, StaticAnalysisCache> retValCache =
 		new HashMap<String, StaticAnalysisCache>();
 
+	// this is standard constructor for static analysis 
+	// add registerCache calls to the subclass constructor
+	protected AbstractStaticAnalysis() {
+		
+	}
+	
+	// the subclass may optionally override this constructor - enables to use
+	// the static analysis in guards
+	// NOTE: static analysis should not use markings because they are not
+	// visible in guards and will not be set
+	// NOTE: if you include this constructor, you should also include
+	// constructor without parameters, otherwise, the static analysis will not
+	// be usable normally
+	public AbstractStaticAnalysis(ClassNode classNode, MethodNode methodNode,
+			Snippet snippet, MarkedRegion markedRegion) {
+		
+		staticAnalysisData = new StaticAnalysisData(classNode, methodNode,
+				snippet, null, markedRegion);
+	}
+	
 	protected <T extends StaticAnalysisData> void registerCache(
 			String methodName, Class<T> keyCacheClass) {
 

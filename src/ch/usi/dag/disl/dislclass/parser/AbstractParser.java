@@ -148,14 +148,15 @@ public abstract class AbstractParser {
 		}
 
 		// parse annotation data
-		SLAnnotaionData slad = ParserHelper.parseAnnotation(annotation, 
-				new SLAnnotaionData());
+		SLAnnotaionData slad = new SLAnnotaionData();
+		ParserHelper.parseAnnotation(slad, annotation);
 		
 		// default val for init
 		SyntheticLocal.Initialize slvInit = SyntheticLocal.Initialize.ALWAYS;
 		
 		if(slad.initialize != null) {
-			// initialize array
+
+			// enum is converted to array
 			//  - first value is class name
 			//  - second value is value name
 			slvInit = SyntheticLocal.Initialize.valueOf(slad.initialize[1]);

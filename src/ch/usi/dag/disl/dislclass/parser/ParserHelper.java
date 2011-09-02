@@ -24,13 +24,15 @@ public abstract class ParserHelper {
 		return ReflectionHelper.createInstance(guardClass);
 	}
 	
-	public static <T> T parseAnnotation(AnnotationNode annotation,
-			T parsedDataObject) {
+	// NOTE: first parameter is modified by this function
+	public static <T> void parseAnnotation(T parsedDataObject, 
+			AnnotationNode annotation) {
 
 		try {
 		
+			// nothing to do
 			if(annotation.values == null) {
-				return parsedDataObject;
+				return;
 			}
 				
 			Iterator<?> it = annotation.values.iterator();
@@ -61,7 +63,5 @@ public abstract class ParserHelper {
 			throw new DiSLFatalException(
 					"Reflection error wihle parsing annotation", e);
 		}
-		
-		return parsedDataObject;
 	}
 }

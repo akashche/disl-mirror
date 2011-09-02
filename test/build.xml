@@ -2,6 +2,7 @@
 
 	<property file="../disl.version"/>
 	<property file="../build.properties"/>
+	<property file="build.properties"/>
 	<property name="disl.jar.path" value="../build/disl-${disl.version}.jar"/>
 	
 	<path id="buildpath">

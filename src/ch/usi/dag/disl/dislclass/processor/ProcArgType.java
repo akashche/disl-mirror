@@ -2,6 +2,7 @@ package ch.usi.dag.disl.dislclass.processor;
 
 import org.objectweb.asm.Type;
 
+import ch.usi.dag.disl.dislclass.annotation.ProcessAlso;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 
 public enum ProcArgType {
@@ -97,7 +98,26 @@ public enum ProcArgType {
 			return OBJECT;
 		}
 		
-		throw new DiSLFatalException("Conversion from " + type.getClassName() +
-				" not defined");
+		throw new DiSLFatalException("Conversion from " + type.getClassName()
+				+ " not defined");
+	}
+	
+	public static ProcArgType valueOf(ProcessAlso.Type type) {
+		
+		if(type == null) {
+			throw new DiSLFatalException("Conversion from null not defined");
+		}
+		
+		switch(type) {
+		case BOOLEAN:
+			return BOOLEAN;
+		case BYTE:
+			return BYTE;
+		case SHORT:
+			return SHORT;
+		default:
+			throw new DiSLFatalException("Conversion from " + type.toString()
+					+ " not defined");
+		}
 	}
 }

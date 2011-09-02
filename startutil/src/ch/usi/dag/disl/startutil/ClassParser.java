@@ -99,8 +99,9 @@ public class ClassParser {
 					+ " declared as ThreadLocal but is not static");
 		}
 
-		TLAnnotationData tlad = ParserHelper.parseAnnotation(annotation,
-				new TLAnnotationData());
+		// parse annotation
+		TLAnnotationData tlad = new TLAnnotationData();
+		ParserHelper.parseAnnotation(tlad, annotation);
 
 		Type fieldType = Type.getType(field.desc);
 		

@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.dislclass.parser;
 
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -13,6 +14,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.dislclass.annotation.Guarded;
+import ch.usi.dag.disl.dislclass.annotation.ProcessAlso;
 import ch.usi.dag.disl.dislclass.code.UnprocessedCode;
 import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.dislclass.processor.ProcArgType;
@@ -53,8 +55,8 @@ public class ProcessorParser extends AbstractParser {
 			(AnnotationNode) classNode.invisibleAnnotations.get(0);
 		
 		// parse processor annotation
-		ProcessorAnnotationData pad = ParserHelper.parseAnnotation(annotation,
-				new ProcessorAnnotationData());
+		ProcessorAnnotationData pad = new ProcessorAnnotationData();
+		ParserHelper.parseAnnotation(pad, annotation);
 
 		// ** guard **
 		ProcessorGuard guard = 
@@ -118,13 +120,19 @@ public class ProcessorParser extends AbstractParser {
 		ProcArgType methodArgType = parseProcMethodArgs(
 				className + "." + method.name, method.desc);
 
-		EnumSet<ProcArgType> allTypes = EnumSet.of(methodArgType);
+		// all processed types - add method type
+		EnumSet<ProcArgType> allProcessedTypes = EnumSet.of(methodArgType);
 		
 		// ** parse processor method annotation **
 		ProcMethodAnnotationsData pmad = 
 			parseMethodAnnotations(fullMethodName, method.invisibleAnnotations);
 
-		// TODO ! add process also
+		// check if process also annotation contains only valid types
+		checkProcessAlsoSetValidity(fullMethodName, methodArgType,
+				pmad.processAlsoTypes);
+		
+		// add types from process also annotation
+		allProcessedTypes.addAll(pmad.processAlsoTypes);
 		
 		// ** guard **
 		ProcessorMethodGuard guard = 
@@ -136,7 +144,7 @@ public class ProcessorParser extends AbstractParser {
 				method.tryCatchBlocks);
 
 		// return whole processor method
-		return new ProcMethod(allTypes, guard, ucd);
+		return new ProcMethod(allProcessedTypes, guard, ucd);
 
 	}
 
@@ -183,45 +191,53 @@ public class ProcessorParser extends AbstractParser {
 	// data holder for parseMethodAnnotation methods
 	private static class ProcMethodAnnotationsData {
 
+		public EnumSet<ProcArgType> processAlsoTypes = 
+			EnumSet.noneOf(ProcArgType.class);
+		
 		public Type guard = null;
 	}
 
-	private ProcMethodAnnotationsData parseMethodAnnotations(String fullMethodName,
+	private ProcMethodAnnotationsData parseMethodAnnotations(
+			String fullMethodName,
 			List<AnnotationNode> invisibleAnnotations)
 			throws ProcessorParserException {
 
-		// TODO ! add process also
+		ProcMethodAnnotationsData pmad = new ProcMethodAnnotationsData();
 		
-		// check annotation
+		// check no annotation
 		if (invisibleAnnotations == null) {
-			return new ProcMethodAnnotationsData();
+			return pmad;
 		}
+		
+		for(AnnotationNode annotation : invisibleAnnotations) {
 
-		// check only one annotation
-		if (invisibleAnnotations.size() > 1) {
+			Type annotationType = Type.getType(annotation.desc);
+
+			// guarded annotation
+			if (annotationType.equals(Type.getType(Guarded.class))) {
+				parseGuardedAnnotation(pmad, annotation);
+				continue;
+			}
+			
+			// process also annotation
+			if (annotationType.equals(Type.getType(ProcessAlso.class))) {
+				parseProcessAlsoAnnotation(pmad, annotation);
+				continue;
+			}
+			
+			// unknown annotation
 			throw new ProcessorParserException("Method " + fullMethodName
-					+ " can have only one DiSL anottation");
+					+ " has unsupported DiSL annotation");
 		}
 		
-		AnnotationNode annotation = invisibleAnnotations.get(0);
-		
-		Type annotationType = Type.getType(annotation.desc);
-
-		// after annotation
-		if (annotationType.equals(Type.getType(Guarded.class))) {
-			return parseMethodAnnotFields(annotation);
-		}
-
-		// unknown annotation
-		throw new ProcessorParserException("Method " + fullMethodName
-				+ " has unsupported DiSL annotation");
+		return pmad;
 	}
 
-	private ProcMethodAnnotationsData parseMethodAnnotFields(
-			AnnotationNode annotation) {
+	// NOTE: pmad is modified by this function
+	private void parseGuardedAnnotation(
+			ProcMethodAnnotationsData pmad, AnnotationNode annotation) {
 
-		ProcMethodAnnotationsData pmad = ParserHelper.parseAnnotation(
-				annotation, new ProcMethodAnnotationsData());
+		ParserHelper.parseAnnotation(pmad, annotation);
 		
 		if(pmad.guard == null) {
 
@@ -230,7 +246,102 @@ public class ProcessorParser extends AbstractParser {
 					+ ". This may happen if annotation class is changed but"
 					+ " data holder class is not.");
 		}
+	}
+	
+	private static class ProcessAlsoAnnotationData {
 		
-		return pmad;
+		public Collection<String[]> types = null;
+	}
+	
+	// NOTE: pmad is modified by this function
+	private void parseProcessAlsoAnnotation(ProcMethodAnnotationsData pmad,
+			AnnotationNode annotation) {
+
+		ProcessAlsoAnnotationData paData = new ProcessAlsoAnnotationData();
+		
+		ParserHelper.parseAnnotation(paData, annotation);
+		
+		if(paData.types == null) {
+
+			throw new DiSLFatalException("Missing attribute in annotation "
+					+ Type.getType(annotation.desc).toString()
+					+ ". This may happen if annotation class is changed but"
+					+ " data holder class is not.");
+		}
+		
+		// array is converted to collection
+		for(String[] enumType : paData.types) {
+		
+			// enum is converted to array
+			//  - first value is class name
+			//  - second value is value name
+			ProcessAlso.Type paType = ProcessAlso.Type.valueOf(enumType[1]);
+			
+			pmad.processAlsoTypes.add(ProcArgType.valueOf(paType));
+		}
+	}
+	
+	private void checkProcessAlsoSetValidity(String fullMethodName,
+			ProcArgType methodArgType,
+			EnumSet<ProcArgType> processAlsoTypes)
+			throws ProcessorParserException {
+		
+		EnumSet<ProcArgType> validSet;
+
+		// valid sets for types
+		switch(methodArgType) {
+		
+		case INT: {
+			validSet = EnumSet.of(
+					ProcArgType.BOOLEAN,
+					ProcArgType.BYTE,
+					ProcArgType.SHORT);
+			break;
+		}
+		
+		case SHORT: {
+			validSet = EnumSet.of(
+					ProcArgType.BOOLEAN,
+					ProcArgType.BYTE);
+			break;
+		}
+		
+		case BYTE: {
+			validSet = EnumSet.of(
+					ProcArgType.BOOLEAN);
+			break;
+		}
+		
+		default: {
+			// for other types empty set
+			validSet = EnumSet.noneOf(ProcArgType.class);
+		}
+		}
+		
+		// create set of non valid types
+		EnumSet<ProcArgType> nonValidTypes = processAlsoTypes.clone();
+		nonValidTypes.removeAll(validSet);
+		
+		if(! nonValidTypes.isEmpty()) {
+			
+			StringBuilder strNonValidTypes = new StringBuilder();
+			
+			final String STR_DELIM = ", ";
+			
+			for(ProcArgType paType : nonValidTypes) {
+				strNonValidTypes.append(paType.toString() + STR_DELIM);
+			}
+			
+			// remove last STR_DELIM
+			int delimSize = STR_DELIM.length();
+			strNonValidTypes.delete(strNonValidTypes.length() - delimSize,
+					strNonValidTypes.length());
+			
+			throw new ProcessorParserException(methodArgType.toString() 
+					+ " processor in method "
+					+ fullMethodName
+					+ " cannot process "
+					+ strNonValidTypes.toString());
+		}
 	}
 }

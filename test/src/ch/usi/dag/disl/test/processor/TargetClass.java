@@ -21,6 +21,10 @@ public class TargetClass {
 	public void method4(String[] sa, int[] ia) {
 		System.out.println("This is the body of TargetClass.method4");
 	}
+	
+	public void method5(boolean z, byte b, short s) {
+		System.out.println("This is the body of TargetClass.method5");
+	}
 
 	public static void main(String[] args) {
 		TargetClass t = new TargetClass();
@@ -29,5 +33,8 @@ public class TargetClass {
 		t.method3("object", "string");
 		t.method3(1, 2, "object");
 		t.method4(new String[1], new int[1]);
+		byte b = 2;
+		short s = 3;
+		t.method5(true, b, s);
 	}
 }
