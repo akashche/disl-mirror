@@ -1,12 +1,9 @@
 package ch.usi.dag.disl.util;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -48,7 +45,7 @@ public class AsmHelper {
 		case Opcodes.BIPUSH:
 			return ((IntInsnNode) instr).operand;
 		default:
-			throw new DiSLFatalException("Parameter index out of bound");
+			throw new DiSLFatalException("Unknown integer instruction");
 		}
 	}
 	
@@ -74,17 +71,17 @@ public class AsmHelper {
 		}
 	}
 
-	public static int getParameterIndex(MethodNode method, int par_index) {
+	public static int getInternalParamIndex(MethodNode method, int parIndex) {
 
 		Type[] types = Type.getArgumentTypes(method.desc);
 
-		if (par_index >= types.length) {
+		if (parIndex >= types.length) {
 			throw new DiSLFatalException("Parameter index out of bound");
 		}
 
 		int index = 0;
 
-		for (int i = 0; i < par_index; i++) {
+		for (int i = 0; i < parIndex; i++) {
 
 			// add number of occupied slots
 			index += types[i].getSize();
@@ -145,8 +142,9 @@ public class AsmHelper {
 
 	}
 
-	public static void removeReturns(InsnList ilst) {
-		// Remove 'return' instruction
+	public static void replaceRetWithGoto(InsnList ilst) {
+
+		// collect all returns to the list
 		List<AbstractInsnNode> returns = new LinkedList<AbstractInsnNode>();
 
 		for (AbstractInsnNode instr : ilst.toArray()) {
@@ -158,20 +156,25 @@ public class AsmHelper {
 		}
 
 		if (returns.size() > 1) {
-			// Replace 'return' instructions with 'goto'
-			LabelNode label = new LabelNode(new Label());
-			ilst.add(label);
+			
+			// replace 'return' instructions with 'goto' that will point to the
+			// end 
+			LabelNode endL = new LabelNode(new Label());
+			ilst.add(endL);
 
 			for (AbstractInsnNode instr : returns) {
-				ilst.insertBefore(instr, new JumpInsnNode(Opcodes.GOTO, label));
+				ilst.insertBefore(instr, new JumpInsnNode(Opcodes.GOTO, endL));
 				ilst.remove(instr);
 			}
+			
 		} else if (returns.size() == 1) {
+			
+			// there is only one return at the end
 			ilst.remove(returns.get(0));
 		}
 	}
 
-	// Make a clone of an instruction list
+	// makes a clone of an instruction list
 	public static InsnList cloneInsnList(InsnList src) {
 
 		Map<LabelNode, LabelNode> map = createLabelMap(src);
@@ -182,7 +185,7 @@ public class AsmHelper {
 
 		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
 
-		// Iterate the instruction list and get all the labels
+		// iterate the instruction list and get all the labels
 		for (AbstractInsnNode instr : src.toArray()) {
 			if (instr instanceof LabelNode) {
 				LabelNode label = new LabelNode(new Label());
@@ -198,7 +201,7 @@ public class AsmHelper {
 
 		InsnList dst = new InsnList();
 
-		// Copy instructions using clone
+		// copy instructions using clone
 		AbstractInsnNode instr = src.getFirst();
 		while (instr != src.getLast().getNext()) {
 
@@ -236,6 +239,7 @@ public class AsmHelper {
 
 	public static AbstractInsnNode skipLabels(AbstractInsnNode instr,
 			boolean isForward) {
+		
 		while (instr != null && isVirtualInstr(instr)) {
 			instr = isForward ? instr.getNext() : instr.getPrevious();
 		}
@@ -248,7 +252,7 @@ public class AsmHelper {
 		return instr.getOpcode() == -1;
 	}
 	
-	// Detects if the instruction list contains only return
+	// detects if the instruction list contains only return
 	public static boolean containsOnlyReturn(InsnList ilst) {
 
 		AbstractInsnNode instr = ilst.getFirst();
@@ -258,24 +262,6 @@ public class AsmHelper {
 		}
 		
 		return isReturn(instr.getOpcode());
-	}
-
-	// Make sure an instruction has a valid next-instruction.
-	// NOTE that in asm, label might be an AbstractInsnNode. If an instruction
-	// is followed with a label which is the end of an instruction list, then
-	// it has no next instruction.
-	public static boolean hasNext(InsnList instr_lst, int i) {
-
-		if (i < instr_lst.size()) {
-
-			AbstractInsnNode nextInstruction = instr_lst.get(i + 1);
-
-			return nextInstruction == null
-					|| !(isVirtualInstr(nextInstruction)
-							&& nextInstruction.getNext() == null);
-		}
-
-		return false;
 	}
 
 	public static boolean isReturn(int opcode) {
@@ -298,89 +284,6 @@ public class AsmHelper {
 		int opcode = instruction.getOpcode();
 
 		return (instruction instanceof JumpInsnNode && opcode != Opcodes.GOTO);
-	}
-
-	// Get basic blocks of the given method node.
-	public static List<AbstractInsnNode> getBasicBlocks(InsnList instructions,
-			List<TryCatchBlockNode> tryCatchBlocks, boolean isPrecise) {
-
-		Set<AbstractInsnNode> bb_begins = new HashSet<AbstractInsnNode>() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public boolean add(AbstractInsnNode e) {
-				return super.add(skipLabels(e, true));
-			}
-		};
-					
-		bb_begins.add(instructions.getFirst());
-
-		for (int i = 0; i < instructions.size(); i++) {
-			AbstractInsnNode instruction = instructions.get(i);
-			int opcode = instruction.getOpcode();
-
-			switch (instruction.getType()) {
-			case AbstractInsnNode.JUMP_INSN: {
-				// Covers IFEQ, IFNE, IFLT, IFGE, IFGT, IFLE, IF_ICMPEQ,
-				// IF_ICMPNE, IF_ICMPLT, IF_ICMPGE, IF_ICMPGT, IF_ICMPLE,
-				// IF_ACMPEQ, IF_ACMPNE, GOTO, JSR, IFNULL, and IFNONNULL.
-				bb_begins.add(((JumpInsnNode) instruction).label);
-
-				// goto never returns.
-				if (opcode != Opcodes.GOTO && hasNext(instructions, i)) {
-					bb_begins.add(instruction.getNext());
-				}
-
-				break;
-			}
-
-			case AbstractInsnNode.LOOKUPSWITCH_INSN: {
-				// Covers LOOKUPSWITCH
-				LookupSwitchInsnNode lsin = (LookupSwitchInsnNode) instruction;
-
-				for (LabelNode label : lsin.labels) {
-					bb_begins.add(label);
-				}
-
-				bb_begins.add(lsin.dflt);
-				break;
-			}
-
-			case AbstractInsnNode.TABLESWITCH_INSN: {
-				// Covers TABLESWITCH
-				TableSwitchInsnNode tsin = (TableSwitchInsnNode) instruction;
-
-				for (LabelNode label : tsin.labels) {
-					bb_begins.add(label);
-				}
-
-				bb_begins.add(tsin.dflt);
-				break;
-			}
-
-			default:
-				break;
-			}
-
-			if (isPrecise && mightThrowException(instruction)) {
-				bb_begins.add(instruction.getNext());
-			}
-		}
-
-		for (TryCatchBlockNode try_catch_block : tryCatchBlocks) {
-			bb_begins.add(try_catch_block.handler);
-		}
-
-		// Sort
-		List<AbstractInsnNode> bb_list = new ArrayList<AbstractInsnNode>();
-
-		for (AbstractInsnNode instruction : instructions.toArray()) {
-			if (bb_begins.contains(instruction)) {
-				bb_list.add(instruction);
-			}
-		}
-
-		return bb_list;
 	}
 
 	public static boolean mightThrowException(AbstractInsnNode instruction) {

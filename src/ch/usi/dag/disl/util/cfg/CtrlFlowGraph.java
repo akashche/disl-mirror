@@ -19,6 +19,7 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.BasicBlockCalc;
 
 public class CtrlFlowGraph {
 	
@@ -50,8 +51,7 @@ public class CtrlFlowGraph {
 		method_exits = new HashSet<BasicBlock>();
 
 		// Generating basic blocks
-		seperators = AsmHelper.getBasicBlocks(instructions, tryCatchBlocks,
-				false);
+		seperators = BasicBlockCalc.getAll(instructions, tryCatchBlocks, false);
 		AbstractInsnNode last = instructions.getLast();
 		seperators.add(last);
 

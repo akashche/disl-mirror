@@ -72,8 +72,8 @@ public class UnprocessedCode {
 		// *** CODE PROCESSING ***
 		// NOTE: methods are modifying arguments
 
-		// remove returns in snippet (in asm code)
-		AsmHelper.removeReturns(instructions);
+		// replace returns with goto in snippet (in asm code)
+		AsmHelper.replaceRetWithGoto(instructions);
 		
 		// translate thread local variables
 		translateThreadLocalVars(instructions, tlvList);

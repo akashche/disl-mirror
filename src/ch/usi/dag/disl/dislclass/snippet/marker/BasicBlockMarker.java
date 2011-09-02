@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.BasicBlockCalc;
 
 public class BasicBlockMarker implements Marker {
 
@@ -16,7 +17,7 @@ public class BasicBlockMarker implements Marker {
 	public List<MarkedRegion> mark(MethodNode method) {
 
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		List<AbstractInsnNode> seperators = AsmHelper.getBasicBlocks(
+		List<AbstractInsnNode> seperators = BasicBlockCalc.getAll(
 				method.instructions, method.tryCatchBlocks, isPrecise);
 
 		AbstractInsnNode last = AsmHelper.skipLabels(

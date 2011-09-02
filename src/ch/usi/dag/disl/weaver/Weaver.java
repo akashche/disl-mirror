@@ -126,7 +126,7 @@ public class Weaver {
 				method.instructions.insert(
 						instr,
 						new VarInsnNode(t.getOpcode(Opcodes.ILOAD), AsmHelper
-								.getParameterIndex(method, operand)));
+								.getInternalParamIndex(method, operand)));
 			} else if (invoke.name.equals("getLocalVariableValue")) {
 
 				method.instructions.insert(instr,
@@ -283,7 +283,7 @@ public class Weaver {
 			instructions.insertBefore(
 					target,
 					new VarInsnNode(type.getOpcode(Opcodes.ILOAD), AsmHelper
-							.getParameterIndex(method,
+							.getInternalParamIndex(method,
 									processorMethod.getArgPos())));
 			
 			ilist.add(instructions);
