@@ -4,20 +4,18 @@ public class TargetClass {
 
 	public void print(boolean flag) {
 		try {
-			System.out.println("Stepping into try-catch block.");
-			
-			if (flag){
+			System.out.println("try-clause");
+
+			if (flag) {
 				String float_one = "1.0";
-				
+
 				int int_one = Integer.valueOf(float_one);
 				System.out.println(int_one + "This should not be printed!");
 			}
-			
-			System.out.println("After returning!");
-			return;
-		} catch (Exception e) {
-			System.out.println("This is the default handler of the target class.");
-			return;
+
+			System.out.println("normal return");
+		} finally {
+			System.out.println("finally-clause");
 		}
 	}
 

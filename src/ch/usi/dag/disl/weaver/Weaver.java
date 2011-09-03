@@ -530,6 +530,57 @@ public class Weaver {
 		methodNode.instructions.insert(instr, label);
 		return label;
 	}
+	
+	public static boolean offsetBefore(InsnList ilst, int from, int to) {
+
+		if (from >= to) {
+			return false;
+		}
+
+		for (int i = from; i < to; i++) {
+
+			if (ilst.get(i).getOpcode() != -1) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+	
+	public static TryCatchBlockNode getTryCatchBlock(MethodNode methodNode,
+			AbstractInsnNode start, AbstractInsnNode end) {
+
+		InsnList ilst = methodNode.instructions;
+
+		int new_start_offset = ilst.indexOf(start);
+		int new_end_offset = ilst.indexOf(end);
+
+		for (TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
+
+			int start_offset = ilst.indexOf(tcb.start);
+			int end_offset = ilst.indexOf(tcb.end);
+
+			if (offsetBefore(ilst, new_start_offset, start_offset)
+					&& offsetBefore(ilst, start_offset, new_end_offset)
+					&& offsetBefore(ilst, new_end_offset, end_offset)) {
+
+				new_start_offset = start_offset;
+			} else if (offsetBefore(ilst, start_offset, new_start_offset)
+					&& offsetBefore(ilst, new_start_offset, end_offset)
+					&& offsetBefore(ilst, end_offset, new_end_offset)) {
+
+				new_start_offset = end_offset;
+			}
+		}
+		
+		start = ilst.get(new_start_offset);
+		end = ilst.get(new_end_offset);
+
+		LabelNode startLabel = getStartLabel(methodNode, start);
+		LabelNode endLabel = getEndLabel(methodNode, end);
+
+		return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
+	}
 
 	public static void initWeavingEnds(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
@@ -808,38 +859,46 @@ public class Weaver {
 
 				for (MarkedRegion region : regions) {
 
+					int last_index = -1;
+					AbstractInsnNode last_exit = null;
+
 					for (AbstractInsnNode exit : region.getEnds()) {
 
 						int index = stack_end.get(exit);
-						
-						SnippetCode clone = code.clone();
-						InsnList newlst = clone.getInstructions();
-						AbstractInsnNode[] instr_array = newlst.toArray();
-						
-						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
-						fixLocalIndex(methodNode, newlst);
-						
-						weavingProcessor(methodNode, piResolver, snippet,
-								region, newlst, code.getInvokedProcessors()
-										.keySet(), instr_array,
-								sourceFrames[index]);
 
-						// Create a try-catch clause
-						LabelNode startLabel = getStartLabel(methodNode,
-								weaving_start.get(region.getStart()));
-						LabelNode endLabel = getEndLabel(methodNode,
-								weaving_athrow.get(exit));
-
-						methodNode.tryCatchBlocks.add(new TryCatchBlockNode(
-								startLabel, endLabel, endLabel, null));
-						addExceptionHandlerFrame(methodNode, newlst);
-						methodNode.instructions.insert(endLabel, newlst);
-						methodNode.tryCatchBlocks.addAll(clone
-								.getTryCatchBlocks());
-
-						fixDynamicInfo(snippet, region, sourceFrames[index],
-								methodNode);
+						if (last_index < index) {
+							last_index = index;
+							last_exit = exit;
+						}
 					}
+					
+					if (last_index == -1) {
+						continue;
+					}
+
+					SnippetCode clone = code.clone();
+					InsnList newlst = clone.getInstructions();
+					AbstractInsnNode[] instr_array = newlst.toArray();
+
+					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+					fixLocalIndex(methodNode, newlst);
+
+					weavingProcessor(methodNode, piResolver, snippet, region,
+							newlst, code.getInvokedProcessors().keySet(),
+							instr_array, sourceFrames[last_index]);
+
+					// Create a try-catch clause
+					TryCatchBlockNode tcb = getTryCatchBlock(methodNode,
+							weaving_start.get(region.getStart()),
+							weaving_athrow.get(last_exit));
+
+					methodNode.tryCatchBlocks.add(tcb);
+					addExceptionHandlerFrame(methodNode, newlst);
+					methodNode.instructions.insert(tcb.handler, newlst);
+					methodNode.tryCatchBlocks.addAll(clone.getTryCatchBlocks());
+
+					fixDynamicInfo(snippet, region, sourceFrames[last_index],
+							methodNode);
 				}
 			}
 		}
