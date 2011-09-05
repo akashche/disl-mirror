@@ -78,7 +78,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		// *** CODE ANALYSIS ***
 
-		Map<String, Method> staticAnalyses = new HashMap<String, Method>();
+		Map<String, StaticAnalysisMethod> staticAnalyses = 
+			new HashMap<String, StaticAnalysisMethod>();
 
 		Map<Integer, ProcInvocation> invokedProcessors = 
 			new HashMap<Integer, ProcInvocation>();
@@ -90,7 +91,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 			// *** Parse static analysis methods in use ***
 
-			StaticAnalysisMethod anlMtd = insnInvokesStaticAnalysis(
+			StaticAnalysisData anlMtd = insnInvokesStaticAnalysis(
 					declaredStaticAnalyses, instr, staticAnalyses.keySet());
 
 			if (anlMtd != null) {
@@ -118,12 +119,12 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 				usesDynamicAnalysis, invokedProcessors);
 	}
 
-	class StaticAnalysisMethod {
+	class StaticAnalysisData {
 
 		private String id;
-		private Method refM;
+		private StaticAnalysisMethod refM;
 
-		public StaticAnalysisMethod(String id, Method refM) {
+		public StaticAnalysisData(String id, StaticAnalysisMethod refM) {
 			super();
 			this.id = id;
 			this.refM = refM;
@@ -133,12 +134,12 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 			return id;
 		}
 
-		public Method getRefM() {
+		public StaticAnalysisMethod getRefM() {
 			return refM;
 		}
 	}
 
-	private StaticAnalysisMethod insnInvokesStaticAnalysis(
+	private StaticAnalysisData insnInvokesStaticAnalysis(
 			Set<String> knownStAnClasses, AbstractInsnNode instr,
 			Set<String> knownMethods) throws StaticInfoException,
 			ReflectionException {
@@ -156,8 +157,9 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		}
 
 		// crate ASM Method object
-		org.objectweb.asm.commons.Method asmMethod = new org.objectweb.asm.commons.Method(
-				methodInstr.name, methodInstr.desc);
+		org.objectweb.asm.commons.Method asmMethod = 
+			new org.objectweb.asm.commons.Method(methodInstr.name,
+					methodInstr.desc);
 
 		// check method argument
 		// no argument is allowed
@@ -199,10 +201,13 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		Class<?> stAnClass = ReflectionHelper.resolveClass(Type
 				.getObjectType(methodInstr.owner));
 
-		Method method = ReflectionHelper.resolveMethod(stAnClass,
+		Method stAnMethod = ReflectionHelper.resolveMethod(stAnClass,
 				methodInstr.name);
 
-		return new StaticAnalysisMethod(methodID, method);
+		StaticAnalysisMethod stAnM =
+			new StaticAnalysisMethod(stAnMethod, stAnClass);
+		
+		return new StaticAnalysisData(methodID, stAnM);
 	}
 
 	private static class ProcessorInfo {

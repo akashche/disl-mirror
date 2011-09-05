@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.staticinfo;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +8,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
+import ch.usi.dag.disl.dislclass.snippet.StaticAnalysisMethod;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticInfoException;
@@ -152,11 +152,11 @@ public class StaticInfo {
 						.getStaticAnalyses().keySet()) {
 
 					// get static analysis method
-					Method stAnMethod = snippet.getCode().getStaticAnalyses()
-							.get(stAnMehodName);
+					StaticAnalysisMethod stAnMethod = snippet.getCode()
+							.getStaticAnalyses().get(stAnMehodName);
 
 					// get static analysis instance
-					Class<?> methodClass = stAnMethod.getDeclaringClass();
+					Class<?> methodClass = stAnMethod.getReferencedClass();
 					Object saInst = staticAnalysisInstances.get(methodClass);
 
 					// ... or create new one
@@ -178,7 +178,7 @@ public class StaticInfo {
 
 					// compute static data using analysis
 					Object result = saIntr
-							.computeStaticData(stAnMethod, saData);
+							.computeStaticData(stAnMethod.getMethod(), saData);
 
 					// store the result
 					setSI(snippet, markedRegion, stAnMehodName, result);

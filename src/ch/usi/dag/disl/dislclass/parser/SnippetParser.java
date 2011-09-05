@@ -298,7 +298,7 @@ public class SnippetParser extends AbstractParser {
 			// static analysis should implement analysis interface
 			if (!implementsStaticAnalysis(argClass)) {
 				throw new StaticInfoException(argClass.getName()
-						+ " does not implement StaticAnalysis interface and"
+						+ " does not implement StaticAnalysisMethod interface and"
 						+ " cannot be used as advice method parameter");
 			}
 
@@ -309,7 +309,7 @@ public class SnippetParser extends AbstractParser {
 	}
 
 	/**
-	 * Searches for StaticAnalysis interface. Searches through whole class
+	 * Searches for StaticAnalysisMethod interface. Searches through whole class
 	 * hierarchy.
 	 * 
 	 * @param classToSearch
@@ -322,7 +322,7 @@ public class SnippetParser extends AbstractParser {
 			// ...through all interfaces...
 			for (Class<?> iface : classToSearch.getInterfaces()) {
 
-				// ...search for StaticAnalysis interface
+				// ...search for StaticAnalysisMethod interface
 				if (iface.equals(StaticAnalysis.class)) {
 					return true;
 				}

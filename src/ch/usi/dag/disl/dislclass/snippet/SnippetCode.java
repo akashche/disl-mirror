@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.dislclass.snippet;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,7 +17,7 @@ import ch.usi.dag.disl.util.AsmHelper;
 
 public class SnippetCode extends Code {
 
-	private Map<String, Method> staticAnalyses;
+	private Map<String, StaticAnalysisMethod> staticAnalyses;
 	private boolean usesDynamicAnalysis;
 	// integer (key) is an index of an instruction in snippet code that invokes
 	// processor
@@ -29,7 +28,7 @@ public class SnippetCode extends Code {
 			Set<SyntheticLocalVar> referencedSLV,
 			Set<ThreadLocalVar> referencedTLV,
 			boolean containsHandledException,
-			Map<String, Method> staticAnalyses,
+			Map<String, StaticAnalysisMethod> staticAnalyses,
 			boolean usesDynamicAnalysis,
 			Map<Integer, ProcInvocation> invokedProcessors
 			) {
@@ -41,7 +40,7 @@ public class SnippetCode extends Code {
 		this.invokedProcessors = invokedProcessors;
 	}
 
-	public Map<String, Method> getStaticAnalyses() {
+	public Map<String, StaticAnalysisMethod> getStaticAnalyses() {
 		return staticAnalyses;
 	}
 
@@ -63,7 +62,7 @@ public class SnippetCode extends Code {
 				new HashSet<SyntheticLocalVar>(getReferencedSLVs()),
 				new HashSet<ThreadLocalVar>(getReferencedTLVs()),
 				containsHandledException(),
-				new HashMap<String, Method>(staticAnalyses),
+				new HashMap<String, StaticAnalysisMethod>(staticAnalyses),
 				usesDynamicAnalysis,
 				new HashMap<Integer, ProcInvocation>(invokedProcessors));
 	}

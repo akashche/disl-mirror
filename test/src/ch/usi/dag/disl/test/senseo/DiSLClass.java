@@ -9,7 +9,7 @@ import ch.usi.dag.disl.guard.SnippetGuard;
 import ch.usi.dag.disl.processor.Processor;
 import ch.usi.dag.disl.processor.ProcessorApplyType;
 import ch.usi.dag.disl.staticinfo.analysis.StaticContext;
-import ch.usi.dag.disl.staticinfo.analysis.UniqueMethodId;
+import ch.usi.dag.disl.staticinfo.analysis.uid.UniqueMethodId;
 import ch.usi.dag.disl.test.senseo.runtime.*;
 
 // This is the SENSEO Case study recast in DiSL
