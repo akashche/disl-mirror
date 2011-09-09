@@ -33,6 +33,8 @@ import ch.usi.dag.disl.staticinfo.StaticInfo;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
 
+// TODO better public API - marker pkg should be in disl pkg, class visibility (and pkg) cleanup everywhere
+//  - maybe expose classes in user package and other are considered non visible :)
 // TODO javadoc comment all
 public class DiSL implements Instrumentation {
 
@@ -46,8 +48,13 @@ public class DiSL implements Instrumentation {
 	// instances are created lazily when needed in StaticInfo
 	Map<Class<?>, Object> staticAnalysisInstances;
 
-	public void initialize() {
+	// this method should be called only once
+	public synchronized void initialize() {
 
+		if(snippets != null) {
+			throw new DiSLFatalException("DiSL cannot be initialized twice");
+		}
+		
 		// report every exception within our code - don't let anyone mask it
 		try {
 
@@ -242,6 +249,7 @@ public class DiSL implements Instrumentation {
 		return selectedMarking;
 	}
 
+	// this method is thread safe after initialization
 	public void instrument(ClassNode classNode) {
 
 		if (snippets == null) {
