@@ -255,6 +255,10 @@ public class DiSL implements Instrumentation {
 		if (snippets == null) {
 			throw new DiSLFatalException("DiSL was not initialized");
 		}
+		
+		// AfterInitBodyMarker uses AdviceAdapter
+		//  - check is required by ASM 4.0 guidelines
+		classNode.check(Opcodes.ASM4);
 
 		// report every exception within our code - don't let anyone mask it
 		try {

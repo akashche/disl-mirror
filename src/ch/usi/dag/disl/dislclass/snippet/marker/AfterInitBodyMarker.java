@@ -3,9 +3,9 @@ package ch.usi.dag.disl.dislclass.snippet.marker;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.AdviceAdapter;
-import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -13,6 +13,14 @@ import ch.usi.dag.disl.util.Constants;
 
 public class AfterInitBodyMarker implements Marker {
 
+	// empty visitor for new AdviceAdapter
+	private static class EmptyMethodVisitor extends MethodVisitor {
+
+		public EmptyMethodVisitor() {
+			super(Opcodes.ASM4);
+		}
+	}
+	
 	// Get the first valid mark of a method.
 	// For a constructor, the return value will be the instruction after
 	// the object initialization.
@@ -28,8 +36,9 @@ public class AfterInitBodyMarker implements Marker {
 		// Similar to 'const boolean **trigger' in c.
 		final boolean trigger[] = { false };
 
-		AdviceAdapter adapter = new AdviceAdapter(new EmptyVisitor(),
-				method.access, method.name, method.desc) {
+		AdviceAdapter adapter = new AdviceAdapter(Opcodes.ASM4,
+				new EmptyMethodVisitor(), method.access, method.name,
+				method.desc) {
 
 			public void onMethodEnter() {
 				trigger[0] = true;
