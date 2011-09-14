@@ -49,8 +49,5 @@ public class ProcessorTest {
 		DiSLClass.args[pos] = s;
 	}
 
-	public static void stringPM(int pos, int n, java.lang.String s) {
-		DiSLClass.args[pos] = s;	
-	}
 	
 }
