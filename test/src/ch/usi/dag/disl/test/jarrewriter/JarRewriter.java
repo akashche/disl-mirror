@@ -10,26 +10,23 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.ClassNode;
-
-import ch.usi.dag.jborat.agent.Instrumentation;
+import ch.usi.dag.disl.DiSL;
 
 /**
- * Tool to rewrite a jar, with an {@link Instrumentation}
+ * Tool to rewrite a jar, with DiSL
  */
 public class JarRewriter {
     
     private static final String CLASS_FILE_EXT = ".class";
-	private final Instrumentation instrumentation;
+	private final DiSL disl;
 
     /**
      * @param instr Defines the Instrumentation used for rewriting classes
+     * @throws Exception 
      */
-    public JarRewriter(Instrumentation instr) {
-        this.instrumentation = instr;
-        instrumentation.initialize();
+    public JarRewriter() throws Exception {
+        this.disl = new DiSL();
+        disl.initialize();
     }
 
 	/**
@@ -56,11 +53,11 @@ public class JarRewriter {
 
 				ZipEntry ze = (ZipEntry) jiEntries.nextElement();
 				String entryName = ze.getName();
-				InputStream jarIn = jarInFile.getInputStream(ze);
+				InputStream classIS = jarInFile.getInputStream(ze);
 
 				// something else then class
 				if (! entryName.endsWith(CLASS_FILE_EXT)) {
-					addEntry(jarOut, entryName, jarIn);
+					addEntry(jarOut, entryName, classIS);
 					continue;
 				}
 				
@@ -73,27 +70,25 @@ public class JarRewriter {
 				
 				// TODO why ??
 				if (classname.startsWith("[")) {
-					addEntry(jarOut, entryName, jarIn);
+					addEntry(jarOut, entryName, classIS);
 					continue;
 				}
 
 				try {
 
-					// crate ASM class node
-					ClassReader cr = new ClassReader(jarIn);
-					ClassNode classNode = new ClassNode();
-					cr.accept(classNode, 0);
-					
 					// instrument it
-					instrumentation.instrument(classNode);
+					byte[] instrumentedBytes = disl.instrument(classIS);
 					
-					ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-					classNode.accept(cw);
+					if(instrumentedBytes != null) {
 
-					byte[] instrumentedBytes = cw.toByteArray();
-					
-					// put it into jar
-					addEntry(jarOut, entryName, instrumentedBytes);
+						// put instrumented into jar
+						addEntry(jarOut, entryName, instrumentedBytes);
+					}
+					else {
+						
+						// put original into jar
+						addEntry(jarOut, entryName, classIS);
+					}
 				}
 				catch (Exception e) {
 					// catch exception, print it, and try another one
@@ -148,14 +143,11 @@ public class JarRewriter {
 
 	public static void main(String args[]) {
 
-		if (args.length != 3)
+		if (args.length != 2)
 			usage();
 
-		Instrumentation instr;
-
 		try {
-			instr = (Instrumentation) Class.forName(args[0]).newInstance();
-			JarRewriter jr = new JarRewriter(instr);
+			JarRewriter jr = new JarRewriter();
 			jr.rewrite(args[1], args[2]);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -164,7 +156,7 @@ public class JarRewriter {
 	}
 
 	private static void usage() {
-		System.out.println("Usage: JarRewriter <instrumentation> <injar> <outjar>\n\tinstrumentation: a canonical classname of an implementation of Instrumentation\n\tinjar: input jarfile\n\toutjar: output jarfile");
+		System.out.println("Usage: JarRewriter <injar> <outjar>\n\tinstrumentation: a canonical classname of an implementation of Instrumentation\n\tinjar: input jarfile\n\toutjar: output jarfile");
 		System.exit(1);
 	}
 

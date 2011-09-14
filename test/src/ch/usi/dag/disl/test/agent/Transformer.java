@@ -4,10 +4,6 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.ClassNode;
-
 import ch.usi.dag.disl.DiSL;
 
 public class Transformer implements ClassFileTransformer {
@@ -22,38 +18,40 @@ public class Transformer implements ClassFileTransformer {
     	
     	try {
     	
-	    	ClassReader cr = new ClassReader(classfileBuffer);
-			ClassNode classNode = new ClassNode();
-			cr.accept(classNode, ClassReader.SKIP_DEBUG | ClassReader.EXPAND_FRAMES);
 	    	
 			DiSL disl = new DiSL();
 			disl.initialize();
-			disl.instrument(classNode);
+			instrumentedClass = disl.instrument(classfileBuffer);
+			
+			if(instrumentedClass != null) {
+			
+				/*
+				// print class
+				ClassReader cr = new ClassReader(instrumentedClass);
+				TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
+				cr.accept(tcv, 0);
+				/**/
 				
-			ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-			classNode.accept(cw);
-	
-			instrumentedClass = cw.toByteArray();
+				/*
+				// check class
+				ClassReader cr2 = new ClassReader(instrumentedClass);
+				ClassWriter cw = new ClassWriter(cr2, ClassWriter.COMPUTE_MAXS);
+				cr2.accept(new CheckClassAdapter(cw), 0);
+				/**/
 			
-			// TODO enable after jborat interface change
-			/*
-			// print class 
-			TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
-			classNode.accept(tcv);
-			/**/
-			
-			/*
-			// output class
-			try {
-				File f = new File("ModifiedClass.class");
-				FileOutputStream fos = new FileOutputStream(f);
-				fos.write(cw.toByteArray());
-				fos.flush();
-				fos.close();
-			} catch (Exception e) {
-				e.printStackTrace();
+				/*
+				// output class
+				try {
+					File f = new File("ModifiedClass.class");
+					FileOutputStream fos = new FileOutputStream(f);
+					fos.write(instrumentedClass);
+					fos.flush();
+					fos.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				/**/
 			}
-			/**/
 			
     	} catch(Throwable e) {
     		e.printStackTrace();

@@ -126,6 +126,8 @@ public abstract class AbstractParser {
 			throw new ParserException("Field " + className + "." + field.name
 					+ " declared as ThreadLocal but is not static");
 		}
+		
+		// TODO ! add thread local parsing
 
 		// here we can ignore annotation parsing - already done by start utility
 		return new ThreadLocalVar(className, field.name);

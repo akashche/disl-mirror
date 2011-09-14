@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -19,6 +21,7 @@ import ch.usi.dag.disl.dislclass.parser.ClassParser;
 import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
@@ -39,7 +42,10 @@ import ch.usi.dag.jborat.agent.Instrumentation;
 public class DiSL implements Instrumentation {
 
 	final String PROP_DYNAMIC_BYPASS = "disl.dynbypass";
-	final String PROP_DYNAMIC_BYPASS_TRUE = "yes";
+	final boolean allDynamicBypass = Boolean.getBoolean(PROP_DYNAMIC_BYPASS);
+	
+	final String PROP_DEBUG = "disl.debug";
+	final boolean debug = Boolean.getBoolean(PROP_DEBUG);
 
 	List<Snippet> snippets;
 
@@ -48,8 +54,19 @@ public class DiSL implements Instrumentation {
 	// instances are created lazily when needed in StaticInfo
 	Map<Class<?>, Object> staticAnalysisInstances;
 
+	private void reportError(Exception e) {
+
+		// error report for user (input) errors
+		System.err.println("DiSL error: " + e.getMessage());
+		Throwable cause = e.getCause();
+		while (cause != null) {
+			System.err.println("  Inner error: " + cause.getMessage());
+			cause = cause.getCause();
+		}
+	}
+	
 	// this method should be called only once
-	public synchronized void initialize() {
+	public synchronized void initialize() throws Exception {
 
 		if(snippets != null) {
 			throw new DiSLFatalException("DiSL cannot be initialized twice");
@@ -57,14 +74,6 @@ public class DiSL implements Instrumentation {
 		
 		// report every exception within our code - don't let anyone mask it
 		try {
-
-			String allDynBypassStr = System.getProperty(PROP_DYNAMIC_BYPASS);
-
-			boolean allDynamicBypass = false;
-			if (allDynBypassStr != null) {
-				allDynamicBypass = allDynBypassStr.toLowerCase().equals(
-						PROP_DYNAMIC_BYPASS_TRUE);
-			}
 
 			List<InputStream> dislClasses = ClassByteLoader.loadDiSLClasses();
 			
@@ -111,13 +120,20 @@ public class DiSL implements Instrumentation {
 			// probably something, you don't want - so just warn the user
 			// also it can warn about unknown opcodes if you let user to
 			// specify this for InstructionMarker
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
+			
 			reportError(e);
-			// TODO just for debugging
-			e.printStackTrace();
+
+			if(debug) {
+				e.printStackTrace();
+			}
+			
+			// signal error
+			throw e;
 		}
 	}
-
+	
 	/**
 	 * Instruments a method in a class.
 	 * 
@@ -128,18 +144,18 @@ public class DiSL implements Instrumentation {
 	 * @param methodNode
 	 *            method in the classNode argument, that will be instrumented
 	 */
-	private void instrumentMethod(ClassNode classNode, MethodNode methodNode)
+	private boolean instrumentMethod(ClassNode classNode, MethodNode methodNode)
 			throws ReflectionException, StaticInfoException,
 			ProcessorException {
 
 		// skip abstract methods
 		if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
-			return;
+			return false;
 		}
 		
 		// skip native methods
 		if ((methodNode.access & Opcodes.ACC_NATIVE) != 0) {
-			return;
+			return false;
 		}
 		
 		// *** match snippet scope ***
@@ -157,7 +173,7 @@ public class DiSL implements Instrumentation {
 		// if there is nothing to instrument -> quit
 		// just to be faster out
 		if (matchedSnippets.isEmpty()) {
-			return;
+			return false;
 		}
 
 		// *** create markings ***
@@ -218,9 +234,12 @@ public class DiSL implements Instrumentation {
 				new LinkedList<SyntheticLocalVar>(usedSLVs), staticInfo,
 				piResolver);
 
-		// TODO just for debugging
-		System.out.println("--- instumentation of " + classNode.name + "."
-				+ methodNode.name);
+		if(debug) {
+			System.out.println("--- instumentation of " + classNode.name + "."
+					+ methodNode.name);
+		}
+		
+		return true;
 	}
 
 	private List<MarkedRegion> selectMarkingWithGuard(Snippet snippet,
@@ -250,16 +269,14 @@ public class DiSL implements Instrumentation {
 	}
 
 	// this method is thread safe after initialization
-	public void instrument(ClassNode classNode) {
+	private boolean instrument(ClassNode classNode) throws DiSLException {
 
 		if (snippets == null) {
 			throw new DiSLFatalException("DiSL was not initialized");
 		}
 		
-		// AfterInitBodyMarker uses AdviceAdapter
-		//  - check is required by ASM 4.0 guidelines
-		classNode.check(Opcodes.ASM4);
-
+		boolean classChanged = false;
+		
 		// report every exception within our code - don't let anyone mask it
 		try {
 
@@ -270,23 +287,69 @@ public class DiSL implements Instrumentation {
 			// instrument all methods in a class
 			for (MethodNode methodNode : classNode.methods) {
 
-				instrumentMethod(classNode, methodNode);
+				boolean methodChanged = instrumentMethod(classNode, methodNode);
+				
+				classChanged = classChanged || methodChanged;
 			}
 
-		} catch (Throwable e) {
-			// unexpected exception, just print stack trace
-			e.printStackTrace();
 		}
+		catch (DiSLException e) {
+			
+			reportError(e);
+
+			if(debug) {
+				e.printStackTrace();
+			}
+			
+			// signal error
+			throw e;
+		}
+		
+		return classChanged;
 	}
 
-	private void reportError(Exception e) {
-
-		// error report for user (input) errors
-		System.err.println("DiSL error: " + e.getMessage());
-		Throwable cause = e.getCause();
-		while (cause != null) {
-			System.err.println("  Inner error: " + cause.getMessage());
-			cause = cause.getCause();
+	private byte[] instrument(ClassReader classReader) throws DiSLException {
+	
+		// AfterInitBodyMarker uses AdviceAdapter
+		//  - classNode with API param is required by ASM 4.0 guidelines
+		ClassNode classNode = new ClassNode(Opcodes.ASM4);
+		classReader.accept(classNode, ClassReader.SKIP_DEBUG
+				| ClassReader.EXPAND_FRAMES);
+		
+		
+		if(instrument(classNode)) {
+		
+			// DiSL uses some instructions available only in higher versions
+			final int REQUIRED_VERSION = Opcodes.V1_5;
+			final int MAJOR_V_MASK = 0xFFFF;
+			
+			int requiredMajorVersion = REQUIRED_VERSION & MAJOR_V_MASK;
+			int classMajorVersion = classNode.version & MAJOR_V_MASK;
+			
+			if (classMajorVersion < requiredMajorVersion) {
+				classNode.version = REQUIRED_VERSION;
+			}
+			
+			// return as bytes
+			ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+			classNode.accept(cw);
+			return cw.toByteArray();
 		}
+		
+		return null;
+	}
+	
+	public byte[] instrument(byte[] classAsBytes) throws Exception {
+
+		ClassReader cr = new ClassReader(classAsBytes);
+
+		return instrument(cr);
+	}
+	
+	public byte[] instrument(InputStream classAsStream) throws Exception {
+		
+    	ClassReader cr = new ClassReader(classAsStream);
+    	
+    	return instrument(cr);
 	}
 }
