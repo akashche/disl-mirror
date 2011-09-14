@@ -121,18 +121,4 @@ public class ProcessorTest {
 		DiSLClass.thisAnalysis.profileArgument(Short.class, pos);
 		
 	}
-
-	
-
-	public static void stringPM(int pos, int n, java.lang.String s) {
-//		System.out.println("processor for String");
-//		System.out.println(pos);
-//		System.out.println(n);
-//		System.out.println(s);
-//		System.out.println("--------------------");
-//		System.out.println(" THIS ANALYSIS " + DiSLClass.thisAnalysis);
-		DiSLClass.thisAnalysis.profileArgument(String.class, pos);
-		
-	}
-	
 }
