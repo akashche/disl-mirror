@@ -5,17 +5,18 @@ sun.instrument.*
 ch.usi.dag.disl.test.senseo.runtime.*
 ch.usi.dag.disl.test.map.runtime.*
 ch.usi.dag.disl.test.jp2.runtime.*
+ch.usi.dag.disl.test.virda.runtime.*
 ch.usi.dag.sample.runtime.*
 # BEGIN JDK WEAVING
 # COMMENT THE FOLLOWING FOR FULL COVERAGE
-org.jcp.*
-org.omg.*
-org.xml.*
-org.ietf.*
-java.*
-javax.*
-com.sun.*
-com.apple.*
-sun.*
-sunx.*
+#org.jcp.*
+#org.omg.*
+#org.xml.*
+#org.ietf.*
+#java.*
+#javax.*
+#com.sun.*
+#com.apple.*
+#sun.*
+#sunx.*
 # END JDK
