@@ -7,6 +7,7 @@
 		<pathelement location="${asm.path}"/>
 		<pathelement location="${jborat.path}"/>
 		<pathelement location="${jborat-runtime.path}"/>
+		<pathelement location="${jborat-interface.path}"/>
 	</path>
 
 	<target name="package" depends="compile">

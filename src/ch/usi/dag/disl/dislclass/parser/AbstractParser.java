@@ -2,6 +2,7 @@ package ch.usi.dag.disl.dislclass.parser;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -11,7 +12,13 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.analysis.Analyzer;
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.Frame;
+import org.objectweb.asm.tree.analysis.SourceValue;
 
 import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dislclass.localvar.LocalVars;
@@ -20,6 +27,8 @@ import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.stack.StackUtil;
+import ch.usi.dag.jborat.tools.thread.ExtendThread;
 
 /**
  * Parses DiSL class with local variables
@@ -46,19 +55,25 @@ public abstract class AbstractParser {
 		allLocalVars.putAll(localVars);
 
 		// get static initialization code
-		InsnList origInitCodeIL = null;
+		MethodNode cinit = null;
 		for (MethodNode method : classNode.methods) {
 
 			// get the code
 			if (method.name.equals(Constants.STATIC_INIT_NAME)) {
-				origInitCodeIL = method.instructions;
+				cinit = method;
 				break;
 			}
 		}
 
 		// parse init code for synthetic local vars and assigns them accordingly
-		if (origInitCodeIL != null) {
-			parseInitCodeForSLV(origInitCodeIL, localVars.getSyntheticLocals());
+		if (cinit.instructions != null) {
+			parseInitCodeForSLV(cinit.instructions, localVars.getSyntheticLocals());
+			parseInitCodeForTLV(classNode.name, cinit, localVars.getThreadLocals());
+		}
+		
+		for(ThreadLocalVar tlv : localVars.getThreadLocals().values()) {
+			ExtendThread.addField(tlv.getName(), tlv.getTypeAsDesc(),
+					tlv.getDefaultValue(), tlv.isInheritable());
 		}
 	}
 	
@@ -118,6 +133,10 @@ public abstract class AbstractParser {
 		return result;
 	}
 
+	private static class TLAnnotationData {
+		
+		public boolean inheritable = false; // default
+	}
 	private ThreadLocalVar parseThreadLocal(String className, FieldNode field,
 			AnnotationNode annotation) throws ParserException {
 
@@ -127,10 +146,15 @@ public abstract class AbstractParser {
 					+ " declared as ThreadLocal but is not static");
 		}
 		
-		// TODO ! add thread local parsing
+		// parse annotation
+		TLAnnotationData tlad = new TLAnnotationData();
+		ParserHelper.parseAnnotation(tlad, annotation);
 
-		// here we can ignore annotation parsing - already done by start utility
-		return new ThreadLocalVar(className, field.name);
+		Type fieldType = Type.getType(field.desc);
+		
+		// default value will be set later on
+		return new ThreadLocalVar(className, field.name, fieldType,
+				tlad.inheritable);
 	}
 
 	private static class SLAnnotaionData {
@@ -233,5 +257,133 @@ public abstract class AbstractParser {
 		}
 
 		return dst;
+	}
+	
+	private void parseInitCodeForTLV(String className, MethodNode cinitMethod,
+			Map<String, ThreadLocalVar> tlvs) throws ParserException {
+
+		// crate analyzer
+		Analyzer<SourceValue> analyzer = StackUtil.getSourceAnalyzer();
+
+		try {
+			analyzer.analyze(className, cinitMethod);
+		} catch (AnalyzerException e) {
+			throw new ParserException(e);
+		}
+
+		Frame<SourceValue>[] frames = analyzer.getFrames();
+
+		// analyze instructions in each frame
+		// one frame should cover one field initialization
+		for (int i = 0; i < frames.length; i++) {
+
+			AbstractInsnNode instr = cinitMethod.instructions.get(i);
+
+			// if the last instruction puts some value into the field...
+			if (instr.getOpcode() != Opcodes.PUTSTATIC) {
+				continue;
+			}
+
+			FieldInsnNode fin = (FieldInsnNode) instr;
+
+			ThreadLocalVar tlv = 
+				tlvs.get(className + ThreadLocalVar.NAME_DELIM + fin.name);
+			
+			// ... and the field is thread local var
+			if (tlv == null) {
+				continue;
+			}
+
+			// get the instruction that put the field value on the stack
+			Set<AbstractInsnNode> sources = frames[i].getStack(frames[i]
+					.getStackSize() - 1).insns;
+
+			if (sources.size() != 1) {
+				throw new ParserException("Thread local variable "
+						+ tlv.getName()
+						+ " can be initialized only by single constant");
+			}
+
+			AbstractInsnNode source = sources.iterator().next();
+
+			// analyze oppcode and set the proper default value
+			switch (source.getOpcode()) {
+			// not supported
+			// case Opcodes.ACONST_NULL:
+			// var.setDefaultValue(null);
+			// break;
+
+			case Opcodes.ICONST_M1:
+				tlv.setDefaultValue(-1);
+				break;
+
+			case Opcodes.ICONST_0:
+
+				if (fin.desc.equals("Z")) {
+					tlv.setDefaultValue(false);
+				} else {
+					tlv.setDefaultValue(0);
+				}
+
+				break;
+
+			case Opcodes.LCONST_0:
+				tlv.setDefaultValue(0);
+				break;
+
+			case Opcodes.FCONST_0:
+			case Opcodes.DCONST_0:
+				tlv.setDefaultValue(0.0);
+				break;
+
+			case Opcodes.ICONST_1:
+
+				if (fin.desc.equals("Z")) {
+					tlv.setDefaultValue(true);
+				} else {
+					tlv.setDefaultValue(1);
+				}
+
+				break;
+			case Opcodes.LCONST_1:
+				tlv.setDefaultValue(1);
+				break;
+
+			case Opcodes.FCONST_1:
+			case Opcodes.DCONST_1:
+				tlv.setDefaultValue(1.0);
+				break;
+
+			case Opcodes.ICONST_2:
+			case Opcodes.FCONST_2:
+				tlv.setDefaultValue(2);
+				break;
+
+			case Opcodes.ICONST_3:
+				tlv.setDefaultValue(3);
+				break;
+
+			case Opcodes.ICONST_4:
+				tlv.setDefaultValue(4);
+				break;
+
+			case Opcodes.ICONST_5:
+				tlv.setDefaultValue(5);
+				break;
+
+			case Opcodes.BIPUSH:
+			case Opcodes.SIPUSH:
+				tlv.setDefaultValue(((IntInsnNode) source).operand);
+				break;
+
+			case Opcodes.LDC:
+				tlv.setDefaultValue(((LdcInsnNode) source).cst);
+				break;
+
+			default:
+				throw new ParserException("Initialization is not"
+						+ " defined for thread local variable " + tlv.getName());
+			}
+		}
 	}
 }

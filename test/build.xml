@@ -29,13 +29,6 @@
 		</javac>
 	</target>
 
-         <target name="extendThread">
-             <java fork="true" classpath="../${asm.path}:../${jborat.path}" classname="ch.usi.dag.jborat.tools.thread.ExtendThread" failonerror="true">
-                        <arg line="lib/Thread_test.jar  'currentAnalysis:Lch/usi/dag/disl/test/senseo/runtime/Analysis;:null:false,threadLocalCCTNode:Lch/usi/dag/disl/test/jp2/runtime/CCTNode;:null:false,bytecodeIndex:I:0:false,counter:I:0:false,bypass:Z:false:false'"/>
-
-                </java>
-        </target>
-
 	<target name="agent" description="create simple agent jar file" >
 		<mkdir dir="build"/>
 		<jar jarfile="build/agent-light.jar">
