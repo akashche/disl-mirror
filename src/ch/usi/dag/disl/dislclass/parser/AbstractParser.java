@@ -66,7 +66,7 @@ public abstract class AbstractParser {
 		}
 
 		// parse init code for synthetic local vars and assigns them accordingly
-		if (cinit.instructions != null) {
+		if (cinit != null && cinit.instructions != null) {
 			parseInitCodeForSLV(cinit.instructions, localVars.getSyntheticLocals());
 			parseInitCodeForTLV(classNode.name, cinit, localVars.getThreadLocals());
 		}
