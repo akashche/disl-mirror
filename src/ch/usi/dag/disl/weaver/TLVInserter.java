@@ -6,6 +6,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 
 import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
@@ -56,8 +57,8 @@ public final class TLVInserter extends ClassVisitor {
 		@Override
 		protected void onMethodEnter() {
 
-			final String THREAD_CLASS_NAME = Thread.class.getName().replace(
-					Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_ASM_DELIM);
+			final String THREAD_CLASS_NAME = 
+				Type.getType(Thread.class).getInternalName();
 			final String CURRENTTHREAD_METHOD_NAME = "currentThread";
 			final String CURRENTTHREAD_METHOD_SIG = 
 				"()L" + THREAD_CLASS_NAME + ";";
