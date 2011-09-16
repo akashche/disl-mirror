@@ -5,7 +5,6 @@
 
 	<path id="buildpath">
 		<pathelement location="${asm.path}"/>
-		<pathelement location="${jborat.path}"/>
 		<pathelement location="${jborat-runtime.path}"/>
 		<pathelement location="${jborat-interface.path}"/>
 	</path>

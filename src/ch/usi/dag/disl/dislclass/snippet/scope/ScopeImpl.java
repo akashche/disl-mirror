@@ -8,6 +8,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.ScopeParserException;
+import ch.usi.dag.disl.util.Constants;
 
 public class ScopeImpl implements Scope {
 
@@ -17,8 +18,6 @@ public class ScopeImpl implements Scope {
 	private final String METHOD_DELIM = ".";
 	private final String PACKAGE_DELIM = ".";
 	private final String PARAM_MATCH_REST = "...";
-	private final char PACKAGE_INNER_DELIM = '/';
-	private final char PACKAGE_STD_DELIM = '.';
 	
 	private String classWildCard;
 	private String methodWildCard;
@@ -194,7 +193,8 @@ public class ScopeImpl implements Scope {
 		*/
 
 		// replace delimiters for matching
-		className = className.replace(PACKAGE_INNER_DELIM, PACKAGE_STD_DELIM);
+		className = className.replace(
+				Constants.PACKAGE_ASM_DELIM, Constants.PACKAGE_STD_DELIM);
 		
 		if(classWildCard != null
 				&& ! WildCard.match(className, classWildCard)) {

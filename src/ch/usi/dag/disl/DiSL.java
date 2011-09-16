@@ -17,6 +17,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.dislclass.loader.ClassByteLoader;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
+import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.dislclass.parser.ClassParser;
 import ch.usi.dag.disl.dislclass.processor.Proc;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
@@ -33,6 +34,8 @@ import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
+import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.weaver.TLVInserter;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
 
@@ -269,16 +272,16 @@ public class DiSL implements Instrumentation {
 	}
 
 	// this method is thread safe after initialization
-	private boolean instrument(ClassNode classNode) throws DiSLException {
+	private ClassNode instrument(ClassNode classNode) throws DiSLException {
 
-		if (snippets == null) {
-			throw new DiSLFatalException("DiSL was not initialized");
-		}
-		
-		boolean classChanged = false;
-		
 		// report every exception within our code - don't let anyone mask it
 		try {
+			
+			if (snippets == null) {
+				throw new DiSLFatalException("DiSL was not initialized");
+			}
+			
+			boolean classChanged = false;
 
 			// list of static analysis instances
 			// validity of an instance is for one instrumented class
@@ -291,7 +294,34 @@ public class DiSL implements Instrumentation {
 				
 				classChanged = classChanged || methodChanged;
 			}
-
+			
+			String className = classNode.name.replace(
+					Constants.PACKAGE_ASM_DELIM, Constants.PACKAGE_STD_DELIM);
+			
+			// instrument thread local fields
+			if(Thread.class.getName().equals(className)) {
+				
+				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
+				
+				// get all thread locals in snippets
+				for(Snippet snippet : snippets) {
+					insertTLVs.addAll(snippet.getCode().getReferencedTLVs());
+				}
+				
+				// instrument fields
+				ClassNode cnWithFields = new ClassNode(Opcodes.ASM4);
+				classNode.accept(new TLVInserter(cnWithFields, insertTLVs));
+				
+				// replace original code with instrumented one
+				classNode = cnWithFields;
+				classChanged = true;
+			}
+			
+			if(classChanged) {
+				return classNode;
+			}
+			
+			return null;
 		}
 		catch (DiSLException e) {
 			
@@ -304,8 +334,6 @@ public class DiSL implements Instrumentation {
 			// signal error
 			throw e;
 		}
-		
-		return classChanged;
 	}
 
 	private byte[] instrument(ClassReader classReader) throws DiSLException {
@@ -316,27 +344,27 @@ public class DiSL implements Instrumentation {
 		classReader.accept(classNode, ClassReader.SKIP_DEBUG
 				| ClassReader.EXPAND_FRAMES);
 		
+		ClassNode insrCN = instrument(classNode);
 		
-		if(instrument(classNode)) {
-		
-			// DiSL uses some instructions available only in higher versions
-			final int REQUIRED_VERSION = Opcodes.V1_5;
-			final int MAJOR_V_MASK = 0xFFFF;
-			
-			int requiredMajorVersion = REQUIRED_VERSION & MAJOR_V_MASK;
-			int classMajorVersion = classNode.version & MAJOR_V_MASK;
-			
-			if (classMajorVersion < requiredMajorVersion) {
-				classNode.version = REQUIRED_VERSION;
-			}
-			
-			// return as bytes
-			ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-			classNode.accept(cw);
-			return cw.toByteArray();
+		if(insrCN == null) {
+			return null;
 		}
 		
-		return null;
+		// DiSL uses some instructions available only in higher versions
+		final int REQUIRED_VERSION = Opcodes.V1_5;
+		final int MAJOR_V_MASK = 0xFFFF;
+		
+		int requiredMajorVersion = REQUIRED_VERSION & MAJOR_V_MASK;
+		int classMajorVersion = insrCN.version & MAJOR_V_MASK;
+		
+		if (classMajorVersion < requiredMajorVersion) {
+			insrCN.version = REQUIRED_VERSION;
+		}
+		
+		// return as bytes
+		ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+		insrCN.accept(cw);
+		return cw.toByteArray();
 	}
 	
 	public byte[] instrument(byte[] classAsBytes) throws Exception {

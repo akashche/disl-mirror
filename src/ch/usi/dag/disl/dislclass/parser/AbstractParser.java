@@ -28,7 +28,6 @@ import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.stack.StackUtil;
-import ch.usi.dag.jborat.tools.thread.ExtendThread;
 
 /**
  * Parses DiSL class with local variables
@@ -65,15 +64,10 @@ public abstract class AbstractParser {
 			}
 		}
 
-		// parse init code for synthetic local vars and assigns them accordingly
+		// parse init code for local vars and assigns them accordingly
 		if (cinit != null && cinit.instructions != null) {
 			parseInitCodeForSLV(cinit.instructions, localVars.getSyntheticLocals());
 			parseInitCodeForTLV(classNode.name, cinit, localVars.getThreadLocals());
-		}
-		
-		for(ThreadLocalVar tlv : localVars.getThreadLocals().values()) {
-			ExtendThread.addField(tlv.getName(), tlv.getTypeAsDesc(),
-					tlv.getDefaultValue(), tlv.isInheritable());
 		}
 	}
 	
