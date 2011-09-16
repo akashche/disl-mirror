@@ -2,13 +2,31 @@
 
 EXPECTED_ARGS=1
 
-if [ $# -ne $EXPECTED_ARGS ]
+if [ $# -lt $EXPECTED_ARGS ]
 then
-    echo "Usage: `basename $0` {test case}"
+    echo "Usage: `basename $0` test-case [pkg]"
     exit
 fi
 
 DISL_CLASS="./bin/ch/usi/dag/disl/test/$1/DiSLClass.class"
 TARGET_CLASS="ch.usi.dag.disl.test.$1.TargetClass"
 
-java -javaagent:../lib/jborat-agent.jar -Dch.usi.dag.jborat.exclusionList="conf/exclusion.lst" -Dch.usi.dag.jborat.liblist="conf/lib.lst" -Dch.usi.dag.jborat.instrumentation="ch.usi.dag.disl.DiSL" -Dch.usi.dag.jborat.codemergerList="conf/codemerger.lst" -Dch.usi.dag.jborat.uninstrumented="uninstrumented" -Dch.usi.dag.jborat.instrumented="instrumented" -Xbootclasspath/p:../lib/Thread_jborat.jar:../lib/jborat-runtime.jar -Ddisl.classes=${DISL_CLASS} -Ddisl.dynbypass -Ddisl.debug -cp "./bin/" ${TARGET_CLASS}
+if [ "$2" == "pkg" ]
+then
+    # start server and take pid
+    ant package -Dtest.name=$1
+    ./runServer.sh
+else
+    # start server and take pid
+    ./runServer.sh -Ddisl.classes=${DISL_CLASS}
+fi
+
+# wait for server startup
+sleep 5
+
+# run client
+./runClient.sh ${TARGET_CLASS}
+
+# kill server
+kill -KILL `cat .server.pid`
+rm .server.pid

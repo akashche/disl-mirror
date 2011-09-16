@@ -51,7 +51,7 @@
 	<property name="test.path" value="ch/usi/dag/disl/test/${test.name}"/>
 
 	<target name="package" depends="report-missing-property" description="create instrumentation package for specified test">
-	        <jar jarfile="lib/${user.runtime.jar.name}"
+	        <jar jarfile="./build/${user.runtime.jar.name}"
 		     basedir="./bin"
 		     includes="${test.path}/runtime/**">
 		</jar>
