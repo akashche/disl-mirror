@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CLASSPATH=lib/asm-all-3.3.jar:../lib/jborat.jar:../lib/jborat-agent.jar:../lib/jborat-runtime.jar:lib/remote-server.jar:../lib/jborat-interface.jar
+CLASSPATH=../lib/jborat-agent.jar:../lib/jborat-runtime.jar:../lib/jborat-interface.jar:lib/remote-server.jar
 
 java -Dch.usi.dag.jborat.instrumented="instrumented" \
     -Djborat.debug \
@@ -9,6 +9,7 @@ java -Dch.usi.dag.jborat.instrumented="instrumented" \
     -Dch.usi.dag.jborat.instrumentation="ch.usi.dag.disl.DiSL" \
     -Dch.usi.dag.jborat.codemergerList="conf/codemerger.lst" \
     -Dch.usi.dag.jborat.liblist="conf/lib.lst" \
+    -Dch.usi.dag.jborat.udiliblist="conf/udilib.lst" \
     -Dch.usi.dag.jborat.exclusionList="conf/exclusion.lst" \
     $* \
     -cp ${CLASSPATH} \
