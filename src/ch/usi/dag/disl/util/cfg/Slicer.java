@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.util.cfg;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -20,6 +19,7 @@ import ch.usi.dag.disl.util.stack.StackUtil;
 
 public class Slicer {
 
+	// slicing criterion
 	public static class Field {
 		public String owner;
 		public String name;
@@ -27,6 +27,10 @@ public class Slicer {
 		public Field(String owner, String name) {
 			this.owner = owner;
 			this.name = name;
+		}
+		
+		public FieldInsnNode toFieldInsnNode() {
+			return new FieldInsnNode(Opcodes.PUTSTATIC, owner, name, null);
 		}
 	}
 
@@ -41,15 +45,20 @@ public class Slicer {
 		instructions = method.instructions;
 		size = instructions.size();
 
-		cfg = new CtrlFlowGraph(method);
-		cfg.build();
+		cfg = CtrlFlowGraph.build(method);
 
 		frames = StackUtil.getSourceAnalyzer().analyze(className, method);
 	}
 
+	// backward slicing, takes a list of fields(<owner,name> pair) and a
+	// starting location as input, returns an array of boolean(bitmap) that
+	// refers to the instructions which has impact on 'fields'.
+	// NOTE that it does not remove any control instruction.
 	public boolean[] backward(List<Field> fields, AbstractInsnNode from) {
+
 		boolean[] flags = new boolean[size];
 
+		// all labels are included in the slicing result
 		for (int index = 0; index < size; index++) {
 			flags[index] = instructions.get(index) instanceof LabelNode;
 		}
@@ -58,10 +67,12 @@ public class Slicer {
 
 		List<AbstractInsnNode> ilist = new LinkedList<AbstractInsnNode>();
 
+		// last-store of each field are included in the slicing result
 		for (Field field : fields) {
-			lastStore(flags, ilist, from, field.owner, field.name);
+			lastStore(flags, ilist, from, field.toFieldInsnNode());
 		}
 
+		// all control instructions are included in the slicing result
 		for (BasicBlock bb : cfg.getNodes()) {
 
 			AbstractInsnNode exit = bb.getExit();
@@ -77,10 +88,15 @@ public class Slicer {
 			ilist.remove(0);
 			int index = instructions.indexOf(instr);
 
-			for (int i = 0; i < frames[index].getStackSize(); i++) {
-				setFlag(flags, ilist, frames[index].getStack(i).insns);
+			// stack should be consistent
+			for (int i = 0; i < frames[index].getStackSize(); i++) {				
+				for (AbstractInsnNode iter : frames[index].getStack(i).insns) {					
+					setFlag(flags, ilist, iter);
+				}
 			}
 
+			// get last-store if the current instruction loads from a field
+			// or a local slot
 			switch (instr.getOpcode()) {
 
 			case Opcodes.ILOAD:
@@ -111,30 +127,9 @@ public class Slicer {
 
 		int index = instructions.indexOf(instr);
 
-		if (flags[index]) {
-			return;
-		}
-
-		flags[index] = true;
-		ilist.add(instr);
-	}
-
-	private void setFlag(boolean[] flags, List<AbstractInsnNode> ilist,
-			Collection<AbstractInsnNode> instrs) {
-
-		for (AbstractInsnNode instr : instrs) {
-			setFlag(flags, ilist, instr);
-		}
-	}
-
-	private void lastStore(boolean[] flags, List<AbstractInsnNode> ilist,
-			AbstractInsnNode from, String owner, String name) {
-
-		Set<AbstractInsnNode> last = cfg.lastStore(from, new FieldInsnNode(
-				Opcodes.PUTSTATIC, owner, name, null));
-
-		for (AbstractInsnNode instr : last) {
-			setFlag(flags, ilist, instr);
+		if (!flags[index]) {
+			flags[index] = true;
+			ilist.add(instr);
 		}
 	}
 

@@ -22,36 +22,35 @@ import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
 public class CtrlFlowGraph {
-	
+
 	public final static int NOT_FOUND = -1;
 	public final static int NEW = -2;
 
-	final private InsnList instructions;
-	final private List<TryCatchBlockNode> tryCatchBlocks;
-
+	// basic blocks of a method
 	private List<BasicBlock> nodes;
+
+	// a basic block is marked as connected after visited
 	private List<BasicBlock> connected_nodes;
 
-	private Set<BasicBlock> method_exits;
-
-	private List<AbstractInsnNode> seperators;
-	
+	// size of connected basic blocks since last visit
 	private int connected_size;
+
+	// basic blocks that ends with a 'return' or 'athrow'
+	private Set<BasicBlock> method_exits;
 
 	// Initialize the control flow graph.
 	public CtrlFlowGraph(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks) {
 
-		this.instructions = instructions;
-		this.tryCatchBlocks = tryCatchBlocks;
-
 		nodes = new LinkedList<BasicBlock>();
 		connected_nodes = new LinkedList<BasicBlock>();
+		connected_size = 0;
 
 		method_exits = new HashSet<BasicBlock>();
 
 		// Generating basic blocks
-		seperators = BasicBlockCalc.getAll(instructions, tryCatchBlocks, false);
+		List<AbstractInsnNode> seperators = BasicBlockCalc.getAll(instructions,
+				tryCatchBlocks, false);
 		AbstractInsnNode last = instructions.getLast();
 		seperators.add(last);
 
@@ -67,8 +66,6 @@ public class CtrlFlowGraph {
 			end = AsmHelper.skipVirualInsns(end, false);
 			nodes.add(new BasicBlock(i, start, end));
 		}
-		
-		connected_size = 0;
 	}
 
 	// Initialize the control flow graph.
@@ -100,17 +97,14 @@ public class CtrlFlowGraph {
 		instr = AsmHelper.skipVirualInsns(instr, true);
 
 		while (instr != null) {
-			if (seperators.contains(instr)) {
-				break;
+
+			for (int i = 0; i < nodes.size(); i++) {
+				if (nodes.get(i).getEntrance().equals(instr)) {
+					return nodes.get(i);
+				}
 			}
 
 			instr = instr.getPrevious();
-		}
-
-		for (int i = 0; i < nodes.size(); i++) {
-			if (nodes.get(i).getEntrance().equals(instr)) {
-				return nodes.get(i);
-			}
 		}
 
 		return null;
@@ -121,27 +115,27 @@ public class CtrlFlowGraph {
 	// is not found, return NOT_FOUND;
 	// If the basic block has been visited, then returns its index;
 	// Otherwise return NEW.
-	public int tryVisit(BasicBlock current, AbstractInsnNode node) {
+	private int tryVisit(BasicBlock current, AbstractInsnNode node) {
 
 		BasicBlock bb = getBB(node);
 
 		if (bb == null) {
 			return NOT_FOUND;
 		}
-		
+
 		if (connected_nodes.contains(bb)) {
-			
+
 			int index = connected_nodes.indexOf(bb);
-			
+
 			if (current != null) {
 				if (index < connected_size) {
 					current.getJoins().add(bb);
-				}else{
+				} else {
 					current.getSuccessors().add(bb);
 					bb.getPredecessors().add(current);
 				}
 			}
-			
+
 			return index;
 		}
 
@@ -149,18 +143,18 @@ public class CtrlFlowGraph {
 			current.getSuccessors().add(bb);
 			bb.getPredecessors().add(current);
 		}
-		
+
 		connected_nodes.add(bb);
 		return NEW;
 	}
 
 	// Try to visit a successor. If it is visited last build, then regards
 	// it as an exit.
-	public void tryVisit(BasicBlock current, AbstractInsnNode node,
-			AbstractInsnNode exit, List<AbstractInsnNode> joins, int size) {
+	private void tryVisit(BasicBlock current, AbstractInsnNode node,
+			AbstractInsnNode exit, List<AbstractInsnNode> joins) {
 		int ret = tryVisit(current, node);
-		
-		if (ret >= 0 && ret < size) {
+
+		if (ret >= 0 && ret < connected_size) {
 			joins.add(exit);
 		}
 	}
@@ -175,13 +169,13 @@ public class CtrlFlowGraph {
 	public List<AbstractInsnNode> visit(AbstractInsnNode root) {
 
 		List<AbstractInsnNode> joins = new LinkedList<AbstractInsnNode>();
-		
+
 		if (tryVisit(null, root) == NOT_FOUND) {
 			return joins;
 		}
-		
+
 		for (int i = connected_size; i < connected_nodes.size(); i++) {
-			
+
 			BasicBlock current = connected_nodes.get(i);
 			AbstractInsnNode exit = current.getExit();
 
@@ -192,13 +186,11 @@ public class CtrlFlowGraph {
 				// Covers IFEQ, IFNE, IFLT, IFGE, IFGT, IFLE, IF_ICMPEQ,
 				// IF_ICMPNE, IF_ICMPLT, IF_ICMPGE, IF_ICMPGT, IF_ICMPLE,
 				// IF_ACMPEQ, IF_ACMPNE, GOTO, JSR, IFNULL, and IFNONNULL.
-				tryVisit(current, ((JumpInsnNode) exit).label, exit, joins,
-						connected_size);
+				tryVisit(current, ((JumpInsnNode) exit).label, exit, joins);
 
 				// goto never returns.
 				if (opcode != Opcodes.GOTO) {
-					tryVisit(current, exit.getNext(), exit, joins,
-							connected_size);
+					tryVisit(current, exit.getNext(), exit, joins);
 				}
 
 				break;
@@ -209,10 +201,10 @@ public class CtrlFlowGraph {
 				LookupSwitchInsnNode lsin = (LookupSwitchInsnNode) exit;
 
 				for (LabelNode label : lsin.labels) {
-					tryVisit(current, label, exit, joins, connected_size);
+					tryVisit(current, label, exit, joins);
 				}
 
-				tryVisit(current, lsin.dflt, exit, joins, connected_size);
+				tryVisit(current, lsin.dflt, exit, joins);
 
 				break;
 			}
@@ -222,10 +214,10 @@ public class CtrlFlowGraph {
 				TableSwitchInsnNode tsin = (TableSwitchInsnNode) exit;
 
 				for (LabelNode label : tsin.labels) {
-					tryVisit(current, label, exit, joins, connected_size);
+					tryVisit(current, label, exit, joins);
 				}
 
-				tryVisit(current, tsin.dflt, exit, joins, connected_size);
+				tryVisit(current, tsin.dflt, exit, joins);
 				break;
 			}
 
@@ -234,19 +226,20 @@ public class CtrlFlowGraph {
 						|| opcode == Opcodes.ATHROW) {
 					method_exits.add(current);
 				} else {
-					tryVisit(current, exit.getNext(), exit, joins,
-							connected_size);
+					tryVisit(current, exit.getNext(), exit, joins);
 				}
 
 				break;
 			}
 		}
-		
+
 		connected_size = connected_nodes.size();
 
 		return joins;
 	}
 
+	// test if the current instruction rewrites a field
+	// add to 'source' if it does rewrite
 	private boolean testStore(Set<AbstractInsnNode> source,
 			AbstractInsnNode instr, String owner, String name) {
 
@@ -264,6 +257,9 @@ public class CtrlFlowGraph {
 		return false;
 	}
 
+	// test if the current instruction rewrites a local slot
+	// add to 'source' if it does rewrite, or if it is an 'iinc' instruction,
+	// which updates the local slot, but still relies on the value of last store
 	private boolean testStore(Set<AbstractInsnNode> source,
 			AbstractInsnNode instr, int var) {
 
@@ -290,6 +286,7 @@ public class CtrlFlowGraph {
 		}
 	}
 
+	// test if the current instruction rewrites a field or a local slot
 	private boolean testStore(Set<AbstractInsnNode> source,
 			AbstractInsnNode instr, AbstractInsnNode criterion) {
 
@@ -303,58 +300,76 @@ public class CtrlFlowGraph {
 		}
 	}
 
-	// Get last store instructions
+	// Get last store instructions before 'instr'
+	// 'criterion' is either a field instruction that indicates the field node,
+	// or a load/store instruction that indicates the local slot number.
 	public Set<AbstractInsnNode> lastStore(AbstractInsnNode instr,
 			AbstractInsnNode criterion) {
+
 		Set<AbstractInsnNode> source = new HashSet<AbstractInsnNode>();
 
-		Set<BasicBlock> bbs = new HashSet<BasicBlock>();
+		Set<BasicBlock> unvisited = new HashSet<BasicBlock>();
 		Set<BasicBlock> visited = new HashSet<BasicBlock>();
-		
+
 		BasicBlock current = getBB(instr);
-		visited.add(current);
+
+		// marked the basic block that contains 'instr' as visited when
+		// it is going to be fully visited in the loop
+		if (instr.equals(current.getExit())) {
+			visited.add(current);
+		}
 
 		while (true) {
-			
+
+			// whether last store is found
+			boolean fLastStore = false;
+
+			// backward searching
 			while (instr != current.getEntrance()) {
-				
-				if (testStore(source, instr, criterion)) {
+
+				fLastStore = testStore(source, instr, criterion);
+
+				if (fLastStore) {
 					break;
 				}
 
 				instr = instr.getPrevious();
 			}
-			
-			if (instr == current.getEntrance()
-					&& !testStore(source, instr, criterion)) {
+
+			// visit predecessors when last store not found
+			if (!fLastStore) {
 
 				for (BasicBlock bb : current.getPredecessors()) {
-					
+
 					if (!visited.contains(bb)) {
-						bbs.add(bb);
+						unvisited.add(bb);
 					}
 				}
 			}
-			
-			if (bbs.size() > 0) {
-				current = bbs.iterator().next();
-				bbs.remove(current);
+
+			// update current basic block and the iterator
+			if (unvisited.size() > 0) {
+
+				current = unvisited.iterator().next();
+				unvisited.remove(current);
 				visited.add(current);
 				instr = current.getExit();
 			} else {
 				break;
 			}
 		}
-		
+
 		return source;
 	}
-	
-	public void computeDominators(AbstractInsnNode instr) {
 
+	// compute dominators
+	private void computeDominators(AbstractInsnNode instr) {
+
+		// dominators of the first basic block contains only itself
 		BasicBlock entry = getBB(instr);
-
 		entry.getDominators().add(entry);
 
+		// initialization
 		for (BasicBlock bb : connected_nodes) {
 
 			if (bb != entry) {
@@ -362,10 +377,12 @@ public class CtrlFlowGraph {
 			}
 		}
 
-		boolean flag;
+		// whether the dominators of any basic block is changed
+		boolean fChanged;
 
+		// loop until no more changes
 		do {
-			flag = false;
+			fChanged = false;
 
 			for (BasicBlock bb : connected_nodes) {
 
@@ -375,35 +392,43 @@ public class CtrlFlowGraph {
 
 				bb.getDominators().remove(bb);
 
+				// update the dominators of current basic block,
+				// contains only the dominators of its predecessors
 				for (BasicBlock predecessor : bb.getPredecessors()) {
 
 					if (bb.getDominators().retainAll(
 							predecessor.getDominators())) {
-						flag = true;
+						fChanged = true;
 					}
 				}
 
 				bb.getDominators().add(bb);
 			}
-		} while (flag);
+		} while (fChanged);
 	}
 
-	public void build() {
-		visit(instructions.getFirst());
-		computeDominators(instructions.getFirst());
+	// build up the control flow graph of 'method'.
+	// NOTE that the function will compute the dominators.
+	public static CtrlFlowGraph build(MethodNode method) {
+		CtrlFlowGraph cfg = new CtrlFlowGraph(method);
 
-		for (int i = tryCatchBlocks.size() - 1; i >= 0; i--) {
-			visit(tryCatchBlocks.get(i).handler);
-			computeDominators(instructions.getFirst());
+		cfg.visit(method.instructions.getFirst());
+		cfg.computeDominators(method.instructions.getFirst());
+
+		for (int i = method.tryCatchBlocks.size() - 1; i >= 0; i--) {
+			cfg.visit(method.tryCatchBlocks.get(i).handler);
+			cfg.computeDominators(method.instructions.getFirst());
 		}
-		
-		for (BasicBlock bb : connected_nodes) {
+
+		for (BasicBlock bb : cfg.connected_nodes) {
 			for (BasicBlock successor : bb.getSuccessors()) {
 				if (bb.getDominators().contains(successor)) {
 					successor.setLoop(true);
 				}
 			}
 		}
+
+		return cfg;
 	}
 
 }

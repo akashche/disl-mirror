@@ -13,10 +13,12 @@ import org.objectweb.asm.tree.analysis.SourceValue;
 
 public class StackUtil {
 
+	// generate a basic analyzer
 	public static Analyzer<BasicValue> getBasicAnalyzer() {
 		return new Analyzer<BasicValue>(new BasicVerifier());
 	}
 
+	// calculate the stack size
 	public static int getOffset(Frame<BasicValue> frame) {
 		int offset = 0;
 
@@ -29,6 +31,7 @@ public class StackUtil {
 		return offset;
 	}
 
+	// generate an instruction list to backup the stack
 	public static InsnList enter(Frame<BasicValue> frame, int offset) {
 
 		InsnList ilst = new InsnList();
@@ -45,6 +48,7 @@ public class StackUtil {
 		return ilst;
 	}
 
+	// generate an instruction list to restore the stack
 	public static InsnList exit(Frame<BasicValue> frame, int offset) {
 		InsnList ilst = new InsnList();
 		ilst.add(new LabelNode());
@@ -61,6 +65,7 @@ public class StackUtil {
 		return ilst;
 	}
 
+	// generate a source analyzer
 	public static Analyzer<SourceValue> getSourceAnalyzer() {
 		return new Analyzer<SourceValue>(new SourceInterpreter());
 	}

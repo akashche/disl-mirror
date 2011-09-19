@@ -53,536 +53,8 @@ import ch.usi.dag.disl.util.stack.StackUtil;
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
 
-	// Search for an instruction sequence that match the pattern
-	// of the pseudo variables.
-	public static void fixPseudoVar(Snippet snippet, MarkedRegion region,
-			InsnList src, StaticInfo staticInfoHolder) {
-
-		for (AbstractInsnNode instr : src.toArray()) {
-
-			AbstractInsnNode previous = instr.getPrevious();
-			// pseudo var are represented by a static function call with
-			// a null as its parameter.
-			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL || previous == null
-					|| previous.getOpcode() != Opcodes.ALOAD) {
-				continue;
-			}
-
-			MethodInsnNode invocation = (MethodInsnNode) instr;
-			
-			if (staticInfoHolder.contains(snippet, region, invocation.owner,
-					invocation.name)) {
-
-				Object const_var = staticInfoHolder.get(snippet, region,
-						invocation.owner, invocation.name);
-
-				if (const_var != null) {
-					// Insert a ldc instruction
-					src.insert(instr, new LdcInsnNode(const_var));
-				} else {
-					// push null onto the stack
-					src.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
-				}
-
-				// remove the pseudo instructions
-				src.remove(previous);
-				src.remove(instr);
-			}
-		}
-	}
-
-	public static void fixDynamicInfo(Snippet snippet, MarkedRegion region,
-			Frame<SourceValue> frame, MethodNode method) {
-		InsnList src = method.instructions;
-
-		for (AbstractInsnNode instr : src.toArray()) {
-
-			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL) {
-				continue;
-			}
-
-			MethodInsnNode invoke = (MethodInsnNode) instr;
-
-			if (!invoke.owner
-					.equals(Type.getInternalName(DynamicContext.class))) {
-				continue;
-			}
-
-			AbstractInsnNode prev = instr.getPrevious();
-			AbstractInsnNode next = instr.getNext();
-
-			int operand = AsmHelper.getIConstOperand(prev.getPrevious());
-			Type t = AsmHelper.getClassType(prev);
-
-			if (invoke.name.equals("getStackValue")) {
-				int sopcode = t.getOpcode(Opcodes.ISTORE);
-				int lopcode = t.getOpcode(Opcodes.ILOAD);
-				int size = dupStack(frame, method, operand, sopcode);
-
-				src.insert(instr, new VarInsnNode(lopcode, method.maxLocals));
-				method.maxLocals += size;
-			} else if (invoke.name.equals("getMethodArgumentValue")) {
-
-				method.instructions.insert(
-						instr,
-						new VarInsnNode(t.getOpcode(Opcodes.ILOAD), AsmHelper
-								.getInternalParamIndex(method, operand)));
-			} else if (invoke.name.equals("getLocalVariableValue")) {
-
-				method.instructions.insert(instr,
-						new VarInsnNode(t.getOpcode(Opcodes.ILOAD), operand));
-			}
-
-			src.remove(instr);
-
-			for (int i = 0; i < 3; i++) {
-				instr = prev;
-				prev = prev.getPrevious();
-				src.remove(instr);
-			}
-
-			if (next.getOpcode() == Opcodes.CHECKCAST) {
-				instr = next;
-				next = next.getNext();
-				src.remove(instr);
-
-				if (next.getOpcode() == Opcodes.INVOKEVIRTUAL) {
-					src.remove(next);
-				}
-			}
-		}
-	}
-
-	private static int dupStack(Frame<SourceValue> frame,
-			MethodNode method, int operand, int sopcode) {
-		SourceValue source = StackUtil.getSource(frame, operand);
-
-		for (AbstractInsnNode itr : source.insns) {
-
-			switch (itr.getOpcode()) {
-
-			case Opcodes.DUP2:
-				if (source.size != 1) {
-					break;
-				}
-
-				dupStack(frame, method, operand + 2, sopcode);
-				continue;
-
-			case Opcodes.DUP2_X1:
-				if (source.size != 1) {
-					break;
-				}
-
-				dupStack(frame, method, operand + 3, sopcode);
-				continue;
-
-			case Opcodes.DUP2_X2:
-				if (source.size != 1) {
-					break;
-				}
-
-				SourceValue x2 = StackUtil.getSource(frame, operand + 2);
-				dupStack(frame, method, operand + (4 - x2.size), sopcode);
-				continue;
-
-			default:
-				break;
-			}
-			
-			method.instructions.insert(itr, new VarInsnNode(sopcode,
-					method.maxLocals));
-			method.instructions.insert(itr, new InsnNode(
-					source.size == 2 ? Opcodes.DUP2 : Opcodes.DUP));
-		}
-		
-		return source.size;
-	}
-
-	// Fix the stack operand index of each stack-based instruction
-	// according to the maximum number of locals in the target method node.
-	// NOTE that the field maxLocals of the method node will be automatically
-	// updated.
-	public static void fixLocalIndex(MethodNode methodNode, InsnList src) {
-		int max = methodNode.maxLocals;
-
-		for (AbstractInsnNode instr : src.toArray()) {
-
-			if (instr instanceof VarInsnNode) {
-
-				VarInsnNode varInstr = (VarInsnNode) instr;
-				varInstr.var += methodNode.maxLocals;
-
-				switch (varInstr.getOpcode()) {
-				case Opcodes.LLOAD:
-				case Opcodes.DLOAD:
-				case Opcodes.LSTORE:
-				case Opcodes.DSTORE:
-
-					if ((varInstr.var + 2) > max) {
-						max = varInstr.var + 2;
-					}
-
-					break;
-
-				default:
-					if ((varInstr.var + 1) > max) {
-						max = varInstr.var + 1;
-					}
-
-					break;
-				}
-			} else if (instr instanceof IincInsnNode) {
-
-				IincInsnNode iinc = (IincInsnNode) instr;
-				iinc.var += methodNode.maxLocals;
-
-				if ((iinc.var + 1) > max) {
-					max = iinc.var + 1;
-				}
-			}
-		}
-
-		methodNode.maxLocals = max;
-	}
-	
-	public static InsnList procInMethod(MethodNode method,
-			ProcInstance processor) {
-		InsnList ilist = new InsnList();
-
-		for (ProcMethodInstance processorMethod : processor.getMethods()) {
-
-			Code code = processorMethod.getCode().clone();
-			InsnList instructions = code.getInstructions();
-			Type type = processorMethod.getArgType().getASMType();
-
-			AbstractInsnNode start = instructions.getFirst();
-			instructions.insertBefore(start,
-					AsmHelper.getIConstInstr(processorMethod.getArgPos()));
-			instructions
-					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 0));
-			
-			instructions.insertBefore(start,
-					AsmHelper.getIConstInstr(processorMethod.getArgsCount()));
-			instructions
-					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 1));
-
-			VarInsnNode target = new VarInsnNode(
-					type.getOpcode(Opcodes.ISTORE), 2);
-			instructions.insertBefore(start, target);
-
-			String typeName = processorMethod.getArgTypeName();
-			if (typeName != null) {
-				instructions.insertBefore(start, new LdcInsnNode(typeName));
-				instructions.insertBefore(start, new VarInsnNode(
-						Opcodes.ASTORE, 2 + type.getSize()));
-			}
-			
-			fixLocalIndex(method, instructions);
-
-			instructions.insertBefore(
-					target,
-					new VarInsnNode(type.getOpcode(Opcodes.ILOAD), AsmHelper
-							.getInternalParamIndex(method,
-									processorMethod.getArgPos())));
-			
-			ilist.add(instructions);
-			method.tryCatchBlocks.addAll(code.getTryCatchBlocks());
-		}
-
-		return ilist;
-	}
-	
-	public static InsnList procBeforeInvoke(MethodNode method,
-			ProcInstance processor, Frame<SourceValue> frame) {
-		
-		InsnList ilist = new InsnList();
-
-		for (ProcMethodInstance processorMethod : processor.getMethods()) {
-
-			Code code = processorMethod.getCode().clone();
-			InsnList instructions = code.getInstructions();
-
-			int pos = processorMethod.getArgsCount() - 1
-					- processorMethod.getArgPos();
-			SourceValue source = StackUtil.getSource(frame, pos);
-
-			AbstractInsnNode start = instructions.getFirst();
-			instructions.insertBefore(start,
-					AsmHelper.getIConstInstr(processorMethod.getArgPos()));
-			instructions
-					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 0));
-			
-			instructions.insertBefore(start,
-					AsmHelper.getIConstInstr(processorMethod.getArgsCount()));
-			instructions
-					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 1));
-
-			Type type = processorMethod.getArgType().getASMType();
-			int sopcode = type.getOpcode(Opcodes.ISTORE);
-
-			for (AbstractInsnNode itr : source.insns) {
-				method.instructions.insert(itr, new VarInsnNode(sopcode,
-						// TRICK: the value has to be set properly because
-						// method code will be not adjusted by fixLocalIndex
-						method.maxLocals + 2));
-				method.instructions.insert(itr, new InsnNode(
-						type.getSize() == 2 ? Opcodes.DUP2 : Opcodes.DUP));
-			}
-			
-			String typeName = processorMethod.getArgTypeName();
-			if (typeName != null) {
-				instructions.insertBefore(start, new LdcInsnNode(typeName));
-				instructions.insertBefore(start, new VarInsnNode(
-						Opcodes.ASTORE, 2 + type.getSize()));
-			}
-
-			fixLocalIndex(method, instructions);
-			ilist.add(instructions);
-			method.tryCatchBlocks.addAll(code.getTryCatchBlocks());
-		}
-
-		return ilist;
-	}
-
-	public static void weavingProcessor(MethodNode methodNode,
-			PIResolver piResolver, Snippet snippet, MarkedRegion region,
-			InsnList newlst, Set<Integer> set, AbstractInsnNode[] array,
-			Frame<SourceValue> frame) {
-				
-		for (int index : set) {
-
-			AbstractInsnNode instr = array[index];
-			ProcInstance processor = piResolver.get(snippet, region, index);
-			
-			if (processor != null) {
-				if (processor.getProcApplyType() == 
-					ProcessorApplyType.BEFORE_INVOCATION) {
-
-					newlst.insert(instr,
-							procBeforeInvoke(methodNode, processor, frame));
-				} else {
-
-					newlst.insert(instr, procInMethod(methodNode, processor));
-				}
-			}
-
-			newlst.remove(instr.getPrevious().getPrevious());
-			newlst.remove(instr.getPrevious());
-			newlst.remove(instr);
-		}
-	}
-
-	// Transform static fields to synthetic local
-	// NOTE that the field maxLocals of the method node will be automatically
-	// updated.
-	public static void static2Local(MethodNode methodNode,
-			List<SyntheticLocalVar> syntheticLocalVars) {
-
-		InsnList instructions = methodNode.instructions;
-
-		// Extract the 'id' field in each synthetic local
-		AbstractInsnNode first = instructions.getFirst();
-
-		// Initialization
-		// TODO implement BESTEFFORT
-		for (SyntheticLocalVar var : syntheticLocalVars) {
-
-			if (var.getInitialize() == Initialize.NEVER) {
-				continue;
-			}
-			
-			if (var.getInitASMCode() != null) {
-
-				InsnList newlst = AsmHelper.cloneInsnList(var.getInitASMCode());
-				instructions.insertBefore(first, newlst);
-			} else {
-				
-				Type type = var.getType();
-				
-				switch ( type.getSort()) {
-				case Type.ARRAY:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.ACONST_NULL));	
-					instructions.insertBefore(first, new TypeInsnNode(
-							Opcodes.CHECKCAST,  type.getDescriptor()));
-					break;
-					
-				case Type.BOOLEAN:
-				case Type.BYTE:
-				case Type.CHAR:
-				case Type.INT:
-				case Type.SHORT:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.ICONST_0));
-					break;
-					
-				case Type.DOUBLE:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.DCONST_0));
-					break;
-					
-				case Type.FLOAT:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.FCONST_0));
-					break;
-					
-				case Type.LONG:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.LCONST_0));
-					break;
-					
-				case Type.OBJECT:
-				default:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.ACONST_NULL));
-					break;
-				}
-
-				instructions.insertBefore(first, new FieldInsnNode(
-						Opcodes.PUTSTATIC, var.getOwner(), var.getName(),  
-						type.getDescriptor()));
-			}
-		}
-
-		// Scan for FIELD instructions and replace with local load/store.
-		for (AbstractInsnNode instr : instructions.toArray()) {
-			int opcode = instr.getOpcode();
-
-			// Only field instructions will be transformed.
-			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
-
-				FieldInsnNode field_instr = (FieldInsnNode) instr;
-				String id = field_instr.owner + SyntheticLocalVar.NAME_DELIM
-						+ field_instr.name;
-				
-				int index = 0, count = 0;
-				
-				for (SyntheticLocalVar var : syntheticLocalVars){
-					
-					if (id.equals(var.getID())){
-						break;
-					}
-
-					index += var.getType().getSize();
-					count++;
-				}
-
-				if (count == syntheticLocalVars.size()) {
-					// Not contained in the synthetic locals.
-					continue;
-				}
-
-				// Construct a instruction for local
-				Type type = Type.getType(field_instr.desc);
-				int new_opcode = type
-						.getOpcode(opcode == Opcodes.GETSTATIC ? Opcodes.ILOAD
-								: Opcodes.ISTORE);
-				VarInsnNode insn = new VarInsnNode(new_opcode,
-						methodNode.maxLocals + index);
-				instructions.insertBefore(instr, insn);
-				instructions.remove(instr);
-			}
-		}
-
-		methodNode.maxLocals += syntheticLocalVars.size();
-	}
-
-	// Add an exception handler frame to a instruction list.
-	// That is, an astore <n> before the list, then an aload <n>
-	// and an athrow after the list.
-	public static void addExceptionHandlerFrame(MethodNode methodNode,
-			InsnList instructions) {
-		instructions.insertBefore(instructions.getFirst(), new VarInsnNode(
-				Opcodes.ASTORE, methodNode.maxLocals));
-		instructions.add(new VarInsnNode(Opcodes.ALOAD, methodNode.maxLocals));
-		instructions.add(new InsnNode(Opcodes.ATHROW));
-
-		methodNode.maxLocals++;
-	}
-
-	// Return a predecessor label of the input 'start'.
-	public static LabelNode getStartLabel(MethodNode methodNode,
-			AbstractInsnNode start) {
-		LabelNode label = new LabelNode();
-		methodNode.instructions.insertBefore(start, label);
-		return label;
-	}
-
-	// Return a successor label of weaving location corresponding to
-	// the input 'end'.
-	public static LabelNode getEndLabel(MethodNode methodNode,
-			AbstractInsnNode instr) {
-		// For those instruction that might fall through, there should
-		// be a 'GOTO' instruction to separate from the exception handler.
-		if (AsmHelper.isConditionalBranch(instr) || !AsmHelper.isBranch(instr)) {
-
-			LabelNode branch = new LabelNode();
-			methodNode.instructions.insert(instr, branch);
-
-			JumpInsnNode jump = new JumpInsnNode(Opcodes.GOTO, branch);
-			methodNode.instructions.insert(instr, jump);
-			instr = jump;
-		}
-
-		// Create a label just after the 'GOTO' instruction.
-		LabelNode label = new LabelNode();
-		methodNode.instructions.insert(instr, label);
-		return label;
-	}
-	
-	public static boolean offsetBefore(InsnList ilst, int from, int to) {
-
-		if (from >= to) {
-			return false;
-		}
-
-		for (int i = from; i < to; i++) {
-
-			if (ilst.get(i).getOpcode() != -1) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-	
-	public static TryCatchBlockNode getTryCatchBlock(MethodNode methodNode,
-			AbstractInsnNode start, AbstractInsnNode end) {
-
-		InsnList ilst = methodNode.instructions;
-
-		int new_start_offset = ilst.indexOf(start);
-		int new_end_offset = ilst.indexOf(end);
-
-		for (TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
-
-			int start_offset = ilst.indexOf(tcb.start);
-			int end_offset = ilst.indexOf(tcb.end);
-
-			if (offsetBefore(ilst, new_start_offset, start_offset)
-					&& offsetBefore(ilst, start_offset, new_end_offset)
-					&& offsetBefore(ilst, new_end_offset, end_offset)) {
-
-				new_start_offset = start_offset;
-			} else if (offsetBefore(ilst, start_offset, new_start_offset)
-					&& offsetBefore(ilst, new_start_offset, end_offset)
-					&& offsetBefore(ilst, end_offset, new_end_offset)) {
-
-				new_start_offset = end_offset;
-			}
-		}
-		
-		start = ilst.get(new_start_offset);
-		end = ilst.get(new_end_offset);
-
-		LabelNode startLabel = getStartLabel(methodNode, start);
-		LabelNode endLabel = getEndLabel(methodNode, end);
-
-		return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
-	}
-
-	public static void initWeavingEnds(MethodNode methodNode,
+	// initialize weaving locations
+	private static void initWeavingLocations(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			Map<AbstractInsnNode, AbstractInsnNode> weaving_start,
 			Map<AbstractInsnNode, AbstractInsnNode> weaving_end,
@@ -602,7 +74,7 @@ public class Weaver {
 		for (Snippet snippet : array) {
 
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
-				// initialize of start
+				// initialize weaving start
 				AbstractInsnNode start = region.getStart();
 				AbstractInsnNode wstart = AsmHelper.skipVirualInsns(start, true);
 
@@ -662,6 +134,7 @@ public class Weaver {
 			}
 		}
 
+		// initialize stack_start and stack_end
 		for (Snippet snippet : array) {
 
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
@@ -682,6 +155,571 @@ public class Weaver {
 				}
 			}
 		}
+	}
+
+	// Search for an instruction sequence that match the pattern
+	// of the pseudo variables.
+	public static void fixPseudoVar(Snippet snippet, MarkedRegion region,
+			InsnList src, StaticInfo staticInfoHolder) {
+
+		for (AbstractInsnNode instr : src.toArray()) {
+
+			AbstractInsnNode previous = instr.getPrevious();
+			// pseudo var are represented by a static function call with
+			// a null as its parameter.
+			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL || previous == null
+					|| previous.getOpcode() != Opcodes.ALOAD) {
+				continue;
+			}
+
+			MethodInsnNode invocation = (MethodInsnNode) instr;
+			
+			if (staticInfoHolder.contains(snippet, region, invocation.owner,
+					invocation.name)) {
+
+				Object const_var = staticInfoHolder.get(snippet, region,
+						invocation.owner, invocation.name);
+
+				if (const_var != null) {
+					// Insert a ldc instruction
+					src.insert(instr, new LdcInsnNode(const_var));
+				} else {
+					// push null onto the stack
+					src.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
+				}
+
+				// remove the pseudo instructions
+				src.remove(previous);
+				src.remove(instr);
+			}
+		}
+	}
+
+	// Search for an instruction sequence that stands for a request for dynamic
+	// information, and replace them with a load instruction.
+	// NOTE that if the user requests for the stack value, some store 
+	// instructions will be inserted to the target method, and new local slot
+	// will be used for storing this.
+	public static void fixDynamicInfo(Snippet snippet, MarkedRegion region,
+			Frame<SourceValue> frame, MethodNode method, InsnList src) {
+
+		int max = AsmHelper.calcMaxLocal(src);
+
+		for (AbstractInsnNode instr : src.toArray()) {
+			// pseudo function call
+			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL) {
+				continue;
+			}
+
+			MethodInsnNode invoke = (MethodInsnNode) instr;
+
+			if (!invoke.owner
+					.equals(Type.getInternalName(DynamicContext.class))) {
+				continue;
+			}
+
+			// parsing:
+			//		aload dynamic_info
+			//		iconst
+			//		ldc class
+			//		invoke  (current instruction)
+			//		[checkcast]
+			//		[invoke]
+			AbstractInsnNode prev = instr.getPrevious();
+			AbstractInsnNode next = instr.getNext();
+
+			int operand = AsmHelper.getIConstOperand(prev.getPrevious());
+			Type t = AsmHelper.getClassType(prev);
+
+			if (invoke.name.equals("getStackValue")) {
+				int sopcode = t.getOpcode(Opcodes.ISTORE);
+				int lopcode = t.getOpcode(Opcodes.ILOAD);
+				
+				// store the stack value without changing the semantic
+				int size = dupStack(frame, method, operand, sopcode,
+						method.maxLocals + max);
+				// load the stack value
+				src.insert(instr, new VarInsnNode(lopcode, max));
+				max += size;
+			} 
+			// TRICK: the following two situation will generate a VarInsnNode
+			//        with a negative local slot. And it will be updated in 
+			//        method fixLocalIndex
+			else if (invoke.name.equals("getMethodArgumentValue")) {
+				
+				src.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
+						AsmHelper.getInternalParamIndex(method, operand)
+								- method.maxLocals));
+			} else if (invoke.name.equals("getLocalVariableValue")) {
+
+				src.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
+						operand - method.maxLocals));
+			}
+
+			// remove invoke
+			src.remove(instr);
+
+			// remove aload, iconst, ldc
+			for (int i = 0; i < 3; i++) {
+				instr = prev;
+				prev = prev.getPrevious();
+				src.remove(instr);
+			}
+
+			// remove checkcast, invoke
+			if (next.getOpcode() == Opcodes.CHECKCAST) {
+				instr = next;
+				next = next.getNext();
+				src.remove(instr);
+
+				if (next.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+					src.remove(next);
+				}
+			}
+		}
+	}
+
+	// find out where a stack operand is pushed onto stack, and duplicate the
+	// operand and store into a local slot.
+	private static int dupStack(Frame<SourceValue> frame,
+			MethodNode method, int operand, int sopcode, int slot) {
+		SourceValue source = StackUtil.getSource(frame, operand);
+
+		for (AbstractInsnNode itr : source.insns) {
+
+			// if the instruction duplicates two-size operand(s), weaver should
+			// be careful that the operand might be either 2 one-size operands,
+			// or 1 two-size operand.
+			switch (itr.getOpcode()) {
+
+			case Opcodes.DUP2:
+				if (source.size != 1) {
+					break;
+				}
+
+				dupStack(frame, method, operand + 2, sopcode, slot);
+				continue;
+
+			case Opcodes.DUP2_X1:
+				if (source.size != 1) {
+					break;
+				}
+
+				dupStack(frame, method, operand + 3, sopcode, slot);
+				continue;
+
+			case Opcodes.DUP2_X2:
+				if (source.size != 1) {
+					break;
+				}
+
+				SourceValue x2 = StackUtil.getSource(frame, operand + 2);
+				dupStack(frame, method, operand + (4 - x2.size), sopcode, slot);
+				continue;
+
+			default:
+				break;
+			}
+			
+			// insert 'dup' instruction and then store to a local slot
+			method.instructions.insert(itr, new VarInsnNode(sopcode, slot));
+			method.instructions.insert(itr, new InsnNode(
+					source.size == 2 ? Opcodes.DUP2 : Opcodes.DUP));
+		}
+		
+		return source.size;
+	}
+
+	// Fix the stack operand index of each stack-based instruction
+	// according to the maximum number of locals in the target method node.
+	// NOTE that the field maxLocals of the method node will be automatically
+	// updated.
+	public static void fixLocalIndex(MethodNode methodNode, InsnList src) {
+		int max = methodNode.maxLocals;
+
+		for (AbstractInsnNode instr : src.toArray()) {
+
+			if (instr instanceof VarInsnNode) {
+
+				VarInsnNode varInstr = (VarInsnNode) instr;
+				varInstr.var += methodNode.maxLocals;
+
+				switch (varInstr.getOpcode()) {
+				case Opcodes.LLOAD:
+				case Opcodes.DLOAD:
+				case Opcodes.LSTORE:
+				case Opcodes.DSTORE:
+
+					if ((varInstr.var + 2) > max) {
+						max = varInstr.var + 2;
+					}
+
+					break;
+
+				default:
+					if ((varInstr.var + 1) > max) {
+						max = varInstr.var + 1;
+					}
+
+					break;
+				}
+			} else if (instr instanceof IincInsnNode) {
+
+				IincInsnNode iinc = (IincInsnNode) instr;
+				iinc.var += methodNode.maxLocals;
+
+				if ((iinc.var + 1) > max) {
+					max = iinc.var + 1;
+				}
+			}
+		}
+
+		methodNode.maxLocals = max;
+	}
+	
+	// combine processors into an instruction list
+	// NOTE that these processors are for the current method
+	private static InsnList procInMethod(MethodNode method,
+			ProcInstance processor) {
+		InsnList ilist = new InsnList();
+
+		for (ProcMethodInstance processorMethod : processor.getMethods()) {
+
+			Code code = processorMethod.getCode().clone();
+			InsnList instructions = code.getInstructions();
+			Type type = processorMethod.getArgType().getASMType();
+			// initialize the parameters of a processor, including argument
+			// position, arguments count and argument value
+			AbstractInsnNode start = instructions.getFirst();
+			instructions.insertBefore(start,
+					AsmHelper.getIConstInstr(processorMethod.getArgPos()));
+			instructions
+					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 0));
+			
+			instructions.insertBefore(start,
+					AsmHelper.getIConstInstr(processorMethod.getArgsCount()));
+			instructions
+					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 1));
+
+			VarInsnNode target = new VarInsnNode(
+					type.getOpcode(Opcodes.ISTORE), 2);
+			instructions.insertBefore(start, target);
+			// optional argument: type name
+			String typeName = processorMethod.getArgTypeName();
+			if (typeName != null) {
+				instructions.insertBefore(start, new LdcInsnNode(typeName));
+				instructions.insertBefore(start, new VarInsnNode(
+						Opcodes.ASTORE, 2 + type.getSize()));
+			}
+
+			fixLocalIndex(method, instructions);
+
+			instructions.insertBefore(
+					target,
+					new VarInsnNode(type.getOpcode(Opcodes.ILOAD), AsmHelper
+							.getInternalParamIndex(method,
+									processorMethod.getArgPos())));
+			
+			ilist.add(instructions);
+			method.tryCatchBlocks.addAll(code.getTryCatchBlocks());
+		}
+
+		return ilist;
+	}
+
+	// combine processors into an instruction list
+	// NOTE that these processors are for the callee
+	private static InsnList procBeforeInvoke(MethodNode method,
+			ProcInstance processor, Frame<SourceValue> frame) {
+		
+		InsnList ilist = new InsnList();
+
+		for (ProcMethodInstance processorMethod : processor.getMethods()) {
+
+			Code code = processorMethod.getCode().clone();
+			InsnList instructions = code.getInstructions();
+			// initialize the parameters of a processor, including argument
+			// position, arguments count and argument value
+			int pos = processorMethod.getArgsCount() - 1
+					- processorMethod.getArgPos();
+			SourceValue source = StackUtil.getSource(frame, pos);
+
+			AbstractInsnNode start = instructions.getFirst();
+			instructions.insertBefore(start,
+					AsmHelper.getIConstInstr(processorMethod.getArgPos()));
+			instructions
+					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 0));
+
+			instructions.insertBefore(start,
+					AsmHelper.getIConstInstr(processorMethod.getArgsCount()));
+			instructions
+					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 1));
+
+			Type type = processorMethod.getArgType().getASMType();
+			int sopcode = type.getOpcode(Opcodes.ISTORE);
+
+			for (AbstractInsnNode itr : source.insns) {
+				method.instructions.insert(itr, new VarInsnNode(sopcode,
+						// TRICK: the value has to be set properly because
+						// method code will be not adjusted by fixLocalIndex
+						method.maxLocals + 2));
+				method.instructions.insert(itr, new InsnNode(
+						type.getSize() == 2 ? Opcodes.DUP2 : Opcodes.DUP));
+			}
+			// optional argument: type name
+			String typeName = processorMethod.getArgTypeName();
+			if (typeName != null) {
+				instructions.insertBefore(start, new LdcInsnNode(typeName));
+				instructions.insertBefore(start, new VarInsnNode(
+						Opcodes.ASTORE, 2 + type.getSize()));
+			}
+
+			fixLocalIndex(method, instructions);
+			ilist.add(instructions);
+			method.tryCatchBlocks.addAll(code.getTryCatchBlocks());
+		}
+
+		return ilist;
+	}
+
+	// replace processor-applying pseudo invocation with processors
+	public static void weavingProcessor(MethodNode methodNode,
+			PIResolver piResolver, Snippet snippet, MarkedRegion region,
+			InsnList newlst, Set<Integer> set, AbstractInsnNode[] array,
+			Frame<SourceValue> frame) {
+				
+		for (int index : set) {
+
+			AbstractInsnNode instr = array[index];
+			ProcInstance processor = piResolver.get(snippet, region, index);
+			
+			if (processor != null) {
+				if (processor.getProcApplyType() == 
+					ProcessorApplyType.BEFORE_INVOCATION) {
+
+					newlst.insert(instr,
+							procBeforeInvoke(methodNode, processor, frame));
+				} else {
+
+					newlst.insert(instr, procInMethod(methodNode, processor));
+				}
+			}
+
+			// remove pseudo invocation
+			newlst.remove(instr.getPrevious().getPrevious());
+			newlst.remove(instr.getPrevious());
+			newlst.remove(instr);
+		}
+	}
+
+	// Transform static fields to synthetic local
+	// NOTE that the field maxLocals of the method node will be automatically
+	// updated.
+	public static void static2Local(MethodNode methodNode,
+			List<SyntheticLocalVar> syntheticLocalVars) {
+
+		InsnList instructions = methodNode.instructions;
+
+		// Extract the 'id' field in each synthetic local
+		AbstractInsnNode first = instructions.getFirst();
+
+		// Initialization
+		// TODO implement BESTEFFORT
+		for (SyntheticLocalVar var : syntheticLocalVars) {
+
+			if (var.getInitialize() == Initialize.NEVER) {
+				continue;
+			}
+
+			if (var.getInitASMCode() != null) {
+
+				InsnList newlst = AsmHelper.cloneInsnList(var.getInitASMCode());
+				instructions.insertBefore(first, newlst);
+			} else {
+
+				Type type = var.getType();
+
+				switch (type.getSort()) {
+				case Type.ARRAY:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.ACONST_NULL));
+					instructions.insertBefore(first, new TypeInsnNode(
+							Opcodes.CHECKCAST, type.getDescriptor()));
+					break;
+
+				case Type.BOOLEAN:
+				case Type.BYTE:
+				case Type.CHAR:
+				case Type.INT:
+				case Type.SHORT:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.ICONST_0));
+					break;
+
+				case Type.DOUBLE:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.DCONST_0));
+					break;
+
+				case Type.FLOAT:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.FCONST_0));
+					break;
+
+				case Type.LONG:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.LCONST_0));
+					break;
+
+				case Type.OBJECT:
+				default:
+					instructions.insertBefore(first, new InsnNode(
+							Opcodes.ACONST_NULL));
+					break;
+				}
+
+				instructions.insertBefore(first,
+						new FieldInsnNode(Opcodes.PUTSTATIC, var.getOwner(),
+								var.getName(), type.getDescriptor()));
+			}
+		}
+
+		// Scan for FIELD instructions and replace with local load/store.
+		for (AbstractInsnNode instr : instructions.toArray()) {
+			int opcode = instr.getOpcode();
+
+			// Only field instructions will be transformed.
+			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
+
+				FieldInsnNode field_instr = (FieldInsnNode) instr;
+				String id = field_instr.owner + SyntheticLocalVar.NAME_DELIM
+						+ field_instr.name;
+
+				int index = 0, count = 0;
+
+				for (SyntheticLocalVar var : syntheticLocalVars) {
+
+					if (id.equals(var.getID())) {
+						break;
+					}
+
+					index += var.getType().getSize();
+					count++;
+				}
+
+				if (count == syntheticLocalVars.size()) {
+					// Not contained in the synthetic locals.
+					continue;
+				}
+
+				// Construct a instruction for local
+				Type type = Type.getType(field_instr.desc);
+				int new_opcode = type
+						.getOpcode(opcode == Opcodes.GETSTATIC ? Opcodes.ILOAD
+								: Opcodes.ISTORE);
+				VarInsnNode insn = new VarInsnNode(new_opcode,
+						methodNode.maxLocals + index);
+				instructions.insertBefore(instr, insn);
+				instructions.remove(instr);
+			}
+		}
+
+		methodNode.maxLocals += syntheticLocalVars.size();
+	}
+
+	// Add an exception handler frame to a instruction list.
+	// That is, an astore <n> before the list, then an aload <n>
+	// and an athrow after the list.
+	public static void addExceptionHandlerFrame(MethodNode methodNode,
+			InsnList instructions) {
+		instructions.insertBefore(instructions.getFirst(), new VarInsnNode(
+				Opcodes.ASTORE, methodNode.maxLocals));
+		instructions.add(new VarInsnNode(Opcodes.ALOAD, methodNode.maxLocals));
+		instructions.add(new InsnNode(Opcodes.ATHROW));
+
+		methodNode.maxLocals++;
+	}
+
+	// Return a predecessor label of the input 'start'.
+	private static LabelNode getStartLabel(MethodNode methodNode,
+			AbstractInsnNode start) {
+		LabelNode label = new LabelNode();
+		methodNode.instructions.insertBefore(start, label);
+		return label;
+	}
+
+	// Return a successor label of weaving location corresponding to
+	// the input 'end'.
+	private static LabelNode getEndLabel(MethodNode methodNode,
+			AbstractInsnNode instr) {
+		// For those instruction that might fall through, there should
+		// be a 'GOTO' instruction to separate from the exception handler.
+		if (AsmHelper.isConditionalBranch(instr) || !AsmHelper.isBranch(instr)) {
+
+			LabelNode branch = new LabelNode();
+			methodNode.instructions.insert(instr, branch);
+
+			JumpInsnNode jump = new JumpInsnNode(Opcodes.GOTO, branch);
+			methodNode.instructions.insert(instr, jump);
+			instr = jump;
+		}
+
+		// Create a label just after the 'GOTO' instruction.
+		LabelNode label = new LabelNode();
+		methodNode.instructions.insert(instr, label);
+		return label;
+	}
+
+	private static boolean offsetBefore(InsnList ilst, int from, int to) {
+
+		if (from >= to) {
+			return false;
+		}
+
+		for (int i = from; i < to; i++) {
+
+			if (ilst.get(i).getOpcode() != -1) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	// generate a try catch block node given the scope of the handler
+	public static TryCatchBlockNode getTryCatchBlock(MethodNode methodNode,
+			AbstractInsnNode start, AbstractInsnNode end) {
+
+		InsnList ilst = methodNode.instructions;
+
+		int new_start_offset = ilst.indexOf(start);
+		int new_end_offset = ilst.indexOf(end);
+
+		for (TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
+
+			int start_offset = ilst.indexOf(tcb.start);
+			int end_offset = ilst.indexOf(tcb.end);
+
+			if (offsetBefore(ilst, new_start_offset, start_offset)
+					&& offsetBefore(ilst, start_offset, new_end_offset)
+					&& offsetBefore(ilst, new_end_offset, end_offset)) {
+
+				new_start_offset = start_offset;
+			} else if (offsetBefore(ilst, start_offset, new_start_offset)
+					&& offsetBefore(ilst, new_start_offset, end_offset)
+					&& offsetBefore(ilst, end_offset, new_end_offset)) {
+
+				new_start_offset = end_offset;
+			}
+		}
+
+		start = ilst.get(new_start_offset);
+		end = ilst.get(new_end_offset);
+
+		LabelNode startLabel = getStartLabel(methodNode, start);
+		LabelNode endLabel = getEndLabel(methodNode, end);
+
+		return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
 	}
 
 	// Sort the try-catch blocks of the method according to the
@@ -718,7 +756,7 @@ public class Weaver {
 		stack_start = new HashMap<AbstractInsnNode, Integer>();
 		stack_end = new HashMap<AbstractInsnNode, Integer>();
 
-		initWeavingEnds(methodNode, snippetMarkings, weaving_start,
+		initWeavingLocations(methodNode, snippetMarkings, weaving_start,
 				weaving_end, weaving_athrow, stack_start, stack_end, array);
 
 		Analyzer<BasicValue> basicAnalyzer = StackUtil.getBasicAnalyzer();
@@ -764,6 +802,9 @@ public class Weaver {
 					AbstractInsnNode loc = weaving_start.get(region.getStart());
 					int index = stack_start.get(region.getStart());
 
+					// exception handler will discard the stack and push the
+					// exception object. Thus, before entering this snippet,
+					// weaver must backup the stack and restore when exiting
 					if (code.containsHandledException()) {
 						
 						InsnList popAll = StackUtil.enter(basicFrames[index],
@@ -772,7 +813,7 @@ public class Weaver {
 								methodNode.maxLocals);
 						methodNode.maxLocals += StackUtil
 								.getOffset(basicFrames[index]);
-						
+
 						AbstractInsnNode temp = pushAll.getFirst();
 
 						methodNode.instructions.insertBefore(loc, popAll);
@@ -786,6 +827,8 @@ public class Weaver {
 					AbstractInsnNode[] instr_array = newlst.toArray();
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+					fixDynamicInfo(snippet, region, sourceFrames[index],
+							methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);
 										
 					weavingProcessor(methodNode, piResolver, snippet, region,
@@ -795,8 +838,6 @@ public class Weaver {
 					methodNode.instructions.insertBefore(loc, newlst);
 					methodNode.tryCatchBlocks.addAll(clone.getTryCatchBlocks());
 
-					fixDynamicInfo(snippet, region, sourceFrames[index],
-							methodNode);
 				}
 			}
 
@@ -812,6 +853,7 @@ public class Weaver {
 
 						int index = stack_end.get(exit);
 						
+						// backup and restore the stack
 						if (code.containsHandledException()) {
 
 							InsnList popAll = StackUtil.enter(
@@ -834,6 +876,8 @@ public class Weaver {
 						AbstractInsnNode[] instr_array = newlst.toArray();
 						
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+						fixDynamicInfo(snippet, region, sourceFrames[index],
+								methodNode, newlst);
 						fixLocalIndex(methodNode, newlst);
 						
 						weavingProcessor(methodNode, piResolver, snippet,
@@ -844,9 +888,6 @@ public class Weaver {
 						methodNode.instructions.insert(loc, newlst);
 						methodNode.tryCatchBlocks.addAll(clone
 								.getTryCatchBlocks());
-
-						fixDynamicInfo(snippet, region, sourceFrames[index],
-								methodNode);
 					}
 				}
 			}
@@ -858,7 +899,8 @@ public class Weaver {
 					|| snippet.getAnnotationClass().equals(After.class)) {
 
 				for (MarkedRegion region : regions) {
-
+					// after-throwing inserts the snippet once, and marks
+					// the start and the very end as the scope
 					int last_index = -1;
 					AbstractInsnNode last_exit = null;
 
@@ -881,6 +923,8 @@ public class Weaver {
 					AbstractInsnNode[] instr_array = newlst.toArray();
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+					fixDynamicInfo(snippet, region, sourceFrames[last_index],
+							methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);
 
 					weavingProcessor(methodNode, piResolver, snippet, region,
@@ -896,9 +940,6 @@ public class Weaver {
 					addExceptionHandlerFrame(methodNode, newlst);
 					methodNode.instructions.insert(tcb.handler, newlst);
 					methodNode.tryCatchBlocks.addAll(clone.getTryCatchBlocks());
-
-					fixDynamicInfo(snippet, region, sourceFrames[last_index],
-							methodNode);
 				}
 			}
 		}

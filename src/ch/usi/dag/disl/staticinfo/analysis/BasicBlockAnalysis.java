@@ -51,9 +51,8 @@ public class BasicBlockAnalysis extends AbstractStaticAnalysis {
 	
 	public boolean isFirstOfLoop() {
 
-		CtrlFlowGraph cfg = new CtrlFlowGraph(
-				staticAnalysisData.getMethodNode());
-		cfg.build();
+		CtrlFlowGraph cfg = CtrlFlowGraph.build(staticAnalysisData
+				.getMethodNode());
 		return cfg.getBB(staticAnalysisData.getMarkedRegion().getStart())
 				.isLoop();
 	}
