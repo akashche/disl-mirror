@@ -1,7 +1,5 @@
 package ch.usi.dag.disl;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,7 +14,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.util.CheckClassAdapter;
 
 import ch.usi.dag.disl.dislclass.loader.ClassByteLoader;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
@@ -37,7 +34,6 @@ import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.staticinfo.StaticInfo;
-import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.weaver.TLVInserter;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
@@ -288,8 +284,7 @@ public class DiSL implements Instrumentation {
 
 			//*
 			// TODO ! nasty fix for thread local
-			if (Type.getType(Thread.class).getInternalName()
-					.equals(classNode.name)) {
+			if (Type.getType(Thread.class).getInternalName().equals(classNode.name)) {
 				
 				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
 				ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass", Type.getType(boolean.class), false);
