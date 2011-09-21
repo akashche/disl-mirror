@@ -1,5 +1,7 @@
 package ch.usi.dag.disl;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,6 +16,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.util.CheckClassAdapter;
 
 import ch.usi.dag.disl.dislclass.loader.ClassByteLoader;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
@@ -283,6 +286,22 @@ public class DiSL implements Instrumentation {
 			
 			boolean classChanged = false;
 
+			//*
+			// TODO ! nasty fix for thread local
+			if (Type.getType(Thread.class).getInternalName()
+					.equals(classNode.name)) {
+				
+				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
+				ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass", Type.getType(boolean.class), false);
+				tlv.setDefaultValue(0);
+				insertTLVs.add(tlv);
+				
+				ClassNode cnWithFields = new ClassNode(Opcodes.ASM4);
+				classNode.accept(new TLVInserter(cnWithFields, insertTLVs));
+				classNode = cnWithFields;
+			}
+			/**/
+			
 			// list of static analysis instances
 			// validity of an instance is for one instrumented class
 			staticAnalysisInstances = new HashMap<Class<?>, Object>();
@@ -295,11 +314,11 @@ public class DiSL implements Instrumentation {
 				classChanged = classChanged || methodChanged;
 			}
 			
-			String className = classNode.name.replace(
-					Constants.PACKAGE_ASM_DELIM, Constants.PACKAGE_STD_DELIM);
-			
 			// instrument thread local fields
-			if(Thread.class.getName().equals(className)) {
+			String threadInternalName = 
+				Type.getType(Thread.class).getInternalName();
+			
+			if (threadInternalName.equals(classNode.name)) {
 				
 				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
 				
@@ -307,14 +326,17 @@ public class DiSL implements Instrumentation {
 				for(Snippet snippet : snippets) {
 					insertTLVs.addAll(snippet.getCode().getReferencedTLVs());
 				}
-				
-				// instrument fields
-				ClassNode cnWithFields = new ClassNode(Opcodes.ASM4);
-				classNode.accept(new TLVInserter(cnWithFields, insertTLVs));
-				
-				// replace original code with instrumented one
-				classNode = cnWithFields;
-				classChanged = true;
+
+				if(! insertTLVs.isEmpty()) {
+
+					// instrument fields
+					ClassNode cnWithFields = new ClassNode(Opcodes.ASM4);
+					classNode.accept(new TLVInserter(cnWithFields, insertTLVs));
+					
+					// replace original code with instrumented one
+					classNode = cnWithFields;
+					classChanged = true;
+				}
 			}
 			
 			if(classChanged) {

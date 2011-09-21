@@ -5,7 +5,7 @@ CLASSPATH=../lib/jborat-agent.jar:../lib/jborat-runtime.jar:../lib/jborat-interf
 java -Dch.usi.dag.jborat.instrumented="instrumented" \
     -Djborat.debug \
     -Ddisl.dynbypass=true \
-    -Ddisl.debug \
+    -Ddisl.debug=true \
     -Dch.usi.dag.jborat.instrumentation="ch.usi.dag.disl.DiSL" \
     -Dch.usi.dag.jborat.codemergerList="conf/codemerger.lst" \
     -Dch.usi.dag.jborat.liblist="conf/lib.lst" \
