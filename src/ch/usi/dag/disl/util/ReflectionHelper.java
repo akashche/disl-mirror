@@ -5,7 +5,6 @@ import java.lang.reflect.Method;
 
 import org.objectweb.asm.Type;
 
-import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.ReflectionException;
 
 public class ReflectionHelper {
@@ -16,7 +15,6 @@ public class ReflectionHelper {
 	 * @param classToInstantiate
 	 * @param args
 	 * @return
-	 * @throws DiSLException
 	 */
 	public static Object createInstance(Class<?> classToInstantiate,
 			Object... args) throws ReflectionException {

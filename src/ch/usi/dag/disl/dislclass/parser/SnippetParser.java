@@ -103,6 +103,8 @@ public class SnippetParser extends AbstractParser {
 			throw new SnippetParserException("Method " + className + "."
 					+ method.name + " cannot return value");
 		}
+		
+		// TODO ! check no throws
 
 		AnnotationNode annotation = method.invisibleAnnotations.get(0);
 
@@ -144,8 +146,8 @@ public class SnippetParser extends AbstractParser {
 				annotData.dynamicBypass);
 
 		// return whole snippet
-		return new Snippet(annotData.type, marker, scope, guard,
-				annotData.order, uscd);
+		return new Snippet(className, method.name, annotData.type, marker,
+				scope, guard, annotData.order, uscd);
 	}
 
 	private SnippetAnnotationData parseMethodAnnotation(String fullMethodName,

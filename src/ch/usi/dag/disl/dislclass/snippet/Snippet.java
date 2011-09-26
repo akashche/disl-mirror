@@ -15,6 +15,9 @@ import ch.usi.dag.disl.guard.SnippetGuard;
 
 public class Snippet implements Comparable<Snippet> {
 
+	private String originClassName;
+	private String originMethodName;
+	
 	private Class<?> annotationClass;
 	private Marker marker;
 	private Scope scope;
@@ -23,15 +26,27 @@ public class Snippet implements Comparable<Snippet> {
 	private SnippetUnprocessedCode unprocessedCode;
 	private SnippetCode code;
 
-	public Snippet(Class<?> annotationClass, Marker marker, Scope scope,
-			SnippetGuard guard, int order, SnippetUnprocessedCode unprocessedCode) {
+	public Snippet(String originClassName, String originMethodName,
+			Class<?> annotationClass, Marker marker, Scope scope,
+			SnippetGuard guard, int order,
+			SnippetUnprocessedCode unprocessedCode) {
 		super();
+		this.originClassName = originClassName;
+		this.originMethodName = originMethodName;
 		this.annotationClass = annotationClass;
 		this.marker = marker;
 		this.scope = scope;
 		this.guard = guard;
 		this.order = order;
 		this.unprocessedCode = unprocessedCode;
+	}
+
+	public String getOriginClassName() {
+		return originClassName;
+	}
+
+	public String getOriginMethodName() {
+		return originMethodName;
 	}
 
 	public Class<?> getAnnotationClass() {

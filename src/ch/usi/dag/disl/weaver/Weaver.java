@@ -54,6 +54,7 @@ import ch.usi.dag.disl.util.stack.StackUtil;
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
 
+	// TODO ! use method
 	/**
 	 * Checks if dynamic analysis methods contains only constants
 	 */

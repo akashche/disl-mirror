@@ -116,6 +116,8 @@ public class ProcessorParser extends AbstractParser {
 					 + " cannot be empty");
 		}
 		
+		// TODO ! check no throws
+		
 		// ** parse processor method arguments **
 		PMArgData pmArgData = parseProcMethodArgs(
 				className + "." + method.name, method.desc);
@@ -145,8 +147,8 @@ public class ProcessorParser extends AbstractParser {
 				method.tryCatchBlocks);
 
 		// return whole processor method
-		return new ProcMethod(allProcessedTypes, pmArgData.insertTypeName(),
-				guard, ucd);
+		return new ProcMethod(className, method.name, allProcessedTypes,
+				pmArgData.insertTypeName(), guard, ucd);
 
 	}
 

@@ -11,19 +11,33 @@ import ch.usi.dag.disl.guard.ProcessorMethodGuard;
 
 public class ProcMethod {
 
+	private String originClassName;
+	private String originMethodName;
+	
 	private EnumSet<ProcArgType> types;
 	private boolean insertTypeName;
 	private ProcessorMethodGuard guard;
 	private UnprocessedCode unprocessedCode;
 	private Code code;
 
-	public ProcMethod(EnumSet<ProcArgType> types, boolean insertTypeName,
+	public ProcMethod(String originClassName, String originMethodName,
+			EnumSet<ProcArgType> types, boolean insertTypeName,
 			ProcessorMethodGuard guard, UnprocessedCode unprocessedCode) {
 		super();
+		this.originClassName = originClassName;
+		this.originMethodName = originMethodName;
 		this.types = types;
 		this.insertTypeName = insertTypeName;
 		this.guard = guard;
 		this.unprocessedCode = unprocessedCode;
+	}
+
+	public String getOriginClassName() {
+		return originClassName;
+	}
+
+	public String getOriginMethodName() {
+		return originMethodName;
 	}
 
 	public EnumSet<ProcArgType> getTypes() {
