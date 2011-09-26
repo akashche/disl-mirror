@@ -104,7 +104,11 @@ public class SnippetParser extends AbstractParser {
 					+ method.name + " cannot return value");
 		}
 		
-		// TODO ! check no throws
+		// no exception can be thrown
+		if(! method.exceptions.isEmpty()) {
+			throw new SnippetParserException("Method " + className + "."
+					+ method.name + " cannot throw any exception");
+		}
 
 		AnnotationNode annotation = method.invisibleAnnotations.get(0);
 

@@ -112,11 +112,15 @@ public class ProcessorParser extends AbstractParser {
 		
 		// detect empty processors
 		if (AsmHelper.containsOnlyReturn(method.instructions)) {
-			throw new ProcessorParserException("Method "+ fullMethodName
+			throw new ProcessorParserException("Method " + fullMethodName
 					 + " cannot be empty");
 		}
 		
-		// TODO ! check no throws
+		// no exception can be thrown
+		if(! method.exceptions.isEmpty()) {
+			throw new ProcessorParserException("Method " + fullMethodName
+					 + " cannot throw any exception");
+		}
 		
 		// ** parse processor method arguments **
 		PMArgData pmArgData = parseProcMethodArgs(
