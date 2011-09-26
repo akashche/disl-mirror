@@ -58,9 +58,8 @@ public class Weaver {
 	/**
 	 * Checks if dynamic analysis methods contains only constants
 	 */
-	private static void passesConstsToDynamicAnalysis(String className,
-			String methodName, InsnList instructions)
-			throws DynamicInfoException {
+	private static void passesConstsToDynamicAnalysis(Snippet snippet,
+			InsnList instructions) throws DynamicInfoException {
 
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
@@ -93,16 +92,20 @@ public class Weaver {
 				break;
 
 			default:
-				throw new DynamicInfoException("In advice " + className + "."
-						+ methodName + " - pass the first (pos)"
+				throw new DynamicInfoException("In advice "
+						+ snippet.getOriginClassName() + "."
+						+ snippet.getOriginMethodName()
+						+ " - pass the first (pos)"
 						+ " argument of a dynamic context method direcltly."
 						+ " ex: getStackValue(1, int.class)");
 			}
 
 			// second operand test
 			if (AsmHelper.getClassType(secondOperand) == null) {
-				throw new DynamicInfoException("In advice " + className + "."
-						+ methodName + " - pass the second (type)"
+				throw new DynamicInfoException("In advice "
+						+ snippet.getOriginClassName() + "."
+						+ snippet.getOriginMethodName()
+						+ " - pass the second (type)"
 						+ " argument of a dynamic context method direcltly."
 						+ " ex: getStackValue(1, int.class)");
 			}
@@ -238,7 +241,7 @@ public class Weaver {
 
 				if (const_var != null) {
 					// Insert a ldc instruction
-					src.insert(instr, new LdcInsnNode(const_var));
+					src.insert(instr, AsmHelper.loadConst(const_var));
 				} else {
 					// push null onto the stack
 					src.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
@@ -792,8 +795,9 @@ public class Weaver {
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
-			StaticInfo staticInfoHolder, PIResolver piResolver) {
-		// Sort the snippets based on their order
+			StaticInfo staticInfoHolder, PIResolver piResolver)
+			throws DynamicInfoException {
+	// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_end;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_athrow;
@@ -883,6 +887,7 @@ public class Weaver {
 					AbstractInsnNode[] instr_array = newlst.toArray();
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+					passesConstsToDynamicAnalysis(snippet, newlst);
 					fixDynamicInfo(snippet, region, sourceFrames[index],
 							methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);
@@ -932,6 +937,7 @@ public class Weaver {
 						AbstractInsnNode[] instr_array = newlst.toArray();
 						
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+						passesConstsToDynamicAnalysis(snippet, newlst);
 						fixDynamicInfo(snippet, region, sourceFrames[index],
 								methodNode, newlst);
 						fixLocalIndex(methodNode, newlst);
@@ -979,6 +985,7 @@ public class Weaver {
 					AbstractInsnNode[] instr_array = newlst.toArray();
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+					passesConstsToDynamicAnalysis(snippet, newlst);
 					fixDynamicInfo(snippet, region, sourceFrames[last_index],
 							methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);

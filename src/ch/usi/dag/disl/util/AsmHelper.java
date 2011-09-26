@@ -27,6 +27,77 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 
 public class AsmHelper {
 
+	public static AbstractInsnNode loadConst(Object var) {
+
+		if (var instanceof Boolean) {
+
+			return new InsnNode((Boolean) var ? Opcodes.ICONST_1
+					: Opcodes.ICONST_0);
+		} else if (var instanceof Integer || var instanceof Short
+				|| var instanceof Byte) {
+
+			int intValue = 0;
+
+			if (var instanceof Integer) {
+				intValue = ((Integer) var).intValue();
+			} else if (var instanceof Short) {
+				intValue = ((Short) var).intValue();
+			} else if (var instanceof Byte) {
+				intValue = ((Byte) var).intValue();
+			}
+
+			switch (intValue) {
+			case -1:
+				return new InsnNode(Opcodes.ICONST_M1);
+			case 0:
+				return new InsnNode(Opcodes.ICONST_0);
+			case 1:
+				return new InsnNode(Opcodes.ICONST_1);
+			case 2:
+				return new InsnNode(Opcodes.ICONST_2);
+			case 3:
+				return new InsnNode(Opcodes.ICONST_3);
+			case 4:
+				return new InsnNode(Opcodes.ICONST_4);
+			case 5:
+				return new InsnNode(Opcodes.ICONST_5);
+			default:
+				return new IntInsnNode(Opcodes.BIPUSH, intValue);
+			}
+		} else if (var instanceof Long) {
+
+			long longValue = ((Long) var).longValue();
+
+			if (longValue == 0) {
+				return new InsnNode(Opcodes.LCONST_0);
+			} else if (longValue == 1) {
+				return new InsnNode(Opcodes.LCONST_1);
+			}
+		} else if (var instanceof Float) {
+
+			float floatValue = ((Float) var).floatValue();
+
+			if (floatValue == 0) {
+				return new InsnNode(Opcodes.FCONST_0);
+			} else if (floatValue == 1) {
+				return new InsnNode(Opcodes.FCONST_1);
+			} else if (floatValue == 2) {
+				return new InsnNode(Opcodes.FCONST_2);
+			}
+		} else if (var instanceof Double) {
+
+			double doubleValue = ((Double) var).doubleValue();
+
+			if (doubleValue == 0) {
+				return new InsnNode(Opcodes.DCONST_0);
+			} else if (doubleValue == 1) {
+				return new InsnNode(Opcodes.DCONST_1);
+			}
+		}
+
+		return new LdcInsnNode(var);
+	}
+
 	public static int getIConstOperand(AbstractInsnNode instr) {
 
 		switch (instr.getOpcode()) {

@@ -24,6 +24,7 @@ import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.DynamicInfoException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
@@ -148,7 +149,7 @@ public class DiSL implements Instrumentation {
 	 */
 	private boolean instrumentMethod(ClassNode classNode, MethodNode methodNode)
 			throws ReflectionException, StaticInfoException,
-			ProcessorException {
+			ProcessorException, DynamicInfoException {
 
 		// skip abstract methods
 		if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
