@@ -11,7 +11,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -135,11 +134,6 @@ public class SnippetParser extends AbstractParser {
 		// analysis arguments (local variables 1, 2, ...) cannot be stored or
 		// overwritten, may be used only in method calls
 		usesAnalysisProperly(className, method.name, method.desc,
-				method.instructions);
-
-		// values of dynamic analysis method arguments should be directly passed
-		// constants
-		passesConstsToDynamicAnalysis(className, method.name,
 				method.instructions);
 
 		// ** create unprocessed code holder class **
@@ -380,60 +374,6 @@ public class SnippetParser extends AbstractParser {
 
 				break;
 			}
-			}
-		}
-	}
-
-	/**
-	 * Checks if dynamic analysis methods contains only
-	 */
-	private void passesConstsToDynamicAnalysis(String className,
-			String methodName, InsnList instructions)
-			throws SnippetParserException {
-
-		for (AbstractInsnNode instr : instructions.toArray()) {
-
-			// it is invocation...
-			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL) {
-				continue;
-			}
-
-			MethodInsnNode invoke = (MethodInsnNode) instr;
-
-			// ... of dynamic analysis
-			if (!invoke.owner
-					.equals(Type.getInternalName(DynamicContext.class))) {
-				continue;
-			}
-
-			AbstractInsnNode secondOperand = instr.getPrevious();
-			AbstractInsnNode firstOperand = secondOperand.getPrevious();
-
-			// first operand test
-			switch (firstOperand.getOpcode()) {
-			case Opcodes.ICONST_M1:
-			case Opcodes.ICONST_0:
-			case Opcodes.ICONST_1:
-			case Opcodes.ICONST_2:
-			case Opcodes.ICONST_3:
-			case Opcodes.ICONST_4:
-			case Opcodes.ICONST_5:
-			case Opcodes.BIPUSH:
-				break;
-
-			default:
-				throw new SnippetParserException("In advice " + className + "."
-						+ methodName + " - pass the first (pos)"
-						+ " argument of a dynamic context method direcltly."
-						+ " ex: getStackValue(1, int.class)");
-			}
-
-			// second operand test
-			if (AsmHelper.getClassType(secondOperand) == null) {
-				throw new SnippetParserException("In advice " + className + "."
-						+ methodName + " - pass the second (type)"
-						+ " argument of a dynamic context method direcltly."
-						+ " ex: getStackValue(1, int.class)");
 			}
 		}
 	}

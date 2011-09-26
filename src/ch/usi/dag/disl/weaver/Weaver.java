@@ -42,6 +42,7 @@ import ch.usi.dag.disl.dislclass.snippet.SnippetCode;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.dynamicinfo.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.DynamicInfoException;
 import ch.usi.dag.disl.processor.ProcessorApplyType;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
@@ -53,6 +54,60 @@ import ch.usi.dag.disl.util.stack.StackUtil;
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
 
+	/**
+	 * Checks if dynamic analysis methods contains only constants
+	 */
+	private static void passesConstsToDynamicAnalysis(String className,
+			String methodName, InsnList instructions)
+			throws DynamicInfoException {
+
+		for (AbstractInsnNode instr : instructions.toArray()) {
+
+			// it is invocation...
+			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL) {
+				continue;
+			}
+
+			MethodInsnNode invoke = (MethodInsnNode) instr;
+
+			// ... of dynamic analysis
+			if (!invoke.owner
+					.equals(Type.getInternalName(DynamicContext.class))) {
+				continue;
+			}
+
+			AbstractInsnNode secondOperand = instr.getPrevious();
+			AbstractInsnNode firstOperand = secondOperand.getPrevious();
+
+			// first operand test
+			switch (firstOperand.getOpcode()) {
+			case Opcodes.ICONST_M1:
+			case Opcodes.ICONST_0:
+			case Opcodes.ICONST_1:
+			case Opcodes.ICONST_2:
+			case Opcodes.ICONST_3:
+			case Opcodes.ICONST_4:
+			case Opcodes.ICONST_5:
+			case Opcodes.BIPUSH:
+				break;
+
+			default:
+				throw new DynamicInfoException("In advice " + className + "."
+						+ methodName + " - pass the first (pos)"
+						+ " argument of a dynamic context method direcltly."
+						+ " ex: getStackValue(1, int.class)");
+			}
+
+			// second operand test
+			if (AsmHelper.getClassType(secondOperand) == null) {
+				throw new DynamicInfoException("In advice " + className + "."
+						+ methodName + " - pass the second (type)"
+						+ " argument of a dynamic context method direcltly."
+						+ " ex: getStackValue(1, int.class)");
+			}
+		}
+	}
+	
 	// initialize weaving locations
 	private static void initWeavingLocations(MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
