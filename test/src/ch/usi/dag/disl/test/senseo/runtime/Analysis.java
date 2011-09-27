@@ -1,83 +1,103 @@
 package ch.usi.dag.disl.test.senseo.runtime;
 
+import ch.usi.dag.disl.test.senseo.runtime.arguments.Null;
+import ch.usi.dag.jborat.runtime.DynamicBypass;
+
 
 public class Analysis {
-	
-	 private static final int MAX_TL_TREE_UPDATES = 40000;
-	    private static final int MAX_ATTEMPTS = 5;
-//	    private static final int MODULE = 8192;
 
-	    CCTNodeTL localRoot;
-	    private CCTNodeTL currentNode;
-	    private int attempts = 0;
-	    private int cnt = MAX_TL_TREE_UPDATES;// + (Thread.currentThread().hashCode() % MODULE);
+    private static final int MAX_TL_TREE_UPDATES = 40000;
+    private static final int MAX_ATTEMPTS = 5;
+    private static final int MODULE = 8192;
 
-	    public Analysis() {
-	        currentNode = (localRoot = CCTNodeTL.createRoot());
-	        CCTManager.getManager().register(Thread.currentThread(), this);
-	    }
+    CCTNodeTL localRoot;
+    private CCTNodeTL currentNode;
+    private int attempts = 0;
+    private int cnt;
 
+    public Analysis() {
+        boolean oldState = DynamicBypass.getAndSet();
+        try {
+            cnt = MAX_TL_TREE_UPDATES + (Thread.currentThread().hashCode() % MODULE);
+            currentNode = (localRoot = CCTNodeTL.createRoot());
+            CCTManager.getManager().register(Thread.currentThread(), this);
+        } finally {
+            DynamicBypass.set(oldState);
+        }
+    }
 
-	    public CCTNodeTL onMethodEntry(int methodUID) {
-	    	currentNode = currentNode.getOrCreateCallee(methodUID, 1);
-	    	currentNode.resetCurrentArg();
-	    	return currentNode;
-	    }
+    public CCTNodeTL onEntry(int methodUID, boolean hasOnlyPrimitiveArgs, int totBBs) {
+        currentNode = currentNode.getOrCreateCallee(methodUID, 1, hasOnlyPrimitiveArgs, totBBs);
+        return currentNode;
+    }
 
-	    public void profileArgument(Class<?> argClass, int pos) {
-	        currentNode.profileArgument(argClass, pos);
-	    }
+//    public void profileArgument(Class<?> argClass) {//, int pos) {
+//        currentNode.profileArgument(argClass);//, pos);
+//    }
 
+    public void profileArgument(Object obj) {
+        boolean oldState = DynamicBypass.getAndSet();
+        try {
+            currentNode.profileArgument((obj ==null) ? Null.class : obj.getClass());
+        } finally {
+            DynamicBypass.set(oldState);
+        }
+    }
 
-	    public void onMethodExit() {
-	        currentNode = currentNode.parent;
+    public void onExit() { //int id) {
+//        if(id != currentNode.methodUID) {
+//            boolean oldState = DynamicBypass.getAndSet();
+//            try {
+//                System.err.println("ERROR! id: " + id + " methodUID: " + currentNode.methodUID);
+//                System.exit(-1);
+//            } finally {
+//                DynamicBypass.set(oldState);
+//            }
+//        }
 
-	        if(--cnt == 0) {
-	            boolean force = (++attempts <= MAX_ATTEMPTS) ? false : true;
+        currentNode = currentNode.parent;
 
-	            if(CCTManager.getManager().merge(localRoot, force)) {
-	                pruneLocalCCT(currentNode);
-	                cnt = MAX_TL_TREE_UPDATES;// + (this.hashCode() % MODULE);
-	                attempts = 0;
-	            }
-	            else {
-	                cnt = MAX_TL_TREE_UPDATES;//(MAX_TL_TREE_UPDATES / attempts) + (this.hashCode() % MODULE);
-	            }
-	        }
-	    }
+        if(--cnt == 0) {
+            sendCurrentBuffer();
+        }
+    }
 
-	    private static void pruneLocalCCT(CCTNodeTL currentNode) { //extreme pruning that keeps only the elements in the stack
-	        CCTNodeTL tempNode;
-	        CCTNodeTL currNode = currentNode;
+    public void onBB(int index) { //, int id) {
+//        if(id != currentNode.methodUID) {
+//            boolean oldState = DynamicBypass.getAndSet();
+//            try {
+//                System.err.println("ERROR! id: " + id + " methodUID: " + currentNode.methodUID);
+//                System.exit(-1);
+//            } finally {
+//                DynamicBypass.set(oldState);
+//            }
+//        }
+        currentNode.profileBB(index);
+    }
 
-	        currNode.left = null;
-	        currNode.right = null;
-	        currNode.callees = null;
+    public void sendCurrentBuffer() {
+        boolean oldState = DynamicBypass.getAndSet();
+        try {
+            boolean force = (++attempts <= MAX_ATTEMPTS) ? false : true;
+        
+            if(CCTManager.getManager().merge(localRoot, force)) {
+                pruneLocalCCT(currentNode);
+                cnt = MAX_TL_TREE_UPDATES + (this.hashCode() % MODULE);
+                attempts = 0;
+            }
+            else {
+                cnt = (MAX_TL_TREE_UPDATES / attempts) + (this.hashCode() % MODULE);
+            }
+        } finally {
+            DynamicBypass.set(oldState);
+        }
+    }
 
-	        currNode.argsRoot.nextArgs = null;
-//	        currNode.argsRoot = null;
-//	        if(currNode.argsRoot != null) {
-//	            currNode.argsRoot = ArgumentNodeTL.createRoot();
-//	        }
+    private static void pruneLocalCCT(CCTNodeTL currentNode) { //extreme pruning that keeps only the elements in the stack
+        CCTNodeTL tempNode = currentNode;
 
-	        currNode.calls = 0;
-
-	        while((tempNode = currNode.parent) != null) {
-	            tempNode.callees = currNode;
-	            tempNode.left = null;
-	            tempNode.right = null;
-
-                tempNode.argsRoot.nextArgs = null;
-
-//	            tempNode.argsRoot = null;
-//	            if(currNode.argsRoot != null) {
-//	                currNode.argsRoot = ArgumentNodeTL.createRoot();
-//	            }
-
-	            tempNode.calls = 0;
-	            currNode = tempNode;
-	        }
-	    }
-
-
+        do {
+            tempNode.prune();
+        } while((tempNode = tempNode.parent) != null);
+    }
 }

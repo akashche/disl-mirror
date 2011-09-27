@@ -1,57 +1,45 @@
 package ch.usi.dag.disl.test.senseo.runtime;
 
-
-import java.io.*;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import ch.usi.dag.disl.test.senseo.runtime.arguments.PrimitiveWrapper;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 
 public final class ArgumentNode {
-    private static final String SEPARATOR = " - ";
+    private static final String SEPARATOR = " ";
 
     private static final AtomicIntegerFieldUpdater<ArgumentNode> occurrencesUpdater; 
     private static final AtomicReferenceFieldUpdater<ArgumentNode, ArgumentNode> leftUpdater; 
     private static final AtomicReferenceFieldUpdater<ArgumentNode, ArgumentNode> rightUpdater; 
     private static final AtomicReferenceFieldUpdater<ArgumentNode, ArgumentNode> nextArgsUpdater;
 
-//	    private final ArgumentNode prevArg;
+    static {
+        boolean oldState = DynamicBypass.getAndSet();
+        try {
+            occurrencesUpdater = AtomicIntegerFieldUpdater.newUpdater(ArgumentNode.class, "occurrences");
+            leftUpdater = AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "left");
+            rightUpdater = AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "right");
+            nextArgsUpdater = AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "nextArgs");
+        } finally {
+            DynamicBypass.set(oldState);
+        }
+    }
+
     private volatile ArgumentNode left, right;
     private volatile ArgumentNode nextArgs;
 
     private final Class<?> argument;
     private volatile int occurrences;
-    
-    static {
-    	boolean old = DynamicBypass.get();
-    	DynamicBypass.activate();
-    	try {
-    		  occurrencesUpdater =
-    		        AtomicIntegerFieldUpdater.newUpdater(ArgumentNode.class, "occurrences");
-    		    leftUpdater =
-    		        AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "left");
-    		   rightUpdater =
-    		        AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "right");
-    		  nextArgsUpdater =
-    		        AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "nextArgs");
-    		
-    	}finally {
-    		if(old)
-    			DynamicBypass.activate();
-    		else
-    			DynamicBypass.deactivate();
-    	}
-    }
+
+    private static final Package referencePackage = PrimitiveWrapper.class.getPackage();
 
     public static ArgumentNode createRoot() {
         return new ArgumentNode(null, null, 0);
     }
 
     private ArgumentNode(ArgumentNode prevArg, Class<?> argument, int occurrences) {
-//	        this.prevArg = prevArg;
         this.argument = argument;
         this.occurrences = occurrences;
     }
@@ -67,7 +55,7 @@ public final class ArgumentNode {
             }
         }
 
-        int hash_arg =  System.identityHashCode(argument); 
+        int hash_arg = System.identityHashCode(argument); 
 
         while (true) {
             Class<?> n_arg;
@@ -125,16 +113,26 @@ public final class ArgumentNode {
 
     public void dump(StringBuffer buf) { // must be called with activated DIB
         if(nextArgs != null) {
-            buf.append('{');        
             dumpArgs(buf, nextArgs, "");
-            buf.append('}');
         }
     }
 
     private static void dumpArgs(StringBuffer buf, ArgumentNode n, String path) {
         if (n != null) {
             String prevPath = path;
-            String localPath = prevPath + n.argument.getName();
+            String localPath = prevPath;
+            Package pack = n.argument.getPackage();
+            if(pack != null && pack.equals(referencePackage)) {
+                try {
+                    localPath += n.argument.newInstance().toString();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(-10);
+                }
+            }
+            else {
+                localPath += n.argument.getName();
+            }
 
             if(n.dumpArgs(buf, localPath)) {
                 if(!prevPath.startsWith(SEPARATOR)) {
@@ -148,12 +146,12 @@ public final class ArgumentNode {
 
     private boolean dumpArgs(StringBuffer buf, String path) {
         if (nextArgs != null) {
-            String localPath = path + ", ";
+            String localPath = path + ",";
             dumpArgs(buf, nextArgs, localPath);
             return false;
         }
         else {
-            buf.append(path + " = " + occurrences);
+            buf.append(path + " " + occurrences);
             return true;
         }
     }
