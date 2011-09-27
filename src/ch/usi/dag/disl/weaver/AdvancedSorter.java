@@ -3,17 +3,51 @@ package ch.usi.dag.disl.weaver;
 import java.util.Collections;
 import java.util.Comparator;
 
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.TryCatchBlockSorter;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.util.AsmHelper;
 
 public class AdvancedSorter extends TryCatchBlockSorter {
 
-	public AdvancedSorter(MethodVisitor mv, int access, String name,
-			String desc, String signature, String[] exceptions) {
-		super(mv, access, name, desc, signature, exceptions);
+	public AdvancedSorter(MethodNode method) {
+		super(null, method.access, method.name, method.desc, method.signature,
+				null);
+
+		this.instructions = method.instructions;
+		this.tryCatchBlocks = method.tryCatchBlocks;
+	}
+
+	public void validate() {
+
+		TryCatchBlockNode[] tcbs = new TryCatchBlockNode[tryCatchBlocks.size()];
+		tcbs = tryCatchBlocks.toArray(tcbs);
+
+		for (int i = 0; i < tcbs.length; i++) {
+
+			int istart = instructions.indexOf(AsmHelper.skipVirualInsns(
+					tcbs[i].start, true));
+			int iend = instructions.indexOf(tcbs[i].end);
+
+			for (int j = i; j < tcbs.length; j++) {
+
+				int jstart = instructions.indexOf(AsmHelper.skipVirualInsns(
+						tcbs[j].start, true));
+				int jend = instructions.indexOf(tcbs[j].end);
+				
+				if ((AsmHelper.offsetBefore(instructions, istart, jstart)
+						&& AsmHelper.offsetBefore(instructions, jstart, iend) 
+						&& AsmHelper.offsetBefore(instructions, iend, jend)) ||
+						(AsmHelper.offsetBefore(instructions, jstart, istart)
+						&& AsmHelper.offsetBefore(instructions, istart, jend) 
+						&& AsmHelper.offsetBefore(instructions, jend, iend))) {
+					
+					throw new DiSLFatalException("Crossing exception handler.");
+				}
+			}
+		}
 	}
 
 	public void visitEnd() {
@@ -33,7 +67,13 @@ public class AdvancedSorter extends TryCatchBlockSorter {
 				return endidx - startidx;
 			}
 		};
-		
+
 		Collections.sort(tryCatchBlocks, comp);
+	}
+
+	public static void sort(MethodNode method) {
+		AdvancedSorter sorter = new AdvancedSorter(method);
+		sorter.visitEnd();
+		sorter.validate();
 	}
 }

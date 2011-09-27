@@ -27,6 +27,22 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 
 public class AsmHelper {
 
+	public static boolean offsetBefore(InsnList ilst, int from, int to) {
+
+		if (from >= to) {
+			return false;
+		}
+
+		for (int i = from; i < to; i++) {
+
+			if (ilst.get(i).getOpcode() != -1) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public static AbstractInsnNode loadConst(Object var) {
 
 		if (var instanceof Boolean) {

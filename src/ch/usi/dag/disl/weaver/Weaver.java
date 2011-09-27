@@ -729,21 +729,6 @@ public class Weaver {
 		return label;
 	}
 
-	private static boolean offsetBefore(InsnList ilst, int from, int to) {
-
-		if (from >= to) {
-			return false;
-		}
-
-		for (int i = from; i < to; i++) {
-
-			if (ilst.get(i).getOpcode() != -1) {
-				return true;
-			}
-		}
-
-		return false;
-	}
 
 	// generate a try catch block node given the scope of the handler
 	public static TryCatchBlockNode getTryCatchBlock(MethodNode methodNode,
@@ -759,14 +744,17 @@ public class Weaver {
 			int start_offset = ilst.indexOf(tcb.start);
 			int end_offset = ilst.indexOf(tcb.end);
 
-			if (offsetBefore(ilst, new_start_offset, start_offset)
-					&& offsetBefore(ilst, start_offset, new_end_offset)
-					&& offsetBefore(ilst, new_end_offset, end_offset)) {
+			if (AsmHelper.offsetBefore(ilst, new_start_offset, start_offset)
+					&& AsmHelper.offsetBefore(ilst, start_offset,
+							new_end_offset)
+					&& AsmHelper.offsetBefore(ilst, new_end_offset, end_offset)) {
 
 				new_start_offset = start_offset;
-			} else if (offsetBefore(ilst, start_offset, new_start_offset)
-					&& offsetBefore(ilst, new_start_offset, end_offset)
-					&& offsetBefore(ilst, end_offset, new_end_offset)) {
+			} else if (AsmHelper.offsetBefore(ilst, start_offset,
+					new_start_offset)
+					&& AsmHelper.offsetBefore(ilst, new_start_offset,
+							end_offset)
+					&& AsmHelper.offsetBefore(ilst, end_offset, new_end_offset)) {
 
 				new_start_offset = end_offset;
 			}
@@ -779,16 +767,6 @@ public class Weaver {
 		LabelNode endLabel = getEndLabel(methodNode, end);
 
 		return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
-	}
-
-	// Sort the try-catch blocks of the method according to the
-	// length of each block.
-	public static void sortTryCatchBlocks(MethodNode method) {
-		AdvancedSorter sorter = new AdvancedSorter(null, method.access,
-				method.name, method.desc, method.signature, null);
-		sorter.instructions = method.instructions;
-		sorter.tryCatchBlocks = method.tryCatchBlocks;
-		sorter.visitEnd();
 	}
 
 	// TODO respect BEST_EFFORT initialization type in synthetic local variable
@@ -1007,8 +985,8 @@ public class Weaver {
 			}
 		}
 
-		sortTryCatchBlocks(methodNode);
 		static2Local(methodNode, syntheticLocalVars);
+		AdvancedSorter.sort(methodNode);
 	}
 
 }
