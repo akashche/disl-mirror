@@ -121,7 +121,6 @@ public class Weaver {
 			Map<AbstractInsnNode, Integer> stack_end, ArrayList<Snippet> array) {
 
 		InsnList instructions = methodNode.instructions;
-		List<LabelNode> instrumented = new LinkedList<LabelNode>();
 
 		List<LabelNode> tcb_ends = new LinkedList<LabelNode>();
 
@@ -129,72 +128,48 @@ public class Weaver {
 			tcb_ends.add(tcb.end);
 		}
 
+		// initialize weaving start
 		for (Snippet snippet : array) {
-
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
-				// initialize weaving start
+
 				AbstractInsnNode start = region.getStart();
-				AbstractInsnNode wstart = AsmHelper.skipVirualInsns(start, true);
 
 				if (weaving_start.get(start) == null) {
-					weaving_start.put(start, start);
-				}
 
+					LabelNode lstart = new LabelNode();
+					instructions.insertBefore(start, lstart);
+					weaving_start.put(start, lstart);
+				}
+			}
+		}
+
+		for (Snippet snippet : array) {
+			for (MarkedRegion region : snippetMarkings.get(snippet)) {
 				for (AbstractInsnNode end : region.getEnds()) {
 
-					AbstractInsnNode wend = AsmHelper.skipVirualInsns(end, false);
+					AbstractInsnNode wend = end;
 
 					if (AsmHelper.isBranch(wend)) {
-
-						AbstractInsnNode prev = wend.getPrevious();
-
-						if (wstart == wend) {
-							// Contains only one instruction
-							if (!(prev != null && prev instanceof LabelNode && 
-									instrumented.contains(prev))) {
-
-								LabelNode labelNode = new LabelNode();
-								instrumented.add(labelNode);
-								instructions.insertBefore(start, labelNode);
-								prev = labelNode;
-							}
-
-							weaving_start.put(start, prev);
-							weaving_end.put(end, prev);
-							weaving_athrow.put(end, prev);
-						} else {
-							weaving_end.put(end, prev);
-
-							while (tcb_ends.contains(prev)) {
-
-								if (prev == start) {
-
-									LabelNode labelNode = new LabelNode();
-									instrumented.add(labelNode);
-									instructions.insert(start, labelNode);
-									prev = labelNode;
-									break;
-								}
-
-								prev = prev.getPrevious();
-							}
-
-							weaving_athrow.put(end, prev);
-						}
-					} else {
-						// this one is not a branch instruction, which
-						// means instruction list can be inserted after
-						// this instruction.
-						weaving_end.put(end, end);
-						weaving_athrow.put(end, end);
+						wend = wend.getPrevious();
 					}
+
+					LabelNode lend = new LabelNode();
+					instructions.insert(wend, lend);
+					weaving_end.put(end, lend);
+
+					while (tcb_ends.contains(wend)) {
+						wend = wend.getPrevious();
+					}
+
+					LabelNode lthrow = new LabelNode();
+					instructions.insert(wend, lthrow);
+					weaving_athrow.put(end, lthrow);
 				}
 			}
 		}
 
 		// initialize stack_start and stack_end
 		for (Snippet snippet : array) {
-
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
 
 				AbstractInsnNode start = region.getStart();
@@ -204,7 +179,6 @@ public class Weaver {
 				}
 
 				for (AbstractInsnNode end : region.getEnds()) {
-
 					if (AsmHelper.isBranch(end)) {
 						stack_end.put(end, instructions.indexOf(end));
 					} else {
@@ -698,14 +672,6 @@ public class Weaver {
 		methodNode.maxLocals++;
 	}
 
-	// Return a predecessor label of the input 'start'.
-	private static LabelNode getStartLabel(MethodNode methodNode,
-			AbstractInsnNode start) {
-		LabelNode label = new LabelNode();
-		methodNode.instructions.insertBefore(start, label);
-		return label;
-	}
-
 	// Return a successor label of weaving location corresponding to
 	// the input 'end'.
 	private static LabelNode getEndLabel(MethodNode methodNode,
@@ -762,7 +728,7 @@ public class Weaver {
 		start = ilst.get(new_start_offset);
 		end = ilst.get(new_end_offset);
 
-		LabelNode startLabel = getStartLabel(methodNode, start);
+		LabelNode startLabel = (LabelNode) start;
 		LabelNode endLabel = getEndLabel(methodNode, end);
 
 		return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
