@@ -1,6 +1,7 @@
 package ch.usi.dag.disl;
 
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -14,6 +15,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.util.CheckClassAdapter;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 import ch.usi.dag.disl.dislclass.loader.ClassByteLoader;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
@@ -288,13 +291,27 @@ public class DiSL implements Instrumentation {
 			if (Type.getType(Thread.class).getInternalName().equals(classNode.name)) {
 				
 				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
+				
+				// dynamic bypass
 				ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass", Type.getType(boolean.class), false);
 				tlv.setDefaultValue(0);
 				insertTLVs.add(tlv);
 				
+				// get all thread locals in snippets
+				for(Snippet snippet : snippets) {
+					insertTLVs.addAll(snippet.getCode().getReferencedTLVs());
+				}
+
+				// instrument fields
 				ClassNode cnWithFields = new ClassNode(Opcodes.ASM4);
 				classNode.accept(new TLVInserter(cnWithFields, insertTLVs));
+				
+				// replace original code with instrumented one
 				classNode = cnWithFields;
+				classChanged = true;
+				
+				classNode.accept(new CheckClassAdapter(
+						new TraceClassVisitor(new PrintWriter(System.out))));
 			}
 			/**/
 			
@@ -310,6 +327,7 @@ public class DiSL implements Instrumentation {
 				classChanged = classChanged || methodChanged;
 			}
 			
+			/* TODO ! uncomment when ASM is fixed 
 			// instrument thread local fields
 			String threadInternalName = 
 				Type.getType(Thread.class).getInternalName();
@@ -334,6 +352,7 @@ public class DiSL implements Instrumentation {
 					classChanged = true;
 				}
 			}
+			*/
 			
 			if(classChanged) {
 				return classNode;

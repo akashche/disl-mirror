@@ -108,8 +108,19 @@ public final class TLVInserter extends ClassVisitor {
 					visitLdcInsn(defaultVal);
 				}
 				else {
-					// null
-					visitInsn(ACONST_NULL);
+
+					int tlvSort = tlv.getType().getSort();
+					
+					// if object or array
+					if(tlvSort == Type.OBJECT || tlvSort == Type.ARRAY) {
+						// insert null
+						visitInsn(ACONST_NULL);
+					}
+					// if basic type
+					else {
+						// insert 0 as default
+						visitLdcInsn(0);
+					}
 				}
 
 				// -- put value to the field --
