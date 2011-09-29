@@ -39,6 +39,7 @@ import ch.usi.dag.disl.dislclass.code.Code;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.dislclass.snippet.Snippet;
 import ch.usi.dag.disl.dislclass.snippet.SnippetCode;
+import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
 import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.dynamicinfo.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
@@ -146,7 +147,7 @@ public class Weaver {
 		for (Snippet snippet : array) {
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
 				for (AbstractInsnNode end : region.getEnds()) {
-
+					// initialize weaving end
 					AbstractInsnNode wend = end;
 
 					if (AsmHelper.isBranch(wend)) {
@@ -157,8 +158,20 @@ public class Weaver {
 					instructions.insert(wend, lend);
 					weaving_end.put(end, lend);
 
+					// initialize weaving athrow
+					wend = end;
+
+					if (AsmHelper.isBranch(wend)
+							&& wend.getOpcode() != Opcodes.ATHROW) {
+						wend = wend.getPrevious();
+					}
+
 					while (tcb_ends.contains(wend)) {
 						wend = wend.getPrevious();
+					}
+
+					if (snippet.getMarker() instanceof BodyMarker) {
+						wend = instructions.getLast();
 					}
 
 					LabelNode lthrow = new LabelNode();
@@ -676,9 +689,8 @@ public class Weaver {
 	// the input 'end'.
 	private static LabelNode getEndLabel(MethodNode methodNode,
 			AbstractInsnNode instr) {
-		// For those instruction that might fall through, there should
-		// be a 'GOTO' instruction to separate from the exception handler.
-		if (AsmHelper.isConditionalBranch(instr) || !AsmHelper.isBranch(instr)) {
+
+		if (instr.getNext() != null) {
 
 			LabelNode branch = new LabelNode();
 			methodNode.instructions.insert(instr, branch);
