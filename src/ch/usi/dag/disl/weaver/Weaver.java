@@ -117,7 +117,7 @@ public class Weaver {
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			Map<AbstractInsnNode, AbstractInsnNode> weaving_start,
 			Map<AbstractInsnNode, AbstractInsnNode> weaving_end,
-			Map<AbstractInsnNode, AbstractInsnNode> weaving_athrow,
+			Map<MarkedRegion, AbstractInsnNode> weaving_athrow,
 			Map<AbstractInsnNode, Integer> stack_start,
 			Map<AbstractInsnNode, Integer> stack_end, ArrayList<Snippet> array) {
 
@@ -146,6 +146,9 @@ public class Weaver {
 
 		for (Snippet snippet : array) {
 			for (MarkedRegion region : snippetMarkings.get(snippet)) {
+
+				AbstractInsnNode last = region.getStart();
+
 				for (AbstractInsnNode end : region.getEnds()) {
 					// initialize weaving end
 					AbstractInsnNode wend = end;
@@ -159,25 +162,31 @@ public class Weaver {
 					weaving_end.put(end, lend);
 
 					// initialize weaving athrow
-					wend = end;
-
-					if (AsmHelper.isBranch(wend)
-							&& wend.getOpcode() != Opcodes.ATHROW) {
-						wend = wend.getPrevious();
+					if (AsmHelper.before(last, end)) {
+						last = end;
 					}
-
-					while (tcb_ends.contains(wend)) {
-						wend = wend.getPrevious();
-					}
-
-					if (snippet.getMarker() instanceof BodyMarker) {
-						wend = instructions.getLast();
-					}
-
-					LabelNode lthrow = new LabelNode();
-					instructions.insert(wend, lthrow);
-					weaving_athrow.put(end, lthrow);
 				}
+
+				if (snippet.getMarker() instanceof BodyMarker) {
+
+					last = AsmHelper.skipVirualInsns(instructions.getLast(),
+							false);
+				} else {
+
+					if (AsmHelper.isBranch(last)
+							&& last.getOpcode() != Opcodes.ATHROW) {
+						last = last.getPrevious();
+					}
+
+					while (tcb_ends.contains(last)) {
+						last = last.getPrevious();
+					}
+
+				}
+
+				LabelNode lthrow = new LabelNode();
+				instructions.insert(last, lthrow);
+				weaving_athrow.put(region, lthrow);
 			}
 		}
 
@@ -198,6 +207,9 @@ public class Weaver {
 						stack_end.put(end, instructions.indexOf(end.getNext()));
 					}
 				}
+
+				AbstractInsnNode wend = weaving_athrow.get(region);
+				stack_end.put(wend, instructions.indexOf(wend));
 			}
 		}
 	}
@@ -690,7 +702,8 @@ public class Weaver {
 	private static LabelNode getEndLabel(MethodNode methodNode,
 			AbstractInsnNode instr) {
 
-		if (instr.getNext() != null) {
+		if (instr.getNext() != null
+				&& AsmHelper.skipVirualInsns(instr.getNext(), true) != null) {
 
 			LabelNode branch = new LabelNode();
 			methodNode.instructions.insert(instr, branch);
@@ -755,7 +768,7 @@ public class Weaver {
 	// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_end;
-		Map<AbstractInsnNode, AbstractInsnNode> weaving_athrow;
+		Map<MarkedRegion, AbstractInsnNode> weaving_athrow;
 
 		Map<AbstractInsnNode, Integer> stack_start;
 		Map<AbstractInsnNode, Integer> stack_end;
@@ -767,7 +780,7 @@ public class Weaver {
 		// Prepare for weaving
 		weaving_start = new HashMap<AbstractInsnNode, AbstractInsnNode>();
 		weaving_end = new HashMap<AbstractInsnNode, AbstractInsnNode>();
-		weaving_athrow = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+		weaving_athrow = new HashMap<MarkedRegion, AbstractInsnNode>();
 		stack_start = new HashMap<AbstractInsnNode, Integer>();
 		stack_end = new HashMap<AbstractInsnNode, Integer>();
 
@@ -918,8 +931,9 @@ public class Weaver {
 				for (MarkedRegion region : regions) {
 					// after-throwing inserts the snippet once, and marks
 					// the start and the very end as the scope
+					AbstractInsnNode last = weaving_athrow.get(region);
+
 					int last_index = -1;
-					AbstractInsnNode last_exit = null;
 
 					for (AbstractInsnNode exit : region.getEnds()) {
 
@@ -927,12 +941,11 @@ public class Weaver {
 
 						if (last_index < index) {
 							last_index = index;
-							last_exit = exit;
 						}
 					}
-					
+
 					if (last_index == -1) {
-						continue;
+						last_index = stack_end.get(last);
 					}
 
 					SnippetCode clone = code.clone();
@@ -951,8 +964,7 @@ public class Weaver {
 
 					// Create a try-catch clause
 					TryCatchBlockNode tcb = getTryCatchBlock(methodNode,
-							weaving_start.get(region.getStart()),
-							weaving_athrow.get(last_exit));
+							weaving_start.get(region.getStart()), last);
 
 					methodNode.tryCatchBlocks.add(tcb);
 					addExceptionHandlerFrame(methodNode, newlst);

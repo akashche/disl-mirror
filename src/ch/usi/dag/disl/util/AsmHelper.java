@@ -27,6 +27,19 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 
 public class AsmHelper {
 
+	public static boolean before(AbstractInsnNode first, AbstractInsnNode second) {
+
+		while (first != null) {
+			first = first.getNext();
+
+			if (first == second) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public static boolean offsetBefore(InsnList ilst, int from, int to) {
 
 		if (from >= to) {
