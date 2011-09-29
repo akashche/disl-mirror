@@ -1,7 +1,6 @@
 package ch.usi.dag.disl;
 
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -15,8 +14,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.util.CheckClassAdapter;
-import org.objectweb.asm.util.TraceClassVisitor;
 
 import ch.usi.dag.disl.dislclass.loader.ClassByteLoader;
 import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
@@ -309,9 +306,6 @@ public class DiSL implements Instrumentation {
 				// replace original code with instrumented one
 				classNode = cnWithFields;
 				classChanged = true;
-				
-				classNode.accept(new CheckClassAdapter(
-						new TraceClassVisitor(new PrintWriter(System.out))));
 			}
 			/**/
 			
