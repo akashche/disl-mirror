@@ -78,7 +78,9 @@ public class AsmHelper {
 			case 5:
 				return new InsnNode(Opcodes.ICONST_5);
 			default:
-				return new IntInsnNode(Opcodes.BIPUSH, intValue);
+				if (intValue >= -128 && intValue < 128) {
+					return new IntInsnNode(Opcodes.BIPUSH, intValue);
+				}
 			}
 		} else if (var instanceof Long) {
 
@@ -133,6 +135,13 @@ public class AsmHelper {
 			return 5;
 		case Opcodes.BIPUSH:
 			return ((IntInsnNode) instr).operand;
+		case Opcodes.LDC: {
+			LdcInsnNode ldc = (LdcInsnNode) instr;
+
+			if (ldc.cst instanceof Integer) {
+				return ((Integer) ldc.cst).intValue();
+			}
+		}
 		default:
 			throw new DiSLFatalException("Unknown integer instruction");
 		}
