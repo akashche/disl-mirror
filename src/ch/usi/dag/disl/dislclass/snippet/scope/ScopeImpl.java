@@ -26,8 +26,16 @@ public class ScopeImpl implements Scope {
 	
 	private int lastWhitespace(String where) {
 		
-		// TODO only space is considered - should be any whitespace
-		return where.lastIndexOf(" ");
+		char[] whereCharArray = where.toCharArray();
+		
+		for (int i = whereCharArray.length - 1; i >= 0; --i) {
+		    
+			if (Character.isWhitespace(whereCharArray[i])) {
+		       return i;
+		    }
+		}
+		
+		return -1;
 	}
 	
 	// thx - http://stackoverflow.com/questions/4067809/how-to-check-space-in-string
@@ -168,30 +176,6 @@ public class ScopeImpl implements Scope {
 		
 		// -- match class --
 		
-		// TODO handling of ..* and .* in class matching 
-		// if wildcard does not include ".." matched class can have only so many
-		// dots as wildcard
-		// if wildcard has ".." replace it with . and match
-
-		/*
-		final String HANDLE_SUBPACKAGES = "..*";
-		final String REPLACE_SUBPACKAGES = ".*";
-		final String NOT_HANDLE_SUBPACKAGES = ".*";
-		
-		String matchingClassWC = classWildCard;
-		
-		if(classWildCard.indexOf(HANDLE_SUBPACKAGES) != -1) {
-			matchingClassWC = classWildCard.replaceAll(
-					HANDLE_SUBPACKAGES, REPLACE_SUBPACKAGES);
-		}
-
-		if(classWildCard.indexOf(NOT_HANDLE_SUBPACKAGES) != -1) {
-			// TODO if dots not matches return
-		}
-		
-		// TODO you should also take care about number of dots
-		*/
-
 		// replace delimiters for matching
 		className = className.replace(
 				Constants.PACKAGE_ASM_DELIM, Constants.PACKAGE_STD_DELIM);
