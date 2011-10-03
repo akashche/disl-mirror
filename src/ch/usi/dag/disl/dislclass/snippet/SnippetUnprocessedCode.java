@@ -357,6 +357,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		LabelNode handlerBegin = new LabelNode();
 		instructions.add(handlerBegin);
 
+		// TODO ! snippet should not throw an exception - the solution should contain try-finally for each block regardless of dynamic bypass and should fail immediately
 		// add invocation of deactivate - abnormal flow
 		instructions.add(mtdDeactivate.clone(null));
 		// throw exception again

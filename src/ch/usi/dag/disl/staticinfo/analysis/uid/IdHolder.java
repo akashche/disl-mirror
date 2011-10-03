@@ -58,6 +58,7 @@ class IdHolder {
 		
 		// dump to the file
 		output.println(newId + "\t" + forValue);
+		output.flush();
 		
 		return newId;
 	}
