@@ -8,6 +8,15 @@ then
     exit
 fi
 
+SERVER_FILE=.server.pid
+export SERVER_FILE
+
+if [ -e ${SERVER_FILE} ]
+then
+    kill -KILL `cat ${SERVER_FILE}`
+    rm .server.pid
+fi
+
 DISL_CLASS="./bin/ch/usi/dag/disl/test/$1/DiSLClass.class"
 TARGET_CLASS="ch.usi.dag.disl.test.$1.TargetClass"
 
@@ -28,5 +37,5 @@ sleep 5
 ./runClient.sh ${TARGET_CLASS}
 
 # kill server
-kill -KILL `cat .server.pid`
+kill -KILL `cat ${SERVER_FILE}`
 rm .server.pid

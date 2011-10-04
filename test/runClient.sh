@@ -6,4 +6,6 @@ java -XX:MaxPermSize=128m \
     -Xbootclasspath/p:lib/remote-runtime.jar:../lib/jborat-runtime.jar:build/test-runtime.jar \
     -agentpath:lib/libjboratclientagent.so=1234,localhost \
     -cp ./bin \
-     $*
+    -jar lib/dacapo-9.12-bach.jar --no-validation tomcat
+
+#     $*

@@ -5,7 +5,7 @@ CLASSPATH=../lib/jborat-agent.jar:../lib/jborat-runtime.jar:../lib/jborat-interf
 java -Dch.usi.dag.jborat.instrumented="instrumented" \
     -Djborat.debug \
     -Ddisl.dynbypass=true \
-    -Ddisl.debug=true \
+    -Ddisl.debug \
     -Dch.usi.dag.jborat.instrumentation="ch.usi.dag.disl.DiSL" \
     -Dch.usi.dag.jborat.codemergerList="conf/codemerger.lst" \
     -Dch.usi.dag.jborat.liblist="conf/lib.lst" \
@@ -16,4 +16,4 @@ java -Dch.usi.dag.jborat.instrumented="instrumented" \
     ch.usi.dag.jborat.remote.server.Server \
     &
 
-echo $! > .server.pid
+echo $! > ${SERVER_FILE}
