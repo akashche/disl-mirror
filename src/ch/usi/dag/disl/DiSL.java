@@ -321,7 +321,7 @@ public class DiSL implements Instrumentation {
 				classChanged = classChanged || methodChanged;
 			}
 			
-			/* TODO ! uncomment when ASM is fixed 
+			/* TODO ! uncomment when ASM is fixed
 			// instrument thread local fields
 			String threadInternalName = 
 				Type.getType(Thread.class).getInternalName();
@@ -410,5 +410,10 @@ public class DiSL implements Instrumentation {
     	ClassReader cr = new ClassReader(classAsStream);
     	
     	return instrument(cr);
+	}
+
+	@Override
+	public void terminate() throws Exception {
+		
 	}
 }

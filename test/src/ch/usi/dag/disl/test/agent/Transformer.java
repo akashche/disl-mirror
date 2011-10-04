@@ -1,12 +1,8 @@
 package ch.usi.dag.disl.test.agent;
 
-import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.util.TraceClassVisitor;
 
 import ch.usi.dag.disl.DiSL;
 
@@ -29,7 +25,7 @@ public class Transformer implements ClassFileTransformer {
 			
 			if(instrumentedClass != null) {
 			
-				//*
+				/*
 				// print class
 				ClassReader cr = new ClassReader(instrumentedClass);
 				TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
