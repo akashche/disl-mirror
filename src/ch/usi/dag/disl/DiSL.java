@@ -261,6 +261,8 @@ public class DiSL implements Instrumentation {
 		// check guard for each marking
 		for(MarkedRegion markedRegion : marking) {
 
+			// TODO ! shadow - create shadow
+			
 			if(guard.isApplicable(classNode, methodNode, snippet, 
 					markedRegion)) {
 

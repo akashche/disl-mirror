@@ -1,7 +1,12 @@
 package ch.usi.dag.disl.dynamicinfo;
 
-abstract public class DynamicContext {
+final public class DynamicContext {
 
+	// Disallow to create instances
+	private DynamicContext() {
+		
+	}
+	
 	/**
 	 * Returns value on application stack at runtime.
 	 * 
