@@ -21,6 +21,12 @@ public class BasicBlockAnalysis extends AbstractStaticAnalysis {
 		super(classNode, methodNode, snippet, markedRegion);
 	}
 
+	public int getTotBBs() {
+        CtrlFlowGraph cfg = new CtrlFlowGraph(
+                staticAnalysisData.getMethodNode());
+        return cfg.getNodes().size();
+	}
+
 	public int getBBSize() {
 
 		int count = 1;
