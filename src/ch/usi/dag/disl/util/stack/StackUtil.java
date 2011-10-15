@@ -65,12 +65,16 @@ public class StackUtil {
 		return ilst;
 	}
 
+	public static BasicValue getBasicValue(Frame<BasicValue> frame, int depth) {
+		return frame.getStack(frame.getStackSize() - 1 - depth);
+	}
+
 	// generate a source analyzer
 	public static Analyzer<SourceValue> getSourceAnalyzer() {
 		return new Analyzer<SourceValue>(new SourceInterpreter());
 	}
-	
-	public static SourceValue getSource(Frame<SourceValue> frame, int depth) {
+
+	public static SourceValue getSourceValue(Frame<SourceValue> frame, int depth) {
 		return frame.getStack(frame.getStackSize() - 1 - depth);
 	}
 

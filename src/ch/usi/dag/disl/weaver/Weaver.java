@@ -258,7 +258,8 @@ public class Weaver {
 	// instructions will be inserted to the target method, and new local slot
 	// will be used for storing this.
 	public static void fixDynamicInfo(Snippet snippet, MarkedRegion region,
-			Frame<SourceValue> frame, MethodNode method, InsnList src) {
+			Frame<BasicValue> basicframe, Frame<SourceValue> sourceframe,
+			MethodNode method, InsnList src) {
 
 		int max = AsmHelper.calcMaxLocal(src);
 
@@ -291,9 +292,25 @@ public class Weaver {
 			if (invoke.name.equals("getStackValue")) {
 				int sopcode = t.getOpcode(Opcodes.ISTORE);
 				int lopcode = t.getOpcode(Opcodes.ILOAD);
-				
+
+				// index should be less than the stack height
+				if (operand >= basicframe.getStackSize() || operand < 0) {
+					throw new DiSLFatalException("Illegal access of index "
+							+ operand + " on a stack with "
+							+ basicframe.getStackSize() + " operands");
+				}
+
+				// Type checking
+				Type targetType = StackUtil.getBasicValue(basicframe, operand)
+						.getType();
+
+				if (t.getSort() != targetType.getSort()) {
+					throw new DiSLFatalException("Unwanted type \""
+							+ targetType + "\", while user needs \"" + t + "\"");
+				}
+
 				// store the stack value without changing the semantic
-				int size = dupStack(frame, method, operand, sopcode,
+				int size = dupStack(sourceframe, method, operand, sopcode,
 						method.maxLocals + max);
 				// load the stack value
 				src.insert(instr, new VarInsnNode(lopcode, max));
@@ -303,11 +320,42 @@ public class Weaver {
 			//        with a negative local slot. And it will be updated in 
 			//        method fixLocalIndex
 			else if (invoke.name.equals("getMethodArgumentValue")) {
-				
+
+				int slot = AsmHelper.getInternalParamIndex(method, operand);
+
+				// index should be less than the size of local variables
+				if (slot >= basicframe.getLocals() || slot < 0) {
+					throw new DiSLFatalException("Illegal access of index "
+							+ slot + " while the size of local variable is "
+							+ basicframe.getLocals());
+				}
+
+				// Type checking
+				Type targetType = basicframe.getLocal(slot).getType();
+
+				if (t.getSort() != targetType.getSort()) {
+					throw new DiSLFatalException("Unwanted type \""
+							+ targetType + "\", while user needs \"" + t + "\"");
+				}
+
 				src.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
-						AsmHelper.getInternalParamIndex(method, operand)
-								- method.maxLocals));
+						slot - method.maxLocals));
 			} else if (invoke.name.equals("getLocalVariableValue")) {
+
+				// index should be less than the size of local variables
+				if (operand >= basicframe.getLocals() || operand < 0) {
+					throw new DiSLFatalException("Illegal access of index "
+							+ operand + " while the size of local variable is "
+							+ basicframe.getLocals());
+				}
+
+				// Type checking
+				Type targetType = basicframe.getLocal(operand).getType();
+
+				if (t.getSort() != targetType.getSort()) {
+					throw new DiSLFatalException("Unwanted type \""
+							+ targetType + "\", while user needs \"" + t + "\"");
+				}
 
 				src.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
 						operand - method.maxLocals));
@@ -340,7 +388,7 @@ public class Weaver {
 	// operand and store into a local slot.
 	private static int dupStack(Frame<SourceValue> frame,
 			MethodNode method, int operand, int sopcode, int slot) {
-		SourceValue source = StackUtil.getSource(frame, operand);
+		SourceValue source = StackUtil.getSourceValue(frame, operand);
 
 		for (AbstractInsnNode itr : source.insns) {
 
@@ -370,7 +418,7 @@ public class Weaver {
 					break;
 				}
 
-				SourceValue x2 = StackUtil.getSource(frame, operand + 2);
+				SourceValue x2 = StackUtil.getSourceValue(frame, operand + 2);
 				dupStack(frame, method, operand + (4 - x2.size), sopcode, slot);
 				continue;
 
@@ -499,7 +547,7 @@ public class Weaver {
 			// position, arguments count and argument value
 			int pos = processorMethod.getArgsCount() - 1
 					- processorMethod.getArgPos();
-			SourceValue source = StackUtil.getSource(frame, pos);
+			SourceValue source = StackUtil.getSourceValue(frame, pos);
 
 			AbstractInsnNode start = instructions.getFirst();
 			instructions.insertBefore(start,
@@ -856,8 +904,8 @@ public class Weaver {
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 					passesConstsToDynamicAnalysis(snippet, newlst);
-					fixDynamicInfo(snippet, region, sourceFrames[index],
-							methodNode, newlst);
+					fixDynamicInfo(snippet, region, basicFrames[index],
+							sourceFrames[index], methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);
 										
 					weavingProcessor(methodNode, piResolver, snippet, region,
@@ -906,8 +954,8 @@ public class Weaver {
 						
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 						passesConstsToDynamicAnalysis(snippet, newlst);
-						fixDynamicInfo(snippet, region, sourceFrames[index],
-								methodNode, newlst);
+						fixDynamicInfo(snippet, region, basicFrames[index],
+								sourceFrames[index], methodNode, newlst);
 						fixLocalIndex(methodNode, newlst);
 						
 						weavingProcessor(methodNode, piResolver, snippet,
@@ -954,8 +1002,8 @@ public class Weaver {
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
 					passesConstsToDynamicAnalysis(snippet, newlst);
-					fixDynamicInfo(snippet, region, sourceFrames[last_index],
-							methodNode, newlst);
+					fixDynamicInfo(snippet, region, basicFrames[last_index],
+							sourceFrames[last_index], methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);
 
 					weavingProcessor(methodNode, piResolver, snippet, region,
