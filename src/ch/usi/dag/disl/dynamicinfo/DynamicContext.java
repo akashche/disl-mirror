@@ -1,36 +1,16 @@
 package ch.usi.dag.disl.dynamicinfo;
 
-final public class DynamicContext {
+public interface DynamicContext {
 
-	// Disallow to create instances
-	private DynamicContext() {
-		
-	}
-	
-	// TODO ! distance difference 1 ?? really ??
 	/**
 	 * Returns value on application stack at runtime.
 	 * 
 	 * @param distance position from the top of the stack.
 	 * 			0 returns top of the stack.
-	 * 			Doubles and longs are counted as distance difference 1.
+	 * 			Doubles and longs are counted as distance difference 2.
 	 * @param valueType type of the accessed value
 	 */
-	public <T> T getStackValue(int distance, Class<T> valueType) {
-		return null;
-	}
-	
-	/**
-	 * Returns value of method argument at given position at runtime.
-	 * 
-	 * @param index argument position.
-	 * 			0 returns this if applicable.
-	 * 			Doubles and longs are counted as distance difference 1.
-	 * @param valueType type of the accessed argument
-	 */
-	public <T> T getMethodArgumentValue(int index, Class<T> valueType) {
-		return null;
-	}
+	public <T> T stackValue(int distance, Class<T> valueType);
 	
 	/**
 	 * Returns value of local variable with given index at runtime.
@@ -40,7 +20,20 @@ final public class DynamicContext {
 	 * 			Doubles and longs are counted as distance difference 2.
 	 * @param valueType type of the accessed argument
 	 */
-	public <T> T getLocalVariableValue(int index, Class<T> valueType) {
-		return null;
-	}
+	public <T> T localVariableValue(int index, Class<T> valueType);
+	
+	/**
+	 * Returns value of this object for dynamic method null for static method.
+	 */
+	public Object thisValue();
+	
+	/**
+	 * Returns value of method argument at given position at runtime.
+	 * 
+	 * @param index argument position.
+	 * 			0 returns this if applicable, null otherwise.
+	 * 			Doubles and longs are counted as distance difference 1.
+	 * @param valueType type of the accessed argument
+	 */
+	public <T> T methodArgumentValue(int index, Class<T> valueType);
 }

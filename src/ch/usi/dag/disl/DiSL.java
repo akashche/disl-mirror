@@ -41,6 +41,7 @@ import ch.usi.dag.jborat.agent.Instrumentation;
 
 // TODO better public API - marker pkg should be in disl pkg, class visibility (and pkg) cleanup everywhere
 //  - maybe expose classes in user package and other are considered non visible :)
+//  - make private DiSL classes only package visible - the class dependency will tell you what should be in one package :)
 // TODO javadoc comment all
 public class DiSL implements Instrumentation {
 
