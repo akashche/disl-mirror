@@ -15,6 +15,8 @@ public class NewObjMarker implements Marker {
 
 	protected boolean isPrecise = false;
 
+	// NOTE: does not work for arrays
+	
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {
 

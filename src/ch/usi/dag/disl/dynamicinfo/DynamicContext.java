@@ -7,6 +7,7 @@ final public class DynamicContext {
 		
 	}
 	
+	// TODO ! distance difference 1 ?? really ??
 	/**
 	 * Returns value on application stack at runtime.
 	 * 

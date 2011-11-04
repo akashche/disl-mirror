@@ -117,7 +117,7 @@ public class SnippetParser extends AbstractParser {
 
 		// ** marker **
 		Marker marker = 
-			getMarker(annotData.marker, annotData.param);
+			getMarker(annotData.marker, annotData.args);
 
 		// ** scope **
 		Scope scope = new ScopeImpl(annotData.scope);
@@ -191,7 +191,7 @@ public class SnippetParser extends AbstractParser {
 		
 		// annotation values
 		public Type marker = null;
-		public String param = null; // default
+		public String args = null; // default
 		public String scope = null;
 		public Type guard = null; // default
 		public int order = 100; // default

@@ -12,7 +12,7 @@ public @interface After {
 	// are not retrieved from here but from class mentioned above
 	
 	Class<? extends Marker> marker();
-	String param() default ""; // cannot be null :(
+	String args() default ""; // cannot be null :(
 	String scope();
 	Class<? extends SnippetGuard> guard() default SnippetGuard.class; // cannot be null :(
 	int order() default 100;
