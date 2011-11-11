@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.test.jp2;
 
-import ch.usi.dag.disl.dislclass.annotation.After;
 import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
 import ch.usi.dag.disl.dislclass.annotation.Before;
 import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;

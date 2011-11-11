@@ -5,8 +5,8 @@ import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
 import ch.usi.dag.disl.dynamicinfo.DynamicContext;
 
 public class DiSLClass {
-	@AfterReturning(marker = BytecodeMarker.class, param="new", scope = "TargetClass.*")
+	@AfterReturning(marker = BytecodeMarker.class, args="new", scope = "TargetClass.*")
 	public static void precondition(DynamicContext dc) {
-		dc.getStackValue(0, Object.class);
+		dc.stackValue(0, Object.class);
 	}
 }

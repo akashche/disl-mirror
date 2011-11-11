@@ -1,15 +1,11 @@
 package ch.usi.dag.disl.test.senseo;
 
 import ch.usi.dag.disl.dislclass.annotation.After;
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
 import ch.usi.dag.disl.dislclass.annotation.Before;
 import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dislclass.annotation.ThreadLocal;
 import ch.usi.dag.disl.dislclass.snippet.marker.AfterInitBodyMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.BasicBlockMarker;
 import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
-import ch.usi.dag.disl.dynamicinfo.DynamicContext;
 import ch.usi.dag.disl.processor.Processor;
 import ch.usi.dag.disl.processor.ProcessorApplyType;
 import ch.usi.dag.disl.staticinfo.analysis.BasicBlockAnalysis;

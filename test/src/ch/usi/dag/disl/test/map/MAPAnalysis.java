@@ -3,7 +3,6 @@ package ch.usi.dag.disl.test.map;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 
 import ch.usi.dag.disl.staticinfo.analysis.AbstractStaticAnalysis;

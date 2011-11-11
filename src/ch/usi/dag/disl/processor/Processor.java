@@ -12,7 +12,7 @@ public abstract class Processor {
 		
 	}
 
-	// TODO ! reciver - should it have apply type?, add desc
+	// TODO ! receiver - should it have apply type?, add description
 	public static Object getReceiver(ProcessorApplyType applyType) {
 		return null;
 	}

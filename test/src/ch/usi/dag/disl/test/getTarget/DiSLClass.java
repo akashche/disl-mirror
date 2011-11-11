@@ -14,7 +14,7 @@ public class DiSLClass {
 
 	@Before(marker = BytecodeMarker.class, param = "invokevirtual", scope = "*.foo")
 	public static void getTarget(GetTargetAnalysis gta, DynamicContext dc) {
-		Object target = dc.getStackValue(gta.calleeParCount(), Object.class);
+		Object target = dc.stackValue(gta.calleeParCount(), Object.class);
 		System.out.println(target);
 	}
 }

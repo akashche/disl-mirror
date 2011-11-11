@@ -16,7 +16,7 @@ public class DiSLClass {
 	@AfterReturning(marker = NewObjMarker.class, scope = "TargetClass.main")
 	public static void afterAlloc(DynamicContext dc) {
 
-		TargetClass tc = dc.getStackValue(0, TargetClass.class);
+		TargetClass tc = dc.stackValue(0, TargetClass.class);
 		System.out.println(tc.printMe);
 	}
 }

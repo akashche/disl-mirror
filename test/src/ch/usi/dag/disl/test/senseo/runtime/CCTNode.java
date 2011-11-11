@@ -30,7 +30,8 @@ public final class CCTNode {
         }
     }
 
-    private final CCTNode parent;
+    @SuppressWarnings("unused")
+	private final CCTNode parent;
     private final int methodUID;
 
     public int index = -1;

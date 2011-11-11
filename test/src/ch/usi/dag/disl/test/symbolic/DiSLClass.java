@@ -51,7 +51,7 @@ public class DiSLClass {
 				stackmodel.pop()));
 	}
 	
-	@AfterReturning(marker = BytecodeMarker.class, param = "if_icmple", scope = "TargetClass.print")
+	@AfterReturning(marker = BytecodeMarker.class, args = "if_icmple", scope = "TargetClass.print")
 	public static void branch_fall(SEAnalysis ba) {
 		constraints.fall();
 	}

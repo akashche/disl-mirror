@@ -1,7 +1,5 @@
 package ch.usi.dag.disl.test.map;
 
-import java.util.Vector;
-
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class TargetClass {
@@ -34,6 +32,7 @@ public class TargetClass {
 		return thisString;
 	}
 	
+	@SuppressWarnings("unused")
 	public void goo() {
 		System.out.println("this object is " + this);
 		synchronized(this) {
@@ -58,7 +57,7 @@ public class TargetClass {
 		// test caload / castore
 		char[] carr = new char[] {'h'};
 		char c = carr[0];
-		System.out.println("The char array is " + carr + " at index 0");
+		System.out.println("The char array is " + carr.toString() + " at index 0");
 		// test faload / fastore
 		float [] farr = new float[] { 1,0 };
 		float f = farr[0];
@@ -77,6 +76,7 @@ public class TargetClass {
 	    System.out.println("The long array is " + larr + " at index 0");
 	}
 	
+	@SuppressWarnings("unused")
 	public void foo2() {
 		value += 100;
 		staticValue += 1000;
@@ -99,10 +99,11 @@ public class TargetClass {
 		System.out.println("This is synchronized method " + this);
 	}
 	
-	  public void foo() {
-          String s = stringValue; // getfield..
-          Size size = new Size(new String());
-      }
+	@SuppressWarnings("unused")
+	public void foo() {
+		String s = stringValue; // getfield..
+		Size size = new Size(new String());
+	}
 	
 	
 	

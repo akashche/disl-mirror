@@ -5,7 +5,8 @@ public class TargetClass {
 	 
 	public static final int UNINITIALIZED = -1;
 	 
-		private int numberOfArgs = UNINITIALIZED;
+	@SuppressWarnings("unused")
+	private int numberOfArgs = UNINITIALIZED;
 		
 	public void method1() {
 		System.out.println("This is the body of TargetClass.method1");

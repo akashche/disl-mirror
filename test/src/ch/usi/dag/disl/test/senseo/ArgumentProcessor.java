@@ -1,16 +1,6 @@
 package ch.usi.dag.disl.test.senseo;
 
 import ch.usi.dag.disl.dislclass.annotation.Processor;
-import ch.usi.dag.disl.test.senseo.runtime.arguments.Boolean;
-import ch.usi.dag.disl.test.senseo.runtime.arguments.Byte;
-import ch.usi.dag.disl.test.senseo.runtime.arguments.Char;
-import ch.usi.dag.disl.test.senseo.runtime.arguments.Double;
-import ch.usi.dag.disl.test.senseo.runtime.arguments.Float;
-import ch.usi.dag.disl.test.senseo.runtime.arguments.Int;
-import ch.usi.dag.disl.test.senseo.runtime.arguments.Long;
-import ch.usi.dag.disl.test.senseo.runtime.arguments.Null;
-import ch.usi.dag.disl.test.senseo.runtime.arguments.Short;
-import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 @Processor
 public class ArgumentProcessor {

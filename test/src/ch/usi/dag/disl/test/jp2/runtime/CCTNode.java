@@ -12,13 +12,8 @@ package ch.usi.dag.disl.test.jp2.runtime;
  * with no claim as to its suitability for any purpose.
  */
 
-import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -90,6 +85,7 @@ public final class CCTNode  {
           
             // SHUTDOWNHOOK
     		Thread shutdownHook = new Thread() {
+				@SuppressWarnings("static-access")
 				public void run () {
 					  
 						System.out.println("SHUTDOWN..." + ROOT + " THREAD " + Thread.currentThread());
@@ -318,7 +314,8 @@ public final class CCTNode  {
     }
     */
     
-    private static void accumulateSiblings(CCTNode n, List<CCTNode> accumulator) {
+    @SuppressWarnings("unused")
+	private static void accumulateSiblings(CCTNode n, List<CCTNode> accumulator) {
         if (n == null) return;
         
         accumulator.add(n);
