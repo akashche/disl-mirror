@@ -12,10 +12,11 @@ public class TargetClass {
 		public TargetClass2() {
 			
 			System.out.println("Constructing TargetClass2");
+			System.out.println("Construction end");
 		}
 	
 		public void method() {
-			System.out.println("Construction end");
+			
 		}
 	}
 

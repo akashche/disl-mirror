@@ -35,15 +35,22 @@ public class AfterInitBodyMarker implements Marker {
 			return first;
 		}
 
-		// Similar to 'const boolean **trigger' in c.
-		final boolean trigger[] = { false };
+		// AdviceAdapter will help us with identifying the proper place where
+		// the constructor to super is called 
+		
+		// just need an object that will hold a value
+		//  - we need access to the changeable boolean via reference
+		class DataHolder {
+			boolean trigger = false;
+		}
+		final DataHolder dh = new DataHolder();
 
 		AdviceAdapter adapter = new AdviceAdapter(Opcodes.ASM4,
 				new EmptyMethodVisitor(), method.access, method.name,
 				method.desc) {
 
 			public void onMethodEnter() {
-				trigger[0] = true;
+				dh.trigger = true;
 			}
 		};
 
@@ -55,8 +62,9 @@ public class AfterInitBodyMarker implements Marker {
 			
 			iterator.accept(adapter);
 
-			if (trigger[0]) {
-				first = iterator.getPrevious();
+			// first instruction will be instruction after constructor call
+			if (dh.trigger) {
+				first = iterator.getNext();
 				break;
 			}
 		}
