@@ -25,7 +25,7 @@ import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.exception.SnippetParserException;
-import ch.usi.dag.disl.exception.StaticInfoException;
+import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.SnippetGuard;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.marker.Parameter;
@@ -33,7 +33,7 @@ import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetUnprocessedCode;
-import ch.usi.dag.disl.staticcontext.StaticAnalysis;
+import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
@@ -52,7 +52,7 @@ public class SnippetParser extends AbstractParser {
 	
 	public void parse(ClassNode classNode) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
-			StaticInfoException, MarkerException {
+			StaticContextGenException, MarkerException {
 
 		// NOTE: this method can be called many times
 
@@ -78,7 +78,7 @@ public class SnippetParser extends AbstractParser {
 	// parse snippet
 	private Snippet parseSnippet(String className, MethodNode method)
 			throws SnippetParserException, ReflectionException,
-			ScopeParserException, StaticInfoException, MarkerException {
+			ScopeParserException, StaticContextGenException, MarkerException {
 
 		// check annotation
 		if (method.invisibleAnnotations == null) {
@@ -126,8 +126,8 @@ public class SnippetParser extends AbstractParser {
 		SnippetGuard guard = 
 			(SnippetGuard) ParserHelper.getGuard(annotData.guard);
 		
-		// ** parse used static analysis **
-		Analysis analysis = parseAnalysis(method.desc);
+		// ** parse used static and dynamic context **
+		Context context = parseContext(method.desc);
 
 		// ** checks **
 
@@ -137,16 +137,16 @@ public class SnippetParser extends AbstractParser {
 					+ method.name + " cannot be empty");
 		}
 
-		// analysis arguments (local variables 1, 2, ...) cannot be stored or
+		// context arguments (local variables 1, 2, ...) cannot be stored or
 		// overwritten, may be used only in method calls
-		usesAnalysisProperly(className, method.name, method.desc,
+		usesContextProperly(className, method.name, method.desc,
 				method.instructions);
 
 		// ** create unprocessed code holder class **
 		// code is processed after everything is parsed
 		SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(className,
 				method.name, method.instructions, method.tryCatchBlocks,
-				analysis.getStaticAnalyses(), analysis.usesDynamicAnalysis(),
+				context.getStaticContexts(), context.usesDynamicContext(),
 				annotData.dynamicBypass);
 
 		// return whole snippet
@@ -259,62 +259,62 @@ public class SnippetParser extends AbstractParser {
 		}
 	}
 
-	private static class Analysis {
+	private static class Context {
 
-		private Set<String> staticAnalyses;
-		private boolean usesDynamicAnalysis;
+		private Set<String> staticContexts;
+		private boolean usesDynamicContext;
 
-		public Analysis(Set<String> staticAnalyses, boolean usesDynamicAnalysis) {
+		public Context(Set<String> staticContexts, boolean usesDynamicContext) {
 			super();
-			this.staticAnalyses = staticAnalyses;
-			this.usesDynamicAnalysis = usesDynamicAnalysis;
+			this.staticContexts = staticContexts;
+			this.usesDynamicContext = usesDynamicContext;
 		}
 
-		public Set<String> getStaticAnalyses() {
-			return staticAnalyses;
+		public Set<String> getStaticContexts() {
+			return staticContexts;
 		}
 
-		public boolean usesDynamicAnalysis() {
-			return usesDynamicAnalysis;
+		public boolean usesDynamicContext() {
+			return usesDynamicContext;
 		}
 	}
 
-	private Analysis parseAnalysis(String methodDesc)
-			throws ReflectionException, StaticInfoException {
+	private Context parseContext(String methodDesc)
+			throws ReflectionException, StaticContextGenException {
 
-		Set<String> knownStAn = new HashSet<String>();
-		boolean usesDynamicAnalysis = false;
+		Set<String> knownStCo = new HashSet<String>();
+		boolean usesDynamicContext = false;
 
 		for (Type argType : Type.getArgumentTypes(methodDesc)) {
 
-			// skip dynamic analysis class - don't check anything
+			// skip dynamic context class - don't check anything
 			if (argType.equals(Type.getType(DynamicContext.class))) {
-				usesDynamicAnalysis = true;
+				usesDynamicContext = true;
 				continue;
 			}
 
 			Class<?> argClass = ReflectionHelper.resolveClass(argType);
 
-			// static analysis should implement analysis interface
-			if (!implementsStaticAnalysis(argClass)) {
-				throw new StaticInfoException(argClass.getName()
-						+ " does not implement StaticAnalysisMethod interface and"
+			// static context should implement context interface
+			if (!implementsStaticContext(argClass)) {
+				throw new StaticContextGenException(argClass.getName()
+						+ " does not implement StaticContext interface and"
 						+ " cannot be used as advice method parameter");
 			}
 
-			knownStAn.add(argType.getInternalName());
+			knownStCo.add(argType.getInternalName());
 		}
 
-		return new Analysis(knownStAn, usesDynamicAnalysis);
+		return new Context(knownStCo, usesDynamicContext);
 	}
 
 	/**
-	 * Searches for StaticAnalysisMethod interface. Searches through whole class
+	 * Searches for StaticContext interface. Searches through whole class
 	 * hierarchy.
 	 * 
 	 * @param classToSearch
 	 */
-	private boolean implementsStaticAnalysis(Class<?> classToSearch) {
+	private boolean implementsStaticContext(Class<?> classToSearch) {
 
 		// through whole hierarchy...
 		while (classToSearch != null) {
@@ -322,8 +322,8 @@ public class SnippetParser extends AbstractParser {
 			// ...through all interfaces...
 			for (Class<?> iface : classToSearch.getInterfaces()) {
 
-				// ...search for StaticAnalysisMethod interface
-				if (iface.equals(StaticAnalysis.class)) {
+				// ...search for StaticContext interface
+				if (iface.equals(StaticContext.class)) {
 					return true;
 				}
 			}
@@ -334,7 +334,7 @@ public class SnippetParser extends AbstractParser {
 		return false;
 	}
 
-	private void usesAnalysisProperly(String className, String methodName,
+	private void usesContextProperly(String className, String methodName,
 			String methodDescriptor, InsnList instructions)
 			throws SnippetParserException {
 
@@ -352,7 +352,7 @@ public class SnippetParser extends AbstractParser {
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
 			switch (instr.getOpcode()) {
-			// test if the analysis is stored somewhere else
+			// test if the context is stored somewhere else
 			case Opcodes.ALOAD: {
 
 				int local = ((VarInsnNode) instr).var;
@@ -361,13 +361,13 @@ public class SnippetParser extends AbstractParser {
 						&& instr.getNext().getOpcode() == Opcodes.ASTORE) {
 					throw new SnippetParserException("In advice " + className
 							+ "." + methodName + " - advice parameter"
-							+ " (analysis) cannot be stored into local"
+							+ " (context) cannot be stored into local"
 							+ " variable");
 				}
 
 				break;
 			}
-				// test if something is stored in the analysis
+				// test if something is stored in the context
 			case Opcodes.ASTORE: {
 
 				int local = ((VarInsnNode) instr).var;
@@ -375,7 +375,7 @@ public class SnippetParser extends AbstractParser {
 				if (local < maxArgIndex) {
 					throw new SnippetParserException("In advice " + className
 							+ "." + methodName + " - advice parameter"
-							+ " (analysis) cannot overwritten");
+							+ " (context) cannot overwritten");
 				}
 
 				break;

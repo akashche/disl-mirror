@@ -2,7 +2,7 @@ package ch.usi.dag.disl.test.senseo;
 
 import ch.usi.dag.disl.annotation.ArgsProcessor;
 
-@Processor
+@ArgsProcessor
 public class ArgumentProcessor {
     public static void objPM(int pos, int n, Object o) {
         DiSLClass.thisAnalysis.profileArgument(o);//==null) ? Null.class : o.getClass());//, pos);

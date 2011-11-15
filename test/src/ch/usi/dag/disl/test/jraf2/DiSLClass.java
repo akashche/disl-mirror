@@ -4,7 +4,7 @@ import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.marker.BasicBlockMarker;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.ExceptionHandlerMarker;
-import ch.usi.dag.disl.staticcontext.BasicBlockAnalysis;
+import ch.usi.dag.disl.staticcontext.BasicBlockSC;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.annotation.ThreadLocal;
 import ch.usi.dag.disl.annotation.SyntheticLocal.Initialize;
@@ -37,7 +37,7 @@ public class DiSLClass {
 	
 	
 	@Before(marker = BasicBlockMarker.class, scope = "TargetClass.*(...)", order = 0)
-	public static void updateCounter(BasicBlockAnalysis bba) {
+	public static void updateCounter(BasicBlockSC bba) {
 		if(bba.isFirstOfLoop() && counter > THRESHOLD) {
 			System.out.println("PROFILE FIRST IN LOOP... ***** RESET COUNTER");
 			Profiler.profile(Thread.currentThread(), counter);

@@ -56,9 +56,9 @@ import ch.usi.dag.disl.util.stack.StackUtil;
 public class Weaver {
 
 	/**
-	 * Checks if dynamic analysis methods contains only constants
+	 * Checks if dynamic context methods contains only constants
 	 */
-	private static void passesConstsToDynamicAnalysis(Snippet snippet,
+	private static void passesConstsToDynamicContext(Snippet snippet,
 			InsnList instructions) throws DynamicInfoException {
 
 		for (AbstractInsnNode instr : instructions.toArray()) {
@@ -70,7 +70,7 @@ public class Weaver {
 
 			MethodInsnNode invoke = (MethodInsnNode) instr;
 
-			// ... of dynamic analysis
+			// ... of dynamic context
 			if (!invoke.owner
 					.equals(Type.getInternalName(DynamicContext.class))) {
 				continue;
@@ -903,7 +903,7 @@ public class Weaver {
 					AbstractInsnNode[] instr_array = newlst.toArray();
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
-					passesConstsToDynamicAnalysis(snippet, newlst);
+					passesConstsToDynamicContext(snippet, newlst);
 					fixDynamicInfo(snippet, region, basicFrames[index],
 							sourceFrames[index], methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);
@@ -953,7 +953,7 @@ public class Weaver {
 						AbstractInsnNode[] instr_array = newlst.toArray();
 						
 						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
-						passesConstsToDynamicAnalysis(snippet, newlst);
+						passesConstsToDynamicContext(snippet, newlst);
 						fixDynamicInfo(snippet, region, basicFrames[index],
 								sourceFrames[index], methodNode, newlst);
 						fixLocalIndex(methodNode, newlst);
@@ -1001,7 +1001,7 @@ public class Weaver {
 					AbstractInsnNode[] instr_array = newlst.toArray();
 
 					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
-					passesConstsToDynamicAnalysis(snippet, newlst);
+					passesConstsToDynamicContext(snippet, newlst);
 					fixDynamicInfo(snippet, region, basicFrames[last_index],
 							sourceFrames[last_index], methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);

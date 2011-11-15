@@ -1,11 +1,11 @@
 package ch.usi.dag.disl.staticcontext.cache;
 
-import ch.usi.dag.disl.staticcontext.StaticAnalysisData;
+import ch.usi.dag.disl.staticcontext.Shadow;
 
-public class SnippetCache extends StaticAnalysisData {
+public class SnippetCache extends Shadow {
 
-	public SnippetCache(StaticAnalysisData sad) {
-		super(sad);
+	public SnippetCache(Shadow sa) {
+		super(sa);
 	}
 
 	@Override

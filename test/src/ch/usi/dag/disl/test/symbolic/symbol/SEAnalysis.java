@@ -5,18 +5,18 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import ch.usi.dag.disl.staticcontext.AbstractStaticAnalysis;
+import ch.usi.dag.disl.staticcontext.AbstractStaticContext;
 
-public class SEAnalysis extends AbstractStaticAnalysis{
+public class SEAnalysis extends AbstractStaticContext{
 
 	public int getBytecodeNumber() {
 
-		return staticAnalysisData.getMarkedRegion().getStart().getOpcode();
+		return staticContextData.getMarkedRegion().getStart().getOpcode();
 	}
 
 	public String getID() {
 
-		AbstractInsnNode instruction = staticAnalysisData.getMarkedRegion()
+		AbstractInsnNode instruction = staticContextData.getMarkedRegion()
 				.getStart();
 
 		if (instruction instanceof IincInsnNode) {
@@ -51,7 +51,7 @@ public class SEAnalysis extends AbstractStaticAnalysis{
 
 	public int getIConst() {
 
-		AbstractInsnNode instruction = staticAnalysisData.getMarkedRegion()
+		AbstractInsnNode instruction = staticContextData.getMarkedRegion()
 				.getStart();
 		int opcode = instruction.getOpcode();
 

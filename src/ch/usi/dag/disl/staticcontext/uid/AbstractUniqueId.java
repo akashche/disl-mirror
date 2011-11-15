@@ -1,12 +1,12 @@
 package ch.usi.dag.disl.staticcontext.uid;
 
-import ch.usi.dag.disl.staticcontext.AbstractStaticAnalysis;
+import ch.usi.dag.disl.staticcontext.AbstractStaticContext;
 
-public abstract class AbstractUniqueId extends AbstractStaticAnalysis {
+public abstract class AbstractUniqueId extends AbstractStaticContext {
 
 	private IdHolder idHolder;
 	
-	// constructor for static analysis
+	// constructor for static context
 	protected AbstractUniqueId() {
 		
 		idHolder = null;

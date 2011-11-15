@@ -3,28 +3,15 @@ package ch.usi.dag.disl.test.getTarget;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.marker.MarkedRegion;
-import ch.usi.dag.disl.staticcontext.AbstractStaticAnalysis;
+import ch.usi.dag.disl.staticcontext.AbstractStaticContext;
 
-public class GetTargetAnalysis extends AbstractStaticAnalysis {
-
-	public GetTargetAnalysis() {
-		super();
-	}
-
-	public GetTargetAnalysis(ClassNode classNode, MethodNode methodNode,
-			Snippet snippet, MarkedRegion markedRegion) {
-		super(classNode, methodNode, snippet, markedRegion);
-	}
+public class GetTargetAnalysis extends AbstractStaticContext {
 
 	public boolean isCalleeStatic() {
 
-		AbstractInsnNode instr = staticAnalysisData.getMarkedRegion()
+		AbstractInsnNode instr = staticContextData.getMarkedRegion()
 				.getStart();
 
 		return instr.getOpcode() == Opcodes.INVOKESTATIC;
@@ -32,7 +19,7 @@ public class GetTargetAnalysis extends AbstractStaticAnalysis {
 
 	public int calleeParCount() {
 
-		AbstractInsnNode instr = staticAnalysisData.getMarkedRegion()
+		AbstractInsnNode instr = staticContextData.getMarkedRegion()
 				.getStart();
 
 		if (!(instr instanceof MethodInsnNode)) {

@@ -17,7 +17,7 @@ import ch.usi.dag.disl.exception.ProcessorParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.exception.SnippetParserException;
-import ch.usi.dag.disl.exception.StaticInfoException;
+import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.processor.generator.struct.Proc;
 import ch.usi.dag.disl.snippet.Snippet;
@@ -29,7 +29,7 @@ public class ClassParser {
 	
 	public void parse(InputStream is) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
-			StaticInfoException, ProcessorParserException, IOException,
+			StaticContextGenException, ProcessorParserException, IOException,
 			MarkerException {
 
 		// prepare class node

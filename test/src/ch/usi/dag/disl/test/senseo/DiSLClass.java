@@ -8,7 +8,7 @@ import ch.usi.dag.disl.marker.AfterInitBodyMarker;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.processor.Processor;
 import ch.usi.dag.disl.processor.ProcessorMode;
-import ch.usi.dag.disl.staticcontext.BasicBlockAnalysis;
+import ch.usi.dag.disl.staticcontext.BasicBlockSC;
 import ch.usi.dag.disl.staticcontext.uid.UniqueMethodId;
 import ch.usi.dag.disl.test.senseo.runtime.Analysis;
 
@@ -32,7 +32,7 @@ public class DiSLClass {
      **                Constructors                  **
      **************************************************/
     @Before(marker = AfterInitBodyMarker.class, order = 1, scope = "*.*", guard = ConstructorHasOnlyPrimitiveArgs.class)
-    public static void onConstructorEntryPrimitiveArgs(UniqueMethodId id, BasicBlockAnalysis bba) {
+    public static void onConstructorEntryPrimitiveArgs(UniqueMethodId id, BasicBlockSC bba) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }
@@ -41,14 +41,14 @@ public class DiSLClass {
     }
 
     @Before(marker = AfterInitBodyMarker.class, order = 1, scope = "*.*", guard = ConstructorHasObjectArgs.class)
-    public static void onConstructorEntryObjectArgs(UniqueMethodId id, BasicBlockAnalysis bba) {
+    public static void onConstructorEntryObjectArgs(UniqueMethodId id, BasicBlockSC bba) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }
         //TODO: add method getTotBBs() to class BasicBlockAnalysis
         thisAnalysis.onEntry(id.get(), false, -1);//bba.getTotBBs());
 
-        Processor.apply(ArgumentProcessor.class, ProcessorApplyType.INSIDE_METHOD);     
+        Processor.apply(ArgumentProcessor.class, ProcessorMode.METHOD_ARGS);     
     }
 
     @After(marker = BodyMarker.class, order = 1, scope = "*.*", guard = OnlyInit.class)
@@ -60,7 +60,7 @@ public class DiSLClass {
      **                   Methods                    **
      **************************************************/
     @Before(marker = BodyMarker.class, order = 1, scope = "*.*", guard = MethodHasOnlyPrimitiveArgs.class)
-    public static void onMethodEntryPrimitiveArgs(UniqueMethodId id, BasicBlockAnalysis bba) {
+    public static void onMethodEntryPrimitiveArgs(UniqueMethodId id, BasicBlockSC bba) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }
@@ -69,14 +69,14 @@ public class DiSLClass {
     }
 
     @Before(marker = BodyMarker.class, order = 1, scope = "*.*", guard = MethodHasObjectArgs.class)
-    public static void onMethodEntryObjectArgs(UniqueMethodId id, BasicBlockAnalysis bba) {
+    public static void onMethodEntryObjectArgs(UniqueMethodId id, BasicBlockSC bba) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }
         //TODO: add method getTotBBs() to class BasicBlockAnalysis
         thisAnalysis.onEntry(id.get(), false, -1);//bba.getTotBBs());
 
-        Processor.apply(ArgumentProcessor.class, ProcessorApplyType.INSIDE_METHOD);     
+        Processor.apply(ArgumentProcessor.class, ProcessorMode.METHOD_ARGS);
     }
 
     @After(marker = BodyMarker.class, order = 1, scope = "*.*", guard = NotInitNorClinit.class)

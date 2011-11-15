@@ -5,7 +5,7 @@ import ch.usi.dag.disl.annotation.ProcessAlso.Type;
 import ch.usi.dag.disl.annotation.ArgsProcessor;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 
-@Processor
+@ArgsProcessor
 public class ProcessorTest {
 
 	@SyntheticLocal

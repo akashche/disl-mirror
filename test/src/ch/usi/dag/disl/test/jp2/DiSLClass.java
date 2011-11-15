@@ -8,9 +8,9 @@ import ch.usi.dag.disl.annotation.ThreadLocal;
 import ch.usi.dag.disl.marker.BasicBlockMarker;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.BytecodeMarker;
-import ch.usi.dag.disl.staticcontext.BasicBlockAnalysis;
-import ch.usi.dag.disl.staticcontext.BytecodeAnalysis;
-import ch.usi.dag.disl.staticcontext.StaticContext;
+import ch.usi.dag.disl.staticcontext.BasicBlockSC;
+import ch.usi.dag.disl.staticcontext.BytecodeSC;
+import ch.usi.dag.disl.staticcontext.MethodSC;
 import ch.usi.dag.disl.test.jp2.runtime.CCTNode;
 
 
@@ -33,7 +33,7 @@ public class DiSLClass {
 
 	
 	@Before(marker=BodyMarker.class, scope= "*.*(...)", order=1)
-	public static void methodEnter(StaticContext sc, JP2Analysis ba) {
+	public static void methodEnter(MethodSC sc, JP2Analysis ba) {
 
 		//	System.out.println(" METHOD " + sc.thisMethodFullName() + " has " + ba.getNumberOfBBs());
 
@@ -62,7 +62,7 @@ public class DiSLClass {
 	}
 
 	@Before(marker=BasicBlockMarker.class, scope= "*.*(...)", order=2)
-	public static void basicBlockEnter(BasicBlockAnalysis bba) {
+	public static void basicBlockEnter(BasicBlockSC bba) {
 
 		callee.setBBSize(bba.getBBindex(),bba.getBBSize());
 		callee.incrementBytecodeCounter(bba.getBBSize());
@@ -77,7 +77,7 @@ public class DiSLClass {
 			"multianewarray,putstatic,ldc",
 
 			scope= "*.*(...)" , order = 3 )
-			public static void invocationTracer(BytecodeAnalysis bca, JP2Analysis ba ) {
+			public static void invocationTracer(BytecodeSC bca, JP2Analysis ba ) {
 
 	//	System.out.println("  INDEX OF BYTECODE " + ba.getInMethodIndex() + " with Opcode " + bca.getBytecodeNumber()) ;
 

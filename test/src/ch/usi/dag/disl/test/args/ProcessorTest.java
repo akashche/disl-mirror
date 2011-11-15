@@ -2,7 +2,7 @@ package ch.usi.dag.disl.test.args;
 
 import ch.usi.dag.disl.annotation.ArgsProcessor;
 
-@Processor
+@ArgsProcessor
 public class ProcessorTest {
 	
 

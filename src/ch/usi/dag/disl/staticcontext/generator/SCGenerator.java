@@ -8,12 +8,12 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticInfoException;
+import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.marker.MarkedRegion;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.snippet.StaticAnalysisMethod;
-import ch.usi.dag.disl.staticcontext.StaticAnalysis;
-import ch.usi.dag.disl.staticcontext.StaticAnalysisData;
+import ch.usi.dag.disl.snippet.StaticContextMethod;
+import ch.usi.dag.disl.staticcontext.StaticContext;
+import ch.usi.dag.disl.staticcontext.Shadow;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
@@ -100,19 +100,19 @@ public class SCGenerator {
 
 	Map<StaticInfoKey, Object> staticInfoData = new HashMap<StaticInfoKey, Object>();
 
-	public SCGenerator(Map<Class<?>, Object> staticAnalysisInstances,
+	public SCGenerator(Map<Class<?>, Object> staticContextInstances,
 			ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
-			throws ReflectionException, StaticInfoException {
+			throws ReflectionException, StaticContextGenException {
 
-		computeStaticInfo(staticAnalysisInstances, classNode, methodNode,
+		computeStaticInfo(staticContextInstances, classNode, methodNode,
 				snippetMarkings);
 	}
 	
 	private StaticInfoKey createStaticInfoKey(Snippet snippet,
 			MarkedRegion markedRegion, String infoClass, String infoMethod) {
 		
-		String methodID = infoClass + Constants.STATIC_ANALYSIS_METHOD_DELIM
+		String methodID = infoClass + Constants.STATIC_CONTEXT_METHOD_DELIM
 				+ infoMethod;
 		
 		return new StaticInfoKey(snippet, markedRegion, methodID);
@@ -136,52 +136,51 @@ public class SCGenerator {
 		return staticInfoData.get(sik);
 	}
 
-	// Call static analysis for each snippet and each marked region and create
+	// Call static context for each snippet and each marked region and create
 	// a static info values
 	private void computeStaticInfo(
-			Map<Class<?>, Object> staticAnalysisInstances, ClassNode classNode,
+			Map<Class<?>, Object> staticContextInstances, ClassNode classNode,
 			MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings)
-			throws ReflectionException, StaticInfoException {
+			throws ReflectionException, StaticContextGenException {
 
 		for (Snippet snippet : snippetMarkings.keySet()) {
 
 			for (MarkedRegion markedRegion : snippetMarkings.get(snippet)) {
 
-				for (String stAnMehodName : snippet.getCode()
-						.getStaticAnalyses().keySet()) {
+				for (String stConMehodName : snippet.getCode()
+						.getStaticContexts().keySet()) {
 
-					// get static analysis method
-					StaticAnalysisMethod stAnMethod = snippet.getCode()
-							.getStaticAnalyses().get(stAnMehodName);
+					// get static context method
+					StaticContextMethod stAnMethod = snippet.getCode()
+							.getStaticContexts().get(stConMehodName);
 
-					// get static analysis instance
+					// get static context instance
 					Class<?> methodClass = stAnMethod.getReferencedClass();
-					Object saInst = staticAnalysisInstances.get(methodClass);
+					Object scInst = staticContextInstances.get(methodClass);
 
 					// ... or create new one
-					if (saInst == null) {
+					if (scInst == null) {
 
-						saInst = ReflectionHelper.createInstance(methodClass);
+						scInst = ReflectionHelper.createInstance(methodClass);
 
 						// and store for later use
-						staticAnalysisInstances.put(methodClass, saInst);
+						staticContextInstances.put(methodClass, scInst);
 					}
 
-					// recast analysis object to interface
-					StaticAnalysis saIntr = (StaticAnalysis) saInst;
+					// recast context object to interface
+					StaticContext scIntr = (StaticContext) scInst;
 
-					// create static analysis info data
-					StaticAnalysisData saData = new StaticAnalysisData(
-							classNode, methodNode, snippet,
-							snippetMarkings.get(snippet), markedRegion);
+					// create static context info data
+					Shadow scData = new Shadow(
+							classNode, methodNode, snippet, markedRegion);
 
-					// compute static data using analysis
-					Object result = saIntr
-							.computeStaticData(stAnMethod.getMethod(), saData);
+					// compute static data using context
+					Object result = scIntr
+							.computeStaticData(stAnMethod.getMethod(), scData);
 
 					// store the result
-					setSI(snippet, markedRegion, stAnMehodName, result);
+					setSI(snippet, markedRegion, stConMehodName, result);
 				}
 			}
 		}

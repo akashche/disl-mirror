@@ -27,7 +27,7 @@ public abstract class ClassByteLoader {
 	// 2) Include manifest file that contains names of all used DiSL classes
 	//     - for the name of the manifest attribute see ATTR_DISL_CLASSES
 	// Jar should contain all additional classes needed for instrumentation
-	// like Markers, Static analyses, ...
+	// like Markers, Static contexts, ...
 	//
 	// NOTE: Example of the usage is processor test case
 	// To build the jar for the processor test case go to the test directory

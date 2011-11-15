@@ -2,7 +2,7 @@ package ch.usi.dag.disl.test.guard;
 
 import ch.usi.dag.disl.annotation.ArgsProcessor;
 
-@Processor(guard=GuardNo.class)
+@ArgsProcessor(guard=GuardNo.class)
 public class ProcessorTest2 {
 
 	public static void stringPM(int a, int b, Object c) {

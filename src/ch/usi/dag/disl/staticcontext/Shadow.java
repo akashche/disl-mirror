@@ -1,40 +1,36 @@
 package ch.usi.dag.disl.staticcontext;
 
-import java.util.List;
-
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.marker.MarkedRegion;
 import ch.usi.dag.disl.snippet.Snippet;
 
-public class StaticAnalysisData {
+// TODO ! shadow
+
+public class Shadow {
 
 	protected ClassNode classNode;
 	protected MethodNode methodNode;
 	protected Snippet snippet;
-	protected List<MarkedRegion> marking;
 	protected MarkedRegion markedRegion;
 	
-	public StaticAnalysisData(ClassNode classNode, MethodNode methodNode,
-			Snippet snippet, List<MarkedRegion> marking,
-			MarkedRegion markedRegion) {
+	public Shadow(ClassNode classNode, MethodNode methodNode,
+			Snippet snippet, MarkedRegion markedRegion) {
 		super();
 		this.classNode = classNode;
 		this.methodNode = methodNode;
 		this.snippet = snippet;
-		this.marking = marking;
 		this.markedRegion = markedRegion;
 	}
 	
 	// special constructor for caching support
-	public StaticAnalysisData(StaticAnalysisData sad) {
+	public Shadow(Shadow sa) {
 		
-		this.classNode = sad.classNode;
-		this.methodNode = sad.methodNode;
-		this.snippet = sad.snippet;
-		this.marking = sad.marking;
-		this.markedRegion = sad.markedRegion;
+		this.classNode = sa.classNode;
+		this.methodNode = sa.methodNode;
+		this.snippet = sa.snippet;
+		this.markedRegion = sa.markedRegion;
 	}
 
 	public ClassNode getClassNode() {
@@ -47,10 +43,6 @@ public class StaticAnalysisData {
 
 	public Snippet getSnippet() {
 		return snippet;
-	}
-
-	public List<MarkedRegion> getMarking() {
-		return marking;
 	}
 
 	public MarkedRegion getMarkedRegion() {

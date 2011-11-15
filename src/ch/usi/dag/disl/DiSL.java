@@ -23,7 +23,7 @@ import ch.usi.dag.disl.exception.DynamicInfoException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticInfoException;
+import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.SnippetGuard;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
@@ -50,10 +50,10 @@ public class DiSL implements Instrumentation {
 
 	List<Snippet> snippets;
 
-	// list of static analysis instances
+	// list of static context instances
 	// validity of an instance is for one instrumented class
 	// instances are created lazily when needed in SCGenerator
-	Map<Class<?>, Object> staticAnalysisInstances;
+	Map<Class<?>, Object> staticContextInstances;
 
 	private void reportError(Exception e) {
 
@@ -87,7 +87,7 @@ public class DiSL implements Instrumentation {
 
 			// *** parse disl classes ***
 			// - create snippets
-			// - create static analysis methods
+			// - create static context methods
 
 			ClassParser parser = new ClassParser();
 
@@ -146,7 +146,7 @@ public class DiSL implements Instrumentation {
 	 *            method in the classNode argument, that will be instrumented
 	 */
 	private boolean instrumentMethod(ClassNode classNode, MethodNode methodNode)
-			throws ReflectionException, StaticInfoException,
+			throws ReflectionException, StaticContextGenException,
 			ProcessorException, DynamicInfoException {
 
 		// skip abstract methods
@@ -200,8 +200,8 @@ public class DiSL implements Instrumentation {
 		
 		// *** compute static info ***
 
-		// prepares SCGenerator class (computes static analysis)
-		SCGenerator staticInfo = new SCGenerator(staticAnalysisInstances,
+		// prepares SCGenerator class (computes static context)
+		SCGenerator staticInfo = new SCGenerator(staticContextInstances,
 				classNode, methodNode, snippetMarkings);
 
 		// *** used synthetic local vars in snippets ***
@@ -309,9 +309,9 @@ public class DiSL implements Instrumentation {
 			}
 			/**/
 			
-			// list of static analysis instances
+			// list of static context instances
 			// validity of an instance is for one instrumented class
-			staticAnalysisInstances = new HashMap<Class<?>, Object>();
+			staticContextInstances = new HashMap<Class<?>, Object>();
 
 			// instrument all methods in a class
 			for (MethodNode methodNode : classNode.methods) {

@@ -5,7 +5,7 @@ import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.ThreadLocal;
 import ch.usi.dag.disl.marker.BodyMarker;
-import ch.usi.dag.disl.staticcontext.StaticContext;
+import ch.usi.dag.disl.staticcontext.MethodSC;
 
 // Simple cflow with DiSL
 
@@ -28,7 +28,7 @@ public class DiSLClass {
 	
 	
 	@Before(marker = BodyMarker.class, scope = "TargetClass.*(...)", order=1)
-	public static void something(StaticContext sc) {
+	public static void something(MethodSC sc) {
 		 if(counter>0) {
 			System.out.println("IN CFLOW OF foo() " + sc.thisMethodFullName());
 		}else{

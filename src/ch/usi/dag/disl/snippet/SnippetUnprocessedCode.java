@@ -22,7 +22,7 @@ import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.coderep.UnprocessedCode;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticInfoException;
+import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.marker.Marker;
@@ -37,25 +37,25 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 	private String className;
 	private String methodName;
-	private Set<String> declaredStaticAnalyses;
-	private boolean usesDynamicAnalysis;
+	private Set<String> declaredStaticContexts;
+	private boolean usesDynamicContext;
 	private boolean dynamicBypass;
 
 	public SnippetUnprocessedCode(String className, String methodName,
 			InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
-			Set<String> declaredStaticAnalyses, boolean usesDynamicAnalysis,
+			Set<String> declaredStaticContexts, boolean usesDynamicContext,
 			boolean dynamicBypass) {
 		super(instructions, tryCatchBlocks);
 		this.className = className;
 		this.methodName = methodName;
-		this.declaredStaticAnalyses = declaredStaticAnalyses;
-		this.usesDynamicAnalysis = usesDynamicAnalysis;
+		this.declaredStaticContexts = declaredStaticContexts;
+		this.usesDynamicContext = usesDynamicContext;
 		this.dynamicBypass = dynamicBypass;
 	}
 
 	public SnippetCode process(LocalVars allLVs,
 			Map<Type, Proc> processors, Marker marker, boolean allDynamicBypass)
-			throws StaticInfoException, ReflectionException,
+			throws StaticContextGenException, ReflectionException,
 			ProcessorException {
 
 		// process code
@@ -78,8 +78,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		// *** CODE ANALYSIS ***
 
-		Map<String, StaticAnalysisMethod> staticAnalyses = 
-			new HashMap<String, StaticAnalysisMethod>();
+		Map<String, StaticContextMethod> staticContexts = 
+			new HashMap<String, StaticContextMethod>();
 
 		Map<Integer, ProcInvocation> invokedProcessors = 
 			new HashMap<Integer, ProcInvocation>();
@@ -89,13 +89,13 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 			AbstractInsnNode instr = instructionArray[i];
 
-			// *** Parse static analysis methods in use ***
+			// *** Parse static context methods in use ***
 
-			StaticAnalysisData anlMtd = insnInvokesStaticAnalysis(
-					declaredStaticAnalyses, instr, staticAnalyses.keySet());
+			StaticContextData anlMtd = insnInvokesStaticContext(
+					declaredStaticContexts, instr, staticContexts.keySet());
 
 			if (anlMtd != null) {
-				staticAnalyses.put(anlMtd.getId(), anlMtd.getRefM());
+				staticContexts.put(anlMtd.getId(), anlMtd.getRefM());
 				continue;
 			}
 
@@ -115,16 +115,16 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		return new SnippetCode(instructions, tryCatchBlocks,
 				code.getReferencedSLVs(), code.getReferencedTLVs(),
-				code.containsHandledException(), staticAnalyses,
-				usesDynamicAnalysis, invokedProcessors);
+				code.containsHandledException(), staticContexts,
+				usesDynamicContext, invokedProcessors);
 	}
 
-	class StaticAnalysisData {
+	class StaticContextData {
 
 		private String id;
-		private StaticAnalysisMethod refM;
+		private StaticContextMethod refM;
 
-		public StaticAnalysisData(String id, StaticAnalysisMethod refM) {
+		public StaticContextData(String id, StaticContextMethod refM) {
 			super();
 			this.id = id;
 			this.refM = refM;
@@ -134,14 +134,14 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 			return id;
 		}
 
-		public StaticAnalysisMethod getRefM() {
+		public StaticContextMethod getRefM() {
 			return refM;
 		}
 	}
 
-	private StaticAnalysisData insnInvokesStaticAnalysis(
+	private StaticContextData insnInvokesStaticContext(
 			Set<String> knownStAnClasses, AbstractInsnNode instr,
-			Set<String> knownMethods) throws StaticInfoException,
+			Set<String> knownMethods) throws StaticContextGenException,
 			ReflectionException {
 
 		// check - instruction invokes method
@@ -151,7 +151,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		MethodInsnNode methodInstr = (MethodInsnNode) instr;
 
-		// check - we've found static analysis
+		// check - we've found static context
 		if (!knownStAnClasses.contains(methodInstr.owner)) {
 			return null;
 		}
@@ -166,7 +166,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		Type[] methodArguments = asmMethod.getArgumentTypes();
 
 		if (methodArguments.length != 0) {
-			throw new StaticInfoException("Static analysis method "
+			throw new StaticContextGenException("Static context method "
 					+ methodInstr.name + " in the class " + methodInstr.owner
 					+ " shouldn't have a parameter.");
 		}
@@ -184,30 +184,30 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 				|| methodReturn.equals(Type.SHORT_TYPE) || methodReturn
 				.equals(Type.getType(String.class)))) {
 
-			throw new StaticInfoException("Static analysis method "
+			throw new StaticContextGenException("Static context method "
 					+ methodInstr.name + " in the class " + methodInstr.owner
 					+ " can have only basic type or String as a return type.");
 		}
 
-		// crate static analysis method id
+		// crate static context method id
 		String methodID = methodInstr.owner
-				+ Constants.STATIC_ANALYSIS_METHOD_DELIM + methodInstr.name;
+				+ Constants.STATIC_CONTEXT_METHOD_DELIM + methodInstr.name;
 
 		if (knownMethods.contains(methodID)) {
 			return null;
 		}
 
-		// resolve static analysis class
+		// resolve static context class
 		Class<?> stAnClass = ReflectionHelper.resolveClass(Type
 				.getObjectType(methodInstr.owner));
 
 		Method stAnMethod = ReflectionHelper.resolveMethod(stAnClass,
 				methodInstr.name);
 
-		StaticAnalysisMethod stAnM =
-			new StaticAnalysisMethod(stAnMethod, stAnClass);
+		StaticContextMethod stAnM =
+			new StaticContextMethod(stAnMethod, stAnClass);
 		
-		return new StaticAnalysisData(methodID, stAnM);
+		return new StaticContextData(methodID, stAnM);
 	}
 
 	private static class ProcessorInfo {

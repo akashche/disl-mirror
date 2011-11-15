@@ -7,7 +7,7 @@ import ch.usi.dag.disl.util.Constants;
 
 public class UniqueMethodId extends AbstractUniqueId {
 
-	// constructor for static analysis
+	// constructor for static context
 	public UniqueMethodId() {
 		
 	}
@@ -20,8 +20,8 @@ public class UniqueMethodId extends AbstractUniqueId {
 	
 	protected String idFor() {
 		
-		ClassNode classNode = staticAnalysisData.getClassNode();
-		MethodNode methodNode = staticAnalysisData.getMethodNode();
+		ClassNode classNode = staticContextData.getClassNode();
+		MethodNode methodNode = staticContextData.getMethodNode();
 		
 		return classNode.name
 				+ Constants.CLASS_DELIM

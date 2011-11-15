@@ -6,7 +6,7 @@ import org.objectweb.asm.Type;
 
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticInfoException;
+import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.SnippetGuard;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.marker.Marker;
@@ -78,7 +78,7 @@ public class Snippet implements Comparable<Snippet> {
 	}
 
 	public void init(LocalVars allLVs, Map<Type, Proc> processors,
-			boolean allDynamicBypass) throws StaticInfoException,
+			boolean allDynamicBypass) throws StaticContextGenException,
 			ReflectionException, ProcessorException {
 
 		code = unprocessedCode.process(allLVs, processors, marker,

@@ -5,7 +5,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-import ch.usi.dag.disl.exception.StaticAnalysisException;
+import ch.usi.dag.disl.exception.StaticContextException;
 
 // holds IDs
 class IdHolder {
@@ -26,8 +26,8 @@ class IdHolder {
 		try {
 			output = new PrintWriter(outputFileName);
 		} catch (FileNotFoundException e) {
-			throw new StaticAnalysisException(
-					"Cannot create output for AbstractUniqueId analysis", e);
+			throw new StaticContextException(
+					"Cannot create output for AbstractUniqueId context", e);
 		}
 		
 		// register shutdown hook - output close

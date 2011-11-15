@@ -2,12 +2,12 @@ package ch.usi.dag.disl.test.staticinfo;
 
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.marker.BodyMarker;
-import ch.usi.dag.disl.staticcontext.StaticContext;
+import ch.usi.dag.disl.staticcontext.MethodSC;
 
 public class DiSLClass {
 	
 	@Before(marker = BodyMarker.class, scope = "TargetClass.this_is_a_method_name", order = 0)
-	public static void precondition(StaticContext ci) {
+	public static void precondition(MethodSC ci) {
 		
 		String mid = ci.thisMethodName();
 		System.out.println(mid);
@@ -18,7 +18,7 @@ public class DiSLClass {
 	}
 	
 	@Before(marker = BodyMarker.class, scope = "TargetClass.this_is_a_method_name", order = 1)
-	public static void secondPrecondition(StaticContext ci) {
+	public static void secondPrecondition(MethodSC ci) {
 		
 		// caching test
 		String mid3 = ci.thisMethodName();

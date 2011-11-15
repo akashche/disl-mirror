@@ -5,7 +5,7 @@ import java.util.EnumSet;
 import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.coderep.UnprocessedCode;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticInfoException;
+import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.ProcessorMethodGuard;
 import ch.usi.dag.disl.localvar.LocalVars;
 
@@ -56,7 +56,7 @@ public class ProcMethod {
 		return code;
 	}
 
-	public void init(LocalVars allLVs) throws StaticInfoException,
+	public void init(LocalVars allLVs) throws StaticContextGenException,
 			ReflectionException {
 
 		code = unprocessedCode.process(allLVs);

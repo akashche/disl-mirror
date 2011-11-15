@@ -8,16 +8,16 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import ch.usi.dag.disl.staticcontext.AbstractStaticAnalysis;
+import ch.usi.dag.disl.staticcontext.AbstractStaticContext;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
-public class JP2Analysis extends AbstractStaticAnalysis {
+public class JP2Analysis extends AbstractStaticContext {
 	
 	
 	
 	public int getNumberOfBBs() {
-		return BasicBlockCalc.getAll(staticAnalysisData.getMethodNode().instructions,
-				staticAnalysisData.getMethodNode().tryCatchBlocks, false).size();
+		return BasicBlockCalc.getAll(staticContextData.getMethodNode().instructions,
+				staticContextData.getMethodNode().tryCatchBlocks, false).size();
 	
 	}
 		
@@ -26,8 +26,8 @@ public class JP2Analysis extends AbstractStaticAnalysis {
 		
 		int idx = 0;
 		
-		InsnList inslist = staticAnalysisData.getMethodNode().instructions;
-		AbstractInsnNode instr = staticAnalysisData.getMarkedRegion()
+		InsnList inslist = staticContextData.getMethodNode().instructions;
+		AbstractInsnNode instr = staticContextData.getMarkedRegion()
 		.getStart();
 		
 		
@@ -43,7 +43,7 @@ public class JP2Analysis extends AbstractStaticAnalysis {
 	
 	public boolean isCallToObjectConstructor() {
 		
-			AbstractInsnNode instr = staticAnalysisData.getMarkedRegion()
+			AbstractInsnNode instr = staticContextData.getMarkedRegion()
 					.getStart();
 
 			if (instr.getOpcode() == Opcodes.INVOKESPECIAL) {

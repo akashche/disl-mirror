@@ -5,14 +5,14 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 
-import ch.usi.dag.disl.staticcontext.AbstractStaticAnalysis;
+import ch.usi.dag.disl.staticcontext.AbstractStaticContext;
 
-public class MAPAnalysis extends AbstractStaticAnalysis {
+public class MAPAnalysis extends AbstractStaticContext {
 	
 
 	public String getFieldName() {
 
-		AbstractInsnNode instr = staticAnalysisData.getMarkedRegion()
+		AbstractInsnNode instr = staticContextData.getMarkedRegion()
 				.getStart();
 
 		if (instr.getOpcode() == Opcodes.GETFIELD
@@ -27,7 +27,7 @@ public class MAPAnalysis extends AbstractStaticAnalysis {
 	
 	public String getStaticFieldName() {
 
-		AbstractInsnNode instr = staticAnalysisData.getMarkedRegion()
+		AbstractInsnNode instr = staticContextData.getMarkedRegion()
 				.getStart();
 
 		if (instr.getOpcode() == Opcodes.GETSTATIC
@@ -40,7 +40,7 @@ public class MAPAnalysis extends AbstractStaticAnalysis {
 	
 	public int getAMultiArrayDimension() {
 		
-		AbstractInsnNode instr = staticAnalysisData.getMarkedRegion()
+		AbstractInsnNode instr = staticContextData.getMarkedRegion()
 			.getStart();
 		
 		if(instr.getOpcode() == Opcodes.MULTIANEWARRAY) {

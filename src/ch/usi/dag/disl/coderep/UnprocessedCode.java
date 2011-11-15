@@ -15,7 +15,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticInfoException;
+import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
@@ -34,7 +34,7 @@ public class UnprocessedCode {
 		this.tryCatchBlocks = tryCatchBlocks;
 	}
 
-	public Code process(LocalVars allLVs) throws StaticInfoException,
+	public Code process(LocalVars allLVs) throws StaticContextGenException,
 			ReflectionException {
 
 		// *** CODE ANALYSIS ***

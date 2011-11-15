@@ -17,8 +17,8 @@ import ch.usi.dag.disl.util.AsmHelper;
 
 public class SnippetCode extends Code {
 
-	private Map<String, StaticAnalysisMethod> staticAnalyses;
-	private boolean usesDynamicAnalysis;
+	private Map<String, StaticContextMethod> staticContexts;
+	private boolean usesDynamicContext;
 	// integer (key) is an index of an instruction in snippet code that invokes
 	// processor
 	private Map<Integer, ProcInvocation> invokedProcessors; 
@@ -28,24 +28,24 @@ public class SnippetCode extends Code {
 			Set<SyntheticLocalVar> referencedSLV,
 			Set<ThreadLocalVar> referencedTLV,
 			boolean containsHandledException,
-			Map<String, StaticAnalysisMethod> staticAnalyses,
-			boolean usesDynamicAnalysis,
+			Map<String, StaticContextMethod> staticContexts,
+			boolean usesDynamicContext,
 			Map<Integer, ProcInvocation> invokedProcessors
 			) {
 		
 		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
 				containsHandledException);
-		this.staticAnalyses = staticAnalyses;
-		this.usesDynamicAnalysis = usesDynamicAnalysis;
+		this.staticContexts = staticContexts;
+		this.usesDynamicContext = usesDynamicContext;
 		this.invokedProcessors = invokedProcessors;
 	}
 
-	public Map<String, StaticAnalysisMethod> getStaticAnalyses() {
-		return staticAnalyses;
+	public Map<String, StaticContextMethod> getStaticContexts() {
+		return staticContexts;
 	}
 
-	public boolean usesDynamicAnalysis() {
-		return usesDynamicAnalysis;
+	public boolean usesDynamicContext() {
+		return usesDynamicContext;
 	}
 	
 	public Map<Integer, ProcInvocation> getInvokedProcessors() {
@@ -62,8 +62,8 @@ public class SnippetCode extends Code {
 				new HashSet<SyntheticLocalVar>(getReferencedSLVs()),
 				new HashSet<ThreadLocalVar>(getReferencedTLVs()),
 				containsHandledException(),
-				new HashMap<String, StaticAnalysisMethod>(staticAnalyses),
-				usesDynamicAnalysis,
+				new HashMap<String, StaticContextMethod>(staticContexts),
+				usesDynamicContext,
 				new HashMap<Integer, ProcInvocation>(invokedProcessors));
 	}
 }
