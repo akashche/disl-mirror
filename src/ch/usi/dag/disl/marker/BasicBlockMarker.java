@@ -6,11 +6,10 @@ import java.util.List;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
-public class BasicBlockMarker implements Marker {
+public class BasicBlockMarker extends AbstractMarker {
 
 	protected boolean isPrecise = false;
 

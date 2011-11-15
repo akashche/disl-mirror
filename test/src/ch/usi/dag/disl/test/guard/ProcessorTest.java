@@ -3,7 +3,7 @@ package ch.usi.dag.disl.test.guard;
 import ch.usi.dag.disl.annotation.Guarded;
 import ch.usi.dag.disl.annotation.ArgsProcessor;
 
-@ArgsProcessor(guard=GuardYes.class)
+@ArgsProcessor
 public class ProcessorTest {
 
 	@Guarded(guard=GuardYes.class)

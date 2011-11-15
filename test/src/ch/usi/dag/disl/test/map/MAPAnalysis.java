@@ -12,8 +12,7 @@ public class MAPAnalysis extends AbstractStaticContext {
 
 	public String getFieldName() {
 
-		AbstractInsnNode instr = staticContextData.getMarkedRegion()
-				.getStart();
+		AbstractInsnNode instr = staticContextData.getRegionStart();
 
 		if (instr.getOpcode() == Opcodes.GETFIELD
 				|| instr.getOpcode() == Opcodes.PUTFIELD
@@ -27,8 +26,7 @@ public class MAPAnalysis extends AbstractStaticContext {
 	
 	public String getStaticFieldName() {
 
-		AbstractInsnNode instr = staticContextData.getMarkedRegion()
-				.getStart();
+		AbstractInsnNode instr = staticContextData.getRegionStart();
 
 		if (instr.getOpcode() == Opcodes.GETSTATIC
 				|| instr.getOpcode() == Opcodes.PUTSTATIC) {
@@ -40,8 +38,7 @@ public class MAPAnalysis extends AbstractStaticContext {
 	
 	public int getAMultiArrayDimension() {
 		
-		AbstractInsnNode instr = staticContextData.getMarkedRegion()
-			.getStart();
+		AbstractInsnNode instr = staticContextData.getRegionStart();
 		
 		if(instr.getOpcode() == Opcodes.MULTIANEWARRAY) {
 			return ((MultiANewArrayInsnNode)instr).dims;

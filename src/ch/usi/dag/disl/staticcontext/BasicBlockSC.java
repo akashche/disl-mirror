@@ -20,8 +20,8 @@ public class BasicBlockSC extends AbstractStaticContext {
 		AbstractInsnNode start;
 		List<AbstractInsnNode> ends;
 
-		start = staticContextData.getMarkedRegion().getStart();
-		ends = staticContextData.getMarkedRegion().getEnds();
+		start = staticContextData.getRegionStart();
+		ends = staticContextData.getRegionEnds();
 
 		while (!ends.contains(start)) {
 			
@@ -39,14 +39,14 @@ public class BasicBlockSC extends AbstractStaticContext {
 
 		CtrlFlowGraph cfg = new CtrlFlowGraph(
 				staticContextData.getMethodNode());
-		return cfg.getIndex(staticContextData.getMarkedRegion().getStart());
+		return cfg.getIndex(staticContextData.getRegionStart());
 	}
 	
 	public boolean isFirstOfLoop() {
 
 		CtrlFlowGraph cfg = CtrlFlowGraph.build(staticContextData
 				.getMethodNode());
-		return cfg.getBB(staticContextData.getMarkedRegion().getStart())
+		return cfg.getBB(staticContextData.getRegionStart())
 				.isLoop();
 	}
 }

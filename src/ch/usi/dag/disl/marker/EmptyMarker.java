@@ -5,9 +5,7 @@ import java.util.List;
 
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.snippet.MarkedRegion;
-
-public class EmptyMarker implements Marker {
+public class EmptyMarker extends AbstractMarker {
 	
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {

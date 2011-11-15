@@ -4,12 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
-
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
-import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.StaticContextMethod;
@@ -19,17 +15,14 @@ import ch.usi.dag.disl.util.ReflectionHelper;
 
 public class SCGenerator {
 
-	class StaticInfoKey {
+	class StaticContextKey {
 
-		private Snippet snippet;
-		private MarkedRegion markedRegion;
+		private Shadow shadow;
 		private String methodID;
 
-		public StaticInfoKey(Snippet snippet, MarkedRegion markedRegion,
-				String methodID) {
+		public StaticContextKey(Shadow shadow, String methodID) {
 			super();
-			this.snippet = snippet;
-			this.markedRegion = markedRegion;
+			this.shadow = shadow;
 			this.methodID = methodID;
 		}
 
@@ -42,13 +35,10 @@ public class SCGenerator {
 			result = prime * result + getOuterType().hashCode();
 
 			result = prime * result
-					+ ((markedRegion == null) ? 0 : markedRegion.hashCode());
+					+ ((shadow == null) ? 0 : shadow.hashCode());
 
 			result = prime * result
 					+ ((methodID == null) ? 0 : methodID.hashCode());
-
-			result = prime * result
-					+ ((snippet == null) ? 0 : snippet.hashCode());
 
 			return result;
 		}
@@ -62,15 +52,15 @@ public class SCGenerator {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			StaticInfoKey other = (StaticInfoKey) obj;
+			StaticContextKey other = (StaticContextKey) obj;
 			if (!getOuterType().equals(other.getOuterType()))
 				return false;
 
-			if (markedRegion == null) {
-				if (other.markedRegion != null) {
+			if (shadow == null) {
+				if (other.shadow != null) {
 					return false;
 				}
-			} else if (!markedRegion.equals(other.markedRegion)) {
+			} else if (!shadow.equals(other.shadow)) {
 				return false;
 			}
 
@@ -82,14 +72,6 @@ public class SCGenerator {
 				return false;
 			}
 
-			if (snippet == null) {
-				if (other.snippet != null) {
-					return false;
-				}
-			} else if (!snippet.equals(other.snippet)) {
-				return false;
-			}
-
 			return true;
 		}
 
@@ -98,55 +80,51 @@ public class SCGenerator {
 		}
 	}
 
-	Map<StaticInfoKey, Object> staticInfoData = new HashMap<StaticInfoKey, Object>();
+	Map<StaticContextKey, Object> staticInfoData = new HashMap<StaticContextKey, Object>();
 
 	public SCGenerator(Map<Class<?>, Object> staticContextInstances,
-			ClassNode classNode, MethodNode methodNode,
-			Map<Snippet, List<MarkedRegion>> snippetMarkings)
+			Map<Snippet, List<Shadow>> snippetMarkings)
 			throws ReflectionException, StaticContextGenException {
 
-		computeStaticInfo(staticContextInstances, classNode, methodNode,
-				snippetMarkings);
+		computeStaticInfo(staticContextInstances, snippetMarkings);
 	}
 	
-	private StaticInfoKey createStaticInfoKey(Snippet snippet,
-			MarkedRegion markedRegion, String infoClass, String infoMethod) {
+	private StaticContextKey createStaticInfoKey(Shadow shadow,
+			String infoClass, String infoMethod) {
 		
 		String methodID = infoClass + Constants.STATIC_CONTEXT_METHOD_DELIM
 				+ infoMethod;
 		
-		return new StaticInfoKey(snippet, markedRegion, methodID);
+		return new StaticContextKey(shadow, methodID);
 	}
 	
-	public boolean contains(Snippet snippet, MarkedRegion markedRegion,
-			String infoClass, String infoMethod) {
+	public boolean contains(Shadow shadow, String infoClass,
+			String infoMethod) {
 		
-		StaticInfoKey sik = 
-			createStaticInfoKey(snippet, markedRegion, infoClass, infoMethod);
+		StaticContextKey sck = 
+			createStaticInfoKey(shadow, infoClass, infoMethod);
 		
-		return staticInfoData.containsKey(sik);
+		return staticInfoData.containsKey(sck);
 	}
 
-	public Object get(Snippet snippet, MarkedRegion markedRegion,
-			String infoClass, String infoMethod) {
+	public Object get(Shadow shadow, String infoClass, String infoMethod) {
 
-		StaticInfoKey sik = 
-			createStaticInfoKey(snippet, markedRegion, infoClass, infoMethod);
+		StaticContextKey sck = 
+			createStaticInfoKey(shadow, infoClass, infoMethod);
 		
-		return staticInfoData.get(sik);
+		return staticInfoData.get(sck);
 	}
 
 	// Call static context for each snippet and each marked region and create
 	// a static info values
 	private void computeStaticInfo(
-			Map<Class<?>, Object> staticContextInstances, ClassNode classNode,
-			MethodNode methodNode,
-			Map<Snippet, List<MarkedRegion>> snippetMarkings)
+			Map<Class<?>, Object> staticContextInstances,
+			Map<Snippet, List<Shadow>> snippetMarkings)
 			throws ReflectionException, StaticContextGenException {
 
 		for (Snippet snippet : snippetMarkings.keySet()) {
 
-			for (MarkedRegion markedRegion : snippetMarkings.get(snippet)) {
+			for (Shadow shadow : snippetMarkings.get(snippet)) {
 
 				for (String stConMehodName : snippet.getCode()
 						.getStaticContexts().keySet()) {
@@ -171,25 +149,19 @@ public class SCGenerator {
 					// recast context object to interface
 					StaticContext scIntr = (StaticContext) scInst;
 
-					// create static context info data
-					Shadow scData = new Shadow(
-							classNode, methodNode, snippet, markedRegion);
-
 					// compute static data using context
 					Object result = scIntr
-							.computeStaticData(stAnMethod.getMethod(), scData);
+							.computeStaticData(stAnMethod.getMethod(), shadow);
 
 					// store the result
-					setSI(snippet, markedRegion, stConMehodName, result);
+					setSI(shadow, stConMehodName, result);
 				}
 			}
 		}
 	}
 
-	private void setSI(Snippet snippet, MarkedRegion markedRegion,
-			String methodID, Object value) {
+	private void setSI(Shadow shadow, String methodID, Object value) {
 
-		staticInfoData.put(new StaticInfoKey(snippet, markedRegion, methodID),
-				value);
+		staticInfoData.put(new StaticContextKey(shadow, methodID), value);
 	}
 }

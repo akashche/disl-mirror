@@ -32,7 +32,7 @@ import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.processor.generator.struct.Proc;
-import ch.usi.dag.disl.snippet.MarkedRegion;
+import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.weaver.TLVInserter;
@@ -177,24 +177,25 @@ public class DiSL implements Instrumentation {
 			return false;
 		}
 
-		// *** create markings ***
+		// *** create shadows ***
 
-		// markings according to snippets for viewing
-		Map<Snippet, List<MarkedRegion>> snippetMarkings =
-			new HashMap<Snippet, List<MarkedRegion>>();
+		// shadows maped to snippets - for viewing
+		Map<Snippet, List<Shadow>> snippetMarkings =
+			new HashMap<Snippet, List<Shadow>>();
 
 		for (Snippet snippet : matchedSnippets) {
 
 			// marking
-			List<MarkedRegion> marking = snippet.getMarker().mark(methodNode);
+			List<Shadow> shadows = 
+					snippet.getMarker().mark(classNode, methodNode, snippet);
 
-			// select markings according to snippet guard
-			List<MarkedRegion> selectedMarking =
-				selectMarkingWithGuard(snippet, marking, classNode, methodNode);
+			// select shadows according to snippet guard
+			List<Shadow> selectedShadows =
+				selectShadowsWithGuard(snippet.getGuard(), shadows);
 			
 			// add to map
-			if(! selectedMarking.isEmpty()) {
-				snippetMarkings.put(snippet, selectedMarking);
+			if(! selectedShadows.isEmpty()) {
+				snippetMarkings.put(snippet, selectedShadows);
 			}
 		}
 		
@@ -202,7 +203,7 @@ public class DiSL implements Instrumentation {
 
 		// prepares SCGenerator class (computes static context)
 		SCGenerator staticInfo = new SCGenerator(staticContextInstances,
-				classNode, methodNode, snippetMarkings);
+				snippetMarkings);
 
 		// *** used synthetic local vars in snippets ***
 		// weaver needs list of synthetic locals that are actively used in
@@ -215,8 +216,7 @@ public class DiSL implements Instrumentation {
 
 		// *** prepare processors ***
 
-		PIResolver piResolver = new ProcGenerator().compute(classNode,
-				methodNode, snippetMarkings);
+		PIResolver piResolver = new ProcGenerator().compute(snippetMarkings);
 
 		// *** used synthetic local vars in processors ***
 		
@@ -243,28 +243,20 @@ public class DiSL implements Instrumentation {
 		return true;
 	}
 
-	private List<MarkedRegion> selectMarkingWithGuard(Snippet snippet,
-			List<MarkedRegion> marking,
-			ClassNode classNode,
-			MethodNode methodNode) {
-		
-		SnippetGuard guard = snippet.getGuard();
+	private List<Shadow> selectShadowsWithGuard(SnippetGuard guard, List<Shadow> marking) {
 		
 		if(guard == null) {
 			return marking;
 		}
 
-		List<MarkedRegion> selectedMarking = new LinkedList<MarkedRegion>();
+		List<Shadow> selectedMarking = new LinkedList<Shadow>();
 
-		// check guard for each marking
-		for(MarkedRegion markedRegion : marking) {
+		// check guard for each shadow
+		for(Shadow shadow : marking) {
 
-			// TODO ! shadow - create shadow
-			
-			if(guard.isApplicable(classNode, methodNode, snippet, 
-					markedRegion)) {
+			if(guard.isApplicable(shadow)) {
 
-				selectedMarking.add(markedRegion);
+				selectedMarking.add(shadow);
 			}
 		}
 		

@@ -5,6 +5,6 @@ public class BytecodeSC extends AbstractStaticContext {
 
 	public int getBytecodeNumber() {
 		
-		return staticContextData.getMarkedRegion().getStart().getOpcode();
+		return staticContextData.getRegionStart().getOpcode();
 	}
 }

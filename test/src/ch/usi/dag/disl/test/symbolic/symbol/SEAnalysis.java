@@ -11,13 +11,12 @@ public class SEAnalysis extends AbstractStaticContext{
 
 	public int getBytecodeNumber() {
 
-		return staticContextData.getMarkedRegion().getStart().getOpcode();
+		return staticContextData.getRegionStart().getOpcode();
 	}
 
 	public String getID() {
 
-		AbstractInsnNode instruction = staticContextData.getMarkedRegion()
-				.getStart();
+		AbstractInsnNode instruction = staticContextData.getRegionStart();
 
 		if (instruction instanceof IincInsnNode) {
 			return "I_" + ((IincInsnNode) instruction).var;
@@ -51,8 +50,7 @@ public class SEAnalysis extends AbstractStaticContext{
 
 	public int getIConst() {
 
-		AbstractInsnNode instruction = staticContextData.getMarkedRegion()
-				.getStart();
+		AbstractInsnNode instruction = staticContextData.getRegionStart();
 		int opcode = instruction.getOpcode();
 
 		switch (opcode) {

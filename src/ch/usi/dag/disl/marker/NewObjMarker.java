@@ -9,10 +9,9 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.Constants;
 
-public class NewObjMarker implements Marker {
+public class NewObjMarker extends AbstractMarker {
 
 	protected boolean isPrecise = false;
 

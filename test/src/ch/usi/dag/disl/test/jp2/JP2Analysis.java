@@ -27,8 +27,7 @@ public class JP2Analysis extends AbstractStaticContext {
 		int idx = 0;
 		
 		InsnList inslist = staticContextData.getMethodNode().instructions;
-		AbstractInsnNode instr = staticContextData.getMarkedRegion()
-		.getStart();
+		AbstractInsnNode instr = staticContextData.getRegionStart();
 		
 		
 		Iterator<AbstractInsnNode> it=inslist.iterator();
@@ -43,8 +42,7 @@ public class JP2Analysis extends AbstractStaticContext {
 	
 	public boolean isCallToObjectConstructor() {
 		
-			AbstractInsnNode instr = staticContextData.getMarkedRegion()
-					.getStart();
+			AbstractInsnNode instr = staticContextData.getRegionStart();
 
 			if (instr.getOpcode() == Opcodes.INVOKESPECIAL) {
 				if( ((MethodInsnNode) instr).owner.equals("java/lang/Object") && 

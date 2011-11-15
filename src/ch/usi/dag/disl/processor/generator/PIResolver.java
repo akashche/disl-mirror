@@ -4,8 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import ch.usi.dag.disl.snippet.MarkedRegion;
-import ch.usi.dag.disl.snippet.Snippet;
+import ch.usi.dag.disl.snippet.Shadow;
 
 public class PIResolver {
 
@@ -14,15 +13,12 @@ public class PIResolver {
 	
 	private static class ResolverKey {
 		
-		private Snippet snippet;
-		private MarkedRegion markedRegion;
+		private Shadow shadow;
 		private int instrPos;
 		
-		public ResolverKey(Snippet snippet, MarkedRegion markedRegion,
-				int instrPos) {
+		public ResolverKey(Shadow shadow, int instrPos) {
 			super();
-			this.snippet = snippet;
-			this.markedRegion = markedRegion;
+			this.shadow = shadow;
 			this.instrPos = instrPos;
 		}
 
@@ -35,10 +31,7 @@ public class PIResolver {
 			result = prime * result + instrPos;
 			
 			result = prime * result
-					+ ((markedRegion == null) ? 0 : markedRegion.hashCode());
-			
-			result = prime * result
-					+ ((snippet == null) ? 0 : snippet.hashCode());
+					+ ((shadow == null) ? 0 : shadow.hashCode());
 			
 			return result;
 		}
@@ -60,34 +53,27 @@ public class PIResolver {
 			if (instrPos != other.instrPos)
 				return false;
 			
-			if (markedRegion == null) {
-				if (other.markedRegion != null)
+			if (shadow == null) {
+				if (other.shadow != null)
 					return false;
-			} else if (!markedRegion.equals(other.markedRegion))
-				return false;
-			
-			if (snippet == null) {
-				if (other.snippet != null)
-					return false;
-			} else if (!snippet.equals(other.snippet))
+			} else if (!shadow.equals(other.shadow))
 				return false;
 			
 			return true;
 		}
 	}
 	
-	public ProcInstance get(Snippet snippet, MarkedRegion markedRegion,
-			int instrPos) {
+	public ProcInstance get(Shadow shadow, int instrPos) {
 
-		ResolverKey key = new ResolverKey(snippet, markedRegion, instrPos);
+		ResolverKey key = new ResolverKey(shadow, instrPos);
 		
 		return piStore.get(key);
 	}
 
-	public void set(Snippet snippet, MarkedRegion markedRegion,
-			int instrPos, ProcInstance processorInstance) {
+	public void set(Shadow shadow, int instrPos,
+			ProcInstance processorInstance) {
 
-		ResolverKey key = new ResolverKey(snippet, markedRegion, instrPos);
+		ResolverKey key = new ResolverKey(shadow, instrPos);
 		
 		piStore.put(key, processorInstance);
 	}

@@ -1,19 +1,15 @@
 package ch.usi.dag.disl.test.senseo;
 
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
-
-import ch.usi.dag.disl.snippet.MarkedRegion;
-import ch.usi.dag.disl.snippet.Snippet;
+import ch.usi.dag.disl.snippet.Shadow;
 
 // check if none of the arguments is an Object 
 // --> if "L" is not in the description of the arguments
 public class ConstructorHasOnlyPrimitiveArgs extends OnlyInit {
     @Override
-    public boolean isApplicable(ClassNode classNode, MethodNode methodNode, Snippet snippet, MarkedRegion markedRegion) {
-        String desc = methodNode.desc;
+    public boolean isApplicable(Shadow shadow) {
+        String desc = shadow.getMethodNode().desc;
         return
-            super.isApplicable(classNode, methodNode, snippet, markedRegion)
+            super.isApplicable(shadow)
             && !desc.substring(0, desc.indexOf(')')).contains("L");
     }
 }

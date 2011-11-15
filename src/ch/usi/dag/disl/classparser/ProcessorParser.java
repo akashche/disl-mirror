@@ -20,7 +20,6 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ProcessorParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.guard.ProcessorGuard;
 import ch.usi.dag.disl.guard.ProcessorMethodGuard;
 import ch.usi.dag.disl.processor.generator.struct.Proc;
 import ch.usi.dag.disl.processor.generator.struct.ProcArgType;
@@ -39,29 +38,11 @@ public class ProcessorParser extends AbstractParser {
 		return processors;
 	}
 	
-	// data holder for AnnotationParser
-	private static class ProcessorAnnotationData {
-
-		public Type guard = null; // default
-	}
-	
 	public void parse(ClassNode classNode) throws ParserException,
 			ProcessorParserException, ReflectionException {
 
 		// NOTE: this method can be called many times
 
-		// there is only one annotation - processor annotation
-		AnnotationNode annotation = 
-			(AnnotationNode) classNode.invisibleAnnotations.get(0);
-		
-		// parse processor annotation
-		ProcessorAnnotationData pad = new ProcessorAnnotationData();
-		ParserHelper.parseAnnotation(pad, annotation);
-
-		// ** guard **
-		ProcessorGuard guard = 
-			(ProcessorGuard) ParserHelper.getGuard(pad.guard);
-		
 		// ** local variables **
 		processLocalVars(classNode);
 
@@ -90,7 +71,7 @@ public class ProcessorParser extends AbstractParser {
 		Type processorClassType = Type.getType("L" + classNode.name + ";"); 
 		
 		processors.put(processorClassType, 
-				new Proc(classNode.name, guard, methods));
+				new Proc(classNode.name, methods));
 	}
 	
 	private ProcMethod parseProcessorMethod(String className, MethodNode method)

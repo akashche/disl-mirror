@@ -1,25 +1,28 @@
 package ch.usi.dag.disl.snippet;
 
+import java.util.List;
+
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-
-// TODO ! shadow
 
 public class Shadow {
 
 	protected ClassNode classNode;
 	protected MethodNode methodNode;
 	protected Snippet snippet;
-	protected MarkedRegion markedRegion;
+	private AbstractInsnNode regionStart;
+	private List<AbstractInsnNode> regionEnds;
 	
 	public Shadow(ClassNode classNode, MethodNode methodNode,
-			Snippet snippet, MarkedRegion markedRegion) {
+			Snippet snippet, AbstractInsnNode regionStart, List<AbstractInsnNode> regionEnds) {
 		super();
 		this.classNode = classNode;
 		this.methodNode = methodNode;
 		this.snippet = snippet;
-		this.markedRegion = markedRegion;
+		this.regionStart = regionStart;
+		this.regionEnds = regionEnds;
 	}
 	
 	// special constructor for caching support
@@ -28,7 +31,8 @@ public class Shadow {
 		this.classNode = sa.classNode;
 		this.methodNode = sa.methodNode;
 		this.snippet = sa.snippet;
-		this.markedRegion = sa.markedRegion;
+		this.regionStart = sa.regionStart;
+		this.regionEnds = sa.regionEnds;
 	}
 
 	public ClassNode getClassNode() {
@@ -43,7 +47,11 @@ public class Shadow {
 		return snippet;
 	}
 
-	public MarkedRegion getMarkedRegion() {
-		return markedRegion;
+	public AbstractInsnNode getRegionStart() {
+		return regionStart;
+	}
+
+	public List<AbstractInsnNode> getRegionEnds() {
+		return regionEnds;
 	}
 }

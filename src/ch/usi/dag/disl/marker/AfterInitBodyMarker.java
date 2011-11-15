@@ -9,10 +9,9 @@ import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.Constants;
 
-public class AfterInitBodyMarker implements Marker {
+public class AfterInitBodyMarker extends AbstractMarker {
 
 	// empty visitor for new AdviceAdapter
 	private static class EmptyMethodVisitor extends MethodVisitor {

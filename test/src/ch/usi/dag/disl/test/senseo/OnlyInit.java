@@ -1,15 +1,11 @@
 package ch.usi.dag.disl.test.senseo;
 
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
-
-import ch.usi.dag.disl.snippet.MarkedRegion;
-import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.guard.SnippetGuard;
+import ch.usi.dag.disl.snippet.Shadow;
 
 public class OnlyInit implements SnippetGuard {
     @Override
-    public boolean isApplicable(ClassNode classNode, MethodNode methodNode, Snippet snippet, MarkedRegion markedRegion) {
-        return (methodNode.name.equals("<init>") && !classNode.name.equals("java/lang/Object")) ? true : false;
+    public boolean isApplicable(Shadow shadow) {
+        return (shadow.getMethodNode().name.equals("<init>") && !shadow.getClassNode().name.equals("java/lang/Object")) ? true : false;
     }
 }

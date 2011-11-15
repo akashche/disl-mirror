@@ -45,7 +45,7 @@ import ch.usi.dag.disl.processor.ProcessorMode;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
-import ch.usi.dag.disl.snippet.MarkedRegion;
+import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
@@ -114,10 +114,10 @@ public class Weaver {
 	
 	// initialize weaving locations
 	private static void initWeavingLocations(MethodNode methodNode,
-			Map<Snippet, List<MarkedRegion>> snippetMarkings,
+			Map<Snippet, List<Shadow>> snippetMarkings,
 			Map<AbstractInsnNode, AbstractInsnNode> weaving_start,
 			Map<AbstractInsnNode, AbstractInsnNode> weaving_end,
-			Map<MarkedRegion, AbstractInsnNode> weaving_athrow,
+			Map<Shadow, AbstractInsnNode> weaving_athrow,
 			Map<AbstractInsnNode, Integer> stack_start,
 			Map<AbstractInsnNode, Integer> stack_end, ArrayList<Snippet> array) {
 
@@ -131,9 +131,9 @@ public class Weaver {
 
 		// initialize weaving start
 		for (Snippet snippet : array) {
-			for (MarkedRegion region : snippetMarkings.get(snippet)) {
+			for (Shadow region : snippetMarkings.get(snippet)) {
 
-				AbstractInsnNode start = region.getStart();
+				AbstractInsnNode start = region.getRegionStart();
 
 				if (weaving_start.get(start) == null) {
 
@@ -145,11 +145,11 @@ public class Weaver {
 		}
 
 		for (Snippet snippet : array) {
-			for (MarkedRegion region : snippetMarkings.get(snippet)) {
+			for (Shadow region : snippetMarkings.get(snippet)) {
 
-				AbstractInsnNode last = region.getStart();
+				AbstractInsnNode last = region.getRegionStart();
 
-				for (AbstractInsnNode end : region.getEnds()) {
+				for (AbstractInsnNode end : region.getRegionEnds()) {
 					// initialize weaving end
 					AbstractInsnNode wend = end;
 
@@ -192,15 +192,15 @@ public class Weaver {
 
 		// initialize stack_start and stack_end
 		for (Snippet snippet : array) {
-			for (MarkedRegion region : snippetMarkings.get(snippet)) {
+			for (Shadow region : snippetMarkings.get(snippet)) {
 
-				AbstractInsnNode start = region.getStart();
+				AbstractInsnNode start = region.getRegionStart();
 
 				if (stack_start.get(start) == null) {
 					stack_start.put(start, instructions.indexOf(start));
 				}
 
-				for (AbstractInsnNode end : region.getEnds()) {
+				for (AbstractInsnNode end : region.getRegionEnds()) {
 					if (AsmHelper.isBranch(end)) {
 						stack_end.put(end, instructions.indexOf(end));
 					} else {
@@ -216,8 +216,8 @@ public class Weaver {
 
 	// Search for an instruction sequence that match the pattern
 	// of the pseudo variables.
-	public static void fixPseudoVar(Snippet snippet, MarkedRegion region,
-			InsnList src, SCGenerator staticInfoHolder) {
+	public static void fixPseudoVar(Shadow region, InsnList src,
+			SCGenerator staticInfoHolder) {
 
 		for (AbstractInsnNode instr : src.toArray()) {
 
@@ -231,10 +231,10 @@ public class Weaver {
 
 			MethodInsnNode invocation = (MethodInsnNode) instr;
 			
-			if (staticInfoHolder.contains(snippet, region, invocation.owner,
+			if (staticInfoHolder.contains(region, invocation.owner,
 					invocation.name)) {
 
-				Object const_var = staticInfoHolder.get(snippet, region,
+				Object const_var = staticInfoHolder.get(region,
 						invocation.owner, invocation.name);
 
 				if (const_var != null) {
@@ -257,7 +257,7 @@ public class Weaver {
 	// NOTE that if the user requests for the stack value, some store 
 	// instructions will be inserted to the target method, and new local slot
 	// will be used for storing this.
-	public static void fixDynamicInfo(Snippet snippet, MarkedRegion region,
+	public static void fixDynamicInfo(Shadow region,
 			Frame<BasicValue> basicframe, Frame<SourceValue> sourceframe,
 			MethodNode method, InsnList src) {
 
@@ -589,14 +589,14 @@ public class Weaver {
 
 	// replace processor-applying pseudo invocation with processors
 	public static void weavingProcessor(MethodNode methodNode,
-			PIResolver piResolver, Snippet snippet, MarkedRegion region,
-			InsnList newlst, Set<Integer> set, AbstractInsnNode[] array,
+			PIResolver piResolver, Shadow region, InsnList newlst,
+			Set<Integer> set, AbstractInsnNode[] array,
 			Frame<SourceValue> frame) {
 				
 		for (int index : set) {
 
 			AbstractInsnNode instr = array[index];
-			ProcInstance processor = piResolver.get(snippet, region, index);
+			ProcInstance processor = piResolver.get(region, index);
 			
 			if (processor != null) {
 				if (processor.getProcApplyType() == 
@@ -809,14 +809,14 @@ public class Weaver {
 
 	// TODO respect BEST_EFFORT initialization type in synthetic local variable
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
-			Map<Snippet, List<MarkedRegion>> snippetMarkings,
+			Map<Snippet, List<Shadow>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
 			SCGenerator staticInfoHolder, PIResolver piResolver)
 			throws DynamicInfoException {
 	// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_end;
-		Map<MarkedRegion, AbstractInsnNode> weaving_athrow;
+		Map<Shadow, AbstractInsnNode> weaving_athrow;
 
 		Map<AbstractInsnNode, Integer> stack_start;
 		Map<AbstractInsnNode, Integer> stack_end;
@@ -828,7 +828,7 @@ public class Weaver {
 		// Prepare for weaving
 		weaving_start = new HashMap<AbstractInsnNode, AbstractInsnNode>();
 		weaving_end = new HashMap<AbstractInsnNode, AbstractInsnNode>();
-		weaving_athrow = new HashMap<MarkedRegion, AbstractInsnNode>();
+		weaving_athrow = new HashMap<Shadow, AbstractInsnNode>();
 		stack_start = new HashMap<AbstractInsnNode, Integer>();
 		stack_end = new HashMap<AbstractInsnNode, Integer>();
 
@@ -861,7 +861,7 @@ public class Weaver {
 		sourceFrames = sourceAnalyzer.getFrames();
 
 		for (Snippet snippet : array) {
-			List<MarkedRegion> regions = snippetMarkings.get(snippet);
+			List<Shadow> regions = snippetMarkings.get(snippet);
 			SnippetCode code = snippet.getCode();
 
 			// skip snippet with empty code
@@ -873,10 +873,10 @@ public class Weaver {
 			// For @Before, instrument the snippet just before the
 			// entrance of a region.
 			if (snippet.getAnnotationClass().equals(Before.class)) {
-				for (MarkedRegion region : regions) {
+				for (Shadow region : regions) {
 
-					AbstractInsnNode loc = weaving_start.get(region.getStart());
-					int index = stack_start.get(region.getStart());
+					AbstractInsnNode loc = weaving_start.get(region.getRegionStart());
+					int index = stack_start.get(region.getRegionStart());
 
 					// exception handler will discard the stack and push the
 					// exception object. Thus, before entering this snippet,
@@ -902,15 +902,15 @@ public class Weaver {
 					InsnList newlst = clone.getInstructions();
 					AbstractInsnNode[] instr_array = newlst.toArray();
 
-					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+					fixPseudoVar(region, newlst, staticInfoHolder);
 					passesConstsToDynamicContext(snippet, newlst);
-					fixDynamicInfo(snippet, region, basicFrames[index],
+					fixDynamicInfo(region, basicFrames[index],
 							sourceFrames[index], methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);
 										
-					weavingProcessor(methodNode, piResolver, snippet, region,
-							newlst, code.getInvokedProcessors().keySet(),
-							instr_array, sourceFrames[index]);
+					weavingProcessor(methodNode, piResolver, region, newlst,
+							code.getInvokedProcessors().keySet(), instr_array,
+							sourceFrames[index]);
 
 					methodNode.instructions.insertBefore(loc, newlst);
 					methodNode.tryCatchBlocks.addAll(clone.getTryCatchBlocks());
@@ -922,9 +922,9 @@ public class Weaver {
 			// after each adjusted exit of a region.
 			if (snippet.getAnnotationClass().equals(AfterReturning.class)
 					|| snippet.getAnnotationClass().equals(After.class)) {
-				for (MarkedRegion region : regions) {
+				for (Shadow region : regions) {
 
-					for (AbstractInsnNode exit : region.getEnds()) {
+					for (AbstractInsnNode exit : region.getRegionEnds()) {
 
 						AbstractInsnNode loc = weaving_end.get(exit);
 
@@ -952,16 +952,15 @@ public class Weaver {
 						InsnList newlst = clone.getInstructions();
 						AbstractInsnNode[] instr_array = newlst.toArray();
 						
-						fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+						fixPseudoVar(region, newlst, staticInfoHolder);
 						passesConstsToDynamicContext(snippet, newlst);
-						fixDynamicInfo(snippet, region, basicFrames[index],
+						fixDynamicInfo(region, basicFrames[index],
 								sourceFrames[index], methodNode, newlst);
 						fixLocalIndex(methodNode, newlst);
 						
-						weavingProcessor(methodNode, piResolver, snippet,
-								region, newlst, code.getInvokedProcessors()
-										.keySet(), instr_array,
-								sourceFrames[index]);
+						weavingProcessor(methodNode, piResolver, region,
+								newlst, code.getInvokedProcessors().keySet(),
+								instr_array, sourceFrames[index]);
 						
 						methodNode.instructions.insert(loc, newlst);
 						methodNode.tryCatchBlocks.addAll(clone
@@ -976,14 +975,14 @@ public class Weaver {
 			if (snippet.getAnnotationClass().equals(AfterThrowing.class)
 					|| snippet.getAnnotationClass().equals(After.class)) {
 
-				for (MarkedRegion region : regions) {
+				for (Shadow region : regions) {
 					// after-throwing inserts the snippet once, and marks
 					// the start and the very end as the scope
 					AbstractInsnNode last = weaving_athrow.get(region);
 
 					int last_index = -1;
 
-					for (AbstractInsnNode exit : region.getEnds()) {
+					for (AbstractInsnNode exit : region.getRegionEnds()) {
 
 						int index = stack_end.get(exit);
 
@@ -1000,19 +999,19 @@ public class Weaver {
 					InsnList newlst = clone.getInstructions();
 					AbstractInsnNode[] instr_array = newlst.toArray();
 
-					fixPseudoVar(snippet, region, newlst, staticInfoHolder);
+					fixPseudoVar(region, newlst, staticInfoHolder);
 					passesConstsToDynamicContext(snippet, newlst);
-					fixDynamicInfo(snippet, region, basicFrames[last_index],
+					fixDynamicInfo(region, basicFrames[last_index],
 							sourceFrames[last_index], methodNode, newlst);
 					fixLocalIndex(methodNode, newlst);
 
-					weavingProcessor(methodNode, piResolver, snippet, region,
-							newlst, code.getInvokedProcessors().keySet(),
-							instr_array, sourceFrames[last_index]);
+					weavingProcessor(methodNode, piResolver, region, newlst,
+							code.getInvokedProcessors().keySet(), instr_array,
+							sourceFrames[last_index]);
 
 					// Create a try-catch clause
 					TryCatchBlockNode tcb = getTryCatchBlock(methodNode,
-							weaving_start.get(region.getStart()), last);
+							weaving_start.get(region.getRegionStart()), last);
 
 					methodNode.tryCatchBlocks.add(tcb);
 					addExceptionHandlerFrame(methodNode, newlst);

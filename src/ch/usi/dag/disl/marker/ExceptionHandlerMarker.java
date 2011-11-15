@@ -7,11 +7,10 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
-public class ExceptionHandlerMarker implements Marker {
+public class ExceptionHandlerMarker extends AbstractMarker {
 
 	@Override
 	public List<MarkedRegion> mark(MethodNode method) {

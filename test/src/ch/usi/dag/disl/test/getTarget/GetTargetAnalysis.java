@@ -11,16 +11,14 @@ public class GetTargetAnalysis extends AbstractStaticContext {
 
 	public boolean isCalleeStatic() {
 
-		AbstractInsnNode instr = staticContextData.getMarkedRegion()
-				.getStart();
+		AbstractInsnNode instr = staticContextData.getRegionStart();
 
 		return instr.getOpcode() == Opcodes.INVOKESTATIC;
 	}
 
 	public int calleeParCount() {
 
-		AbstractInsnNode instr = staticContextData.getMarkedRegion()
-				.getStart();
+		AbstractInsnNode instr = staticContextData.getRegionStart();
 
 		if (!(instr instanceof MethodInsnNode)) {
 			return 0;
