@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.test.exception;
 
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.BytecodeMarker;
 
 public class DiSLClass {
 

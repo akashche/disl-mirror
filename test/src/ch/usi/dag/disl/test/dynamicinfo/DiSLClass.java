@@ -1,10 +1,10 @@
 package ch.usi.dag.disl.test.dynamicinfo;
 
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
-import ch.usi.dag.disl.dynamicinfo.DynamicContext;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.BodyMarker;
+import ch.usi.dag.disl.marker.BytecodeMarker;
+import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 
 public class DiSLClass {
 

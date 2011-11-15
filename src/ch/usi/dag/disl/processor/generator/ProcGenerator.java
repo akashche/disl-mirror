@@ -11,17 +11,17 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.dislclass.processor.Proc;
-import ch.usi.dag.disl.dislclass.processor.ProcArgType;
-import ch.usi.dag.disl.dislclass.processor.ProcMethod;
-import ch.usi.dag.disl.dislclass.snippet.ProcInvocation;
-import ch.usi.dag.disl.dislclass.snippet.Snippet;
-import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.guard.ProcessorGuard;
 import ch.usi.dag.disl.guard.ProcessorMethodGuard;
-import ch.usi.dag.disl.processor.ProcessorApplyType;
+import ch.usi.dag.disl.marker.MarkedRegion;
+import ch.usi.dag.disl.processor.ProcessorMode;
+import ch.usi.dag.disl.processor.generator.struct.Proc;
+import ch.usi.dag.disl.processor.generator.struct.ProcArgType;
+import ch.usi.dag.disl.processor.generator.struct.ProcMethod;
+import ch.usi.dag.disl.snippet.ProcInvocation;
+import ch.usi.dag.disl.snippet.Snippet;
 
 public class ProcGenerator {
 
@@ -103,13 +103,13 @@ public class ProcGenerator {
 					// handle apply type
 					switch (prcInv.getProcApplyType()) {
 
-					case INSIDE_METHOD: {
+					case METHOD_ARGS: {
 						prcInst = computeInsideMethod(methodNode,
 								prcInv.getProcessor(), pmgd);
 						break;
 					}
 
-					case BEFORE_INVOCATION: {
+					case CALLSITE_ARGS: {
 						prcInst = computeBeforeInvocation(
 								classNode.name + "." + methodNode.name,
 								markedRegion, prcInv.getProcessor(), pmgd);
@@ -141,7 +141,7 @@ public class ProcGenerator {
 		ProcInstance procInst = insideMethodPIs.get(processor);
 
 		if (procInst == null) {
-			procInst = createProcInstance(ProcessorApplyType.INSIDE_METHOD,
+			procInst = createProcInstance(ProcessorMode.METHOD_ARGS,
 					methodNode.desc, processor, pmgd);
 		}
 
@@ -152,7 +152,7 @@ public class ProcGenerator {
 			MarkedRegion markedRegion, Proc processor, PMGuardData pmgd)
 			throws ProcessorException {
 
-		// NOTE: SnippetUnprocessedCode checks that BEFORE_INVOCATION is
+		// NOTE: SnippetUnprocessedCode checks that CALLSITE_ARGS is
 		// used only with BytecodeMarker
 		
 		// because it is BytecodeMarker, it should have only one end 
@@ -167,18 +167,18 @@ public class ProcGenerator {
 
 		// check - method invocation
 		if (!(instr instanceof MethodInsnNode)) {
-			throw new ProcessorException("Processor " + processor.getName()
+			throw new ProcessorException("ArgsProcessor " + processor.getName()
 					+ " is not applied before method invocation in method "
 					+ fullMethodName);
 		}
 
 		MethodInsnNode methodInvocation = (MethodInsnNode) instr;
 
-		return createProcInstance(ProcessorApplyType.BEFORE_INVOCATION,
+		return createProcInstance(ProcessorMode.CALLSITE_ARGS,
 				methodInvocation.desc, processor, pmgd);
 	}
 
-	private ProcInstance createProcInstance(ProcessorApplyType procApplyType,
+	private ProcInstance createProcInstance(ProcessorMode procApplyType,
 			String methodDesc, Proc processor, PMGuardData pmgd) {
 
 		List<ProcMethodInstance> procMethodInstances = 

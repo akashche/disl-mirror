@@ -8,7 +8,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import ch.usi.dag.disl.staticinfo.analysis.AbstractStaticAnalysis;
+import ch.usi.dag.disl.staticcontext.AbstractStaticAnalysis;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
 public class JP2Analysis extends AbstractStaticAnalysis {

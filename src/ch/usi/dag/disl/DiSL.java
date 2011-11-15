@@ -15,13 +15,8 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.dislclass.loader.ClassByteLoader;
-import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
-import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.dislclass.parser.ClassParser;
-import ch.usi.dag.disl.dislclass.processor.Proc;
-import ch.usi.dag.disl.dislclass.snippet.Snippet;
-import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.cbloader.ClassByteLoader;
+import ch.usi.dag.disl.classparser.ClassParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.DynamicInfoException;
@@ -30,18 +25,20 @@ import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticInfoException;
 import ch.usi.dag.disl.guard.SnippetGuard;
+import ch.usi.dag.disl.localvar.SyntheticLocalVar;
+import ch.usi.dag.disl.localvar.ThreadLocalVar;
+import ch.usi.dag.disl.marker.MarkedRegion;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
-import ch.usi.dag.disl.staticinfo.StaticInfo;
+import ch.usi.dag.disl.processor.generator.struct.Proc;
+import ch.usi.dag.disl.snippet.Snippet;
+import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.weaver.TLVInserter;
 import ch.usi.dag.disl.weaver.Weaver;
 import ch.usi.dag.jborat.agent.Instrumentation;
 
-// TODO better public API - marker pkg should be in disl pkg, class visibility (and pkg) cleanup everywhere
-//  - maybe expose classes in user package and other are considered non visible :)
-//  - make private DiSL classes only package visible - the class dependency will tell you what should be in one package :)
 // TODO javadoc comment all
 public class DiSL implements Instrumentation {
 
@@ -55,7 +52,7 @@ public class DiSL implements Instrumentation {
 
 	// list of static analysis instances
 	// validity of an instance is for one instrumented class
-	// instances are created lazily when needed in StaticInfo
+	// instances are created lazily when needed in SCGenerator
 	Map<Class<?>, Object> staticAnalysisInstances;
 
 	private void reportError(Exception e) {
@@ -203,8 +200,8 @@ public class DiSL implements Instrumentation {
 		
 		// *** compute static info ***
 
-		// prepares StaticInfo class (computes static analysis)
-		StaticInfo staticInfo = new StaticInfo(staticAnalysisInstances,
+		// prepares SCGenerator class (computes static analysis)
+		SCGenerator staticInfo = new SCGenerator(staticAnalysisInstances,
 				classNode, methodNode, snippetMarkings);
 
 		// *** used synthetic local vars in snippets ***

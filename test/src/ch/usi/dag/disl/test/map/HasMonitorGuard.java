@@ -8,8 +8,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.dislclass.snippet.Snippet;
-import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.snippet.Snippet;
+import ch.usi.dag.disl.marker.MarkedRegion;
 import ch.usi.dag.disl.guard.SnippetGuard;
 
 //check if the method has at least one monitorenter on its body.

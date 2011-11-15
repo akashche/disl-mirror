@@ -5,7 +5,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 
-import ch.usi.dag.disl.staticinfo.analysis.AbstractStaticAnalysis;
+import ch.usi.dag.disl.staticcontext.AbstractStaticAnalysis;
 
 public class MAPAnalysis extends AbstractStaticAnalysis {
 	

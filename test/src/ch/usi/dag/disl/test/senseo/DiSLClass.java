@@ -1,15 +1,15 @@
 package ch.usi.dag.disl.test.senseo;
 
-import ch.usi.dag.disl.dislclass.annotation.After;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
-import ch.usi.dag.disl.dislclass.annotation.ThreadLocal;
-import ch.usi.dag.disl.dislclass.snippet.marker.AfterInitBodyMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
+import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.annotation.ThreadLocal;
+import ch.usi.dag.disl.marker.AfterInitBodyMarker;
+import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.processor.Processor;
-import ch.usi.dag.disl.processor.ProcessorApplyType;
-import ch.usi.dag.disl.staticinfo.analysis.BasicBlockAnalysis;
-import ch.usi.dag.disl.staticinfo.analysis.uid.UniqueMethodId;
+import ch.usi.dag.disl.processor.ProcessorMode;
+import ch.usi.dag.disl.staticcontext.BasicBlockAnalysis;
+import ch.usi.dag.disl.staticcontext.uid.UniqueMethodId;
 import ch.usi.dag.disl.test.senseo.runtime.Analysis;
 
 // This is the SENSEO Case study recast in DiSL

@@ -3,8 +3,8 @@ package ch.usi.dag.disl.test.senseo;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.dislclass.snippet.Snippet;
-import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.snippet.Snippet;
+import ch.usi.dag.disl.marker.MarkedRegion;
 
 // check if at least one of the arguments is an Object 
 // --> if "L" is in the description of the arguments

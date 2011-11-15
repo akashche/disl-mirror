@@ -4,10 +4,10 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.dislclass.snippet.ProcInvocation;
-import ch.usi.dag.disl.dislclass.snippet.Snippet;
-import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
+import ch.usi.dag.disl.marker.MarkedRegion;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
+import ch.usi.dag.disl.snippet.ProcInvocation;
+import ch.usi.dag.disl.snippet.Snippet;
 
 public interface ProcessorMethodGuard {
 

@@ -1,11 +1,11 @@
 package ch.usi.dag.disl.test.cflow;
 
 
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.annotation.After;
-import ch.usi.dag.disl.dislclass.annotation.ThreadLocal;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.staticinfo.analysis.StaticContext;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.ThreadLocal;
+import ch.usi.dag.disl.marker.BodyMarker;
+import ch.usi.dag.disl.staticcontext.StaticContext;
 
 // Simple cflow with DiSL
 

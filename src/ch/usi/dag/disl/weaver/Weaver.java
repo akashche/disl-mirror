@@ -30,25 +30,25 @@ import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
-import ch.usi.dag.disl.dislclass.annotation.After;
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
-import ch.usi.dag.disl.dislclass.annotation.AfterThrowing;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal.Initialize;
-import ch.usi.dag.disl.dislclass.code.Code;
-import ch.usi.dag.disl.dislclass.localvar.SyntheticLocalVar;
-import ch.usi.dag.disl.dislclass.snippet.Snippet;
-import ch.usi.dag.disl.dislclass.snippet.SnippetCode;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.MarkedRegion;
-import ch.usi.dag.disl.dynamicinfo.DynamicContext;
+import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.AfterThrowing;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.annotation.SyntheticLocal.Initialize;
+import ch.usi.dag.disl.coderep.Code;
+import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.DynamicInfoException;
-import ch.usi.dag.disl.processor.ProcessorApplyType;
+import ch.usi.dag.disl.localvar.SyntheticLocalVar;
+import ch.usi.dag.disl.marker.BodyMarker;
+import ch.usi.dag.disl.marker.MarkedRegion;
+import ch.usi.dag.disl.processor.ProcessorMode;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
-import ch.usi.dag.disl.staticinfo.StaticInfo;
+import ch.usi.dag.disl.snippet.Snippet;
+import ch.usi.dag.disl.snippet.SnippetCode;
+import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.stack.StackUtil;
 
@@ -217,7 +217,7 @@ public class Weaver {
 	// Search for an instruction sequence that match the pattern
 	// of the pseudo variables.
 	public static void fixPseudoVar(Snippet snippet, MarkedRegion region,
-			InsnList src, StaticInfo staticInfoHolder) {
+			InsnList src, SCGenerator staticInfoHolder) {
 
 		for (AbstractInsnNode instr : src.toArray()) {
 
@@ -600,7 +600,7 @@ public class Weaver {
 			
 			if (processor != null) {
 				if (processor.getProcApplyType() == 
-					ProcessorApplyType.BEFORE_INVOCATION) {
+					ProcessorMode.CALLSITE_ARGS) {
 
 					newlst.insert(instr,
 							procBeforeInvoke(methodNode, processor, frame));
@@ -811,7 +811,7 @@ public class Weaver {
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<MarkedRegion>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
-			StaticInfo staticInfoHolder, PIResolver piResolver)
+			SCGenerator staticInfoHolder, PIResolver piResolver)
 			throws DynamicInfoException {
 	// Sort the snippets based on their order
 		Map<AbstractInsnNode, AbstractInsnNode> weaving_start;

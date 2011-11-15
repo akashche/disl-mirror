@@ -1,16 +1,16 @@
 package ch.usi.dag.disl.test.jp2;
 
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal.Initialize;
-import ch.usi.dag.disl.dislclass.annotation.ThreadLocal;
-import ch.usi.dag.disl.dislclass.snippet.marker.BasicBlockMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
-import ch.usi.dag.disl.staticinfo.analysis.BasicBlockAnalysis;
-import ch.usi.dag.disl.staticinfo.analysis.BytecodeAnalysis;
-import ch.usi.dag.disl.staticinfo.analysis.StaticContext;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.annotation.SyntheticLocal.Initialize;
+import ch.usi.dag.disl.annotation.ThreadLocal;
+import ch.usi.dag.disl.marker.BasicBlockMarker;
+import ch.usi.dag.disl.marker.BodyMarker;
+import ch.usi.dag.disl.marker.BytecodeMarker;
+import ch.usi.dag.disl.staticcontext.BasicBlockAnalysis;
+import ch.usi.dag.disl.staticcontext.BytecodeAnalysis;
+import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.test.jp2.runtime.CCTNode;
 
 

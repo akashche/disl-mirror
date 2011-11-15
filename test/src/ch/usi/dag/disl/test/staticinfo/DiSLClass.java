@@ -1,8 +1,8 @@
 package ch.usi.dag.disl.test.staticinfo;
 
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.staticinfo.analysis.StaticContext;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.BodyMarker;
+import ch.usi.dag.disl.staticcontext.StaticContext;
 
 public class DiSLClass {
 	

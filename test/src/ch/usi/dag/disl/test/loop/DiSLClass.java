@@ -1,8 +1,8 @@
 package ch.usi.dag.disl.test.loop;
 
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.snippet.marker.BasicBlockMarker;
-import ch.usi.dag.disl.staticinfo.analysis.BasicBlockAnalysis;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.BasicBlockMarker;
+import ch.usi.dag.disl.staticcontext.BasicBlockAnalysis;
 
 public class DiSLClass {
 

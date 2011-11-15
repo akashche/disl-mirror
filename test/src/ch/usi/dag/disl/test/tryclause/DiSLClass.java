@@ -1,9 +1,9 @@
 package ch.usi.dag.disl.test.tryclause;
 
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
-import ch.usi.dag.disl.dislclass.annotation.AfterThrowing;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.snippet.marker.TryClauseMarker;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.AfterThrowing;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.TryClauseMarker;
 
 public class DiSLClass {
 	

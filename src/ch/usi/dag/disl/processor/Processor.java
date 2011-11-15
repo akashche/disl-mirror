@@ -8,12 +8,12 @@ public abstract class Processor {
 	 * @param processorClass processor class to apply
 	 * @param applyType mode in which should be processor applied
 	 */
-	public static void apply(Class<?> processorClass, ProcessorApplyType applyType) {
+	public static void apply(Class<?> processorClass, ProcessorMode applyType) {
 		
 	}
 
 	// TODO ! receiver - should it have apply type?, add description
-	public static Object getReceiver(ProcessorApplyType applyType) {
+	public static Object getReceiver(ProcessorMode applyType) {
 		return null;
 	}
 }

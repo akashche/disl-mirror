@@ -1,12 +1,12 @@
 package ch.usi.dag.disl.test.processor;
 
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.marker.BodyMarker;
+import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.processor.Processor;
-import ch.usi.dag.disl.processor.ProcessorApplyType;
-import ch.usi.dag.disl.staticinfo.analysis.StaticContext;
+import ch.usi.dag.disl.processor.ProcessorMode;
+import ch.usi.dag.disl.staticcontext.StaticContext;
 
 public class DiSLClass {
 

@@ -5,7 +5,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import ch.usi.dag.disl.staticinfo.analysis.AbstractStaticAnalysis;
+import ch.usi.dag.disl.staticcontext.AbstractStaticAnalysis;
 
 public class SEAnalysis extends AbstractStaticAnalysis{
 

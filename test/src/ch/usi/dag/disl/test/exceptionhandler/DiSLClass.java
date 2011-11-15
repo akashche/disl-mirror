@@ -1,8 +1,8 @@
 package ch.usi.dag.disl.test.exceptionhandler;
 
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.snippet.marker.ExceptionHandlerMarker;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.ExceptionHandlerMarker;
 
 public class DiSLClass {
 	

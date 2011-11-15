@@ -9,7 +9,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 
-import ch.usi.dag.disl.dislclass.localvar.ThreadLocalVar;
+import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.Constants;
 
 public final class TLVInserter extends ClassVisitor {

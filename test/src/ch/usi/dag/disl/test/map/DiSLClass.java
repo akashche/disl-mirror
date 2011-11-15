@@ -2,15 +2,15 @@ package ch.usi.dag.disl.test.map;
 
 import java.util.Stack;
 
-import ch.usi.dag.disl.dislclass.annotation.After;
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal.Initialize;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
-import ch.usi.dag.disl.dynamicinfo.DynamicContext;
-import ch.usi.dag.disl.staticinfo.analysis.StaticContext;
+import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.annotation.SyntheticLocal.Initialize;
+import ch.usi.dag.disl.marker.BodyMarker;
+import ch.usi.dag.disl.marker.BytecodeMarker;
+import ch.usi.dag.disl.dynamiccontext.DynamicContext;
+import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.test.map.runtime.MemoryRuntime;
 
 // This is a DiSL implementation of the MAP tool

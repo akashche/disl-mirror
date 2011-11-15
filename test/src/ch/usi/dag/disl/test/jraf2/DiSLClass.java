@@ -1,13 +1,13 @@
 package ch.usi.dag.disl.test.jraf2;
 
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.snippet.marker.BasicBlockMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.ExceptionHandlerMarker;
-import ch.usi.dag.disl.staticinfo.analysis.BasicBlockAnalysis;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
-import ch.usi.dag.disl.dislclass.annotation.ThreadLocal;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal.Initialize;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.BasicBlockMarker;
+import ch.usi.dag.disl.marker.BodyMarker;
+import ch.usi.dag.disl.marker.ExceptionHandlerMarker;
+import ch.usi.dag.disl.staticcontext.BasicBlockAnalysis;
+import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.annotation.ThreadLocal;
+import ch.usi.dag.disl.annotation.SyntheticLocal.Initialize;
 
 public class DiSLClass {
 	

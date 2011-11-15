@@ -1,12 +1,12 @@
 package ch.usi.dag.disl.test.args;
 
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.processor.Processor;
-import ch.usi.dag.disl.processor.ProcessorApplyType;
-import ch.usi.dag.disl.staticinfo.analysis.StaticContext;
+import ch.usi.dag.disl.processor.ProcessorMode;
+import ch.usi.dag.disl.staticcontext.StaticContext;
 
 // This example shows how to emulate AspectJ's thisJoinPoint.getArgs()
 

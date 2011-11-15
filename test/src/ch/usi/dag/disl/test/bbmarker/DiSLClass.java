@@ -1,10 +1,10 @@
 package ch.usi.dag.disl.test.bbmarker;
 
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.snippet.marker.BasicBlockMarker;
-import ch.usi.dag.disl.dislclass.snippet.marker.PreciseBasicBlockMarker;
-import ch.usi.dag.disl.staticinfo.analysis.BasicBlockAnalysis;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.BasicBlockMarker;
+import ch.usi.dag.disl.marker.PreciseBasicBlockMarker;
+import ch.usi.dag.disl.staticcontext.BasicBlockAnalysis;
 
 public class DiSLClass {
 

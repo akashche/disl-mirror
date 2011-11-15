@@ -1,9 +1,9 @@
 package ch.usi.dag.disl.test.threadlocal;
 
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.annotation.After;
-import ch.usi.dag.disl.dislclass.annotation.ThreadLocal;
-import ch.usi.dag.disl.dislclass.snippet.marker.BodyMarker;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.ThreadLocal;
+import ch.usi.dag.disl.marker.BodyMarker;
 
 public class DiSLClass {
     

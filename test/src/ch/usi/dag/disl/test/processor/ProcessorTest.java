@@ -1,9 +1,9 @@
 package ch.usi.dag.disl.test.processor;
 
-import ch.usi.dag.disl.dislclass.annotation.ProcessAlso;
-import ch.usi.dag.disl.dislclass.annotation.ProcessAlso.Type;
-import ch.usi.dag.disl.dislclass.annotation.Processor;
-import ch.usi.dag.disl.dislclass.annotation.SyntheticLocal;
+import ch.usi.dag.disl.annotation.ProcessAlso;
+import ch.usi.dag.disl.annotation.ProcessAlso.Type;
+import ch.usi.dag.disl.annotation.ArgsProcessor;
+import ch.usi.dag.disl.annotation.SyntheticLocal;
 
 @Processor
 public class ProcessorTest {

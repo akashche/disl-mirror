@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.test.guard;
 
-import ch.usi.dag.disl.dislclass.annotation.Guarded;
-import ch.usi.dag.disl.dislclass.annotation.Processor;
+import ch.usi.dag.disl.annotation.Guarded;
+import ch.usi.dag.disl.annotation.ArgsProcessor;
 
 @Processor(guard=GuardYes.class)
 public class ProcessorTest {

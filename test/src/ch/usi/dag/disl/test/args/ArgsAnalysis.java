@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.test.args;
 
 import org.objectweb.asm.Type;
-import ch.usi.dag.disl.staticinfo.analysis.AbstractStaticAnalysis;
+import ch.usi.dag.disl.staticcontext.AbstractStaticAnalysis;
 
 public class ArgsAnalysis extends AbstractStaticAnalysis {
 

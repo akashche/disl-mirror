@@ -1,8 +1,8 @@
 package ch.usi.dag.disl.test.afterinit;
 
-import ch.usi.dag.disl.dislclass.annotation.After;
-import ch.usi.dag.disl.dislclass.annotation.Before;
-import ch.usi.dag.disl.dislclass.snippet.marker.AfterInitBodyMarker;
+import ch.usi.dag.disl.annotation.After;
+import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.AfterInitBodyMarker;
 
 public class DiSLClass {
 	

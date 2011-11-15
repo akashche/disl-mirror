@@ -1,8 +1,8 @@
 package ch.usi.dag.disl.test.stack;
 
-import ch.usi.dag.disl.dislclass.annotation.AfterReturning;
-import ch.usi.dag.disl.dislclass.snippet.marker.BytecodeMarker;
-import ch.usi.dag.disl.dynamicinfo.DynamicContext;
+import ch.usi.dag.disl.annotation.AfterReturning;
+import ch.usi.dag.disl.marker.BytecodeMarker;
+import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 
 public class DiSLClass {
 	@AfterReturning(marker = BytecodeMarker.class, args="new", scope = "TargetClass.*")
