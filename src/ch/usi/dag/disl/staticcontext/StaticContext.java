@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
+import ch.usi.dag.disl.snippet.Shadow;
 
 public interface StaticContext {
 

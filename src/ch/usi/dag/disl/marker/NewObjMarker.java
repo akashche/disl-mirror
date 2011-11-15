@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.Constants;
 
 public class NewObjMarker implements Marker {
@@ -43,7 +44,7 @@ public class NewObjMarker implements Marker {
 				if(min.name.equals(Constants.CONSTRUCTOR_NAME)) {
 					
 					regions.add(
-							new MarkedRegion(method, instruction, instruction));
+							new MarkedRegion(instruction, instruction));
 				}
 			}
 		}

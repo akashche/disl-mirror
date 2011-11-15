@@ -9,11 +9,11 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
-import ch.usi.dag.disl.marker.MarkedRegion;
+import ch.usi.dag.disl.snippet.MarkedRegion;
+import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.StaticContextMethod;
 import ch.usi.dag.disl.staticcontext.StaticContext;
-import ch.usi.dag.disl.staticcontext.Shadow;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 

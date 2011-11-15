@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 
 public class TryClauseMarker implements Marker {
@@ -20,7 +21,7 @@ public class TryClauseMarker implements Marker {
 			AbstractInsnNode start = AsmHelper.skipVirualInsns(tcb.start, true);
 			AbstractInsnNode end = AsmHelper.skipVirualInsns(tcb.end, false);
 			
-			regions.add(new MarkedRegion(method, start, end));
+			regions.add(new MarkedRegion(start, end));
 		}
 		
 		return regions;

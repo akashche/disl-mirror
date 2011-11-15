@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.snippet.MarkedRegion;
+
 public class EmptyMarker implements Marker {
 	
 	@Override

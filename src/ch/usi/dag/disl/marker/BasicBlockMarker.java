@@ -6,6 +6,7 @@ import java.util.List;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
@@ -34,7 +35,7 @@ public class BasicBlockMarker implements Marker {
 				end = end.getPrevious();
 			}
 
-			regions.add(new MarkedRegion(method, start, AsmHelper.skipVirualInsns(
+			regions.add(new MarkedRegion(start, AsmHelper.skipVirualInsns(
 					end, false)));
 		}
 

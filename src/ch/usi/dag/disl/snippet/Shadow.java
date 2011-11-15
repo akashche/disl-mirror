@@ -1,10 +1,8 @@
-package ch.usi.dag.disl.staticcontext;
+package ch.usi.dag.disl.snippet;
 
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.marker.MarkedRegion;
-import ch.usi.dag.disl.snippet.Snippet;
 
 // TODO ! shadow
 

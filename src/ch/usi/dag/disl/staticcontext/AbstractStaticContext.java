@@ -6,6 +6,7 @@ import java.util.Map;
 
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
+import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.staticcontext.cache.StaticContextCache;
 
 abstract public class AbstractStaticContext implements StaticContext {

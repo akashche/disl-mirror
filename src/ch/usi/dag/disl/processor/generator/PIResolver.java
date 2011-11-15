@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import ch.usi.dag.disl.marker.MarkedRegion;
+import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.snippet.Snippet;
 
 public class PIResolver {

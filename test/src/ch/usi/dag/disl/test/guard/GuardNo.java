@@ -4,9 +4,9 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.marker.MarkedRegion;
 import ch.usi.dag.disl.guard.ProcessorGuard;
 import ch.usi.dag.disl.guard.ProcessorMethodGuard;
 import ch.usi.dag.disl.guard.SnippetGuard;

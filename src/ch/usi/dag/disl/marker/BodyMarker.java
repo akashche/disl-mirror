@@ -7,6 +7,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.snippet.MarkedRegion;
+
 public class BodyMarker implements Marker {
 
 	@Override
@@ -14,7 +16,7 @@ public class BodyMarker implements Marker {
 		
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		MarkedRegion region = 
-			new MarkedRegion(method, method.instructions.getFirst());
+			new MarkedRegion(method.instructions.getFirst());
 
 		for (AbstractInsnNode instr : method.instructions.toArray()) {
 			

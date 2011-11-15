@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
@@ -24,7 +25,7 @@ public class ExceptionHandlerMarker implements Marker {
 		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
 			
 			List<AbstractInsnNode> exits = cfg.visit(tcb.handler);
-			regions.add(new MarkedRegion(method, AsmHelper.skipVirualInsns(
+			regions.add(new MarkedRegion(AsmHelper.skipVirualInsns(
 					tcb.handler, true), exits));
 		}
 

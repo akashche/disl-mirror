@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
+import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.AsmOpcodes;
 
 public class BytecodeMarker implements Marker {
@@ -58,7 +59,7 @@ public class BytecodeMarker implements Marker {
 			
 			if (searchedInstrNums.contains(instruction.getOpcode())) {
 				
-				regions.add(new MarkedRegion(method, instruction, instruction));
+				regions.add(new MarkedRegion(instruction, instruction));
 			}
 		}
 

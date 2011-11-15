@@ -9,12 +9,11 @@ import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.util.Constants;
 
 public class AfterInitBodyMarker implements Marker {
 
-	// TODO ! not marking correctly
-	
 	// empty visitor for new AdviceAdapter
 	private static class EmptyMethodVisitor extends MethodVisitor {
 
@@ -78,7 +77,7 @@ public class AfterInitBodyMarker implements Marker {
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		
 		MarkedRegion region = 
-			new MarkedRegion(method, findFirstValidMark(method));
+			new MarkedRegion(findFirstValidMark(method));
 
 		for (AbstractInsnNode instr : method.instructions.toArray()) {
 			

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.staticcontext.Shadow;
+import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
 public class StaticContextCache {

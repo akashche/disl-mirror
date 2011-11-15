@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.staticcontext.cache;
 
-import ch.usi.dag.disl.staticcontext.Shadow;
+import ch.usi.dag.disl.snippet.Shadow;
 
 public class MethodCache extends Shadow {
 

@@ -15,11 +15,11 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.guard.ProcessorGuard;
 import ch.usi.dag.disl.guard.ProcessorMethodGuard;
-import ch.usi.dag.disl.marker.MarkedRegion;
 import ch.usi.dag.disl.processor.ProcessorMode;
 import ch.usi.dag.disl.processor.generator.struct.Proc;
 import ch.usi.dag.disl.processor.generator.struct.ProcArgType;
 import ch.usi.dag.disl.processor.generator.struct.ProcMethod;
+import ch.usi.dag.disl.snippet.MarkedRegion;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Snippet;
 
