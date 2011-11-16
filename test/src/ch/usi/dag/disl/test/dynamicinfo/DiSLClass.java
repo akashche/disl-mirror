@@ -4,6 +4,7 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.BytecodeMarker;
+import ch.usi.dag.disl.staticcontext.MethodSC;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 
 public class DiSLClass {
@@ -27,11 +28,23 @@ public class DiSLClass {
 		System.out.println("Return with " + ret);
 	}
 
+	@Before(marker = BytecodeMarker.class, args = "dsub", scope = "TargetClass.test3")
+	public static void precondition3(DynamicContext di) {
+		double i = di.stackValue(0, double.class);
+		double d = di.stackValue(1, double.class);
+		System.out.println(d + " - " + i + " = " + (d - i));
+	}
+	
 	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.test3")
 	public static void postcondition3(DynamicContext di) {
 		double d = di.localVariableValue(1, double.class);
 		System.out.println("before return, local d is " + d);
 		int i = di.methodArgumentValue(1, int.class);
 		System.out.println("before return, local i is " + i);
+	}
+	
+	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.*")
+	public static void getThis(DynamicContext di, MethodSC msc) {
+		System.out.println(msc.thisMethodName() + " - this: " + di.thisValue());
 	}
 }

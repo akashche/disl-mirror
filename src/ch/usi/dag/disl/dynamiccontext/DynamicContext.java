@@ -8,7 +8,7 @@ public interface DynamicContext {
 	 * 
 	 * @param distance position from the top of the stack.
 	 * 			0 returns top of the stack.
-	 * 			Doubles and longs are counted as distance difference 2.
+	 * 			Doubles and longs are counted as distance difference 1.
 	 * @param valueType type of the accessed value
 	 */
 	public <T> T stackValue(int distance, Class<T> valueType);
@@ -32,7 +32,7 @@ public interface DynamicContext {
 	 * Returns value of method argument at given position at runtime.
 	 * 
 	 * @param index argument position.
-	 * 			0 returns this if applicable, null otherwise.
+	 * 			0 returns first argument.
 	 * 			Doubles and longs are counted as distance difference 1.
 	 * @param valueType type of the accessed argument
 	 */

@@ -16,7 +16,8 @@ public class TargetClass {
 		d += 1;
 		System.out.println("d is now " + d);
 		i -= 1;
-		System.out.println("i is now " + i);	
+		System.out.println("i is now " + i);
+		System.out.println(d - i);
 	}
 
 	public static void main(String[] args) {

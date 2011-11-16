@@ -101,7 +101,7 @@ public class Weaver {
 						+ snippet.getOriginMethodName()
 						+ " - pass the first (pos)"
 						+ " argument of a dynamic context method direcltly."
-						+ " ex: getStackValue(1, int.class)");
+						+ " ex: stackValue(1, int.class)");
 			}
 
 			// second operand test
@@ -111,7 +111,7 @@ public class Weaver {
 						+ snippet.getOriginMethodName()
 						+ " - pass the second (type)"
 						+ " argument of a dynamic context method direcltly."
-						+ " ex: getStackValue(1, int.class)");
+						+ " ex: stackValue(1, int.class)");
 			}
 		}
 	}
@@ -320,7 +320,7 @@ public class Weaver {
 				}
 
 				// Type checking
-				Type targetType = StackUtil.getStack(basicframe, operand)
+				Type targetType = StackUtil.getStackByIndex(basicframe, operand)
 						.getType();
 
 				if (t.getSort() != targetType.getSort()) {
@@ -407,7 +407,7 @@ public class Weaver {
 	// operand and store into a local slot.
 	private static int dupStack(Frame<SourceValue> frame, MethodNode method,
 			int operand, int sopcode, int slot) {
-		SourceValue source = StackUtil.getStack(frame, operand);
+		SourceValue source = StackUtil.getStackByIndex(frame, operand);
 
 		for (AbstractInsnNode itr : source.insns) {
 
@@ -437,7 +437,7 @@ public class Weaver {
 					break;
 				}
 
-				SourceValue x2 = StackUtil.getStack(frame, operand + 2);
+				SourceValue x2 = StackUtil.getStackByIndex(frame, operand + 2);
 				dupStack(frame, method, operand + (4 - x2.size), sopcode, slot);
 				continue;
 
