@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.analysis.BasicVerifier;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceInterpreter;
 import org.objectweb.asm.tree.analysis.SourceValue;
+import org.objectweb.asm.tree.analysis.Value;
 
 public class StackUtil {
 
@@ -65,17 +66,25 @@ public class StackUtil {
 		return ilst;
 	}
 
-	public static BasicValue getBasicValue(Frame<BasicValue> frame, int depth) {
-		return frame.getStack(frame.getStackSize() - 1 - depth);
-	}
-
 	// generate a source analyzer
 	public static Analyzer<SourceValue> getSourceAnalyzer() {
 		return new Analyzer<SourceValue>(new SourceInterpreter());
 	}
 
-	public static SourceValue getSourceValue(Frame<SourceValue> frame, int depth) {
-		return frame.getStack(frame.getStackSize() - 1 - depth);
+	public static <T extends Value> T getStack(Frame<T> frame, int depth) {
+
+		int index = 0;
+
+		while (depth > 0) {
+
+			depth -= frame.getStack(frame.getStackSize() - 1 - index).getSize();
+			index++;
+		}
+
+		return frame.getStack(frame.getStackSize() - 1 - index);
 	}
 
+	public static <T extends Value> T getStackByIndex(Frame<T> frame, int index) {
+		return frame.getStack(frame.getStackSize() - 1 - index);
+	}
 }

@@ -64,7 +64,7 @@ public class Weaver {
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
 			// it is invocation...
-			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL) {
+			if (instr.getOpcode() != Opcodes.INVOKEINTERFACE) {
 				continue;
 			}
 
@@ -73,6 +73,10 @@ public class Weaver {
 			// ... of dynamic context
 			if (!invoke.owner
 					.equals(Type.getInternalName(DynamicContext.class))) {
+				continue;
+			}
+
+			if (invoke.name.equals("thisValue")) {
 				continue;
 			}
 
@@ -265,7 +269,7 @@ public class Weaver {
 
 		for (AbstractInsnNode instr : src.toArray()) {
 			// pseudo function call
-			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL) {
+			if (instr.getOpcode() != Opcodes.INVOKEINTERFACE) {
 				continue;
 			}
 
@@ -276,6 +280,24 @@ public class Weaver {
 				continue;
 			}
 
+			AbstractInsnNode prev = instr.getPrevious();
+
+			if (invoke.name.equals("thisValue")) {
+
+				if ((method.access & Opcodes.ACC_STATIC) == 0) {
+					src.insert(instr, new VarInsnNode(Opcodes.ALOAD,
+							-method.maxLocals));
+				} else {
+					src.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
+				}
+
+				src.remove(invoke);
+				src.remove(prev);
+				continue;
+			}
+
+			AbstractInsnNode next = instr.getNext();
+
 			// parsing:
 			//		aload dynamic_info
 			//		iconst
@@ -283,9 +305,6 @@ public class Weaver {
 			//		invoke  (current instruction)
 			//		[checkcast]
 			//		[invoke]
-			AbstractInsnNode prev = instr.getPrevious();
-			AbstractInsnNode next = instr.getNext();
-
 			int operand = AsmHelper.getIConstOperand(prev.getPrevious());
 			Type t = AsmHelper.getClassType(prev);
 
@@ -301,7 +320,7 @@ public class Weaver {
 				}
 
 				// Type checking
-				Type targetType = StackUtil.getBasicValue(basicframe, operand)
+				Type targetType = StackUtil.getStack(basicframe, operand)
 						.getType();
 
 				if (t.getSort() != targetType.getSort()) {
@@ -386,9 +405,9 @@ public class Weaver {
 
 	// find out where a stack operand is pushed onto stack, and duplicate the
 	// operand and store into a local slot.
-	private static int dupStack(Frame<SourceValue> frame,
-			MethodNode method, int operand, int sopcode, int slot) {
-		SourceValue source = StackUtil.getSourceValue(frame, operand);
+	private static int dupStack(Frame<SourceValue> frame, MethodNode method,
+			int operand, int sopcode, int slot) {
+		SourceValue source = StackUtil.getStack(frame, operand);
 
 		for (AbstractInsnNode itr : source.insns) {
 
@@ -418,7 +437,7 @@ public class Weaver {
 					break;
 				}
 
-				SourceValue x2 = StackUtil.getSourceValue(frame, operand + 2);
+				SourceValue x2 = StackUtil.getStack(frame, operand + 2);
 				dupStack(frame, method, operand + (4 - x2.size), sopcode, slot);
 				continue;
 
@@ -547,7 +566,7 @@ public class Weaver {
 			// position, arguments count and argument value
 			int pos = processorMethod.getArgsCount() - 1
 					- processorMethod.getArgPos();
-			SourceValue source = StackUtil.getSourceValue(frame, pos);
+			SourceValue source = StackUtil.getStackByIndex(frame, pos);
 
 			AbstractInsnNode start = instructions.getFirst();
 			instructions.insertBefore(start,
