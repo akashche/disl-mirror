@@ -27,25 +27,25 @@ public class DiSLClass {
 	@SyntheticLocal
 	static Constraint constraints = new Constraint();
 
-	@Before(marker = BytecodeMarker.class, param = "iconst_M1, iconst_0, iconst_1, "
+	@Before(marker = BytecodeMarker.class, args = "iconst_M1, iconst_0, iconst_1, "
 			+ "iconst_2, iconst_3, iconst_4, iconst_5", scope = "TargetClass.print")
 	public static void iconst(SEAnalysis ba) {
 		stackmodel.push(new IConstValue(ba.getIConst()));
 	}
 	
-	@Before(marker = BytecodeMarker.class, param = "iload", scope = "TargetClass.print")
+	@Before(marker = BytecodeMarker.class, args = "iload", scope = "TargetClass.print")
 	public static void iload(SEAnalysis ba) {
 		stackmodel.push(symbols.get(ba.getID()));
 	}
 
-	@Before(marker = BytecodeMarker.class, param = "iinc", scope = "TargetClass.print")
+	@Before(marker = BytecodeMarker.class, args = "iinc", scope = "TargetClass.print")
 	public static void iinc(SEAnalysis ba) {
 		String id = ba.getID();
 		symbols.put(id, new BinaryOperation(Opcodes.ISUB, new IConstValue(ba.getIConst()), 
 				symbols.get(id)));
 	}
 
-	@Before(marker = BytecodeMarker.class, param = "if_icmple", scope = "TargetClass.print")
+	@Before(marker = BytecodeMarker.class, args = "if_icmple", scope = "TargetClass.print")
 	public static void branch(SEAnalysis ba) {
 		constraints.add(new BinaryOperation(ba.getBytecodeNumber(), stackmodel.pop(),
 				stackmodel.pop()));

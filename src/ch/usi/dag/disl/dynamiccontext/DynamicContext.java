@@ -1,6 +1,7 @@
 package ch.usi.dag.disl.dynamiccontext;
 
-public interface DynamicContext {
+// TODO ! change to interface
+public abstract class DynamicContext {
 
 	/**
 	 * Returns value on application stack at runtime.
@@ -10,7 +11,7 @@ public interface DynamicContext {
 	 * 			Doubles and longs are counted as distance difference 2.
 	 * @param valueType type of the accessed value
 	 */
-	public <T> T stackValue(int distance, Class<T> valueType);
+	abstract public <T> T stackValue(int distance, Class<T> valueType);
 	
 	/**
 	 * Returns value of local variable with given index at runtime.
@@ -20,12 +21,12 @@ public interface DynamicContext {
 	 * 			Doubles and longs are counted as distance difference 2.
 	 * @param valueType type of the accessed argument
 	 */
-	public <T> T localVariableValue(int index, Class<T> valueType);
+	abstract public <T> T localVariableValue(int index, Class<T> valueType);
 	
 	/**
 	 * Returns value of this object for dynamic method null for static method.
 	 */
-	public Object thisValue();
+	abstract public Object thisValue();
 	
 	/**
 	 * Returns value of method argument at given position at runtime.
@@ -35,5 +36,5 @@ public interface DynamicContext {
 	 * 			Doubles and longs are counted as distance difference 1.
 	 * @param valueType type of the accessed argument
 	 */
-	public <T> T methodArgumentValue(int index, Class<T> valueType);
+	abstract public <T> T methodArgumentValue(int index, Class<T> valueType);
 }

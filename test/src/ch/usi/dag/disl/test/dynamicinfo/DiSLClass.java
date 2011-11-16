@@ -8,7 +8,7 @@ import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 
 public class DiSLClass {
 
-	@Before(marker = BytecodeMarker.class, param = "isub", scope = "TargetClass.test1")
+	@Before(marker = BytecodeMarker.class, args = "isub", scope = "TargetClass.test1")
 	public static void precondition(DynamicContext di) {
 		int i = di.stackValue(1, int.class);
 		int j = di.stackValue(0, int.class);

@@ -6,13 +6,13 @@ import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 
 public class DiSLClass {
 
-	@Before(marker = BytecodeMarker.class, param = "invokestatic", scope = "*.foo")
+	@Before(marker = BytecodeMarker.class, args = "invokestatic", scope = "*.foo")
 	public static void getTarget() {
 		Object target = null;
 		System.out.println(target);
 	}
 
-	@Before(marker = BytecodeMarker.class, param = "invokevirtual", scope = "*.foo")
+	@Before(marker = BytecodeMarker.class, args = "invokevirtual", scope = "*.foo")
 	public static void getTarget(GetTargetAnalysis gta, DynamicContext dc) {
 		Object target = dc.stackValue(gta.calleeParCount(), Object.class);
 		System.out.println(target);

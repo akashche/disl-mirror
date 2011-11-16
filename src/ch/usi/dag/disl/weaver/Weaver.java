@@ -289,7 +289,7 @@ public class Weaver {
 			int operand = AsmHelper.getIConstOperand(prev.getPrevious());
 			Type t = AsmHelper.getClassType(prev);
 
-			if (invoke.name.equals("getStackValue")) {
+			if (invoke.name.equals("stackValue")) {
 				int sopcode = t.getOpcode(Opcodes.ISTORE);
 				int lopcode = t.getOpcode(Opcodes.ILOAD);
 
@@ -319,7 +319,7 @@ public class Weaver {
 			// TRICK: the following two situation will generate a VarInsnNode
 			//        with a negative local slot. And it will be updated in 
 			//        method fixLocalIndex
-			else if (invoke.name.equals("getMethodArgumentValue")) {
+			else if (invoke.name.equals("methodArgumentValue")) {
 
 				int slot = AsmHelper.getInternalParamIndex(method, operand);
 
@@ -340,7 +340,7 @@ public class Weaver {
 
 				src.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
 						slot - method.maxLocals));
-			} else if (invoke.name.equals("getLocalVariableValue")) {
+			} else if (invoke.name.equals("localVariableValue")) {
 
 				// index should be less than the size of local variables
 				if (operand >= basicframe.getLocals() || operand < 0) {

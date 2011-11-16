@@ -6,7 +6,7 @@ import ch.usi.dag.disl.staticcontext.BytecodeSC;
 
 public class DiSLClass {
 	
-	@Before(marker = BytecodeMarker.class, param="aload, if_icmpne", scope = "TargetClass.main")
+	@Before(marker = BytecodeMarker.class, args="aload, if_icmpne", scope = "TargetClass.main")
 	public static void precondition(BytecodeSC ba) {
 		System.out.println(ba.getBytecodeNumber());
 	}

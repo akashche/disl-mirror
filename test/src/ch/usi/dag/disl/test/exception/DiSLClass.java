@@ -5,7 +5,7 @@ import ch.usi.dag.disl.marker.BytecodeMarker;
 
 public class DiSLClass {
 
-	@Before(marker = BytecodeMarker.class, param = "invokevirtual", scope = "TargetClass.bar")
+	@Before(marker = BytecodeMarker.class, args = "invokevirtual", scope = "TargetClass.bar")
 	public static void precondition() {
 		try {
 			Integer.valueOf("1.0");

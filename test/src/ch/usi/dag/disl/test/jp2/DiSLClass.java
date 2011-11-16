@@ -72,7 +72,7 @@ public class DiSLClass {
 
 
 	@Before(marker=BytecodeMarker.class,
-			param= "new,invokevirtual,invokestatic,invokeinterface," +
+			args= "new,invokevirtual,invokestatic,invokeinterface," +
 			"invokedynamic,anewarray,checkcast,getstatic,instanceof," +
 			"multianewarray,putstatic,ldc",
 
@@ -87,7 +87,7 @@ public class DiSLClass {
 
 
 	@Before(marker=BytecodeMarker.class,
-			param= "invokespecial",
+			args= "invokespecial",
 			scope= "*.*(...)" , order = 4 )
 			public static void invocationToObjectConstructor(JP2Analysis ba ) {
 		

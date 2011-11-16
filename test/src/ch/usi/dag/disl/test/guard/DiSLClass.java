@@ -18,7 +18,7 @@ public class DiSLClass {
 		Processor.apply(ProcessorTest.class, ProcessorMode.METHOD_ARGS);
 	}
 	
-	@Before(marker = BytecodeMarker.class, param="invokevirtual", order = 1, scope = "TargetClass.main", guard=GuardNo.class)
+	@Before(marker = BytecodeMarker.class, args="invokevirtual", order = 1, scope = "TargetClass.main", guard=GuardNo.class)
 	public static void guarded(MethodSC ci) {
 		
 		System.out.println("This should not be printed");
