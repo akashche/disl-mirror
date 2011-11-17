@@ -3,12 +3,15 @@ package ch.usi.dag.disl.staticcontext.generator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
+import ch.usi.dag.disl.processor.generator.struct.ProcMethod;
+import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.snippet.StaticContextMethod;
 import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
@@ -126,15 +129,31 @@ public class SCGenerator {
 
 			for (Shadow shadow : snippetMarkings.get(snippet)) {
 
-				for (String stConMehodName : snippet.getCode()
-						.getStaticContexts().keySet()) {
-
-					// get static context method
-					StaticContextMethod stAnMethod = snippet.getCode()
-							.getStaticContexts().get(stConMehodName);
+				// compute static data for snippet and all processors
+				// static data for snippets and processors can be evaluated
+				// and stored together
+				
+				Set<StaticContextMethod> stConMethods = 
+						snippet.getCode().getStaticContexts();
+				
+				// add static contexts from all processors
+				for(ProcInvocation pi :
+					snippet.getCode().getInvokedProcessors().values()) {
+					
+					// add static contexts from all processor methods
+					for(ProcMethod pm : pi.getProcessor().getMethods()) {
+						
+						// add to the pool
+						stConMethods.addAll(pm.getCode().getStaticContexts());
+					}
+				}
+				
+				// process all static context methods
+				
+				for (StaticContextMethod stConMth : stConMethods) {
 
 					// get static context instance
-					Class<?> methodClass = stAnMethod.getReferencedClass();
+					Class<?> methodClass = stConMth.getReferencedClass();
 					Object scInst = staticContextInstances.get(methodClass);
 
 					// ... or create new one
@@ -151,13 +170,11 @@ public class SCGenerator {
 
 					// compute static data using context
 					Object result = scIntr
-							.computeStaticData(stAnMethod.getMethod(), shadow);
+							.computeStaticData(stConMth.getMethod(), shadow);
 
 					// store the result
-					setSI(shadow, stConMehodName, result);
+					setSI(shadow, stConMth.getId(), result);
 				}
-				
-				// TODO ! processors - compute also
 			}
 		}
 	}

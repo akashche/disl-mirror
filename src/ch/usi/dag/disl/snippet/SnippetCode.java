@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.coderep.Code;
+import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
@@ -26,7 +27,7 @@ public class SnippetCode extends Code {
 			Set<SyntheticLocalVar> referencedSLV,
 			Set<ThreadLocalVar> referencedTLV,
 			boolean containsHandledException,
-			Map<String, StaticContextMethod> staticContexts,
+			Set<StaticContextMethod> staticContexts,
 			boolean usesDynamicContext,
 			Map<Integer, ProcInvocation> invokedProcessors
 			) {
@@ -50,7 +51,7 @@ public class SnippetCode extends Code {
 				new HashSet<SyntheticLocalVar>(getReferencedSLVs()),
 				new HashSet<ThreadLocalVar>(getReferencedTLVs()),
 				containsHandledException(),
-				new HashMap<String, StaticContextMethod>(getStaticContexts()),
+				new HashSet<StaticContextMethod>(getStaticContexts()),
 				usesDynamicContext(),
 				new HashMap<Integer, ProcInvocation>(invokedProcessors));
 	}

@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.processor.generator.struct;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -11,9 +10,9 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.coderep.Code;
+import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.snippet.StaticContextMethod;
 import ch.usi.dag.disl.util.AsmHelper;
 
 public class ProcCode extends Code {
@@ -25,7 +24,7 @@ public class ProcCode extends Code {
 			Set<SyntheticLocalVar> referencedSLV,
 			Set<ThreadLocalVar> referencedTLV,
 			boolean containsHandledException,
-			Map<String, StaticContextMethod> staticContexts,
+			Set<StaticContextMethod> staticContexts,
 			boolean usesDynamicContext,
 			boolean usesArgumentContext
 			) {
@@ -49,7 +48,7 @@ public class ProcCode extends Code {
 				new HashSet<SyntheticLocalVar>(getReferencedSLVs()),
 				new HashSet<ThreadLocalVar>(getReferencedTLVs()),
 				containsHandledException(),
-				new HashMap<String, StaticContextMethod>(getStaticContexts()),
+				new HashSet<StaticContextMethod>(getStaticContexts()),
 				usesDynamicContext(),
 				usesArgumentContext);
 	}

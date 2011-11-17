@@ -21,7 +21,6 @@ import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.snippet.StaticContextMethod;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
@@ -100,39 +99,20 @@ public class UnprocessedCode {
 
 			// *** Parse static context methods in use ***
 
-			StaticContextMethodData anlMtd = insnInvokesStaticContext(
+			StaticContextMethod scm = insnInvokesStaticContext(
 					declaredStaticContexts, instr, staticContexts.keySet());
 
-			if (anlMtd != null) {
-				staticContexts.put(anlMtd.getId(), anlMtd.getRefM());
+			if (scm != null) {
+				staticContexts.put(scm.getId(), scm);
 				continue;
 			}
 		}
 
 		return new Code(instructions, tryCatchBlocks, slvList, tlvList,
-				staticContexts, usesDynamicContext, containsHandledException);
+				new HashSet<StaticContextMethod>(staticContexts.values()),
+				usesDynamicContext, containsHandledException);
 	}
 	
-	class StaticContextMethodData {
-
-		private String id;
-		private StaticContextMethod refM;
-
-		public StaticContextMethodData(String id, StaticContextMethod refM) {
-			super();
-			this.id = id;
-			this.refM = refM;
-		}
-
-		public String getId() {
-			return id;
-		}
-
-		public StaticContextMethod getRefM() {
-			return refM;
-		}
-	}
-
 	/**
 	 * Determines if the instruction invokes some StaticContext class
 	 * 
@@ -143,7 +123,7 @@ public class UnprocessedCode {
 	 * @throws StaticContextGenException
 	 * @throws ReflectionException
 	 */
-	private StaticContextMethodData insnInvokesStaticContext(
+	private StaticContextMethod insnInvokesStaticContext(
 			Set<String> knownStAnClasses, AbstractInsnNode instr,
 			Set<String> knownMethods) throws StaticContextGenException,
 			ReflectionException {
@@ -208,10 +188,7 @@ public class UnprocessedCode {
 		Method stAnMethod = ReflectionHelper.resolveMethod(stAnClass,
 				methodInstr.name);
 
-		StaticContextMethod stAnM =
-			new StaticContextMethod(stAnMethod, stAnClass);
-		
-		return new StaticContextMethodData(methodID, stAnM);
+		return new StaticContextMethod(methodID, stAnMethod, stAnClass);
 	}
 		
 	/**

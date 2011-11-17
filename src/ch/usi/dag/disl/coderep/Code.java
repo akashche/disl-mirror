@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.coderep;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +11,6 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.snippet.StaticContextMethod;
 import ch.usi.dag.disl.util.AsmHelper;
 
 public class Code {
@@ -21,7 +19,7 @@ public class Code {
 	private List<TryCatchBlockNode> tryCatchBlocks;
 	private Set<SyntheticLocalVar> referencedSLVs;
 	private Set<ThreadLocalVar> referencedTLVs;
-	private Map<String, StaticContextMethod> staticContexts;
+	private Set<StaticContextMethod> staticContexts;
 	private boolean usesDynamicContext;
 	// the code contains handler that handles exception and doesn't propagate
 	// it further - can cause stack inconsistency that has to be handled
@@ -30,7 +28,7 @@ public class Code {
 	public Code(InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
 			Set<SyntheticLocalVar> referencedSLVs,
 			Set<ThreadLocalVar> referencedTLVs,
-			Map<String, StaticContextMethod> staticContexts,
+			Set<StaticContextMethod> staticContexts,
 			boolean usesDynamicContext, boolean containsHandledException) {
 		super();
 		this.instructions = instructions;
@@ -58,7 +56,7 @@ public class Code {
 		return referencedTLVs;
 	}
 
-	public Map<String, StaticContextMethod> getStaticContexts() {
+	public Set<StaticContextMethod> getStaticContexts() {
 		return staticContexts;
 	}
 
@@ -79,7 +77,7 @@ public class Code {
 				AsmHelper.cloneTryCatchBlocks(tryCatchBlocks, map),
 				new HashSet<SyntheticLocalVar>(referencedSLVs),
 				new HashSet<ThreadLocalVar>(referencedTLVs),
-				new HashMap<String, StaticContextMethod>(staticContexts),
+				new HashSet<StaticContextMethod>(staticContexts),
 				usesDynamicContext, containsHandledException);
 	}
 }
