@@ -22,8 +22,6 @@ else
   exit -1
 fi
 
-echo "${ARCH} ${JBORAT_AGENT_PATH}"
-
 CLASSPATH=../lib/jborat-agent.jar:../lib/jborat-runtime.jar:../lib/jborat-interface.jar:lib/remote-server.jar
 
 java -Dch.usi.dag.jborat.instrumented="instrumented" \

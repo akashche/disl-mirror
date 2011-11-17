@@ -14,8 +14,6 @@ else
   exit -1
 fi
 
-echo "${ARCH} ${OS}"
-
 if [ "${OS}" = "Darwin" ]; then
   JBORAT_AGENT="macosx/${ARCH}/"libjboratagent.jnilib
 elif  [ "${OS}" = "Linux" ]; then
