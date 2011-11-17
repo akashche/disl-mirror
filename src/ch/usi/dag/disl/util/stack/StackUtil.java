@@ -1,12 +1,15 @@
 package ch.usi.dag.disl.util.stack;
 
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
+import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.BasicValue;
-import org.objectweb.asm.tree.analysis.BasicVerifier;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceInterpreter;
 import org.objectweb.asm.tree.analysis.SourceValue;
@@ -16,7 +19,7 @@ public class StackUtil {
 
 	// generate a basic analyzer
 	public static Analyzer<BasicValue> getBasicAnalyzer() {
-		return new Analyzer<BasicValue>(new BasicVerifier());
+		return new Analyzer<BasicValue>(new BasicInterpreter());
 	}
 
 	// calculate the stack size
@@ -87,4 +90,56 @@ public class StackUtil {
 	public static <T extends Value> T getStackByIndex(Frame<T> frame, int index) {
 		return frame.getStack(frame.getStackSize() - 1 - index);
 	}
+
+	// find out where a stack operand is pushed onto stack, and duplicate the
+	// operand and store into a local slot.
+	public static int dupStack(Frame<SourceValue> frame, MethodNode method,
+			int operand, int sopcode, int slot) {
+		SourceValue source = StackUtil.getStackByIndex(frame, operand);
+
+		for (AbstractInsnNode itr : source.insns) {
+
+			// if the instruction duplicates two-size operand(s), weaver should
+			// be careful that the operand might be either 2 one-size operands,
+			// or 1 two-size operand.
+			switch (itr.getOpcode()) {
+
+			case Opcodes.DUP2:
+				if (source.size != 1) {
+					break;
+				}
+
+				dupStack(frame, method, operand + 2, sopcode, slot);
+				continue;
+
+			case Opcodes.DUP2_X1:
+				if (source.size != 1) {
+					break;
+				}
+
+				dupStack(frame, method, operand + 3, sopcode, slot);
+				continue;
+
+			case Opcodes.DUP2_X2:
+				if (source.size != 1) {
+					break;
+				}
+
+				SourceValue x2 = StackUtil.getStackByIndex(frame, operand + 2);
+				dupStack(frame, method, operand + (4 - x2.size), sopcode, slot);
+				continue;
+
+			default:
+				break;
+			}
+
+			// insert 'dup' instruction and then store to a local slot
+			method.instructions.insert(itr, new VarInsnNode(sopcode, slot));
+			method.instructions.insert(itr, new InsnNode(
+					source.size == 2 ? Opcodes.DUP2 : Opcodes.DUP));
+		}
+
+		return source.size;
+	}
+
 }
