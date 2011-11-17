@@ -20,7 +20,7 @@ fi
 DISL_CLASS="./bin/ch/usi/dag/disl/test/$1/DiSLClass.class"
 TARGET_CLASS="ch.usi.dag.disl.test.$1.TargetClass"
 
-if [ "$2" == "pkg" ]
+if [ "$2" = "pkg" ]
 then
     # start server and take pid
     ant package -Dtest.name=$1

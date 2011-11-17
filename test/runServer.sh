@@ -4,23 +4,25 @@ OS=`uname`
 ARCH_RAW=`uname -m`
 ARCH="unspec"
 
-if [ "${ARCH_RAW}" == "i686" -o "${ARCH_RAW}" == "x86_32" ]; then
+if [ "${ARCH_RAW}" = "i686" -o "${ARCH_RAW}" = "x86_32" ]; then
   ARCH="x32"
-elif [ "${ARCH_RAW}" == "x86_64" ]; then
+elif [ "${ARCH_RAW}" = "x86_64" ]; then
   ARCH="x64"
 else
   echo "Unknow architecture.."
   exit -1
-fi 
+fi
 
-if [ "${OS}" == "Darwin" ]; then
+if [ "${OS}" = "Darwin" ]; then
   JBORAT_AGENT_PATH="macosx/${ARCH}"
-elif  [ "${OS}" == "Linux" ]; then
+elif  [ "${OS}" = "Linux" ]; then
   JBORAT_AGENT_PATH="linux/${ARCH}"
 else
   echo "Unknow platform..."
   exit -1
 fi
+
+echo "${ARCH} ${JBORAT_AGENT_PATH}"
 
 CLASSPATH=../lib/jborat-agent.jar:../lib/jborat-runtime.jar:../lib/jborat-interface.jar:lib/remote-server.jar
 
