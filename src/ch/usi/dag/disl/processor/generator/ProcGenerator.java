@@ -92,7 +92,7 @@ public class ProcGenerator {
 	private ProcInstance computeBeforeInvocation(Shadow shadow,
 			ProcInvocation prcInv) throws ProcessorException {
 
-		// NOTE: SnippetUnprocessedCode checks that CALLSITE_ARGS is
+		// NOTE: ProcUnprocessedCode checks that CALLSITE_ARGS is
 		// used only with BytecodeMarker
 		
 		// because it is BytecodeMarker, it should have only one end 
@@ -166,9 +166,7 @@ public class ProcGenerator {
 				ProcMethodInstance pmi = new ProcMethodInstance(argPos,
 						argsCount, methodArgType, method.getCode());
 				
-				if(method.insertTypeName()) {
-					pmi.setArgTypeName(argType.getInternalName());
-				}
+				pmi.setArgTypeName(argType.getInternalName());
 
 				// check guard
 				if (isPMGuardApplicable(method.getGuard(), shadow, prcInv, pmi,

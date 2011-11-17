@@ -3,9 +3,11 @@ package ch.usi.dag.disl.classparser;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -15,17 +17,21 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.annotation.Guarded;
 import ch.usi.dag.disl.annotation.ProcessAlso;
-import ch.usi.dag.disl.coderep.UnprocessedCode;
+import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ProcessorParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
+import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.ProcessorMethodGuard;
+import ch.usi.dag.disl.processor.ArgumentContext;
 import ch.usi.dag.disl.processor.generator.struct.Proc;
 import ch.usi.dag.disl.processor.generator.struct.ProcArgType;
 import ch.usi.dag.disl.processor.generator.struct.ProcMethod;
+import ch.usi.dag.disl.processor.generator.struct.ProcUnprocessedCode;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.ReflectionHelper;
 
 public class ProcessorParser extends AbstractParser {
 
@@ -39,7 +45,8 @@ public class ProcessorParser extends AbstractParser {
 	}
 	
 	public void parse(ClassNode classNode) throws ParserException,
-			ProcessorParserException, ReflectionException {
+			ProcessorParserException, ReflectionException,
+			StaticContextGenException {
 
 		// NOTE: this method can be called many times
 
@@ -75,7 +82,8 @@ public class ProcessorParser extends AbstractParser {
 	}
 	
 	private ProcMethod parseProcessorMethod(String className, MethodNode method)
-			throws ProcessorParserException, ReflectionException {
+			throws ProcessorParserException, ReflectionException,
+			StaticContextGenException {
 
 		String fullMethodName = className + "." + method.name;
 		
@@ -128,112 +136,100 @@ public class ProcessorParser extends AbstractParser {
 		
 		// ** create unprocessed code holder class **
 		// code is processed after everything is parsed
-		UnprocessedCode ucd = new UnprocessedCode(method.instructions,
-				method.tryCatchBlocks);
+		ProcUnprocessedCode ucd = new ProcUnprocessedCode(method.instructions,
+				method.tryCatchBlocks, pmArgData.getStaticContexts(),
+				pmArgData.usesDynamicContext(),
+				pmArgData.usesArgumentContext());
 
 		// return whole processor method
-		return new ProcMethod(className, method.name, allProcessedTypes,
-				pmArgData.insertTypeName(), guard, ucd);
+		return new ProcMethod(className, method.name, allProcessedTypes, guard,
+				ucd);
 
 	}
 
 	private static class PMArgData {
 		
 		private ProcArgType type;
-		private boolean insertTypeName;
+		private Set<String> staticContexts;
+		private boolean usesDynamicContext;
+		private boolean usesArgumentContext;
 		
-		public PMArgData(ProcArgType type, boolean insertTypeName) {
+		public PMArgData(ProcArgType type, Set<String> staticContexts,
+				boolean usesDynamicContext, boolean usesArgumentContext) {
 			super();
 			this.type = type;
-			this.insertTypeName = insertTypeName;
+			this.staticContexts = staticContexts;
+			this.usesDynamicContext = usesDynamicContext;
+			this.usesArgumentContext = usesArgumentContext;
 		}
 
 		public ProcArgType getType() {
 			return type;
 		}
 
-		public boolean insertTypeName() {
-			return insertTypeName;
+		public Set<String> getStaticContexts() {
+			return staticContexts;
+		}
+
+		public boolean usesDynamicContext() {
+			return usesDynamicContext;
+		}
+
+		public boolean usesArgumentContext() {
+			return usesArgumentContext;
 		}
 	}
 	
 	private PMArgData parseProcMethodArgs(String methodID, String methodDesc)
-			throws ProcessorParserException {
+			throws ProcessorParserException, StaticContextGenException,
+			ReflectionException {
 
-		final int PM_ARGS_STD_COUNT = 3;
-		
-		final int PM_ARGS_OBJ_MAX_COUNT = 4;
-		
 		Type[] argTypes = Type.getArgumentTypes(methodDesc);
 		
-		// not == because of PM_ARGS_OBJ_MAX_COUNT
-		if(argTypes.length < PM_ARGS_STD_COUNT) {
-			throw new ProcessorParserException(
-					"ArgsProcessor method " + methodID +  " should have at least "
-					+ PM_ARGS_STD_COUNT + " arguments.");
-		}
+		ProcArgType procArgType = ProcArgType.valueOf(argTypes[0]);
 		
-		// first position argument has to be integer
-		if(! Type.INT_TYPE.equals(argTypes[0])) {
-			throw new ProcessorParserException("In method " + methodID + ": " +
-					"First (position) processor method argument has to be int");
-		}
-		
-		// second count argument has to be integer
-		if(! Type.INT_TYPE.equals(argTypes[1])) {
-			throw new ProcessorParserException("In method " + methodID + ": " +
-					"Second (count) processor method argument has to be int");
-		}
-		
-		ProcArgType argType = ProcArgType.valueOf(argTypes[2]);
-		
-		// if the ProcArgType is converted to OBJECT, test that third argument
+		// if the ProcArgType is converted to OBJECT, test that first argument
 		// is really Object.class - nothing else is allowed
-		if(argType == ProcArgType.OBJECT
-				&& ! Type.getType(Object.class).equals(argTypes[2])) {
+		if(procArgType == ProcArgType.OBJECT
+				&& ! Type.getType(Object.class).equals(argTypes[0])) {
 			
 			throw new ProcessorParserException("In method " + methodID + ": " +
 					"Only basic types and Object are allowed as the" +
-					" third parameter");
+					" first (type) parameter");
 		}
 		
-		// ** non object arg types **
-		
-		if(argType != ProcArgType.OBJECT) {
+		Set<String> knownStCo = new HashSet<String>();
+		boolean usesDynamicContext = false;
+		boolean usesArgumentContext = false;
 
-			// argument count test
-			if(argTypes.length != PM_ARGS_STD_COUNT) {
-				throw new ProcessorParserException("ArgsProcessor method "
-						+ methodID + " should have "
-						+ PM_ARGS_STD_COUNT + " arguments.");
+		for (Type argType : Type.getArgumentTypes(methodDesc)) {
+
+			// skip dynamic context class - don't check anything
+			if (argType.equals(Type.getType(DynamicContext.class))) {
+				usesDynamicContext = true;
+				continue;
 			}
 			
-			return new PMArgData(argType, false);
+			// skip argument context class - don't check anything
+			if (argType.equals(Type.getType(ArgumentContext.class))) {
+				usesArgumentContext = true;
+				continue;
+			}
+
+			Class<?> argClass = ReflectionHelper.resolveClass(argType);
+
+			// static context should implement context interface
+			if (!implementsStaticContext(argClass)) {
+				throw new StaticContextGenException(argClass.getName()
+						+ " does not implement StaticContext interface and"
+						+ " cannot be used as advice method parameter");
+			}
+
+			knownStCo.add(argType.getInternalName());
 		}
 
-		// ** object arg type **
-		
-		// no additional argument
-		if(argTypes.length == PM_ARGS_STD_COUNT) {
-			return new PMArgData(argType, false);
-		}
-		
-		// object type argument
-		if(argTypes.length == PM_ARGS_OBJ_MAX_COUNT) {
-			
-			// last argument in object processor (type) has to be String
-			if(! Type.getType(String.class).equals(argTypes[3])) {
-				throw new ProcessorParserException("In method " + methodID
-						+ ": Last argument in object processor (type) has to"
-						+ " be String");
-			}
-			
-			return new PMArgData(argType, true);
-		}
-		
-		throw new ProcessorParserException("ArgsProcessor method "
-				+ methodID + " should have at most "
-				+ PM_ARGS_OBJ_MAX_COUNT + " arguments.");
+		return new PMArgData(procArgType, knownStCo, usesDynamicContext,
+				usesArgumentContext);
 	}
 	
 	// data holder for parseMethodAnnotation methods

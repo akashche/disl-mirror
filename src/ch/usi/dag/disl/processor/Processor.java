@@ -12,7 +12,7 @@ public abstract class Processor {
 		
 	}
 
-	// TODO ! add support
+	// TODO ! processor - add support
 	/**
 	 * Returns the object on which is the processed method (arguments of that
 	 * method) called.
@@ -23,7 +23,7 @@ public abstract class Processor {
 		return null;
 	}
 	
-	// TODO ! add support
+	// TODO ! processor - add support
 	/**
 	 * Returns the object array composed from the method arguments. Note that
 	 * primitive types will be boxed.

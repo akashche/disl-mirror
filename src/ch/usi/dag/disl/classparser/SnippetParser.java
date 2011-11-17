@@ -33,7 +33,6 @@ import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetUnprocessedCode;
-import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
@@ -127,7 +126,7 @@ public class SnippetParser extends AbstractParser {
 			(SnippetGuard) ParserHelper.getGuard(annotData.guard);
 		
 		// ** parse used static and dynamic context **
-		Context context = parseContext(method.desc);
+		Contexts context = parseUsedContexts(method.desc);
 
 		// ** checks **
 
@@ -259,12 +258,12 @@ public class SnippetParser extends AbstractParser {
 		}
 	}
 
-	private static class Context {
+	private static class Contexts {
 
 		private Set<String> staticContexts;
 		private boolean usesDynamicContext;
 
-		public Context(Set<String> staticContexts, boolean usesDynamicContext) {
+		public Contexts(Set<String> staticContexts, boolean usesDynamicContext) {
 			super();
 			this.staticContexts = staticContexts;
 			this.usesDynamicContext = usesDynamicContext;
@@ -279,7 +278,7 @@ public class SnippetParser extends AbstractParser {
 		}
 	}
 
-	private Context parseContext(String methodDesc)
+	private Contexts parseUsedContexts(String methodDesc)
 			throws ReflectionException, StaticContextGenException {
 
 		Set<String> knownStCo = new HashSet<String>();
@@ -305,33 +304,7 @@ public class SnippetParser extends AbstractParser {
 			knownStCo.add(argType.getInternalName());
 		}
 
-		return new Context(knownStCo, usesDynamicContext);
-	}
-
-	/**
-	 * Searches for StaticContext interface. Searches through whole class
-	 * hierarchy.
-	 * 
-	 * @param classToSearch
-	 */
-	private boolean implementsStaticContext(Class<?> classToSearch) {
-
-		// through whole hierarchy...
-		while (classToSearch != null) {
-
-			// ...through all interfaces...
-			for (Class<?> iface : classToSearch.getInterfaces()) {
-
-				// ...search for StaticContext interface
-				if (iface.equals(StaticContext.class)) {
-					return true;
-				}
-			}
-
-			classToSearch = classToSearch.getSuperclass();
-		}
-
-		return false;
+		return new Contexts(knownStCo, usesDynamicContext);
 	}
 
 	private void usesContextProperly(String className, String methodName,

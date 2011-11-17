@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.snippet;
+package ch.usi.dag.disl.processor.generator.struct;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,45 +13,44 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
+import ch.usi.dag.disl.snippet.StaticContextMethod;
 import ch.usi.dag.disl.util.AsmHelper;
 
-public class SnippetCode extends Code {
+public class ProcCode extends Code {
 
-	// integer (key) is an index of an instruction in snippet code that invokes
-	// processor
-	private Map<Integer, ProcInvocation> invokedProcessors; 
+	private boolean usesArgumentContext;
 
-	public SnippetCode(InsnList instructions,
+	public ProcCode(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks,
 			Set<SyntheticLocalVar> referencedSLV,
 			Set<ThreadLocalVar> referencedTLV,
 			boolean containsHandledException,
 			Map<String, StaticContextMethod> staticContexts,
 			boolean usesDynamicContext,
-			Map<Integer, ProcInvocation> invokedProcessors
+			boolean usesArgumentContext
 			) {
 		
 		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
 				staticContexts, usesDynamicContext, containsHandledException);
-		this.invokedProcessors = invokedProcessors;
+		this.usesArgumentContext = usesArgumentContext;
 	}
 
-	public Map<Integer, ProcInvocation> getInvokedProcessors() {
-		return invokedProcessors;
+	public boolean usesArgumentContext() {
+		return usesArgumentContext;
 	}
 	
-	public SnippetCode clone() {
+	public ProcCode clone() {
 
 		Map<LabelNode, LabelNode> map = 
 			AsmHelper.createLabelMap(getInstructions());
 
-		return new SnippetCode(AsmHelper.cloneInsnList(getInstructions(), map),
+		return new ProcCode(AsmHelper.cloneInsnList(getInstructions(), map),
 				AsmHelper.cloneTryCatchBlocks(getTryCatchBlocks(), map),
 				new HashSet<SyntheticLocalVar>(getReferencedSLVs()),
 				new HashSet<ThreadLocalVar>(getReferencedTLVs()),
 				containsHandledException(),
 				new HashMap<String, StaticContextMethod>(getStaticContexts()),
 				usesDynamicContext(),
-				new HashMap<Integer, ProcInvocation>(invokedProcessors));
+				usesArgumentContext);
 	}
 }

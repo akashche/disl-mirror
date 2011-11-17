@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.processor.generator;
 
-import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.processor.generator.struct.ProcArgType;
+import ch.usi.dag.disl.processor.generator.struct.ProcCode;
 
 
 public class ProcMethodInstance {
@@ -10,10 +10,10 @@ public class ProcMethodInstance {
 	private int argsCount;
 	private ProcArgType argType;
 	private String argTypeName;
-	private Code code;
+	private ProcCode code;
 	
 	public ProcMethodInstance(int argPos, int argsCount, ProcArgType argType,
-			Code code) {
+			ProcCode code) {
 		super();
 		this.argPos = argPos;
 		this.argsCount = argsCount;
@@ -44,7 +44,7 @@ public class ProcMethodInstance {
 	// Note: Code is NOT cloned for each instance of ProcMethodInstance.
 	// If the weaver does not rely on this, we can reuse processor instances
 	// which can save us some computation
-	public Code getCode() {
+	public ProcCode getCode() {
 		return code;
 	}
 }

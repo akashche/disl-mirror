@@ -156,6 +156,8 @@ public class SCGenerator {
 					// store the result
 					setSI(shadow, stConMehodName, result);
 				}
+				
+				// TODO ! processors - compute also
 			}
 		}
 	}

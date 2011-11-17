@@ -2,8 +2,6 @@ package ch.usi.dag.disl.processor.generator.struct;
 
 import java.util.EnumSet;
 
-import ch.usi.dag.disl.coderep.Code;
-import ch.usi.dag.disl.coderep.UnprocessedCode;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.ProcessorMethodGuard;
@@ -15,19 +13,17 @@ public class ProcMethod {
 	private String originMethodName;
 	
 	private EnumSet<ProcArgType> types;
-	private boolean insertTypeName;
 	private ProcessorMethodGuard guard;
-	private UnprocessedCode unprocessedCode;
-	private Code code;
+	private ProcUnprocessedCode unprocessedCode;
+	private ProcCode code;
 
 	public ProcMethod(String originClassName, String originMethodName,
-			EnumSet<ProcArgType> types, boolean insertTypeName,
-			ProcessorMethodGuard guard, UnprocessedCode unprocessedCode) {
+			EnumSet<ProcArgType> types, ProcessorMethodGuard guard,
+			ProcUnprocessedCode unprocessedCode) {
 		super();
 		this.originClassName = originClassName;
 		this.originMethodName = originMethodName;
 		this.types = types;
-		this.insertTypeName = insertTypeName;
 		this.guard = guard;
 		this.unprocessedCode = unprocessedCode;
 	}
@@ -44,15 +40,11 @@ public class ProcMethod {
 		return types;
 	}
 
-	public boolean insertTypeName() {
-		return insertTypeName;
-	}
-
 	public ProcessorMethodGuard getGuard() {
 		return guard;
 	}
 
-	public Code getCode() {
+	public ProcCode getCode() {
 		return code;
 	}
 

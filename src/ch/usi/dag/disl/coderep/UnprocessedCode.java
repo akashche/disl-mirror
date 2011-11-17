@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.coderep;
 
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,19 +21,27 @@ import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
+import ch.usi.dag.disl.snippet.StaticContextMethod;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.ReflectionHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
 public class UnprocessedCode {
 
 	private InsnList instructions;
 	private List<TryCatchBlockNode> tryCatchBlocks;
+	private Set<String> declaredStaticContexts;
+	private boolean usesDynamicContext;
 	
 	public UnprocessedCode(InsnList instructions,
-			List<TryCatchBlockNode> tryCatchBlocks) {
+			List<TryCatchBlockNode> tryCatchBlocks,
+			Set<String> declaredStaticContexts, boolean usesDynamicContext) {
 		super();
 		this.instructions = instructions;
 		this.tryCatchBlocks = tryCatchBlocks;
+		this.declaredStaticContexts = declaredStaticContexts;
+		this.usesDynamicContext = usesDynamicContext;
 	}
 
 	public Code process(LocalVars allLVs) throws StaticContextGenException,
@@ -78,8 +88,130 @@ public class UnprocessedCode {
 		// translate thread local variables
 		translateThreadLocalVars(instructions, tlvList);
 
+		// *** CODE ANALYSIS ***
+		
+		Map<String, StaticContextMethod> staticContexts = 
+				new HashMap<String, StaticContextMethod>();
+		
+		AbstractInsnNode[] instructionArray = instructions.toArray();
+		for (int i = 0; i < instructionArray.length; ++i) {
+
+			AbstractInsnNode instr = instructionArray[i];
+
+			// *** Parse static context methods in use ***
+
+			StaticContextMethodData anlMtd = insnInvokesStaticContext(
+					declaredStaticContexts, instr, staticContexts.keySet());
+
+			if (anlMtd != null) {
+				staticContexts.put(anlMtd.getId(), anlMtd.getRefM());
+				continue;
+			}
+		}
+
 		return new Code(instructions, tryCatchBlocks, slvList, tlvList,
-				containsHandledException);
+				staticContexts, usesDynamicContext, containsHandledException);
+	}
+	
+	class StaticContextMethodData {
+
+		private String id;
+		private StaticContextMethod refM;
+
+		public StaticContextMethodData(String id, StaticContextMethod refM) {
+			super();
+			this.id = id;
+			this.refM = refM;
+		}
+
+		public String getId() {
+			return id;
+		}
+
+		public StaticContextMethod getRefM() {
+			return refM;
+		}
+	}
+
+	/**
+	 * Determines if the instruction invokes some StaticContext class
+	 * 
+	 * @param knownStAnClasses known StaticContext classes
+	 * @param instr instruction to analyze
+	 * @param knownMethods methods that are already known
+	 * @return 
+	 * @throws StaticContextGenException
+	 * @throws ReflectionException
+	 */
+	private StaticContextMethodData insnInvokesStaticContext(
+			Set<String> knownStAnClasses, AbstractInsnNode instr,
+			Set<String> knownMethods) throws StaticContextGenException,
+			ReflectionException {
+
+		// check - instruction invokes method
+		if (!(instr instanceof MethodInsnNode)) {
+			return null;
+		}
+
+		MethodInsnNode methodInstr = (MethodInsnNode) instr;
+
+		// check - we've found static context
+		if (!knownStAnClasses.contains(methodInstr.owner)) {
+			return null;
+		}
+
+		// crate ASM Method object
+		org.objectweb.asm.commons.Method asmMethod = 
+			new org.objectweb.asm.commons.Method(methodInstr.name,
+					methodInstr.desc);
+
+		// check method argument
+		// no argument is allowed
+		Type[] methodArguments = asmMethod.getArgumentTypes();
+
+		if (methodArguments.length != 0) {
+			throw new StaticContextGenException("Static context method "
+					+ methodInstr.name + " in the class " + methodInstr.owner
+					+ " shouldn't have a parameter.");
+		}
+
+		Type methodReturn = asmMethod.getReturnType();
+
+		// only basic types + String are allowed as return type
+		if (!(methodReturn.equals(Type.BOOLEAN_TYPE)
+				|| methodReturn.equals(Type.BYTE_TYPE)
+				|| methodReturn.equals(Type.CHAR_TYPE)
+				|| methodReturn.equals(Type.DOUBLE_TYPE)
+				|| methodReturn.equals(Type.FLOAT_TYPE)
+				|| methodReturn.equals(Type.INT_TYPE)
+				|| methodReturn.equals(Type.LONG_TYPE)
+				|| methodReturn.equals(Type.SHORT_TYPE) || methodReturn
+				.equals(Type.getType(String.class)))) {
+
+			throw new StaticContextGenException("Static context method "
+					+ methodInstr.name + " in the class " + methodInstr.owner
+					+ " can have only basic type or String as a return type.");
+		}
+
+		// crate static context method id
+		String methodID = methodInstr.owner
+				+ Constants.STATIC_CONTEXT_METHOD_DELIM + methodInstr.name;
+
+		if (knownMethods.contains(methodID)) {
+			return null;
+		}
+
+		// resolve static context class
+		Class<?> stAnClass = ReflectionHelper.resolveClass(Type
+				.getObjectType(methodInstr.owner));
+
+		Method stAnMethod = ReflectionHelper.resolveMethod(stAnClass,
+				methodInstr.name);
+
+		StaticContextMethod stAnM =
+			new StaticContextMethod(stAnMethod, stAnClass);
+		
+		return new StaticContextMethodData(methodID, stAnM);
 	}
 		
 	/**
