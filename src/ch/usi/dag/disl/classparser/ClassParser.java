@@ -19,8 +19,8 @@ import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.exception.SnippetParserException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
-import ch.usi.dag.disl.processor.generator.struct.Proc;
 import ch.usi.dag.disl.snippet.Snippet;
+import ch.usi.dag.disl.snippet.processor.Proc;
 
 public class ClassParser {
 

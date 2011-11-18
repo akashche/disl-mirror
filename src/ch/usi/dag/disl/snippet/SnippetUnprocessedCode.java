@@ -27,7 +27,7 @@ import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.processor.Processor;
 import ch.usi.dag.disl.processor.ProcessorMode;
-import ch.usi.dag.disl.processor.generator.struct.Proc;
+import ch.usi.dag.disl.snippet.processor.Proc;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class SnippetUnprocessedCode extends UnprocessedCode {

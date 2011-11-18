@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.processor.generator;
 
-import ch.usi.dag.disl.processor.generator.struct.ProcArgType;
-import ch.usi.dag.disl.processor.generator.struct.ProcCode;
+import ch.usi.dag.disl.snippet.processor.ProcArgType;
+import ch.usi.dag.disl.snippet.processor.ProcCode;
 
 
 public class ProcMethodInstance {
