@@ -159,28 +159,6 @@ public class AsmHelper {
 			throw new DiSLFatalException("Unknown integer instruction");
 		}
 	}
-	
-	public static AbstractInsnNode getIConstInstr(int iconst) {
-
-		switch (iconst) {
-		case -1:
-			return new InsnNode(Opcodes.ICONST_M1);
-		case 0:
-			return new InsnNode(Opcodes.ICONST_0);
-		case 1:
-			return new InsnNode(Opcodes.ICONST_1);
-		case 2:
-			return new InsnNode(Opcodes.ICONST_2);
-		case 3:
-			return new InsnNode(Opcodes.ICONST_3);
-		case 4:
-			return new InsnNode(Opcodes.ICONST_4);
-		case 5:
-			return new InsnNode(Opcodes.ICONST_5);
-		default:
-			return new IntInsnNode(Opcodes.BIPUSH, iconst);
-		}
-	}
 
 	public static int getInternalParamIndex(MethodNode method, int parIndex) {
 

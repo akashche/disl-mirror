@@ -8,7 +8,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -21,6 +20,7 @@ import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.DynamicInfoException;
+import ch.usi.dag.disl.processor.ArgumentContext;
 import ch.usi.dag.disl.processor.ProcessorMode;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
@@ -46,6 +46,7 @@ public class WeavingCode {
 	private Snippet snippet;
 	private Shadow region;
 	private int index;
+	private int maxLocals;
 
 	public WeavingCode(WeavingInfo weavingInfo, SnippetCode src,
 			MethodNode method, Snippet snippet, Shadow region, int index) {
@@ -61,16 +62,51 @@ public class WeavingCode {
 		this.snippet = snippet;
 		this.region = region;
 		this.index = index;
+
+		for (AbstractInsnNode instr : iArray) {
+
+			if (instr instanceof VarInsnNode) {
+
+				VarInsnNode varInstr = (VarInsnNode) instr;
+
+				switch (varInstr.getOpcode()) {
+				case Opcodes.LLOAD:
+				case Opcodes.DLOAD:
+				case Opcodes.LSTORE:
+				case Opcodes.DSTORE:
+
+					if ((varInstr.var + 2) > maxLocals) {
+						maxLocals = varInstr.var + 2;
+					}
+
+					break;
+
+				default:
+					if ((varInstr.var + 1) > maxLocals) {
+						maxLocals = varInstr.var + 1;
+					}
+
+					break;
+				}
+			} else if (instr instanceof IincInsnNode) {
+
+				IincInsnNode iinc = (IincInsnNode) instr;
+
+				if ((iinc.var + 1) > maxLocals) {
+					maxLocals = iinc.var + 1;
+				}
+			}
+		}
 	}
 
 	// Search for an instruction sequence that match the pattern
-	// of the pseudo variables.
-	public void fixPseudoVar(SCGenerator staticInfoHolder) {
+	// of fetching static information.
+	public void fixStaticInfo(SCGenerator staticInfoHolder) {
 
 		for (AbstractInsnNode instr : iList.toArray()) {
 
 			AbstractInsnNode previous = instr.getPrevious();
-			// pseudo var are represented by a static function call with
+			// Static information are represented by a static function call with
 			// a null as its parameter.
 			if (instr.getOpcode() != Opcodes.INVOKEVIRTUAL || previous == null
 					|| previous.getOpcode() != Opcodes.ALOAD) {
@@ -313,18 +349,18 @@ public class WeavingCode {
 	// NOTE that the field maxLocals of the method node will be automatically
 	// updated.
 	public void fixLocalIndex() {
-		fixLocalIndex(iList);
+		method.maxLocals = fixLocalIndex(iList, method.maxLocals);
 	}
 
-	private void fixLocalIndex(InsnList src) {
-		int max = method.maxLocals;
+	private int fixLocalIndex(InsnList src, int offset) {
+		int max = offset;
 
 		for (AbstractInsnNode instr : src.toArray()) {
 
 			if (instr instanceof VarInsnNode) {
 
 				VarInsnNode varInstr = (VarInsnNode) instr;
-				varInstr.var += method.maxLocals;
+				varInstr.var += offset;
 
 				switch (varInstr.getOpcode()) {
 				case Opcodes.LLOAD:
@@ -348,7 +384,7 @@ public class WeavingCode {
 			} else if (instr instanceof IincInsnNode) {
 
 				IincInsnNode iinc = (IincInsnNode) instr;
-				iinc.var += method.maxLocals;
+				iinc.var += offset;
 
 				if ((iinc.var + 1) > max) {
 					max = iinc.var + 1;
@@ -356,7 +392,42 @@ public class WeavingCode {
 			}
 		}
 
-		method.maxLocals = max;
+		return max;
+	}
+
+	private void fixArgumentContext(InsnList instructions, int position,
+			int totalCount, Type type) {
+
+		for (AbstractInsnNode instr : instructions.toArray()) {
+
+			AbstractInsnNode previous = instr.getPrevious();
+
+			if (instr.getOpcode() != Opcodes.INVOKEINTERFACE
+					|| previous == null
+					|| previous.getOpcode() != Opcodes.ALOAD) {
+				continue;
+			}
+
+			MethodInsnNode invoke = (MethodInsnNode) instr;
+
+			if (!invoke.owner.equals(Type
+					.getInternalName(ArgumentContext.class))) {
+				continue;
+			}
+
+			if (invoke.name.equals("position")) {
+				instructions.insert(instr, AsmHelper.loadConst(position));
+			} else if (invoke.name.equals("totalCount")) {
+				instructions.insert(instr, AsmHelper.loadConst(totalCount));
+			} else if (invoke.name.equals("typeDescriptor")) {
+				instructions
+						.insert(instr, AsmHelper.loadConst(type.toString()));
+			}
+
+			// remove the pseudo instructions
+			instructions.remove(previous);
+			instructions.remove(instr);
+		}
 	}
 
 	// combine processors into an instruction list
@@ -369,38 +440,27 @@ public class WeavingCode {
 
 			Code code = processorMethod.getCode().clone();
 			InsnList instructions = code.getInstructions();
-			Type type = processorMethod.getArgType().getASMType();
-			// initialize the parameters of a processor, including argument
-			// position, arguments count and argument value
-			AbstractInsnNode start = instructions.getFirst();
-			instructions.insertBefore(start,
-					AsmHelper.getIConstInstr(processorMethod.getArgPos()));
-			instructions
-					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 0));
 
-			instructions.insertBefore(start,
-					AsmHelper.getIConstInstr(processorMethod.getArgsCount()));
-			instructions
-					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 1));
+			int position = processorMethod.getArgPos();
+			int totalCount = processorMethod.getArgsCount();
+			Type type = processorMethod.getArgType().getASMType();
+
+			fixArgumentContext(instructions, position, totalCount, type);
+
+			AbstractInsnNode start = instructions.getFirst();
 
 			VarInsnNode target = new VarInsnNode(
-					type.getOpcode(Opcodes.ISTORE), 2);
+					type.getOpcode(Opcodes.ISTORE), 0);
 			instructions.insertBefore(start, target);
-			// optional argument: type name
-			String typeName = processorMethod.getArgTypeDesc();
-			if (typeName != null) {
-				instructions.insertBefore(start, new LdcInsnNode(typeName));
-				instructions.insertBefore(start, new VarInsnNode(
-						Opcodes.ASTORE, 2 + type.getSize()));
-			}
 
-			fixLocalIndex(instructions);
+			maxLocals = fixLocalIndex(instructions, maxLocals);
 
 			instructions.insertBefore(
 					target,
 					new VarInsnNode(type.getOpcode(Opcodes.ILOAD), AsmHelper
 							.getInternalParamIndex(method,
-									processorMethod.getArgPos())));
+									processorMethod.getArgPos())
+							- method.maxLocals));
 
 			ilist.add(instructions);
 			method.tryCatchBlocks.addAll(code.getTryCatchBlocks());
@@ -420,43 +480,27 @@ public class WeavingCode {
 
 			Code code = processorMethod.getCode().clone();
 			InsnList instructions = code.getInstructions();
-			// initialize the parameters of a processor, including argument
-			// position, arguments count and argument value
-			int pos = processorMethod.getArgsCount() - 1
-					- processorMethod.getArgPos();
-			SourceValue source = StackUtil.getStackByIndex(frame, pos);
 
-			AbstractInsnNode start = instructions.getFirst();
-			instructions.insertBefore(start,
-					AsmHelper.getIConstInstr(processorMethod.getArgPos()));
-			instructions
-					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 0));
-
-			instructions.insertBefore(start,
-					AsmHelper.getIConstInstr(processorMethod.getArgsCount()));
-			instructions
-					.insertBefore(start, new VarInsnNode(Opcodes.ISTORE, 1));
-
+			int position = processorMethod.getArgPos();
+			int totalCount = processorMethod.getArgsCount();
 			Type type = processorMethod.getArgType().getASMType();
+
+			fixArgumentContext(instructions, position, totalCount, type);
+
+			SourceValue source = StackUtil.getStackByIndex(frame, totalCount
+					- 1 - position);
 			int sopcode = type.getOpcode(Opcodes.ISTORE);
 
 			for (AbstractInsnNode itr : source.insns) {
 				method.instructions.insert(itr, new VarInsnNode(sopcode,
 				// TRICK: the value has to be set properly because
 				// method code will be not adjusted by fixLocalIndex
-						method.maxLocals + 2));
+						method.maxLocals + maxLocals));
 				method.instructions.insert(itr, new InsnNode(
 						type.getSize() == 2 ? Opcodes.DUP2 : Opcodes.DUP));
 			}
-			// optional argument: type name
-			String typeName = processorMethod.getArgTypeDesc();
-			if (typeName != null) {
-				instructions.insertBefore(start, new LdcInsnNode(typeName));
-				instructions.insertBefore(start, new VarInsnNode(
-						Opcodes.ASTORE, 2 + type.getSize()));
-			}
 
-			fixLocalIndex(instructions);
+			maxLocals = fixLocalIndex(instructions, maxLocals);
 			ilist.add(instructions);
 			method.tryCatchBlocks.addAll(code.getTryCatchBlocks());
 		}
@@ -497,9 +541,9 @@ public class WeavingCode {
 
 	public void transform(SCGenerator staticInfoHolder, PIResolver piResolver)
 			throws DynamicInfoException {
-		fixPseudoVar(staticInfoHolder);
+		fixProcessor(piResolver);
+		fixStaticInfo(staticInfoHolder);
 		fixDynamicInfo();
 		fixLocalIndex();
-		fixProcessor(piResolver);
 	}
 }
