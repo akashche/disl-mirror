@@ -1,10 +1,12 @@
 package ch.usi.dag.disl.test.processor;
 
+import ch.usi.dag.disl.annotation.ArgsProcessor;
 import ch.usi.dag.disl.annotation.ProcessAlso;
 import ch.usi.dag.disl.annotation.ProcessAlso.Type;
-import ch.usi.dag.disl.annotation.ArgsProcessor;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.processor.ArgumentContext;
+import ch.usi.dag.disl.staticcontext.MethodSC;
 
 @ArgsProcessor
 public class ProcessorTest {
@@ -12,8 +14,8 @@ public class ProcessorTest {
 	@SyntheticLocal
 	public static String flag;
 	
-	public static void objPM(Object c, ArgumentContext ac) {
-		System.out.println("processor for object");
+	public static void objPM(Object c, ArgumentContext ac, MethodSC msc) {
+		System.out.println("processor for object in method " + msc.thisMethodFullName());
 		System.out.println(ac.position());
 		System.out.println(ac.totalCount());
 		System.out.println(ac.typeDescriptor());
@@ -24,11 +26,12 @@ public class ProcessorTest {
 	}
 	
 	@ProcessAlso(types={Type.SHORT, Type.BYTE, Type.BOOLEAN})
-	public static void intPM(int c, ArgumentContext ac) {
+	public static void intPM(int c, ArgumentContext ac, DynamicContext dc) {
 		System.out.println("processor for int");
 		System.out.println(ac.position());
 		System.out.println(ac.totalCount());
 		System.out.println(ac.typeDescriptor());
+		System.out.println(dc.thisValue());
 		System.out.println("--------------------");
 		
 		flag = "Processor flag for the End";
