@@ -8,9 +8,9 @@ public interface ArgumentContext {
 	public int position();
 
 	/**
-	 * Returns type of the processed argument
+	 * Returns type descriptor of the processed argument
 	 */
-	public String type();
+	public String typeDescriptor();
 	
 	/**
 	 * Returns total number of processed arguments

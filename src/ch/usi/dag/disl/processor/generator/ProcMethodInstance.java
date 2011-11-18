@@ -9,16 +9,17 @@ public class ProcMethodInstance {
 	private int argPos;
 	private int argsCount;
 	private ProcArgType argType;
-	private String argTypeName;
+	private String argTypeDesc;
 	private ProcCode code;
 	
 	public ProcMethodInstance(int argPos, int argsCount, ProcArgType argType,
-			ProcCode code) {
+			String argTypeDesc, ProcCode code) {
 		super();
 		this.argPos = argPos;
 		this.argsCount = argsCount;
 		this.argType = argType;
 		this.code = code;
+		this.argTypeDesc = argTypeDesc;
 	}
 
 	public int getArgPos() {
@@ -33,12 +34,8 @@ public class ProcMethodInstance {
 		return argType;
 	}
 
-	public String getArgTypeName() {
-		return argTypeName;
-	}
-
-	public void setArgTypeName(String argTypeName) {
-		this.argTypeName = argTypeName;
+	public String getArgTypeDesc() {
+		return argTypeDesc;
 	}
 	
 	// Note: Code is NOT cloned for each instance of ProcMethodInstance.

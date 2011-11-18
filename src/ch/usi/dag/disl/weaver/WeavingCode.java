@@ -387,7 +387,7 @@ public class WeavingCode {
 					type.getOpcode(Opcodes.ISTORE), 2);
 			instructions.insertBefore(start, target);
 			// optional argument: type name
-			String typeName = processorMethod.getArgTypeName();
+			String typeName = processorMethod.getArgTypeDesc();
 			if (typeName != null) {
 				instructions.insertBefore(start, new LdcInsnNode(typeName));
 				instructions.insertBefore(start, new VarInsnNode(
@@ -449,7 +449,7 @@ public class WeavingCode {
 						type.getSize() == 2 ? Opcodes.DUP2 : Opcodes.DUP));
 			}
 			// optional argument: type name
-			String typeName = processorMethod.getArgTypeName();
+			String typeName = processorMethod.getArgTypeDesc();
 			if (typeName != null) {
 				instructions.insertBefore(start, new LdcInsnNode(typeName));
 				instructions.insertBefore(start, new VarInsnNode(
