@@ -298,7 +298,7 @@ public class SnippetParser extends AbstractParser {
 			if (!implementsStaticContext(argClass)) {
 				throw new StaticContextGenException(argClass.getName()
 						+ " does not implement StaticContext interface and"
-						+ " cannot be used as advice method parameter");
+						+ " cannot be used as snippet method parameter");
 			}
 
 			knownStCo.add(argType.getInternalName());
@@ -321,7 +321,7 @@ public class SnippetParser extends AbstractParser {
 			maxArgIndex += types[i].getSize();
 		}
 
-		// The following code assumes that all disl advices are static
+		// The following code assumes that all disl snippets are static
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
 			switch (instr.getOpcode()) {
@@ -332,8 +332,8 @@ public class SnippetParser extends AbstractParser {
 
 				if (local < maxArgIndex
 						&& instr.getNext().getOpcode() == Opcodes.ASTORE) {
-					throw new SnippetParserException("In advice " + className
-							+ "." + methodName + " - advice parameter"
+					throw new SnippetParserException("In snippet " + className
+							+ "." + methodName + " - snippet parameter"
 							+ " (context) cannot be stored into local"
 							+ " variable");
 				}
@@ -346,8 +346,8 @@ public class SnippetParser extends AbstractParser {
 				int local = ((VarInsnNode) instr).var;
 
 				if (local < maxArgIndex) {
-					throw new SnippetParserException("In advice " + className
-							+ "." + methodName + " - advice parameter"
+					throw new SnippetParserException("In snippet " + className
+							+ "." + methodName + " - snippet parameter"
 							+ " (context) cannot overwritten");
 				}
 

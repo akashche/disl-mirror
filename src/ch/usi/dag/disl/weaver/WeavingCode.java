@@ -175,7 +175,7 @@ public class WeavingCode {
 				break;
 
 			default:
-				throw new DynamicInfoException("In advice "
+				throw new DynamicInfoException("In snippet "
 						+ snippet.getOriginClassName() + "."
 						+ snippet.getOriginMethodName()
 						+ " - pass the first (pos)"
@@ -185,7 +185,7 @@ public class WeavingCode {
 
 			// second operand test
 			if (AsmHelper.getClassType(secondOperand) == null) {
-				throw new DynamicInfoException("In advice "
+				throw new DynamicInfoException("In snippet "
 						+ snippet.getOriginClassName() + "."
 						+ snippet.getOriginMethodName()
 						+ " - pass the second (type)"

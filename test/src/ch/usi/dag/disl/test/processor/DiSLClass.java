@@ -34,4 +34,12 @@ public class DiSLClass {
 		
 		System.out.println(ProcessorTest.flag);
 	}
+	
+	@Before(marker = BytecodeMarker.class, args="aastore", order = 1, scope = "TargetClass.main")
+	public static void beforeArrayStore(MethodSC ci) {
+		
+		System.out.println("(Before) Array : ");
+		
+		Processor.apply(ProcessorTest2.class, ProcessorMode.METHOD_ARGS);
+	}
 }

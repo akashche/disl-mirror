@@ -145,7 +145,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		// first parameter has to be loaded by LDC
 		if (firstParam == null || firstParam.getOpcode() != Opcodes.LDC) {
-			throw new ProcessorException("In advice " + className + "."
+			throw new ProcessorException("In snippet " + className + "."
 					+ methodName + " - pass the first (class)"
 					+ " argument of a ProcMethod.apply method direcltly."
 					+ " ex: ProcMethod.apply(ProcMethod.class,"
@@ -154,7 +154,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		// second parameter has to be loaded by GETSTATIC
 		if (secondParam == null || secondParam.getOpcode() != Opcodes.GETSTATIC) {
-			throw new ProcessorException("In advice " + className + "."
+			throw new ProcessorException("In snippet " + className + "."
 					+ methodName + " - pass the second (type)"
 					+ " argument of a ProcMethod.apply method direcltly."
 					+ " ex: ProcMethod.apply(ProcMethod.class,"
@@ -164,7 +164,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		Object asmType = ((LdcInsnNode) firstParam).cst;
 
 		if (!(asmType instanceof Type)) {
-			throw new ProcessorException("In advice " + className + "."
+			throw new ProcessorException("In snippet " + className + "."
 					+ methodName + " - unsupported processor type "
 					+ asmType.getClass().toString());
 		}
@@ -187,7 +187,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		Proc processor = processors.get(processorType);
 
 		if (processor == null) {
-			throw new ProcessorException("In advice " + className + "."
+			throw new ProcessorException("In snippet " + className + "."
 					+ methodName + " - unknow processor used: "
 					+ processorType.getClassName());
 		}

@@ -205,7 +205,7 @@ public class ProcessorParser extends AbstractParser {
 		// parse rest of the arguments
 		for (int i = 1; i < argTypes.length; ++i) {
 
-			Type argType = argTypes[1];
+			Type argType = argTypes[i];
 			
 			// skip dynamic context class - don't check anything
 			if (argType.equals(Type.getType(DynamicContext.class))) {
@@ -225,7 +225,7 @@ public class ProcessorParser extends AbstractParser {
 			if (!implementsStaticContext(argClass)) {
 				throw new StaticContextGenException(argClass.getName()
 						+ " does not implement StaticContext interface and"
-						+ " cannot be used as advice method parameter");
+						+ " cannot be used as snippet method parameter");
 			}
 
 			knownStCo.add(argType.getInternalName());

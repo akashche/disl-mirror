@@ -36,5 +36,9 @@ public class TargetClass {
 		byte b = 2;
 		short s = 3;
 		t.method5(true, b, s);
+		
+		String[] array = new String[2];
+		array[0] = "hi";
+		array[1] = "bye";
 	}
 }
