@@ -20,7 +20,6 @@ class IdHolder {
 
 		// register id calculator
 		this.idCalc = idCalc;
-		idCalc.regIdMap(strToId);
 		
 		// create output
 		try {

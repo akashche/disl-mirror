@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.dynamiccontext;
 
-// TODO ! change to interface
 public interface DynamicContext {
 
 	/**

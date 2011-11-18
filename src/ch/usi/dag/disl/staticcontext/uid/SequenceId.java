@@ -5,7 +5,7 @@ public class SequenceId extends AbstractIdCalculator {
 	private int nextId = 0;
 
 	// get sequential id
-	protected int getId() {
+	protected int getIdImpl() {
 		
 		int newId = nextId;
 		++nextId;
