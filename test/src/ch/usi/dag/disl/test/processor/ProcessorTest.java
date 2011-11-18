@@ -16,7 +16,7 @@ public class ProcessorTest {
 		System.out.println("processor for object");
 		System.out.println(ac.position());
 		System.out.println(ac.totalCount());
-		System.out.println(ac.type());
+		System.out.println(ac.typeDescriptor());
 		System.out.println(c);
 		System.out.println("--------------------");
 		
@@ -28,7 +28,7 @@ public class ProcessorTest {
 		System.out.println("processor for int");
 		System.out.println(ac.position());
 		System.out.println(ac.totalCount());
-		System.out.println(ac.type());
+		System.out.println(ac.typeDescriptor());
 		System.out.println("--------------------");
 		
 		flag = "Processor flag for the End";
@@ -38,7 +38,7 @@ public class ProcessorTest {
 		System.out.println("processor for long");
 		System.out.println(ac.position());
 		System.out.println(ac.totalCount());
-		System.out.println(ac.type());
+		System.out.println(ac.typeDescriptor());
 		System.out.println("--------------------");
 	}
 
@@ -46,7 +46,7 @@ public class ProcessorTest {
 		System.out.println("processor for double");
 		System.out.println(ac.position());
 		System.out.println(ac.totalCount());
-		System.out.println(ac.type());
+		System.out.println(ac.typeDescriptor());
 		System.out.println("--------------------");
 	}
 }
