@@ -4,7 +4,7 @@ import ch.usi.dag.disl.annotation.ArgsProcessor;
 
 @ArgsProcessor
 public class ArgumentProcessor {
-    public static void objPM(int pos, int n, Object o) {
+    public static void objPM(Object o) {
         DiSLClass.thisAnalysis.profileArgument(o);//==null) ? Null.class : o.getClass());//, pos);
     }
 

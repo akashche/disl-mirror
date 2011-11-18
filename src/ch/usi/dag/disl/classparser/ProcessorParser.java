@@ -202,8 +202,11 @@ public class ProcessorParser extends AbstractParser {
 		boolean usesDynamicContext = false;
 		boolean usesArgumentContext = false;
 
-		for (Type argType : Type.getArgumentTypes(methodDesc)) {
+		// parse rest of the arguments
+		for (int i = 1; i < argTypes.length; ++i) {
 
+			Type argType = argTypes[1];
+			
 			// skip dynamic context class - don't check anything
 			if (argType.equals(Type.getType(DynamicContext.class))) {
 				usesDynamicContext = true;
