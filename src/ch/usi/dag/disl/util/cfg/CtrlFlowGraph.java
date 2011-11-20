@@ -407,17 +407,35 @@ public class CtrlFlowGraph {
 		} while (fChanged);
 	}
 
+	public static CtrlFlowGraph build(InsnList instructions,
+			List<TryCatchBlockNode> tryCatchBlocks) {
+		CtrlFlowGraph cfg = new CtrlFlowGraph(instructions, tryCatchBlocks);
+
+		cfg.visit(instructions.getFirst());
+
+		for (TryCatchBlockNode tcb : tryCatchBlocks) {
+			cfg.visit(tcb.handler);
+		}
+
+		return cfg;
+	}
+
+	public static CtrlFlowGraph build(MethodNode method) {
+		return build(method.instructions, method.tryCatchBlocks);
+	}
+
 	// build up the control flow graph of 'method'.
 	// NOTE that the function will compute the dominators.
-	public static CtrlFlowGraph build(MethodNode method) {
+	public static CtrlFlowGraph buildAll(MethodNode method) {
 		CtrlFlowGraph cfg = new CtrlFlowGraph(method);
 
 		cfg.visit(method.instructions.getFirst());
 		cfg.computeDominators(method.instructions.getFirst());
 
 		for (int i = method.tryCatchBlocks.size() - 1; i >= 0; i--) {
-			cfg.visit(method.tryCatchBlocks.get(i).handler);
-			cfg.computeDominators(method.instructions.getFirst());
+			AbstractInsnNode start = method.tryCatchBlocks.get(i).handler;
+			cfg.visit(start);
+			cfg.computeDominators(start);
 		}
 
 		for (BasicBlock bb : cfg.connected_nodes) {

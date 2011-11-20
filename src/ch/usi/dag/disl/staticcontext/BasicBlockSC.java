@@ -44,7 +44,7 @@ public class BasicBlockSC extends AbstractStaticContext {
 	
 	public boolean isFirstOfLoop() {
 
-		CtrlFlowGraph cfg = CtrlFlowGraph.build(staticContextData
+		CtrlFlowGraph cfg = CtrlFlowGraph.buildAll(staticContextData
 				.getMethodNode());
 		return cfg.getBB(staticContextData.getRegionStart())
 				.isLoop();

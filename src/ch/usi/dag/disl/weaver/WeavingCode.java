@@ -31,6 +31,8 @@ import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.stack.StackUtil;
+import ch.usi.dag.disl.weaver.pe.MaxCalculator;
+import ch.usi.dag.disl.weaver.pe.PartialEvaluator;
 
 public class WeavingCode {
 
@@ -63,40 +65,7 @@ public class WeavingCode {
 		this.region = region;
 		this.index = index;
 
-		for (AbstractInsnNode instr : iArray) {
-
-			if (instr instanceof VarInsnNode) {
-
-				VarInsnNode varInstr = (VarInsnNode) instr;
-
-				switch (varInstr.getOpcode()) {
-				case Opcodes.LLOAD:
-				case Opcodes.DLOAD:
-				case Opcodes.LSTORE:
-				case Opcodes.DSTORE:
-
-					if ((varInstr.var + 2) > maxLocals) {
-						maxLocals = varInstr.var + 2;
-					}
-
-					break;
-
-				default:
-					if ((varInstr.var + 1) > maxLocals) {
-						maxLocals = varInstr.var + 1;
-					}
-
-					break;
-				}
-			} else if (instr instanceof IincInsnNode) {
-
-				IincInsnNode iinc = (IincInsnNode) instr;
-
-				if ((iinc.var + 1) > maxLocals) {
-					maxLocals = iinc.var + 1;
-				}
-			}
-		}
+		maxLocals = MaxCalculator.getMaxLocal(iList);
 	}
 
 	// Search for an instruction sequence that match the pattern
@@ -367,28 +336,18 @@ public class WeavingCode {
 				case Opcodes.DLOAD:
 				case Opcodes.LSTORE:
 				case Opcodes.DSTORE:
-
-					if ((varInstr.var + 2) > max) {
-						max = varInstr.var + 2;
-					}
-
+					max = Math.max(varInstr.var + 2, max);
 					break;
 
 				default:
-					if ((varInstr.var + 1) > max) {
-						max = varInstr.var + 1;
-					}
-
+					max = Math.max(varInstr.var + 1, max);
 					break;
 				}
 			} else if (instr instanceof IincInsnNode) {
 
 				IincInsnNode iinc = (IincInsnNode) instr;
 				iinc.var += offset;
-
-				if ((iinc.var + 1) > max) {
-					max = iinc.var + 1;
-				}
+				max = Math.max(iinc.var + 1, max);
 			}
 		}
 
@@ -545,5 +504,8 @@ public class WeavingCode {
 		fixStaticInfo(staticInfoHolder);
 		fixDynamicInfo();
 		fixLocalIndex();
+
+		// TODO Parameterize partial evaluator
+		PartialEvaluator.evaluate(iList, code.getTryCatchBlocks());
 	}
 }

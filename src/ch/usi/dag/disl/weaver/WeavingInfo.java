@@ -157,9 +157,7 @@ public class WeavingInfo {
 
 		basicFrames = basicAnalyzer.getFrames();
 
-		Analyzer<SourceValue> sourceAnalyzer = null;
-
-		sourceAnalyzer = StackUtil.getSourceAnalyzer();
+		Analyzer<SourceValue> sourceAnalyzer = StackUtil.getSourceAnalyzer();
 
 		try {
 			sourceAnalyzer.analyze(classNode.name, methodNode);

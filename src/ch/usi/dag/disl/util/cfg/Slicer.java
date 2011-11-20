@@ -45,7 +45,7 @@ public class Slicer {
 		instructions = method.instructions;
 		size = instructions.size();
 
-		cfg = CtrlFlowGraph.build(method);
+		cfg = CtrlFlowGraph.buildAll(method);
 
 		frames = StackUtil.getSourceAnalyzer().analyze(className, method);
 	}
