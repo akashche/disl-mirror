@@ -29,12 +29,6 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 		return new ConstValue(type == null ? 1 : type.getSize());
 	}
 
-	/*
-	 * ACONST_NULL, ICONST_M1, ICONST_0, ICONST_1, ICONST_2, ICONST_3, ICONST_4,
-	 * ICONST_5, LCONST_0, LCONST_1, FCONST_0, FCONST_1, FCONST_2, DCONST_0,
-	 * DCONST_1, BIPUSH, SIPUSH, LDC, JSR, GETSTATIC, NEW
-	 */
-
 	@Override
 	public ConstValue newOperation(final AbstractInsnNode insn) {
 
@@ -70,9 +64,9 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 		case Opcodes.DCONST_1:
 			return new ConstValue(2, new Double(1));
 		case Opcodes.BIPUSH:
-			return new ConstValue(2, (Integer) (((IntInsnNode) insn).operand));
+			return new ConstValue(1, (Integer) (((IntInsnNode) insn).operand));
 		case Opcodes.SIPUSH:
-			return new ConstValue(2, (Integer) (((IntInsnNode) insn).operand));
+			return new ConstValue(1, (Integer) (((IntInsnNode) insn).operand));
 		case Opcodes.LDC:
 			Object cst = ((LdcInsnNode) insn).cst;
 			return new ConstValue(
