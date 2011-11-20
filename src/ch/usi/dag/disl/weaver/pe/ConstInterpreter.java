@@ -497,7 +497,7 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 	@Override
 	public ConstValue merge(final ConstValue d, final ConstValue w) {
 
-		if (d.size == w.size && d.cst.equals(w.cst)) {
+		if (d.size == w.size && d.cst != null && d.cst.equals(w.cst)) {
 			return d;
 		}
 
