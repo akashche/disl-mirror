@@ -65,10 +65,12 @@ public class PartialEvaluator {
 		return false;
 	}
 
-	private static void branchPrediction(CtrlFlowGraph cfg, InsnList ilist, 
+	private static boolean branchPrediction(CtrlFlowGraph cfg, InsnList ilist,
 			List<TryCatchBlockNode> tryCatchBlocks,
 			Map<AbstractInsnNode, Frame<ConstValue>> frames,
 			ConstInterpreter interpreter) {
+
+		boolean isOptimized = false;
 
 		for (BasicBlock bb : cfg.getNodes()) {
 
@@ -137,6 +139,7 @@ public class PartialEvaluator {
 					ilist.remove(instr);
 				}
 
+				isOptimized = true;
 				break;
 			}
 
@@ -149,12 +152,23 @@ public class PartialEvaluator {
 				if (value.cst == null) {
 					continue;
 				}
-				
+
 				int index = lsin.keys.indexOf(value.cst);
-				
+				LabelNode label = null;
+
+				if (index >= 0) {
+
+					BasicBlock successor = cfg.getBB(lsin.dflt);
+					bb.getSuccessors().remove(successor);
+					successor.getPredecessors().remove(bb);
+				} else {
+					label = lsin.dflt;
+				}
+
 				for (int i = 0; i < lsin.labels.size(); i++) {
 
 					if (i == index) {
+						label = lsin.labels.get(i);
 						continue;
 					}
 
@@ -163,13 +177,11 @@ public class PartialEvaluator {
 					successor.getPredecessors().remove(bb);
 				}
 
-				if (index >= 0) {
-
-					BasicBlock successor = cfg.getBB(lsin.dflt);
-					bb.getSuccessors().remove(successor);
-					successor.getPredecessors().remove(bb);
-				}
-
+				ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
+				ilist.insertBefore(instr, new JumpInsnNode(Opcodes.GOTO, label));
+				bb.setExit(instr.getPrevious());
+				ilist.remove(instr);
+				isOptimized = true;
 				break;
 			}
 
@@ -184,10 +196,21 @@ public class PartialEvaluator {
 				}
 
 				int index = (Integer) value.cst;
+				LabelNode label = null;
+
+				if (index < tsin.min && index > tsin.max) {
+
+					BasicBlock successor = cfg.getBB(tsin.dflt);
+					bb.getSuccessors().remove(successor);
+					successor.getPredecessors().remove(bb);
+				} else {
+					label = tsin.dflt;
+				}
 
 				for (int i = tsin.min; i <= tsin.max; i++) {
 
 					if (i == index) {
+						label = tsin.labels.get(i - tsin.min);
 						continue;
 					}
 
@@ -197,12 +220,11 @@ public class PartialEvaluator {
 					successor.getPredecessors().remove(bb);
 				}
 
-				if (index < tsin.min && index > tsin.max) {
-
-					BasicBlock successor = cfg.getBB(tsin.dflt);
-					bb.getSuccessors().remove(successor);
-					successor.getPredecessors().remove(bb);
-				}
+				ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
+				ilist.insertBefore(instr, new JumpInsnNode(Opcodes.GOTO, label));
+				bb.setExit(instr.getPrevious());
+				ilist.remove(instr);
+				isOptimized = true;
 				break;
 			}
 
@@ -211,12 +233,13 @@ public class PartialEvaluator {
 			}
 		}
 
-		removeUselessBB(cfg, ilist, tryCatchBlocks);
+		return removeUselessBB(cfg, ilist, tryCatchBlocks) | isOptimized;
 	}
 
-	private static void removeUselessBB(CtrlFlowGraph cfg, InsnList ilist,
+	private static boolean removeUselessBB(CtrlFlowGraph cfg, InsnList ilist,
 			List<TryCatchBlockNode> tryCatchBlocks) {
 
+		boolean isOptimized = false;
 		boolean changed = true;
 		List<BasicBlock> connected = new LinkedList<BasicBlock>(cfg.getNodes());
 
@@ -248,6 +271,7 @@ public class PartialEvaluator {
 					int opcode = prev.getOpcode();
 
 					if (opcode != -1 || opcode != Opcodes.RETURN) {
+						isOptimized = true;
 						ilist.remove(prev);
 					}
 				}
@@ -261,9 +285,13 @@ public class PartialEvaluator {
 
 			connected.removeAll(removed);
 		}
+
+		return isOptimized;
 	}
 
-	private static void removeUselessBranch(InsnList ilist) {
+	private static boolean removeUselessBranch(InsnList ilist) {
+
+		boolean isOptimized = false;
 
 		for (AbstractInsnNode instr : ilist.toArray()) {
 
@@ -286,6 +314,7 @@ public class PartialEvaluator {
 				}
 
 				ilist.remove(instr);
+				isOptimized = true;
 				break;
 			}
 
@@ -308,6 +337,7 @@ public class PartialEvaluator {
 
 				ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
 				ilist.remove(instr);
+				isOptimized = true;
 				break;
 			}
 
@@ -331,6 +361,7 @@ public class PartialEvaluator {
 
 				ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
 				ilist.remove(instr);
+				isOptimized = true;
 				break;
 			}
 
@@ -338,23 +369,30 @@ public class PartialEvaluator {
 				break;
 			}
 		}
+
+		return isOptimized;
 	}
 
-	private static void removeUselessTCB(CtrlFlowGraph cfg, InsnList ilist,
+	private static boolean removeUselessTCB(CtrlFlowGraph cfg, InsnList ilist,
 			List<TryCatchBlockNode> tryCatchBlocks) {
+
+		boolean isOptimized = false;
 
 		for (TryCatchBlockNode tcb : tryCatchBlocks) {
 			if (AsmHelper.skipVirualInsns(tcb.start, true) == AsmHelper
 					.skipVirualInsns(tcb.end, true)) {
 				tryCatchBlocks.remove(tcb);
-				removeUselessBB(cfg, ilist, tryCatchBlocks);
+				isOptimized |= removeUselessBB(cfg, ilist, tryCatchBlocks);
 			}
 		}
+
+		return isOptimized;
 	}
 
-	public static void evaluate(InsnList ilist,
+	public static boolean evaluate(InsnList ilist,
 			List<TryCatchBlockNode> tryCatchBlocks) {
 
+		boolean isOptimized = false;
 		boolean flag = withoutReturn(ilist);
 
 		if (flag) {
@@ -384,12 +422,15 @@ public class PartialEvaluator {
 
 		CtrlFlowGraph cfg = CtrlFlowGraph.build(method);
 
-		branchPrediction(cfg, ilist, tryCatchBlocks, frames, interpreter);
-		removeUselessBranch(ilist);
-		removeUselessTCB(cfg, ilist, tryCatchBlocks);
+		isOptimized |= branchPrediction(cfg, ilist, tryCatchBlocks, frames,
+				interpreter);
+		isOptimized |= removeUselessBranch(ilist);
+		isOptimized |= removeUselessTCB(cfg, ilist, tryCatchBlocks);
 
 		if (flag) {
 			ilist.remove(ilist.getLast());
 		}
+
+		return isOptimized;
 	}
 }
