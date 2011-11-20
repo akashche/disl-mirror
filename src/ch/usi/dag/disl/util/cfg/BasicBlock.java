@@ -48,6 +48,10 @@ public class BasicBlock {
 		return entrance;
 	}
 
+	public void setExit(AbstractInsnNode exit) {
+		this.exit = exit;
+	}
+
 	public AbstractInsnNode getExit() {
 		return exit;
 	}

@@ -119,12 +119,22 @@ public class PartialEvaluator {
 					BasicBlock successor = cfg.getBB(instr.getNext());
 					bb.getSuccessors().remove(successor);
 					successor.getPredecessors().remove(bb);
+
+					ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
+					ilist.insertBefore(instr, new JumpInsnNode(Opcodes.GOTO,
+							((JumpInsnNode) instr).label));
+					bb.setExit(instr.getPrevious());
+					ilist.remove(instr);
 				} else {
 
 					BasicBlock successor = cfg
 							.getBB(((JumpInsnNode) instr).label);
 					bb.getSuccessors().remove(successor);
 					successor.getPredecessors().remove(bb);
+
+					ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
+					bb.setExit(instr.getPrevious());
+					ilist.remove(instr);
 				}
 
 				break;
