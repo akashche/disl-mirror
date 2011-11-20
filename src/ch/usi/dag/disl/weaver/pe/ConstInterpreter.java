@@ -29,6 +29,33 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 		return new ConstValue(type == null ? 1 : type.getSize());
 	}
 
+	public static boolean mightBeNewConstOperation(final AbstractInsnNode insn) {
+
+		switch (insn.getOpcode()) {
+		case Opcodes.ACONST_NULL:
+		case Opcodes.ICONST_M1:
+		case Opcodes.ICONST_0:
+		case Opcodes.ICONST_1:
+		case Opcodes.ICONST_2:
+		case Opcodes.ICONST_3:
+		case Opcodes.ICONST_4:
+		case Opcodes.ICONST_5:
+		case Opcodes.LCONST_0:
+		case Opcodes.LCONST_1:
+		case Opcodes.FCONST_0:
+		case Opcodes.FCONST_1:
+		case Opcodes.FCONST_2:
+		case Opcodes.DCONST_0:
+		case Opcodes.DCONST_1:
+		case Opcodes.BIPUSH:
+		case Opcodes.SIPUSH:
+		case Opcodes.LDC:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	@Override
 	public ConstValue newOperation(final AbstractInsnNode insn) {
 
@@ -83,6 +110,37 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 	public ConstValue copyOperation(final AbstractInsnNode insn,
 			final ConstValue value) {
 		return new ConstValue(value.getSize(), value.cst);
+	}
+
+	public static boolean mightBeUnaryConstOperation(final AbstractInsnNode insn) {
+
+		switch (insn.getOpcode()) {
+		case Opcodes.INEG:
+		case Opcodes.LNEG:
+		case Opcodes.FNEG:
+		case Opcodes.DNEG:
+		case Opcodes.IINC:
+		case Opcodes.I2L:
+		case Opcodes.I2F:
+		case Opcodes.I2D:
+		case Opcodes.L2I:
+		case Opcodes.L2F:
+		case Opcodes.L2D:
+		case Opcodes.F2I:
+		case Opcodes.F2L:
+		case Opcodes.F2D:
+		case Opcodes.D2I:
+		case Opcodes.D2L:
+		case Opcodes.D2F:
+		case Opcodes.I2B:
+		case Opcodes.I2C:
+		case Opcodes.I2S:
+		case Opcodes.CHECKCAST:
+		case Opcodes.INSTANCEOF:
+			return true;
+		default:
+			return false;
+		}
 	}
 
 	@Override
@@ -228,6 +286,53 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 
 		default:
 			return new ConstValue(1);
+		}
+	}
+
+	public static boolean mightBeBinaryConstOperation(
+			final AbstractInsnNode insn) {
+
+		switch (insn.getOpcode()) {
+		case Opcodes.LADD:
+		case Opcodes.LSUB:
+		case Opcodes.LMUL:
+		case Opcodes.LDIV:
+		case Opcodes.LREM:
+		case Opcodes.LSHL:
+		case Opcodes.LSHR:
+		case Opcodes.LUSHR:
+		case Opcodes.LAND:
+		case Opcodes.LOR:
+		case Opcodes.LXOR:
+		case Opcodes.DADD:
+		case Opcodes.DSUB:
+		case Opcodes.DMUL:
+		case Opcodes.DDIV:
+		case Opcodes.DREM:
+		case Opcodes.IADD:
+		case Opcodes.ISUB:
+		case Opcodes.IMUL:
+		case Opcodes.IDIV:
+		case Opcodes.IREM:
+		case Opcodes.ISHL:
+		case Opcodes.ISHR:
+		case Opcodes.IUSHR:
+		case Opcodes.IAND:
+		case Opcodes.IOR:
+		case Opcodes.IXOR:
+		case Opcodes.FADD:
+		case Opcodes.FSUB:
+		case Opcodes.FMUL:
+		case Opcodes.FDIV:
+		case Opcodes.FREM:
+		case Opcodes.LCMP:
+		case Opcodes.FCMPL:
+		case Opcodes.FCMPG:
+		case Opcodes.DCMPL:
+		case Opcodes.DCMPG:
+			return true;
+		default:
+			return false;
 		}
 	}
 

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -15,9 +16,11 @@ import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Frame;
+import org.objectweb.asm.tree.analysis.SourceValue;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.util.AsmHelper;
@@ -27,16 +30,16 @@ import ch.usi.dag.disl.util.stack.StackUtil;
 
 public class PartialEvaluator {
 
-	public static MethodNode wrap(InsnList ilist,
-			List<TryCatchBlockNode> tryCatchBlocks) {
+	private static MethodNode wrap(InsnList ilist,
+			List<TryCatchBlockNode> tryCatchBlocks, String desc, int access) {
 
 		MethodNode method = new MethodNode();
 
 		method.instructions = ilist;
 		method.tryCatchBlocks = tryCatchBlocks;
-		method.access = Opcodes.ACC_STATIC;
-		method.desc = "()V";
-		method.maxLocals = MaxCalculator.getMaxLocal(ilist);
+		method.access = access;
+		method.desc = desc;
+		method.maxLocals = MaxCalculator.getMaxLocal(ilist, desc, access);
 		method.maxStack = MaxCalculator.getMaxStack(ilist, tryCatchBlocks);
 
 		return method;
@@ -63,6 +66,147 @@ public class PartialEvaluator {
 		}
 
 		return false;
+	}
+
+	private static boolean load(InsnList ilist, AbstractInsnNode location,
+			Object cst) {
+
+		if (cst == null) {
+			return false;
+		}
+
+		if (cst == ConstValue.NULL) {
+			ilist.insertBefore(location, new InsnNode(Opcodes.ACONST_NULL));
+			return true;
+		}
+
+		ilist.insertBefore(location, AsmHelper.loadConst(cst));
+		return true;
+	}
+
+	private static boolean constLoad(InsnList ilist,
+			ConstInterpreter interpreter,
+			Map<AbstractInsnNode, Frame<ConstValue>> frames) {
+
+		boolean isOptimized = false;
+
+		for (AbstractInsnNode instr : ilist.toArray()) {
+
+			Frame<ConstValue> frame = frames.get(instr);
+
+			if (frame == null) {
+				continue;
+			}
+
+			if (ConstInterpreter.mightBeUnaryConstOperation(instr)) {
+
+				ConstValue value = StackUtil.getStackByIndex(frame, 0);
+				Object cst = interpreter.unaryOperation(instr, value).cst;
+
+				if (load(ilist, instr, cst)) {
+
+					ilist.insertBefore(instr.getPrevious(), new InsnNode(
+							value.size == 1 ? Opcodes.POP : Opcodes.POP2));
+					ilist.remove(instr);
+					isOptimized = true;
+				}
+
+				continue;
+			} else if (ConstInterpreter.mightBeBinaryConstOperation(instr)) {
+				
+				ConstValue value1 = StackUtil.getStackByIndex(frame, 1);
+				ConstValue value2 = StackUtil.getStackByIndex(frame, 0);
+				Object cst = interpreter.binaryOperation(instr, value1, value2).cst;
+				
+				if (load(ilist, instr, cst)) {
+
+					ilist.insertBefore(instr.getPrevious(), new InsnNode(
+							value2.size == 1 ? Opcodes.POP : Opcodes.POP2));
+					ilist.insertBefore(instr.getPrevious(), new InsnNode(
+							value1.size == 1 ? Opcodes.POP : Opcodes.POP2));
+					ilist.remove(instr);
+					isOptimized = true;
+				}
+
+				continue;
+			}
+
+			switch (instr.getOpcode()) {
+			case Opcodes.ILOAD:
+			case Opcodes.LLOAD:
+			case Opcodes.FLOAD:
+			case Opcodes.DLOAD:
+			case Opcodes.ALOAD:
+				if (load(ilist, instr,
+						frame.getLocal(((VarInsnNode) instr).var).cst)) {
+					ilist.remove(instr);
+					isOptimized = true;
+				}
+
+				break;
+
+			default:
+				break;
+			}
+		}
+
+		return isOptimized;
+	}
+
+	private static boolean removeDeadStore(InsnList ilist,
+			Map<AbstractInsnNode, Frame<ConstValue>> frames) {
+
+		boolean isOptimized = false;
+		List<Integer> loads = new LinkedList<Integer>();
+
+		for (AbstractInsnNode instr : ilist.toArray()) {
+
+			switch (instr.getOpcode()) {
+			case Opcodes.ILOAD:
+			case Opcodes.LLOAD:
+			case Opcodes.FLOAD:
+			case Opcodes.DLOAD:
+			case Opcodes.ALOAD:
+				loads.add(((VarInsnNode) instr).var);
+				break;
+			default:
+				break;
+			}
+		}
+
+		for (AbstractInsnNode instr : ilist.toArray()) {
+
+			switch (instr.getOpcode()) {
+			case Opcodes.ISTORE:
+			case Opcodes.ASTORE:
+			case Opcodes.FSTORE:
+
+				if (loads.contains(((VarInsnNode) instr).var)) {
+					continue;
+				}
+
+				ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
+				ilist.remove(instr);
+				isOptimized = true;
+				break;
+
+			case Opcodes.DSTORE:
+			case Opcodes.LSTORE:
+
+				if (loads.contains(((VarInsnNode) instr).var)) {
+					continue;
+				}
+
+				ilist.insertBefore(instr, new InsnNode(Opcodes.POP2));
+				ilist.remove(instr);
+				isOptimized = true;
+				break;
+			default:
+				break;
+			}
+		}
+
+		return isOptimized;
 	}
 
 	private static boolean branchPrediction(CtrlFlowGraph cfg, InsnList ilist,
@@ -389,8 +533,61 @@ public class PartialEvaluator {
 		return isOptimized;
 	}
 
+	private static boolean removePop(InsnList ilist,
+			Frame<SourceValue>[] sourceFrames) {
+
+		Map<AbstractInsnNode, Frame<SourceValue>> frames = 
+				new HashMap<AbstractInsnNode, Frame<SourceValue>>();
+
+		for (int i = 0; i < ilist.size(); i++) {
+			frames.put(ilist.get(i), sourceFrames[i]);
+		}
+
+		boolean isOptimized = false;
+
+		for (AbstractInsnNode instr : ilist.toArray()) {
+
+			int opcode = instr.getOpcode();
+
+			if (opcode != Opcodes.POP && opcode != Opcodes.POP2) {
+				continue;
+			}
+
+			Frame<SourceValue> frame = frames.get(instr);
+
+			if (frame == null) {
+				continue;
+			}
+
+			boolean flag = true;
+
+			Set<AbstractInsnNode> sources = 
+					StackUtil.getStackByIndex(frame, 0).insns;
+
+			for (AbstractInsnNode source : sources) {
+
+				if (!ConstInterpreter.mightBeNewConstOperation(source)) {
+					flag = false;
+					break;
+				}
+			}
+
+			if (flag) {
+				ilist.remove(instr);
+
+				for (AbstractInsnNode source : sources) {
+					ilist.remove(source);
+				}
+
+				isOptimized = true;
+			}
+		}
+
+		return isOptimized;
+	}
+
 	public static boolean evaluate(InsnList ilist,
-			List<TryCatchBlockNode> tryCatchBlocks) {
+			List<TryCatchBlockNode> tryCatchBlocks, String desc, int access) {
 
 		boolean isOptimized = false;
 		boolean flag = withoutReturn(ilist);
@@ -399,7 +596,8 @@ public class PartialEvaluator {
 			ilist.add(new InsnNode(Opcodes.RETURN));
 		}
 
-		MethodNode method = wrap(ilist, tryCatchBlocks);
+		String newDesc = desc.substring(0, desc.lastIndexOf(')')) + ")V";
+		MethodNode method = wrap(ilist, tryCatchBlocks, newDesc, access);
 
 		ConstInterpreter interpreter = new ConstInterpreter();
 		Analyzer<ConstValue> constAnalyzer = new Analyzer<ConstValue>(
@@ -422,10 +620,24 @@ public class PartialEvaluator {
 
 		CtrlFlowGraph cfg = CtrlFlowGraph.build(method);
 
+		isOptimized |= constLoad(ilist, interpreter, frames);
+		isOptimized |= removeDeadStore(ilist, frames);
 		isOptimized |= branchPrediction(cfg, ilist, tryCatchBlocks, frames,
 				interpreter);
 		isOptimized |= removeUselessBranch(ilist);
 		isOptimized |= removeUselessTCB(cfg, ilist, tryCatchBlocks);
+
+		Analyzer<SourceValue> sourceAnalyzer = StackUtil.getSourceAnalyzer();
+
+		try {
+			sourceAnalyzer.analyze(PartialEvaluator.class.getName(), method);
+		} catch (AnalyzerException e) {
+			e.printStackTrace();
+			throw new DiSLFatalException("Cause by AnalyzerException : \n"
+					+ e.getMessage());
+		}
+		
+		isOptimized |= removePop(ilist, sourceAnalyzer.getFrames());
 
 		if (flag) {
 			ilist.remove(ilist.getLast());

@@ -43,9 +43,10 @@ public class MaxCalculator {
 		SIZE = b;
 	}
 
-	public static int getMaxLocal(InsnList ilist) {
+	public static int getMaxLocal(InsnList ilist, String desc, int access) {
 
-		int maxLocals = 0;
+		int maxLocals = ((access & Opcodes.ACC_STATIC) == 0 ? 1 : 0)
+				+ (Type.getArgumentsAndReturnSizes(desc) >> 2);
 
 		for (AbstractInsnNode instr : ilist.toArray()) {
 

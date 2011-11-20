@@ -262,6 +262,7 @@ public class Weaver {
 					WeavingCode wCode = new WeavingCode(info, code, methodNode,
 							snippet, region, index);
 					wCode.transform(staticInfoHolder, piResolver);
+					wCode.optimize();
 
 					methodNode.instructions.insertBefore(loc, wCode.getiList());
 					methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
@@ -301,6 +302,7 @@ public class Weaver {
 						WeavingCode wCode = new WeavingCode(info, code,
 								methodNode, snippet, region, index);
 						wCode.transform(staticInfoHolder, piResolver);
+						wCode.optimize();
 
 						methodNode.instructions.insert(loc, wCode.getiList());
 						methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
@@ -337,6 +339,7 @@ public class Weaver {
 					WeavingCode wCode = new WeavingCode(info, code, methodNode,
 							snippet, region, last_index);
 					wCode.transform(staticInfoHolder, piResolver);
+					wCode.optimize();
 
 					// Create a try-catch clause
 					TryCatchBlockNode tcb = getTryCatchBlock(methodNode, info

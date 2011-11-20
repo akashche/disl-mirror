@@ -65,7 +65,8 @@ public class WeavingCode {
 		this.region = region;
 		this.index = index;
 
-		maxLocals = MaxCalculator.getMaxLocal(iList);
+		maxLocals = MaxCalculator
+				.getMaxLocal(iList, method.desc, method.access);
 	}
 
 	// Search for an instruction sequence that match the pattern
@@ -504,8 +505,12 @@ public class WeavingCode {
 		fixStaticInfo(staticInfoHolder);
 		fixDynamicInfo();
 		fixLocalIndex();
+	}
 
-		// TODO Parameterize partial evaluator
-		PartialEvaluator.evaluate(iList, code.getTryCatchBlocks());
+	// TODO Parameterize partial evaluator
+	public void optimize() {
+
+		while (PartialEvaluator.evaluate(iList, code.getTryCatchBlocks(),
+				method.desc, method.access));
 	}
 }
