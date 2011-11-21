@@ -18,6 +18,7 @@ import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -473,5 +474,96 @@ public class AsmHelper {
 		default:
 			return false;
 		}
+	}
+	
+	// hepler method for boxValueOnStack
+	private static MethodInsnNode constructValueOf(Class<?> bigClass,
+			Class<?> smallClass) {
+		
+		Type bigType = Type.getType(bigClass);
+		return new MethodInsnNode(Opcodes.INVOKESTATIC,
+				// converting class name
+				bigType.getInternalName(),
+				// converting method descriptor
+				"valueOf",
+				"(" + Type.getDescriptor(smallClass) + ")"
+				+ bigType.getDescriptor());
+	}
+	
+	/**
+	 * Returns instruction that will call the method to box the instruction
+	 * residing on the stack
+	 * 
+	 * @param typeToBox type to be boxed
+	 */
+	public static AbstractInsnNode boxValueOnStack(Type typeToBox) {
+		
+		switch(typeToBox.getSort()) {
+
+		case Type.BOOLEAN:
+			return constructValueOf(Boolean.class, boolean.class);
+		case Type.BYTE:
+			return constructValueOf(Byte.class, byte.class);
+		case Type.CHAR:
+			return constructValueOf(Character.class, char.class);
+		case Type.DOUBLE:
+			return constructValueOf(Double.class, double.class);
+		case Type.FLOAT:
+			return constructValueOf(Float.class, float.class);
+		case Type.INT:
+			return constructValueOf(Integer.class, int.class);
+		case Type.LONG:
+			return constructValueOf(Long.class, long.class);
+		case Type.SHORT:
+			return constructValueOf(Short.class, short.class);
+		
+		default:
+			throw new DiSLFatalException("Cannot box type: "
+					+ typeToBox.getDescriptor());
+		}
+	}
+	
+	// TODO ! processor - move method to weaver
+	public static InsnList createGetArgsCode(String methodDescriptor) {
+		
+		InsnList insnList = new InsnList();
+		
+		Type[] argTypes = Type.getArgumentTypes(methodDescriptor);
+		
+		// array creation code (length is the length of arguments)
+		insnList.add(AsmHelper.loadConst(argTypes.length));
+		insnList.add(new InsnNode(Opcodes.ANEWARRAY));
+		
+		int argIndex = 0;
+		for(int i = 0; i < argTypes.length; ++i) {
+			
+			// ** add new array store **
+
+			// duplicate array object
+			insnList.add(new InsnNode(Opcodes.DUP));
+			
+			// add index into the array where to store the value
+			insnList.add(AsmHelper.loadConst(i));
+			
+			Type argType = argTypes[i];
+			
+			// load "object" that will be stored
+			int loadOpcode = argType.getOpcode(Opcodes.ILOAD);
+			insnList.add(new VarInsnNode(loadOpcode, argIndex));
+			
+			// box non-reference type
+			if(! (argType.getSort() == Type.OBJECT
+					|| argType.getSort() == Type.ARRAY) ) {
+				insnList.add(boxValueOnStack(argType));
+			}
+			
+			// store the value into the array on particular index
+			insnList.add(new InsnNode(Opcodes.AASTORE));
+			
+			// shift argument index according to argument size
+			argIndex += argType.getSize();
+		}
+		
+		return insnList;
 	}
 }
