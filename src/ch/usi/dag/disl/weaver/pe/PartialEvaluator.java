@@ -390,7 +390,7 @@ public class PartialEvaluator {
 		connected.remove(cfg.getBB(ilist.getFirst()));
 
 		for (TryCatchBlockNode tcb : tryCatchBlocks) {
-			connected.remove(cfg.getBB(tcb.start));
+			connected.remove(cfg.getBB(tcb.handler));
 		}
 
 		while (changed) {
