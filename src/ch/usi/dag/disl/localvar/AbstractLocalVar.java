@@ -2,7 +2,7 @@ package ch.usi.dag.disl.localvar;
 
 import org.objectweb.asm.Type;
 
-public abstract class AbstractLocalVar {
+abstract class AbstractLocalVar {
 
 	public final static String NAME_DELIM = ".";
 	

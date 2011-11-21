@@ -50,11 +50,6 @@ public class DiSL implements Instrumentation {
 
 	List<Snippet> snippets;
 
-	// list of static context instances
-	// validity of an instance is for one instrumented class
-	// instances are created lazily when needed in SCGenerator
-	Map<Class<?>, Object> staticContextInstances;
-
 	private void reportError(Exception e) {
 
 		// error report for user (input) errors
@@ -144,8 +139,11 @@ public class DiSL implements Instrumentation {
 	 *            class that will be instrumented
 	 * @param methodNode
 	 *            method in the classNode argument, that will be instrumented
+	 * @param staticContextInstances
+	 *
 	 */
-	private boolean instrumentMethod(ClassNode classNode, MethodNode methodNode)
+	private boolean instrumentMethod(ClassNode classNode,
+			MethodNode methodNode, Map<Class<?>, Object> staticContextInstances)
 			throws ReflectionException, StaticContextGenException,
 			ProcessorException, DynamicInfoException {
 
@@ -301,14 +299,17 @@ public class DiSL implements Instrumentation {
 			}
 			/**/
 			
-			// list of static context instances
-			// validity of an instance is for one instrumented class
-			staticContextInstances = new HashMap<Class<?>, Object>();
+ 			// list of static context instances
+ 			// validity of an instance is for one instrumented class
+			// instances are created lazily when needed in SCGenerator
+			Map<Class<?>, Object> staticContextInstances =
+					new HashMap<Class<?>, Object>();
 
 			// instrument all methods in a class
 			for (MethodNode methodNode : classNode.methods) {
 
-				boolean methodChanged = instrumentMethod(classNode, methodNode);
+				boolean methodChanged = instrumentMethod(classNode, methodNode,
+					staticContextInstances);
 				
 				classChanged = classChanged || methodChanged;
 			}

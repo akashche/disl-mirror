@@ -40,7 +40,7 @@ import ch.usi.dag.disl.util.ReflectionHelper;
 /**
  * The parser takes annotated java file as input and creates Snippet classes
  */
-public class SnippetParser extends AbstractParser {
+class SnippetParser extends AbstractParser {
 
 	private List<Snippet> snippets = new LinkedList<Snippet>();
 
@@ -295,7 +295,7 @@ public class SnippetParser extends AbstractParser {
 			Class<?> argClass = ReflectionHelper.resolveClass(argType);
 
 			// static context should implement context interface
-			if (!implementsStaticContext(argClass)) {
+			if (! ParserHelper.implementsStaticContext(argClass)) {
 				throw new StaticContextGenException(argClass.getName()
 						+ " does not implement StaticContext interface and"
 						+ " cannot be used as snippet method parameter");

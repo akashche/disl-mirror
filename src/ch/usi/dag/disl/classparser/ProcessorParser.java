@@ -33,7 +33,7 @@ import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
-public class ProcessorParser extends AbstractParser {
+class ProcessorParser extends AbstractParser {
 
 	// first map argument is ASM type representing processor class where the
 	// processor is defined
@@ -222,7 +222,7 @@ public class ProcessorParser extends AbstractParser {
 			Class<?> argClass = ReflectionHelper.resolveClass(argType);
 
 			// static context should implement context interface
-			if (!implementsStaticContext(argClass)) {
+			if (! ParserHelper.implementsStaticContext(argClass)) {
 				throw new StaticContextGenException(argClass.getName()
 						+ " does not implement StaticContext interface and"
 						+ " cannot be used as snippet method parameter");

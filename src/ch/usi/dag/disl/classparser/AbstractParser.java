@@ -33,7 +33,7 @@ import ch.usi.dag.disl.util.stack.StackUtil;
 /**
  * Parses DiSL class with local variables
  */
-public abstract class AbstractParser {
+abstract class AbstractParser {
 
 	protected LocalVars allLocalVars = new LocalVars();
 	
@@ -380,31 +380,5 @@ public abstract class AbstractParser {
 						+ " defined for thread local variable " + tlv.getName());
 			}
 		}
-	}
-	
-	/**
-	 * Searches for StaticContext interface. Searches through whole class
-	 * hierarchy.
-	 * 
-	 * @param classToSearch
-	 */
-	protected boolean implementsStaticContext(Class<?> classToSearch) {
-
-		// through whole hierarchy...
-		while (classToSearch != null) {
-
-			// ...through all interfaces...
-			for (Class<?> iface : classToSearch.getInterfaces()) {
-
-				// ...search for StaticContext interface
-				if (iface.equals(StaticContext.class)) {
-					return true;
-				}
-			}
-
-			classToSearch = classToSearch.getSuperclass();
-		}
-
-		return false;
 	}
 }
