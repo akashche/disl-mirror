@@ -25,7 +25,6 @@ import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.stack.StackUtil;
@@ -132,6 +131,7 @@ abstract class AbstractParser {
 		
 		public boolean inheritable = false; // default
 	}
+	
 	private ThreadLocalVar parseThreadLocal(String className, FieldNode field,
 			AnnotationNode annotation) throws ParserException {
 
