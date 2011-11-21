@@ -299,8 +299,8 @@ public class DiSL implements Instrumentation {
 			}
 			/**/
 			
- 			// list of static context instances
- 			// validity of an instance is for one instrumented class
+			// list of static context instances
+			// validity of an instance is for one instrumented class
 			// instances are created lazily when needed in SCGenerator
 			Map<Class<?>, Object> staticContextInstances =
 					new HashMap<Class<?>, Object>();
@@ -309,7 +309,7 @@ public class DiSL implements Instrumentation {
 			for (MethodNode methodNode : classNode.methods) {
 
 				boolean methodChanged = instrumentMethod(classNode, methodNode,
-					staticContextInstances);
+						staticContextInstances);
 				
 				classChanged = classChanged || methodChanged;
 			}
