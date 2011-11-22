@@ -34,9 +34,6 @@ import ch.usi.dag.disl.util.AsmHelper;
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
 
-	final static String PROP_PE = "disl.parteval";
-	final static boolean peEnabled = Boolean.getBoolean(PROP_PE);
-	
 	// Transform static fields to synthetic local
 	// NOTE that the field maxLocals of the method node will be automatically
 	// updated.
@@ -265,9 +262,6 @@ public class Weaver {
 					WeavingCode wCode = new WeavingCode(info, code, methodNode,
 							snippet, region, index);
 					wCode.transform(staticInfoHolder, piResolver);
-					if(peEnabled) {
-						wCode.optimize();
-					}
 
 					methodNode.instructions.insertBefore(loc, wCode.getiList());
 					methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
@@ -307,9 +301,6 @@ public class Weaver {
 						WeavingCode wCode = new WeavingCode(info, code,
 								methodNode, snippet, region, index);
 						wCode.transform(staticInfoHolder, piResolver);
-						if(peEnabled) {
-							wCode.optimize();
-						}
 
 						methodNode.instructions.insert(loc, wCode.getiList());
 						methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
@@ -346,9 +337,6 @@ public class Weaver {
 					WeavingCode wCode = new WeavingCode(info, code, methodNode,
 							snippet, region, last_index);
 					wCode.transform(staticInfoHolder, piResolver);
-					if(peEnabled) {
-						wCode.optimize();
-					}
 
 					// Create a try-catch clause
 					TryCatchBlockNode tcb = getTryCatchBlock(methodNode, info

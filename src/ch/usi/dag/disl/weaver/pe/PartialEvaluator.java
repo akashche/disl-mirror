@@ -68,8 +68,8 @@ public class PartialEvaluator {
 		return false;
 	}
 
-	private static boolean load(InsnList ilist, AbstractInsnNode location,
-			Object cst) {
+	private static boolean insertLoadConstant(InsnList ilist,
+			AbstractInsnNode location, Object cst) {
 
 		if (cst == null) {
 			return false;
@@ -84,7 +84,7 @@ public class PartialEvaluator {
 		return true;
 	}
 
-	private static boolean constLoad(InsnList ilist,
+	private static boolean replaceLoadWithLDC(InsnList ilist,
 			ConstInterpreter interpreter,
 			Map<AbstractInsnNode, Frame<ConstValue>> frames) {
 
@@ -103,7 +103,7 @@ public class PartialEvaluator {
 				ConstValue value = StackUtil.getStackByIndex(frame, 0);
 				Object cst = interpreter.unaryOperation(instr, value).cst;
 
-				if (load(ilist, instr, cst)) {
+				if (insertLoadConstant(ilist, instr, cst)) {
 
 					ilist.insertBefore(instr.getPrevious(), new InsnNode(
 							value.size == 1 ? Opcodes.POP : Opcodes.POP2));
@@ -118,7 +118,7 @@ public class PartialEvaluator {
 				ConstValue value2 = StackUtil.getStackByIndex(frame, 0);
 				Object cst = interpreter.binaryOperation(instr, value1, value2).cst;
 				
-				if (load(ilist, instr, cst)) {
+				if (insertLoadConstant(ilist, instr, cst)) {
 
 					ilist.insertBefore(instr.getPrevious(), new InsnNode(
 							value2.size == 1 ? Opcodes.POP : Opcodes.POP2));
@@ -137,7 +137,7 @@ public class PartialEvaluator {
 			case Opcodes.FLOAD:
 			case Opcodes.DLOAD:
 			case Opcodes.ALOAD:
-				if (load(ilist, instr,
+				if (insertLoadConstant(ilist, instr,
 						frame.getLocal(((VarInsnNode) instr).var).cst)) {
 					ilist.remove(instr);
 					isOptimized = true;
@@ -209,8 +209,8 @@ public class PartialEvaluator {
 		return isOptimized;
 	}
 
-	private static boolean branchPrediction(CtrlFlowGraph cfg, InsnList ilist,
-			List<TryCatchBlockNode> tryCatchBlocks,
+	private static boolean conditionalReduction(CtrlFlowGraph cfg,
+			InsnList ilist, List<TryCatchBlockNode> tryCatchBlocks,
 			Map<AbstractInsnNode, Frame<ConstValue>> frames,
 			ConstInterpreter interpreter) {
 
@@ -377,10 +377,10 @@ public class PartialEvaluator {
 			}
 		}
 
-		return removeUselessBB(cfg, ilist, tryCatchBlocks) | isOptimized;
+		return removeUnusedBB(cfg, ilist, tryCatchBlocks) | isOptimized;
 	}
 
-	private static boolean removeUselessBB(CtrlFlowGraph cfg, InsnList ilist,
+	private static boolean removeUnusedBB(CtrlFlowGraph cfg, InsnList ilist,
 			List<TryCatchBlockNode> tryCatchBlocks) {
 
 		boolean isOptimized = false;
@@ -433,7 +433,7 @@ public class PartialEvaluator {
 		return isOptimized;
 	}
 
-	private static boolean removeUselessBranch(InsnList ilist) {
+	private static boolean removeUnusedJump(InsnList ilist) {
 
 		boolean isOptimized = false;
 
@@ -517,8 +517,8 @@ public class PartialEvaluator {
 		return isOptimized;
 	}
 
-	private static boolean removeUselessTCB(CtrlFlowGraph cfg, InsnList ilist,
-			List<TryCatchBlockNode> tryCatchBlocks) {
+	private static boolean removeUnusedHandler(CtrlFlowGraph cfg,
+			InsnList ilist, List<TryCatchBlockNode> tryCatchBlocks) {
 
 		boolean isOptimized = false;
 
@@ -526,21 +526,30 @@ public class PartialEvaluator {
 			if (AsmHelper.skipVirualInsns(tcb.start, true) == AsmHelper
 					.skipVirualInsns(tcb.end, true)) {
 				tryCatchBlocks.remove(tcb);
-				isOptimized |= removeUselessBB(cfg, ilist, tryCatchBlocks);
+				isOptimized |= removeUnusedBB(cfg, ilist, tryCatchBlocks);
 			}
 		}
 
 		return isOptimized;
 	}
 
-	private static boolean removePop(InsnList ilist,
-			Frame<SourceValue>[] sourceFrames) {
+	private static boolean removePop(InsnList ilist, MethodNode method) {
 
+		Analyzer<SourceValue> sourceAnalyzer = StackUtil.getSourceAnalyzer();
+
+		try {
+			sourceAnalyzer.analyze(PartialEvaluator.class.getName(), method);
+		} catch (AnalyzerException e) {
+			e.printStackTrace();
+			throw new DiSLFatalException("Cause by AnalyzerException : \n"
+					+ e.getMessage());
+		}
+		
 		Map<AbstractInsnNode, Frame<SourceValue>> frames = 
 				new HashMap<AbstractInsnNode, Frame<SourceValue>>();
 
 		for (int i = 0; i < ilist.size(); i++) {
-			frames.put(ilist.get(i), sourceFrames[i]);
+			frames.put(ilist.get(i), sourceAnalyzer.getFrames()[i]);
 		}
 
 		boolean isOptimized = false;
@@ -620,24 +629,13 @@ public class PartialEvaluator {
 
 		CtrlFlowGraph cfg = CtrlFlowGraph.build(method);
 
-		isOptimized |= constLoad(ilist, interpreter, frames);
+		isOptimized |= replaceLoadWithLDC(ilist, interpreter, frames);
 		isOptimized |= removeDeadStore(ilist, frames);
-		isOptimized |= branchPrediction(cfg, ilist, tryCatchBlocks, frames,
+		isOptimized |= conditionalReduction(cfg, ilist, tryCatchBlocks, frames,
 				interpreter);
-		isOptimized |= removeUselessBranch(ilist);
-		isOptimized |= removeUselessTCB(cfg, ilist, tryCatchBlocks);
-
-		Analyzer<SourceValue> sourceAnalyzer = StackUtil.getSourceAnalyzer();
-
-		try {
-			sourceAnalyzer.analyze(PartialEvaluator.class.getName(), method);
-		} catch (AnalyzerException e) {
-			e.printStackTrace();
-			throw new DiSLFatalException("Cause by AnalyzerException : \n"
-					+ e.getMessage());
-		}
-		
-		isOptimized |= removePop(ilist, sourceAnalyzer.getFrames());
+		isOptimized |= removeUnusedJump(ilist);
+		isOptimized |= removeUnusedHandler(cfg, ilist, tryCatchBlocks);
+		isOptimized |= removePop(ilist, method);
 
 		if (flag) {
 			ilist.remove(ilist.getLast());

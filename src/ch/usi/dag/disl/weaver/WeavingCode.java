@@ -36,15 +36,13 @@ import ch.usi.dag.disl.weaver.pe.PartialEvaluator;
 
 public class WeavingCode {
 
+	final static String PROP_PE = "disl.parteval";
+
 	private WeavingInfo info;
-
 	private MethodNode method;
-
 	private SnippetCode code;
 	private InsnList iList;
-
 	private AbstractInsnNode[] iArray;
-
 	private Snippet snippet;
 	private Shadow region;
 	private int index;
@@ -505,12 +503,30 @@ public class WeavingCode {
 		fixStaticInfo(staticInfoHolder);
 		fixDynamicInfo();
 		fixLocalIndex();
+
+		optimize();
 	}
 
-	// TODO Parameterize partial evaluator
 	public void optimize() {
 
-		while (PartialEvaluator.evaluate(iList, code.getTryCatchBlocks(),
-				method.desc, method.access));
+		String prop_pe = System.getProperty(PROP_PE);
+
+		if ((prop_pe == null) || (prop_pe.length() < 2)
+				|| (prop_pe.charAt(0) != 'o' && prop_pe.charAt(0) != 'O')) {
+			return;
+		}
+
+		char option = prop_pe.charAt(1);
+
+		if (option >= '1' && option <= '3') {
+			for (int i = 0; i < (option - '0'); i++) {
+				PartialEvaluator.evaluate(iList, code.getTryCatchBlocks(),
+						method.desc, method.access);
+			}
+		} else if (option == 'x') {
+			while (PartialEvaluator.evaluate(iList, code.getTryCatchBlocks(),
+					method.desc, method.access))
+				;
+		}
 	}
 }
