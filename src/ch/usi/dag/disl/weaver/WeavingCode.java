@@ -289,25 +289,22 @@ public class WeavingCode {
 						operand - method.maxLocals));
 			}
 
+			// remove aload, iconst, ldc
+			iList.remove(instr.getPrevious());
+			iList.remove(instr.getPrevious());
+			iList.remove(instr.getPrevious());
+
 			// remove invoke
 			iList.remove(instr);
 
-			// remove aload, iconst, ldc
-			for (int i = 0; i < 3; i++) {
-				instr = prev;
-				prev = prev.getPrevious();
-				iList.remove(instr);
-			}
-
 			// remove checkcast, invoke
 			if (next.getOpcode() == Opcodes.CHECKCAST) {
-				instr = next;
-				next = next.getNext();
-				iList.remove(instr);
 
-				if (next.getOpcode() == Opcodes.INVOKEVIRTUAL) {
-					iList.remove(next);
+				if (next.getNext().getOpcode() == Opcodes.INVOKEVIRTUAL) {
+					iList.remove(next.getNext());
 				}
+
+				iList.remove(next);
 			}
 		}
 	}
@@ -483,7 +480,8 @@ public class WeavingCode {
 			}
 
 			// remove pseudo invocation
-			iList.remove(instr.getPrevious().getPrevious());
+			iList.remove(instr.getPrevious());
+			iList.remove(instr.getPrevious());
 			iList.remove(instr.getPrevious());
 			iList.remove(instr);
 		}
