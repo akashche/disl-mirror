@@ -25,9 +25,9 @@ import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.marker.Marker;
+import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.processorcontext.ProcessorContext;
 import ch.usi.dag.disl.processorcontext.ProcessorMode;
-import ch.usi.dag.disl.snippet.processor.Proc;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class SnippetUnprocessedCode extends UnprocessedCode {
@@ -146,6 +146,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		AbstractInsnNode secondParam = instr.getPrevious();
 		AbstractInsnNode firstParam = secondParam.getPrevious();
 
+		// NOTE: object parameter is ignored - will be removed by weaver
+		
 		// first parameter has to be loaded by LDC
 		if (firstParam == null || firstParam.getOpcode() != Opcodes.LDC) {
 			throw new ProcessorException("In snippet " + className + "."

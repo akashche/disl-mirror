@@ -10,8 +10,8 @@ import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.marker.Marker;
+import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.scope.Scope;
-import ch.usi.dag.disl.snippet.processor.Proc;
 
 public class Snippet implements Comparable<Snippet> {
 

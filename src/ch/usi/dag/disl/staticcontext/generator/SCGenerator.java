@@ -9,11 +9,11 @@ import java.util.Set;
 import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
+import ch.usi.dag.disl.processor.ProcMethod;
 import ch.usi.dag.disl.runtimecache.StConCache;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.snippet.processor.ProcMethod;
 import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.Constants;
 

@@ -13,13 +13,13 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.guard.GuardHelper;
+import ch.usi.dag.disl.processor.Proc;
+import ch.usi.dag.disl.processor.ProcArgType;
+import ch.usi.dag.disl.processor.ProcMethod;
 import ch.usi.dag.disl.processorcontext.ProcessorMode;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.snippet.processor.Proc;
-import ch.usi.dag.disl.snippet.processor.ProcArgType;
-import ch.usi.dag.disl.snippet.processor.ProcMethod;
 
 public class ProcGenerator {
 
@@ -183,10 +183,6 @@ public class ProcGenerator {
 	private boolean isPMGuardApplicable(Method guard, Shadow shadow,
 			ProcMethodInstance pmi) {
 
-		if(guard == null) {
-			return true;
-		}
-		
 		// evaluate processor method guard
 		return GuardHelper.guardApplicable(guard, shadow, pmi.getArgPos(), 
 				pmi.getArgTypeDesc(), pmi.getArgsCount());

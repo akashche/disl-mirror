@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.snippet.processor;
+package ch.usi.dag.disl.processor;
 
 import java.lang.reflect.Method;
 import java.util.EnumSet;

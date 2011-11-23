@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.snippet.processor;
+package ch.usi.dag.disl.processor;
 
 import java.util.HashSet;
 import java.util.List;

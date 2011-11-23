@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.snippet;
 
+import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.processorcontext.ProcessorMode;
-import ch.usi.dag.disl.snippet.processor.Proc;
 
 public class ProcInvocation {
 

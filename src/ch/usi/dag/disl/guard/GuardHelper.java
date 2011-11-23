@@ -24,6 +24,10 @@ public abstract class GuardHelper {
 	public static Method findAndValidateGuardMethod(Class<?> guardClass,
 			Set<Class<?>> validArgs) throws GuardException {
 		
+		if(guardClass == null) {
+			return null;
+		}
+		
 		Method guardMethod = findGuardMethod(guardClass);
 		validateGuardMethod(guardMethod, validArgs);
 		return guardMethod;
@@ -148,6 +152,10 @@ public abstract class GuardHelper {
 	// invoke guard method for snippet guard
 	public static boolean guardApplicable(Method guardMethod, Shadow shadow) {
 		
+		if(guardMethod == null) {
+			return true;
+		}
+		
 		// no method validation needed - already validated
 		return invokeGuardMethod(guardMethod, shadow, null);
 	}
@@ -155,6 +163,10 @@ public abstract class GuardHelper {
 	// invoke guard method for processor guard
 	public static boolean guardApplicable(Method guardMethod, Shadow shadow,
 			int position, String typeDescriptor, int totalCount) {
+		
+		if(guardMethod == null) {
+			return true;
+		}
 		
 		// no method validation needed - already validated
 		return invokeGuardMethod(guardMethod, shadow, 

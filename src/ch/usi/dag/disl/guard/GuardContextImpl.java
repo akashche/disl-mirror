@@ -20,6 +20,10 @@ class GuardContextImpl implements GuardContext {
 
 	public boolean invoke(Class<?> guardClass) {
 		
+		if(guardClass == null) {
+			throw new NullPointerException("Guard class cannot be null");
+		}
+		
 		try {
 			return GuardHelper.invokeGuard(guardClass, shadow, ac);
 		} catch (GuardException e) {
