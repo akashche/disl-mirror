@@ -4,7 +4,7 @@ OS=`uname`
 ARCH_RAW=`uname -m`
 ARCH="unspec"
 
-if [ "${ARCH_RAW}" = "i686" -o "${ARCH_RAW}" = "x86_32"]; then
+if [ "${ARCH_RAW}" = "i686" -o "${ARCH_RAW}" = "x86_32" -o "${ARCH_RAW}" = "i386" ]; then
   ARCH="x32"
 elif [ "${ARCH_RAW}" = "x86_64" ]; then
   ARCH="x64"
