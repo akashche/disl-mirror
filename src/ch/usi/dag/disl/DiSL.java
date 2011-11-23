@@ -1,6 +1,7 @@
 package ch.usi.dag.disl;
 
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -24,7 +25,7 @@ import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
-import ch.usi.dag.disl.guard.SnippetGuard;
+import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.processor.generator.PIResolver;
@@ -142,8 +143,7 @@ public class DiSL implements Instrumentation {
 	 * @param staticContextInstances
 	 *
 	 */
-	private boolean instrumentMethod(ClassNode classNode,
-			MethodNode methodNode, Map<Class<?>, Object> staticContextInstances)
+	private boolean instrumentMethod(ClassNode classNode, MethodNode methodNode)
 			throws ReflectionException, StaticContextGenException,
 			ProcessorException, DynamicInfoException {
 
@@ -200,8 +200,7 @@ public class DiSL implements Instrumentation {
 		// *** compute static info ***
 
 		// prepares SCGenerator class (computes static context)
-		SCGenerator staticInfo = new SCGenerator(staticContextInstances,
-				snippetMarkings);
+		SCGenerator staticInfo = new SCGenerator(snippetMarkings);
 
 		// *** used synthetic local vars in snippets ***
 		// weaver needs list of synthetic locals that are actively used in
@@ -241,7 +240,8 @@ public class DiSL implements Instrumentation {
 		return true;
 	}
 
-	private List<Shadow> selectShadowsWithGuard(SnippetGuard guard, List<Shadow> marking) {
+	private List<Shadow> selectShadowsWithGuard(Method guard,
+			List<Shadow> marking) {
 		
 		if(guard == null) {
 			return marking;
@@ -252,7 +252,7 @@ public class DiSL implements Instrumentation {
 		// check guard for each shadow
 		for(Shadow shadow : marking) {
 
-			if(guard.isApplicable(shadow)) {
+			if(GuardHelper.guardApplicable(guard, shadow)) {
 
 				selectedMarking.add(shadow);
 			}
@@ -299,17 +299,10 @@ public class DiSL implements Instrumentation {
 			}
 			/**/
 			
-			// list of static context instances
-			// validity of an instance is for one instrumented class
-			// instances are created lazily when needed in SCGenerator
-			Map<Class<?>, Object> staticContextInstances =
-					new HashMap<Class<?>, Object>();
-
 			// instrument all methods in a class
 			for (MethodNode methodNode : classNode.methods) {
 
-				boolean methodChanged = instrumentMethod(classNode, methodNode,
-						staticContextInstances);
+				boolean methodChanged = instrumentMethod(classNode, methodNode);
 				
 				classChanged = classChanged || methodChanged;
 			}

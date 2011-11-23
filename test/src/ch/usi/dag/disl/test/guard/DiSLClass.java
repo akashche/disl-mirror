@@ -24,11 +24,9 @@ public class DiSLClass {
 		System.out.println("This should not be printed");
 	}
 	
-	@After(marker = BodyMarker.class, scope = "TargetClass.m*")
-	public static void afterInvocation(MethodSC ci) {
+	@After(marker = BodyMarker.class, scope = "TargetClass.m*", guard=GuardLength.class)
+	public static void codeLength(MethodSC ci) {
 		
-		System.out.println("This should be printed - after");
-		
-		Processor.apply(ProcessorTest2.class, ProcessorMode.METHOD_ARGS);
+		System.out.println("Method " + ci.thisMethodName() + " is longer then 10 instructions");
 	}
 }

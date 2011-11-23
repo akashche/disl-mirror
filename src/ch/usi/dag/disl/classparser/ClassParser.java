@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
 import ch.usi.dag.disl.annotation.ArgsProcessor;
+import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ProcessorParserException;
@@ -30,7 +31,7 @@ public class ClassParser {
 	public void parse(InputStream is) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
 			StaticContextGenException, ProcessorParserException, IOException,
-			MarkerException {
+			MarkerException, GuardException {
 
 		// prepare class node
 		ClassReader cr = new ClassReader(is);

@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.annotation;
 
-import ch.usi.dag.disl.guard.SnippetGuard;
 import ch.usi.dag.disl.marker.Marker;
 
 public @interface Before {
@@ -14,7 +13,7 @@ public @interface Before {
 	Class<? extends Marker> marker();
 	String args() default ""; // cannot be null :(
 	String scope();
-	Class<? extends SnippetGuard> guard() default SnippetGuard.class; // cannot be null :(
+	Class<? extends Object> guard() default Object.class; // cannot be null :(
 	int order() default 100;
 	// NOTE if the DiSL property disl.dynbypass is set to yes, dynamic bypass is
 	// automatically enabled for each snippet

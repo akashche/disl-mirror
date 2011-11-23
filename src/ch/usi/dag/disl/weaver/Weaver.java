@@ -46,7 +46,7 @@ public class Weaver {
 		AbstractInsnNode first = instructions.getFirst();
 
 		// Initialization
-		// TODO implement BESTEFFORT
+		// TODO respect BEST_EFFORT initialization type in synthetic local variable
 		for (SyntheticLocalVar var : syntheticLocalVars) {
 
 			if (var.getInitialize() == Initialize.NEVER) {
@@ -210,7 +210,6 @@ public class Weaver {
 		return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
 	}
 
-	// TODO respect BEST_EFFORT initialization type in synthetic local variable
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<Shadow>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,

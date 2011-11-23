@@ -278,7 +278,8 @@ public final class MyWeakKeyIdentityHashMap<K,V> {
 //        throw new RuntimeException("Method " + this.getClass().getName() + ".entrySet() has not been implemented");
 //    }
 
-    public interface EntryDumper<MyWeakReference, V> {
+    @SuppressWarnings("hiding")
+	public interface EntryDumper<MyWeakReference, V> {
         void dumpEntry(MyWeakReference key, V value);
         void close();
     }

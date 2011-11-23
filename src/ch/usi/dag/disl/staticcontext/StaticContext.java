@@ -1,9 +1,5 @@
 package ch.usi.dag.disl.staticcontext;
 
-import java.lang.reflect.Method;
-
-import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.snippet.Shadow;
 
 public interface StaticContext {
@@ -14,6 +10,5 @@ public interface StaticContext {
 	// a) static context methods does not have parameters
 	// b) return value can be only basic type (+String)
 
-	public Object computeStaticData(Method usingMethod, Shadow sa)
-			throws ReflectionException, StaticContextGenException;
+	public void staticContextData(Shadow sa);
 }

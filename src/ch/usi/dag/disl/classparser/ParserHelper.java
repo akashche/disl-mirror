@@ -8,21 +8,18 @@ import org.objectweb.asm.tree.AnnotationNode;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
 // package visible
-public abstract class ParserHelper {
+abstract class ParserHelper {
 
-	public static Object getGuard(Type guardType) throws ReflectionException {
+	public static Class<?> getGuard(Type guardType) throws ReflectionException {
 		
 		if(guardType == null) {
 			return null;
 		}
 		
-		Class<?> guardClass = ReflectionHelper.resolveClass(guardType);
-
-		return ReflectionHelper.createInstance(guardClass);
+		return ReflectionHelper.resolveClass(guardType);
 	}
 	
 	// NOTE: first parameter is modified by this function
@@ -64,31 +61,5 @@ public abstract class ParserHelper {
 			throw new DiSLFatalException(
 					"Reflection error wihle parsing annotation", e);
 		}
-	}
-
-	/**
-	 * Searches for StaticContext interface. Searches through whole class
-	 * hierarchy.
-	 * 
-	 * @param classToSearch
-	 */
-	public static boolean implementsStaticContext(Class<?> classToSearch) {
-
-		// through whole hierarchy...
-		while (classToSearch != null) {
-
-			// ...through all interfaces...
-			for (Class<?> iface : classToSearch.getInterfaces()) {
-
-				// ...search for StaticContext interface
-				if (iface.equals(StaticContext.class)) {
-					return true;
-				}
-			}
-
-			classToSearch = classToSearch.getSuperclass();
-		}
-
-		return false;
 	}
 }

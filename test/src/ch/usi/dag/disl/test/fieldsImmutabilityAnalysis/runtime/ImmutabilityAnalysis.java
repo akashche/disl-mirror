@@ -11,6 +11,7 @@ import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 
 
+@SuppressWarnings("unchecked")
 public class ImmutabilityAnalysis {
 	private static final int NUMBER_OF_TABLES = 40000;
 	private static MyWeakKeyIdentityHashMap<Object, ConcurrentHashMap<String, FieldState>> bigMap[];

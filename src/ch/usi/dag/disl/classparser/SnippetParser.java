@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.classparser;
 
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -20,19 +21,21 @@ import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.exception.SnippetParserException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
-import ch.usi.dag.disl.guard.SnippetGuard;
+import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.marker.Parameter;
 import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetUnprocessedCode;
+import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
@@ -51,7 +54,8 @@ class SnippetParser extends AbstractParser {
 	
 	public void parse(ClassNode classNode) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
-			StaticContextGenException, MarkerException {
+			StaticContextGenException, MarkerException,
+			GuardException {
 
 		// NOTE: this method can be called many times
 
@@ -77,7 +81,8 @@ class SnippetParser extends AbstractParser {
 	// parse snippet
 	private Snippet parseSnippet(String className, MethodNode method)
 			throws SnippetParserException, ReflectionException,
-			ScopeParserException, StaticContextGenException, MarkerException {
+			ScopeParserException, StaticContextGenException, MarkerException,
+			GuardException {
 
 		// check annotation
 		if (method.invisibleAnnotations == null) {
@@ -122,8 +127,9 @@ class SnippetParser extends AbstractParser {
 		Scope scope = new ScopeImpl(annotData.scope);
 
 		// ** guard **
-		SnippetGuard guard = 
-			(SnippetGuard) ParserHelper.getGuard(annotData.guard);
+		Class<?> guardClass = ParserHelper.getGuard(annotData.guard);
+		Method guardMethod = GuardHelper.findAndValidateGuardMethod(guardClass,
+				GuardHelper.snippetContextSet());
 		
 		// ** parse used static and dynamic context **
 		Contexts context = parseUsedContexts(method.desc);
@@ -150,7 +156,7 @@ class SnippetParser extends AbstractParser {
 
 		// return whole snippet
 		return new Snippet(className, method.name, annotData.type, marker,
-				scope, guard, annotData.order, uscd);
+				scope, guardMethod, annotData.order, uscd);
 	}
 
 	private SnippetAnnotationData parseMethodAnnotation(String fullMethodName,
@@ -294,8 +300,10 @@ class SnippetParser extends AbstractParser {
 
 			Class<?> argClass = ReflectionHelper.resolveClass(argType);
 
-			// static context should implement context interface
-			if (! ParserHelper.implementsStaticContext(argClass)) {
+			// static context should implement static context interface
+			if (!ReflectionHelper.implementsInterface(argClass,
+					StaticContext.class)) {
+			
 				throw new StaticContextGenException(argClass.getName()
 						+ " does not implement StaticContext interface and"
 						+ " cannot be used as snippet method parameter");

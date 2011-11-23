@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.classparser;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -19,16 +20,18 @@ import ch.usi.dag.disl.annotation.Guarded;
 import ch.usi.dag.disl.annotation.ProcessAlso;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ProcessorParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
-import ch.usi.dag.disl.guard.ProcessorMethodGuard;
+import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.processor.ArgumentContext;
 import ch.usi.dag.disl.snippet.processor.Proc;
 import ch.usi.dag.disl.snippet.processor.ProcArgType;
 import ch.usi.dag.disl.snippet.processor.ProcMethod;
 import ch.usi.dag.disl.snippet.processor.ProcUnprocessedCode;
+import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
@@ -46,7 +49,7 @@ class ProcessorParser extends AbstractParser {
 	
 	public void parse(ClassNode classNode) throws ParserException,
 			ProcessorParserException, ReflectionException,
-			StaticContextGenException {
+			StaticContextGenException, GuardException {
 
 		// NOTE: this method can be called many times
 
@@ -83,7 +86,7 @@ class ProcessorParser extends AbstractParser {
 	
 	private ProcMethod parseProcessorMethod(String className, MethodNode method)
 			throws ProcessorParserException, ReflectionException,
-			StaticContextGenException {
+			StaticContextGenException, GuardException {
 
 		String fullMethodName = className + "." + method.name;
 		
@@ -131,8 +134,9 @@ class ProcessorParser extends AbstractParser {
 		allProcessedTypes.addAll(pmad.processAlsoTypes);
 		
 		// ** guard **
-		ProcessorMethodGuard guard = 
-			(ProcessorMethodGuard) ParserHelper.getGuard(pmad.guard);
+		Class<?> guardClass = ParserHelper.getGuard(pmad.guard);
+		Method guardMethod = GuardHelper.findAndValidateGuardMethod(guardClass,
+				GuardHelper.processorContextSet());
 		
 		// ** create unprocessed code holder class **
 		// code is processed after everything is parsed
@@ -142,8 +146,8 @@ class ProcessorParser extends AbstractParser {
 				pmArgData.usesArgumentContext());
 
 		// return whole processor method
-		return new ProcMethod(className, method.name, allProcessedTypes, guard,
-				ucd);
+		return new ProcMethod(className, method.name, allProcessedTypes,
+				guardMethod, ucd);
 
 	}
 
@@ -221,8 +225,10 @@ class ProcessorParser extends AbstractParser {
 
 			Class<?> argClass = ReflectionHelper.resolveClass(argType);
 
-			// static context should implement context interface
-			if (! ParserHelper.implementsStaticContext(argClass)) {
+			// static context should implement static context interface
+			if (!ReflectionHelper.implementsInterface(argClass,
+					StaticContext.class)) {
+			
 				throw new StaticContextGenException(argClass.getName()
 						+ " does not implement StaticContext interface and"
 						+ " cannot be used as snippet method parameter");

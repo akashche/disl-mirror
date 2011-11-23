@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.processor.generator;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,7 +12,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ProcessorException;
-import ch.usi.dag.disl.guard.ProcessorMethodGuard;
+import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.processor.ProcessorMode;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
@@ -168,8 +169,7 @@ public class ProcGenerator {
 						method.getCode());
 				
 				// check guard
-				if (isPMGuardApplicable(method.getGuard(), shadow, prcInv, pmi,
-						argType)) {
+				if (isPMGuardApplicable(method.getGuard(), shadow, pmi)) {
 
 					// add method
 					result.add(pmi);
@@ -180,15 +180,15 @@ public class ProcGenerator {
 		return result;
 	}
 
-	private boolean isPMGuardApplicable(ProcessorMethodGuard guard,
-			Shadow shadow, ProcInvocation prcInv, ProcMethodInstance pmi,
-			Type exactType) {
+	private boolean isPMGuardApplicable(Method guard, Shadow shadow,
+			ProcMethodInstance pmi) {
 
 		if(guard == null) {
 			return true;
 		}
 		
 		// evaluate processor method guard
-		return guard.isApplicable(shadow, prcInv, pmi, exactType);
+		return GuardHelper.guardApplicable(guard, shadow, pmi.getArgPos(), 
+				pmi.getArgTypeDesc(), pmi.getArgsCount());
 	}
 }

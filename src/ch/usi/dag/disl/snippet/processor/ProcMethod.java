@@ -1,10 +1,10 @@
 package ch.usi.dag.disl.snippet.processor;
 
+import java.lang.reflect.Method;
 import java.util.EnumSet;
 
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
-import ch.usi.dag.disl.guard.ProcessorMethodGuard;
 import ch.usi.dag.disl.localvar.LocalVars;
 
 public class ProcMethod {
@@ -13,12 +13,12 @@ public class ProcMethod {
 	private String originMethodName;
 	
 	private EnumSet<ProcArgType> types;
-	private ProcessorMethodGuard guard;
+	private Method guard;
 	private ProcUnprocessedCode unprocessedCode;
 	private ProcCode code;
 
 	public ProcMethod(String originClassName, String originMethodName,
-			EnumSet<ProcArgType> types, ProcessorMethodGuard guard,
+			EnumSet<ProcArgType> types, Method guard,
 			ProcUnprocessedCode unprocessedCode) {
 		super();
 		this.originClassName = originClassName;
@@ -40,7 +40,7 @@ public class ProcMethod {
 		return types;
 	}
 
-	public ProcessorMethodGuard getGuard() {
+	public Method getGuard() {
 		return guard;
 	}
 

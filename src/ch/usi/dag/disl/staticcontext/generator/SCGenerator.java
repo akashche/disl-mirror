@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.staticcontext.generator;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,13 +9,13 @@ import java.util.Set;
 import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
+import ch.usi.dag.disl.runtimecache.StConCache;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.processor.ProcMethod;
 import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.Constants;
-import ch.usi.dag.disl.util.ReflectionHelper;
 
 public class SCGenerator {
 
@@ -83,13 +84,13 @@ public class SCGenerator {
 		}
 	}
 
-	Map<StaticContextKey, Object> staticInfoData = new HashMap<StaticContextKey, Object>();
+	Map<StaticContextKey, Object> staticInfoData = 
+			new HashMap<StaticContextKey, Object>();
 
-	public SCGenerator(Map<Class<?>, Object> staticContextInstances,
-			Map<Snippet, List<Shadow>> snippetMarkings)
+	public SCGenerator(Map<Snippet, List<Shadow>> snippetMarkings)
 			throws ReflectionException, StaticContextGenException {
 
-		computeStaticInfo(staticContextInstances, snippetMarkings);
+		computeStaticInfo(snippetMarkings);
 	}
 	
 	private StaticContextKey createStaticInfoKey(Shadow shadow,
@@ -121,7 +122,6 @@ public class SCGenerator {
 	// Call static context for each snippet and each marked region and create
 	// a static info values
 	private void computeStaticInfo(
-			Map<Class<?>, Object> staticContextInstances,
 			Map<Snippet, List<Shadow>> snippetMarkings)
 			throws ReflectionException, StaticContextGenException {
 
@@ -153,24 +153,17 @@ public class SCGenerator {
 				for (StaticContextMethod stConMth : stConMethods) {
 
 					// get static context instance
-					Class<?> methodClass = stConMth.getReferencedClass();
-					Object scInst = staticContextInstances.get(methodClass);
-
-					// ... or create new one
-					if (scInst == null) {
-
-						scInst = ReflectionHelper.createInstance(methodClass);
-
-						// and store for later use
-						staticContextInstances.put(methodClass, scInst);
-					}
-
-					// recast context object to interface
-					StaticContext scIntr = (StaticContext) scInst;
-
-					// compute static data using context
-					Object result = scIntr
-							.computeStaticData(stConMth.getMethod(), shadow);
+					StaticContext scInst = 
+							StConCache.getInstance().getStaticContextInstance(
+									stConMth.getReferencedClass());
+					
+					// populate static context instance with data
+					scInst.staticContextData(shadow);
+					
+					// get static data by invoking static context method
+					Object result = invokeStaticContextMethod(
+							stConMth.getMethod(), scInst);
+							
 
 					// store the result
 					setSI(shadow, stConMth.getId(), result);
@@ -178,6 +171,64 @@ public class SCGenerator {
 			}
 		}
 	}
+	
+	private Object invokeStaticContextMethod(Method staticContextMethod,
+			Object methodObject) throws StaticContextGenException {
+		
+		try {
+
+			// invoke static context method and return result
+			return staticContextMethod.invoke(methodObject);
+
+		} catch (Exception e) {
+			throw new StaticContextGenException(
+					"Invocation of static context method "
+							+ staticContextMethod.getName() + " failed", e);
+		}
+	}
+	
+	// TODO ! static context - introduce caching 
+	/*
+	
+	// NOTE: default cache
+	// some default cache is not needed because for each marked region,
+	// the computation is called only once
+
+	// resolve specific method cache
+	StaticContextCache cache = retValCache.get(usingMethod.getName());
+
+	// resolve cached data
+	if (cache != null) {
+
+		Object result = cache.getCachedResult(sa);
+
+		// return cache hit
+		if (result != null) {
+			return result;
+		}
+	}
+
+	// if cache wasn't hit...
+	try {
+
+		// ... invoke static context method
+		Object result = usingMethod.invoke(this);
+
+		if (cache != null) {
+			// ... cache result
+			cache.cacheResult(sa, result);
+		}
+
+		// ... return result
+		return result;
+
+	} catch (Exception e) {
+		throw new StaticContextGenException(
+				"Invocation of static context method "
+						+ usingMethod.getName() + " failed", e);
+	}
+	
+	*/
 
 	private void setSI(Shadow shadow, String methodID, Object value) {
 

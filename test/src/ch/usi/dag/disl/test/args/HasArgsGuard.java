@@ -2,14 +2,15 @@ package ch.usi.dag.disl.test.args;
 
 import org.objectweb.asm.Type;
 
-import ch.usi.dag.disl.guard.SnippetGuard;
-import ch.usi.dag.disl.snippet.Shadow;
+import ch.usi.dag.disl.annotation.GuardMethod;
+import ch.usi.dag.disl.staticcontext.MethodSC;
 
-public class HasArgsGuard  implements SnippetGuard {
-	@Override
-	public boolean isApplicable(Shadow shadow) {
+public class HasArgsGuard {
+	
+	@GuardMethod
+	public static boolean isApplicable(MethodSC msc) {
 		
-		if(Type.getArgumentTypes(shadow.getMethodNode().desc).length>0)
+		if(Type.getArgumentTypes(msc.thisMethodDescriptor()).length>0)
 			return true;
 		return false;
 	}

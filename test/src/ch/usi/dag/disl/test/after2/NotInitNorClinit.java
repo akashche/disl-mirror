@@ -1,11 +1,12 @@
 package ch.usi.dag.disl.test.after2;
 
-import ch.usi.dag.disl.guard.SnippetGuard;
-import ch.usi.dag.disl.snippet.Shadow;
+import ch.usi.dag.disl.annotation.GuardMethod;
+import ch.usi.dag.disl.staticcontext.MethodSC;
 
-public class NotInitNorClinit implements SnippetGuard {
-    @Override
-    public boolean isApplicable(Shadow shadow) {
-        return (shadow.getMethodNode().name.endsWith("init>")) ? false : true;
+public class NotInitNorClinit {
+    
+	@GuardMethod
+    public static boolean isApplicable(MethodSC msc) {
+        return (msc.thisMethodName().endsWith("init>")) ? false : true;
     }
 }

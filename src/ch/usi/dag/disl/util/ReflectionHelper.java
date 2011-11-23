@@ -67,4 +67,29 @@ public class ReflectionHelper {
 					+ " (different) class");
 		}
 	}
+	
+	/**
+	 * Searches for interfaceToImplement interface. Searches through whole class
+	 * hierarchy.
+	 */
+	public static boolean implementsInterface(Class<?> classToSearch,
+			Class<?> interfaceToImplement) {
+
+		// through whole hierarchy...
+		while (classToSearch != null) {
+
+			// ...through all interfaces...
+			for (Class<?> iface : classToSearch.getInterfaces()) {
+
+				// ...search for StaticContext interface
+				if (iface.equals(interfaceToImplement)) {
+					return true;
+				}
+			}
+
+			classToSearch = classToSearch.getSuperclass();
+		}
+
+		return false;
+	}
 }

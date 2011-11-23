@@ -26,7 +26,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
 
-public class AsmHelper {
+public abstract class AsmHelper {
 
 	public static boolean before(AbstractInsnNode first, AbstractInsnNode second) {
 

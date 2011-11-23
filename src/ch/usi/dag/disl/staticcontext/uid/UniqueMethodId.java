@@ -7,6 +7,8 @@ import ch.usi.dag.disl.util.Constants;
 
 public class UniqueMethodId extends AbstractUniqueId {
 
+	private static AbstractUniqueId instance = null;
+	
 	// constructor for static context
 	public UniqueMethodId() {
 		
@@ -30,8 +32,6 @@ public class UniqueMethodId extends AbstractUniqueId {
 				+ methodNode.desc
 				+ ")";
 	}
-	
-	private static AbstractUniqueId instance = null;
 	
 	protected synchronized AbstractUniqueId getSingleton() {
 		

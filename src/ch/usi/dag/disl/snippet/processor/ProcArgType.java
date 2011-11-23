@@ -7,41 +7,24 @@ import ch.usi.dag.disl.exception.DiSLFatalException;
 
 public enum ProcArgType {
 
-	BOOLEAN,
-	BYTE,
-	CHAR,
-	DOUBLE,
-	FLOAT,
-	INT,
-	LONG,
-	SHORT,
-	OBJECT;
+	BOOLEAN(Type.BOOLEAN_TYPE),
+	BYTE(Type.BYTE_TYPE),
+	CHAR(Type.CHAR_TYPE),
+	DOUBLE(Type.DOUBLE_TYPE),
+	FLOAT(Type.FLOAT_TYPE),
+	INT(Type.INT_TYPE),
+	LONG(Type.LONG_TYPE),
+	SHORT(Type.SHORT_TYPE),
+	OBJECT(Type.getType(Object.class));
+	
+	private Type asmType;
+	
+	private ProcArgType(Type asmType) {
+		this.asmType = asmType;
+	}
 	
 	public Type getASMType() {
-		
-		switch(this) {
-		case BOOLEAN:
-			return Type.BOOLEAN_TYPE;
-		case BYTE:
-			return Type.BYTE_TYPE;
-		case CHAR:
-			return Type.CHAR_TYPE;
-		case DOUBLE:
-			return Type.DOUBLE_TYPE;
-		case FLOAT:
-			return Type.FLOAT_TYPE;
-		case INT:
-			return Type.INT_TYPE;
-		case LONG:
-			return Type.LONG_TYPE;
-		case SHORT:
-			return Type.SHORT_TYPE;
-		case OBJECT:
-			return Type.getType(Object.class);
-		default:
-			throw new DiSLFatalException("Conversion from "
-					+ this.getClass().toString() + " to asm Type not defined");
-		}
+		return asmType;
 	}
 	
 	public static ProcArgType valueOf(Type type) {
