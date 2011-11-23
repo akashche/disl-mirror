@@ -1,10 +1,12 @@
-package ch.usi.dag.disl.test.fieldsImmutabilityAnalysis.runtime;
+package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 
 import java.io.PrintStream;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import ch.usi.dag.disl.test.fieldsImmutabilityAnalysis.runtime.MyWeakKeyIdentityHashMap.EntryDumper;
+import ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime.MyWeakKeyIdentityHashMap.EntryDumper;
+
+
 
 public class MyDumper implements EntryDumper<MyWeakReference<Object>, ConcurrentHashMap<String, FieldState>>{
 	

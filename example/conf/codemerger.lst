@@ -1,0 +1,17 @@
+# BEGIN JDK
+# ALL JDK CLASSES MUST HAVE TWO VERSIONS
+org.jcp.*
+org.omg.*
+org.xml.*
+org.ietf.*
+java.*
+javax.*
+com.sun.*
+sun.*
+sunx.*
+com.apple.*
+# END JDK
+# BEGIN APPLICATION CODE
+# IF YOU DON'T WEAVE JDK (see excluded.lst), YOU SHOULD APPLY 
+# THE CODE-MERGER TO THE APPLICATION CODE
+#org.*

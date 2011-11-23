@@ -1,0 +1,5 @@
+# This is a sample configuration with relative paths
+# you can use full path using file:/// format 
+../lib/asm-debug-all-4.0.jar
+lib/remote-jborat.jar
+../lib/jborat.jar

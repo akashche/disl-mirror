@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.test.fieldsImmutabilityAnalysis.runtime;
+package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 
 /**
  * Identity-based hashmap that internally uses {@code MyWeakReference} to

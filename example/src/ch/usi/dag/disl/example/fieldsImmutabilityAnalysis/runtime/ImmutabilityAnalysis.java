@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.test.fieldsImmutabilityAnalysis.runtime;
+package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;

@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.test.fieldsImmutabilityAnalysis;
+package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis;
 
 import java.util.Iterator;
 
