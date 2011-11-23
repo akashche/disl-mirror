@@ -56,6 +56,7 @@ public class TargetClass {
 		TargetClass.Inner ic = tc.new Inner();
 		ic.setTargetClassMutableValue(3);
 		tc.useAnonymousClass();
+		System.out.println("TargetClass successfully executed!");
 	}
 	public interface Anomymous {
 	

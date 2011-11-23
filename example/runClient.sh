@@ -33,6 +33,4 @@ java -noverify -XX:MaxPermSize=128m \
     -Xbootclasspath/p:lib/remote-runtime.jar:../lib/jborat-runtime.jar:build/test-runtime.jar \
     -agentpath:lib/${JBORAT_AGENT}=${JBORAT_AGENT_OPTS} \
     -cp ./bin \
- -jar /Users/aibeksarimbekov/Downloads/Programming/dacapo-9.12-bach.jar  -s small xalan 
-  
- #  $*
+     $*

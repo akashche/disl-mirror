@@ -17,8 +17,8 @@ then
     rm .server.pid
 fi
 
-DISL_CLASS="./bin/ch/usi/dag/disl/test/$1/DiSLClass.class"
-TARGET_CLASS="ch.usi.dag.disl.test.$1.TargetClass"
+DISL_CLASS="./bin/ch/usi/dag/disl/example/$1/DiSLClass.class"
+TARGET_CLASS="ch.usi.dag.disl.example.$1.TargetClass"
 
 if [ "$2" = "pkg" ]
 then
