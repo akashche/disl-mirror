@@ -18,8 +18,7 @@ public interface ProcessorContext {
 	 * @param mode for which should be the object retrieved
 	 */
 	public Object getReceiver(ProcessorMode mode);
-	
-	// TODO ! processor - add support
+
 	/**
 	 * Returns the object array composed from the method arguments. Note that
 	 * primitive types will be boxed.

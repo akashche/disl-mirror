@@ -522,48 +522,5 @@ public abstract class AsmHelper {
 					+ typeToBox.getDescriptor());
 		}
 	}
-	
-	// TODO ! processor - move method to weaver
-	public static InsnList createGetArgsCode(String methodDescriptor) {
-		
-		InsnList insnList = new InsnList();
-		
-		Type[] argTypes = Type.getArgumentTypes(methodDescriptor);
-		
-		// array creation code (length is the length of arguments)
-		insnList.add(AsmHelper.loadConst(argTypes.length));
-		insnList.add(new InsnNode(Opcodes.ANEWARRAY));
-		
-		int argIndex = 0;
-		for(int i = 0; i < argTypes.length; ++i) {
-			
-			// ** add new array store **
 
-			// duplicate array object
-			insnList.add(new InsnNode(Opcodes.DUP));
-			
-			// add index into the array where to store the value
-			insnList.add(AsmHelper.loadConst(i));
-			
-			Type argType = argTypes[i];
-			
-			// load "object" that will be stored
-			int loadOpcode = argType.getOpcode(Opcodes.ILOAD);
-			insnList.add(new VarInsnNode(loadOpcode, argIndex));
-			
-			// box non-reference type
-			if(! (argType.getSort() == Type.OBJECT
-					|| argType.getSort() == Type.ARRAY) ) {
-				insnList.add(boxValueOnStack(argType));
-			}
-			
-			// store the value into the array on particular index
-			insnList.add(new InsnNode(Opcodes.AASTORE));
-			
-			// shift argument index according to argument size
-			argIndex += argType.getSize();
-		}
-		
-		return insnList;
-	}
 }

@@ -5,12 +5,14 @@ import java.util.List;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
@@ -24,6 +26,7 @@ import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.processorcontext.ArgumentContext;
+import ch.usi.dag.disl.processorcontext.ProcessorContext;
 import ch.usi.dag.disl.processorcontext.ProcessorMode;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
@@ -408,7 +411,8 @@ public class WeavingCode {
 					type.getOpcode(Opcodes.ISTORE), 0);
 			instructions.insertBefore(start, target);
 
-			maxLocals = fixLocalIndex(instructions, maxLocals);
+			maxLocals = Math.max(fixLocalIndex(instructions, maxLocals),
+					maxLocals + type.getSize());
 
 			instructions.insertBefore(
 					target,
@@ -455,7 +459,8 @@ public class WeavingCode {
 						type.getSize() == 2 ? Opcodes.DUP2 : Opcodes.DUP));
 			}
 
-			maxLocals = fixLocalIndex(instructions, maxLocals);
+			maxLocals = Math.max(fixLocalIndex(instructions, maxLocals),
+					maxLocals + type.getSize());
 			ilist.add(instructions);
 			method.tryCatchBlocks.addAll(code.getTryCatchBlocks());
 		}
@@ -472,15 +477,144 @@ public class WeavingCode {
 			ProcInstance processor = piResolver.get(region, i);
 
 			if (processor != null) {
-				if (processor.getProcApplyType() == ProcessorMode.CALLSITE_ARGS) {
-					iList.insert(instr, procBeforeInvoke(processor, index));
-				} else {
+				if (processor.getProcApplyType() == ProcessorMode.METHOD_ARGS) {
 					iList.insert(instr, procInMethod(processor));
+				} else {
+					iList.insert(instr, procBeforeInvoke(processor, index));
 				}
 			}
 
 			// remove pseudo invocation
 			iList.remove(instr.getPrevious());
+			iList.remove(instr.getPrevious());
+			iList.remove(instr.getPrevious());
+			iList.remove(instr);
+		}
+	}
+
+	public InsnList createGetArgsCode(String methodDescriptor) {
+
+		InsnList insnList = new InsnList();
+
+		Type[] argTypes = Type.getArgumentTypes(methodDescriptor);
+
+		// array creation code (length is the length of arguments)
+		insnList.add(AsmHelper.loadConst(argTypes.length));
+		insnList.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
+
+		int argIndex = 0;
+		for (int i = 0; i < argTypes.length; ++i) {
+
+			// ** add new array store **
+
+			// duplicate array object
+			insnList.add(new InsnNode(Opcodes.DUP));
+
+			// add index into the array where to store the value
+			insnList.add(AsmHelper.loadConst(i));
+
+			Type argType = argTypes[i];
+
+			// load "object" that will be stored
+			int loadOpcode = argType.getOpcode(Opcodes.ILOAD);
+			insnList.add(new VarInsnNode(loadOpcode, argIndex));
+
+			// box non-reference type
+			if (!(argType.getSort() == Type.OBJECT || argType.getSort() == Type.ARRAY)) {
+				insnList.add(AsmHelper.boxValueOnStack(argType));
+			}
+
+			// store the value into the array on particular index
+			insnList.add(new InsnNode(Opcodes.AASTORE));
+
+			// shift argument index according to argument size
+			argIndex += argType.getSize();
+		}
+
+		return insnList;
+	}
+
+	public void fixProcessorInfo() {
+
+		for (AbstractInsnNode instr : iList.toArray()) {
+
+			// it is invocation...
+			if (instr.getOpcode() != Opcodes.INVOKEINTERFACE) {
+				continue;
+			}
+
+			MethodInsnNode invoke = (MethodInsnNode) instr;
+
+			// ... of ProcessorContext
+			if (!invoke.owner.equals(Type
+					.getInternalName(ProcessorContext.class))) {
+				continue;
+			}
+
+			if (invoke.name.equals("getArgs")) {
+
+				AbstractInsnNode prev = instr.getPrevious();
+
+				if (prev.getOpcode() != Opcodes.GETSTATIC) {
+					throw new DiSLFatalException("Unknown processor mode");
+				}
+				
+				ProcessorMode procApplyType = ProcessorMode
+						.valueOf(((FieldInsnNode) prev).name);
+				InsnList args = null;
+
+				if (procApplyType == ProcessorMode.METHOD_ARGS) {
+
+					args = createGetArgsCode(method.desc);
+					fixLocalIndex(args,
+							((method.access & Opcodes.ACC_STATIC) != 0 ? 0 : 1)
+									- method.maxLocals);
+				} else {
+
+					AbstractInsnNode callee = AsmHelper.skipVirualInsns(
+							region.getRegionStart(), true);
+					
+					if (!(callee instanceof MethodInsnNode)) {
+						throw new DiSLFatalException("Unexpected instruction");
+					}
+
+					String desc = ((MethodInsnNode) callee).desc;
+					Type[] argTypes = Type.getArgumentTypes(desc);
+
+					Frame<SourceValue> frame = info.getSourceFrame(callee);
+					
+					int argIndex = 0;
+					
+					for (int i = 0; i < argTypes.length; i++) {
+
+						SourceValue source = StackUtil.getStackByIndex(frame,
+								argTypes.length - 1 - i);
+						Type type = argTypes[i];
+						int sopcode = type.getOpcode(Opcodes.ISTORE);
+
+						for (AbstractInsnNode itr : source.insns) {
+							method.instructions.insert(itr, new VarInsnNode(sopcode,
+							// TRICK: the value has to be set properly because
+							// method code will be not adjusted by fixLocalIndex
+									method.maxLocals + maxLocals + argIndex));
+							method.instructions.insert(itr,
+									new InsnNode(type.getSize() == 2 ? Opcodes.DUP2
+													: Opcodes.DUP));
+							method.instructions.insert(itr,
+									new InsnNode(Opcodes.NOP));
+						}
+
+						argIndex += type.getSize();
+					}
+
+					args = createGetArgsCode(desc);
+					maxLocals = Math.max(fixLocalIndex(args, maxLocals),
+							maxLocals + argIndex);
+				}
+
+				iList.insert(instr, args);
+			}
+
 			iList.remove(instr.getPrevious());
 			iList.remove(instr.getPrevious());
 			iList.remove(instr);
@@ -498,6 +632,7 @@ public class WeavingCode {
 	public void transform(SCGenerator staticInfoHolder, PIResolver piResolver)
 			throws DynamicInfoException {
 		fixProcessor(piResolver);
+		fixProcessorInfo();
 		fixStaticInfo(staticInfoHolder);
 		fixDynamicInfo();
 		fixLocalIndex();

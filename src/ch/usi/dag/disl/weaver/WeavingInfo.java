@@ -40,6 +40,7 @@ public class WeavingInfo {
 
 	private Frame<BasicValue>[] basicFrames;
 	private Frame<SourceValue>[] sourceFrames;
+	private Map<AbstractInsnNode, Frame<SourceValue>> sourceFrameMap;
 
 	public WeavingInfo(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<Shadow>> snippetMarkings) {
@@ -167,6 +168,12 @@ public class WeavingInfo {
 		}
 
 		sourceFrames = sourceAnalyzer.getFrames();
+
+		sourceFrameMap = new HashMap<AbstractInsnNode, Frame<SourceValue>>();
+		
+		for (int i = 0; i < sourceFrames.length; i++) {
+			sourceFrameMap.put(methodNode.instructions.get(i), sourceFrames[i]);
+		}
 	}
 
 	public Map<AbstractInsnNode, AbstractInsnNode> getWeavingStart() {
@@ -207,6 +214,10 @@ public class WeavingInfo {
 
 	public Frame<SourceValue> getSourceFrame(int index) {
 		return sourceFrames[index];
+	}
+
+	public Frame<SourceValue> getSourceFrame(AbstractInsnNode instr) {
+		return sourceFrameMap.get(instr);
 	}
 
 	public InsnList backupStack(int index, int startFrom) {
