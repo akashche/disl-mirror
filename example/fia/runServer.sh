@@ -4,9 +4,9 @@ OS=`uname`
 ARCH_RAW=`uname -m`
 ARCH="unspec"
 
-if [ "${ARCH_RAW}" = "i686" -o "${ARCH_RAW}" = "x86_32"  ]; then
+if [ "${ARCH_RAW}" = "i686" -o "${ARCH_RAW}" = "x86_32"]; then
   ARCH="x32"
-elif [ "${ARCH_RAW}" = "i386" ]; then
+elif [ "${ARCH_RAW}" = "x86_64" ]; then
   ARCH="x64"
 else
   echo "Unknow architecture.."
@@ -22,7 +22,7 @@ else
   exit -1
 fi
 
-CLASSPATH=../lib/jborat-agent.jar:../lib/jborat-runtime.jar:../lib/jborat-interface.jar:lib/remote-server.jar
+CLASSPATH=../../lib/jborat-agent.jar:../../lib/jborat-runtime.jar:../../lib/jborat-interface.jar:lib/remote-server.jar
 
 java -Dch.usi.dag.jborat.instrumented="instrumented" \
     -Djborat.debug \

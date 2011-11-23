@@ -7,7 +7,7 @@ ARCH="unspec"
 
 if [ "${ARCH_RAW}" = "i686" -o "${ARCH_RAW}" = "x86_32" ]; then
   ARCH="x32"
-elif [ "${ARCH_RAW}" = "i386" ]; then
+elif [ "${ARCH_RAW}" = "x86_64" ]; then
   ARCH="x64"
 else
   echo "Unknow architecture...."
@@ -30,7 +30,7 @@ JBORAT_AGENT_OPTS="1234,localhost,ipc.socket"
 java -noverify -XX:MaxPermSize=128m \
     -Xmx2G \
     -javaagent:lib/agent.jar \
-    -Xbootclasspath/p:lib/remote-runtime.jar:../lib/jborat-runtime.jar:build/test-runtime.jar \
+    -Xbootclasspath/p:lib/remote-runtime.jar:../../lib/jborat-runtime.jar:build/test-runtime.jar \
     -agentpath:lib/${JBORAT_AGENT}=${JBORAT_AGENT_OPTS} \
     -cp ./bin \
      $*
