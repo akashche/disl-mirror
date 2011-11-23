@@ -8,12 +8,9 @@ import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.AfterReturning;
@@ -83,7 +80,7 @@ class SnippetParser extends AbstractParser {
 	private Snippet parseSnippet(String className, MethodNode method)
 			throws SnippetParserException, ReflectionException,
 			ScopeParserException, StaticContextGenException, MarkerException,
-			GuardException {
+			GuardException, ParserException {
 
 		// check annotation
 		if (method.invisibleAnnotations == null) {
@@ -145,7 +142,7 @@ class SnippetParser extends AbstractParser {
 
 		// context arguments (local variables 1, 2, ...) cannot be stored or
 		// overwritten, may be used only in method calls
-		usesContextProperly(className, method.name, method.desc,
+		ParserHelper.usesContextProperly(className, method.name, method.desc,
 				method.instructions);
 
 		// ** create unprocessed code holder class **
@@ -328,55 +325,5 @@ class SnippetParser extends AbstractParser {
 		}
 
 		return new Contexts(knownStCo, usesDynamicContext, usesProcessorContext);
-	}
-
-	private void usesContextProperly(String className, String methodName,
-			String methodDescriptor, InsnList instructions)
-			throws SnippetParserException {
-
-		Type[] types = Type.getArgumentTypes(methodDescriptor);
-		int maxArgIndex = 0;
-
-		// count the max index of arguments
-		for (int i = 0; i < types.length; i++) {
-
-			// add number of occupied slots
-			maxArgIndex += types[i].getSize();
-		}
-
-		// The following code assumes that all disl snippets are static
-		for (AbstractInsnNode instr : instructions.toArray()) {
-
-			switch (instr.getOpcode()) {
-			// test if the context is stored somewhere else
-			case Opcodes.ALOAD: {
-
-				int local = ((VarInsnNode) instr).var;
-
-				if (local < maxArgIndex
-						&& instr.getNext().getOpcode() == Opcodes.ASTORE) {
-					throw new SnippetParserException("In snippet " + className
-							+ "." + methodName + " - snippet parameter"
-							+ " (context) cannot be stored into local"
-							+ " variable");
-				}
-
-				break;
-			}
-				// test if something is stored in the context
-			case Opcodes.ASTORE: {
-
-				int local = ((VarInsnNode) instr).var;
-
-				if (local < maxArgIndex) {
-					throw new SnippetParserException("In snippet " + className
-							+ "." + methodName + " - snippet parameter"
-							+ " (context) cannot overwritten");
-				}
-
-				break;
-			}
-			}
-		}
 	}
 }

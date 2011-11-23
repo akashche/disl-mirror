@@ -8,7 +8,7 @@ public interface StaticContext {
 
 	// NOTE: all static context methods should follow convention:
 	// a) static context methods does not have parameters
-	// b) return value can be only basic type (+String)
+	// b) return value can be only basic type or String
 
 	public void staticContextData(Shadow sa);
 }

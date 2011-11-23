@@ -86,7 +86,7 @@ class ProcessorParser extends AbstractParser {
 	
 	private ProcMethod parseProcessorMethod(String className, MethodNode method)
 			throws ProcessorParserException, ReflectionException,
-			StaticContextGenException, GuardException {
+			StaticContextGenException, GuardException, ParserException {
 
 		String fullMethodName = className + "." + method.name;
 		
@@ -137,6 +137,19 @@ class ProcessorParser extends AbstractParser {
 		Class<?> guardClass = ParserHelper.getGuard(pmad.guard);
 		Method guardMethod = GuardHelper.findAndValidateGuardMethod(guardClass,
 				GuardHelper.processorContextSet());
+		
+		// ** checks **
+
+		// detect empty snippets
+		if (AsmHelper.containsOnlyReturn(method.instructions)) {
+			throw new ProcessorParserException("Method " + className + "."
+					+ method.name + " cannot be empty");
+		}
+
+		// context arguments (local variables 1, 2, ...) cannot be stored or
+		// overwritten, may be used only in method calls
+		ParserHelper.usesContextProperly(className, method.name, method.desc,
+				method.instructions);
 		
 		// ** create unprocessed code holder class **
 		// code is processed after everything is parsed

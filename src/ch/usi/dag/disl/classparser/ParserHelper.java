@@ -3,10 +3,15 @@ package ch.usi.dag.disl.classparser;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
@@ -60,6 +65,56 @@ abstract class ParserHelper {
 		} catch (Exception e) {
 			throw new DiSLFatalException(
 					"Reflection error wihle parsing annotation", e);
+		}
+	}
+	
+	public static void usesContextProperly(String className, String methodName,
+			String methodDescriptor, InsnList instructions)
+			throws ParserException {
+
+		Type[] types = Type.getArgumentTypes(methodDescriptor);
+		int maxArgIndex = 0;
+
+		// count the max index of arguments
+		for (int i = 0; i < types.length; i++) {
+
+			// add number of occupied slots
+			maxArgIndex += types[i].getSize();
+		}
+
+		// The following code assumes that all disl snippets are static
+		for (AbstractInsnNode instr : instructions.toArray()) {
+
+			switch (instr.getOpcode()) {
+			// test if the context is stored somewhere else
+			case Opcodes.ALOAD: {
+
+				int local = ((VarInsnNode) instr).var;
+
+				if (local < maxArgIndex
+						&& instr.getNext().getOpcode() == Opcodes.ASTORE) {
+					throw new ParserException("In method " + className
+							+ "." + methodName + " - method parameter"
+							+ " (context) cannot be stored into local"
+							+ " variable");
+				}
+
+				break;
+			}
+				// test if something is stored in the context
+			case Opcodes.ASTORE: {
+
+				int local = ((VarInsnNode) instr).var;
+
+				if (local < maxArgIndex) {
+					throw new ParserException("In method " + className
+							+ "." + methodName + " - method parameter"
+							+ " (context) cannot be overwritten");
+				}
+
+				break;
+			}
+			}
 		}
 	}
 }
