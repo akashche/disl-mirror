@@ -1,0 +1,2 @@
+Manifest-Version: 1.0
+DiSL-Classes: ch/usi/dag/disl/example/senseo/DiSLClass.class:ch/usi/dag/disl/example/senseo/ArgumentProcessor.class
