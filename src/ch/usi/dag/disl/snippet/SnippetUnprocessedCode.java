@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.snippet;
 
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.processorcontext.ProcessorContext;
 import ch.usi.dag.disl.processorcontext.ProcessorMode;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class SnippetUnprocessedCode extends UnprocessedCode {
@@ -69,8 +71,12 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		// NOTE: methods are modifying arguments
 
 		if (allDynamicBypass || dynamicBypass) {
-			insertDynamicBypass(instructions, tryCatchBlocks);
+			insertDynamicBypass(instructions);
 		}
+		
+		// catch all exceptions
+		// it is forbidden to throw an exception in a snippet
+		insertExceptionHandler(instructions, tryCatchBlocks);
 
 		// *** CODE ANALYSIS ***
 
@@ -204,30 +210,29 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		return new ProcessorInfo(i, prcInv);
 	}
 
-	private void insertDynamicBypass(InsnList instructions,
+	private void insertExceptionHandler(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks) {
-
+		
+		// NOTE: snippet should not throw an exception
+		// this method inserts try-finally for each snippet and fails
+		// immediately in the case of exception produced by snippet
+		
 		// inserts
-		// DynamicBypass.activate();
 		// try {
 		// ... original code
 		// } finally {
-		// DynamicBypass.deactivate();
+		//   System.err.println("...");
+		//   System.exit(...);
 		// }
 
-		// create method nodes
-		Type typeDB = Type.getType(DynamicBypass.class);
-		MethodInsnNode mtdActivate = new MethodInsnNode(Opcodes.INVOKESTATIC,
-				typeDB.getInternalName(), "activate", "()V");
-		MethodInsnNode mtdDeactivate = new MethodInsnNode(Opcodes.INVOKESTATIC,
-				typeDB.getInternalName(), "deactivate", "()V");
+		// resolve types
+		Type typeSystem = Type.getType(System.class);
+		Type typePS = Type.getType(PrintStream.class);
+		Type typeString = Type.getType(String.class);
 
 		// add try label at the beginning
 		LabelNode tryBegin = new LabelNode();
 		instructions.insert(tryBegin);
-
-		// add invocation of activate at the beginning
-		instructions.insert(mtdActivate.clone(null));
 
 		// ## try {
 
@@ -239,9 +244,6 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		// ## after normal flow
 
-		// add invocation of deactivate - normal flow
-		instructions.add(mtdDeactivate.clone(null));
-
 		// normal flow should jump after handler
 		LabelNode handlerEnd = new LabelNode();
 		instructions.add(new JumpInsnNode(Opcodes.GOTO, handlerEnd));
@@ -252,17 +254,66 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		LabelNode handlerBegin = new LabelNode();
 		instructions.add(handlerBegin);
 
-		// TODO ! snippet should not throw an exception - the solution should contain try-finally for each block regardless of dynamic bypass and should fail immediately
-		// add invocation of deactivate - abnormal flow
-		instructions.add(mtdDeactivate.clone(null));
-		// throw exception again
+		// add error report
+		
+		// put error stream on the stack
+		instructions.add(new FieldInsnNode(Opcodes.GETSTATIC,
+				typeSystem.getInternalName(),
+				"err",
+				typePS.getDescriptor()));
+		
+		// put error report on the stack
+		instructions.add(new LdcInsnNode(
+				"Some of the snippets introduced exception that was not"
+				+ " handled. This would change the application control flow."
+				+ " Exiting..."));
+		
+		// invoke printing
+		instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+				typePS.getInternalName(),
+				"println",
+				"(" + typeString.getDescriptor() + ")V"));
+		
+		// add system exit
+		
+		// add exit code
+		final int EXIT_CODE = 666;
+		instructions.add(AsmHelper.loadConst(EXIT_CODE));
+		
+		// invoke System.exit()
+		instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+				typeSystem.getInternalName(), "exit", "(I)V"));
+		
+		// add throw exception just for proper stack frame calculation
 		instructions.add(new InsnNode(Opcodes.ATHROW));
-
+		
 		// add handler end
 		instructions.add(handlerEnd);
 
 		// ## add handler to the list
 		tryCatchBlocks.add(new TryCatchBlockNode(tryBegin, tryEnd,
 				handlerBegin, null));
+		
+	}
+	
+	private void insertDynamicBypass(InsnList instructions) {
+
+		// inserts
+		// DynamicBypass.activate();
+		// ... original code
+		// DynamicBypass.deactivate();
+
+		// resolve type
+		Type typeDB = Type.getType(DynamicBypass.class);
+
+		// add invocation of activate at the beginning
+		instructions.insert(new MethodInsnNode(Opcodes.INVOKESTATIC,
+				typeDB.getInternalName(), "activate", "()V"));
+
+		// ## after normal flow
+
+		// add invocation of deactivate - normal flow
+		instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+				typeDB.getInternalName(), "deactivate", "()V"));
 	}
 }
