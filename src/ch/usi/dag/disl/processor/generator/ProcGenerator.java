@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.guard.GuardHelper;
-import ch.usi.dag.disl.processor.ProcessorMode;
+import ch.usi.dag.disl.processorcontext.ProcessorMode;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;

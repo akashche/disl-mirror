@@ -5,7 +5,7 @@ import ch.usi.dag.disl.annotation.ProcessAlso;
 import ch.usi.dag.disl.annotation.ProcessAlso.Type;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
-import ch.usi.dag.disl.processor.ArgumentContext;
+import ch.usi.dag.disl.processorcontext.ArgumentContext;
 import ch.usi.dag.disl.staticcontext.MethodSC;
 
 @ArgsProcessor

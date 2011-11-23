@@ -2,7 +2,7 @@ package ch.usi.dag.disl.test.guard;
 
 import ch.usi.dag.disl.annotation.Guarded;
 import ch.usi.dag.disl.annotation.ArgsProcessor;
-import ch.usi.dag.disl.processor.ArgumentContext;
+import ch.usi.dag.disl.processorcontext.ArgumentContext;
 
 @ArgsProcessor
 public class ProcessorTest {

@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.guard;
 
-import ch.usi.dag.disl.processor.ArgumentContext;
+import ch.usi.dag.disl.processorcontext.ArgumentContext;
 
 // used for guard invocation - reduced visibility
 class ArgumentContextImpl implements ArgumentContext {

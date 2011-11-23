@@ -18,9 +18,10 @@ import ch.usi.dag.disl.util.AsmHelper;
 
 public class SnippetCode extends Code {
 
+	private boolean usesProcessorContext;
 	// integer (key) is an index of an instruction in snippet code that invokes
 	// processor
-	private Map<Integer, ProcInvocation> invokedProcessors; 
+	private Map<Integer, ProcInvocation> invokedProcessors;
 
 	public SnippetCode(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks,
@@ -29,12 +30,14 @@ public class SnippetCode extends Code {
 			boolean containsHandledException,
 			Set<StaticContextMethod> staticContexts,
 			boolean usesDynamicContext,
+			boolean usesProcessorContext,
 			Map<Integer, ProcInvocation> invokedProcessors
 			) {
 		
 		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
 				staticContexts, usesDynamicContext, containsHandledException);
 		this.invokedProcessors = invokedProcessors;
+		this.usesProcessorContext = usesProcessorContext;
 	}
 
 	public Map<Integer, ProcInvocation> getInvokedProcessors() {
@@ -53,6 +56,7 @@ public class SnippetCode extends Code {
 				containsHandledException(),
 				new HashSet<StaticContextMethod>(getStaticContexts()),
 				usesDynamicContext(),
+				usesProcessorContext,
 				new HashMap<Integer, ProcInvocation>(invokedProcessors));
 	}
 }

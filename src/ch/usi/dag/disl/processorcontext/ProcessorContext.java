@@ -1,6 +1,6 @@
-package ch.usi.dag.disl.processor;
+package ch.usi.dag.disl.processorcontext;
 
-public abstract class Processor {
+public interface ProcessorContext {
 	
 	/**
 	 * Applies mentioned processor for method or call-site arguments
@@ -8,9 +8,7 @@ public abstract class Processor {
 	 * @param processorClass processor class to apply
 	 * @param mode in which should be processor applied
 	 */
-	public static void apply(Class<?> processorClass, ProcessorMode mode) {
-		
-	}
+	public void apply(Class<?> processorClass, ProcessorMode mode);
 
 	// TODO ! processor - add support
 	/**
@@ -19,9 +17,7 @@ public abstract class Processor {
 	 * 
 	 * @param mode for which should be the object retrieved
 	 */
-	public static Object getReceiver(ProcessorMode mode) {
-		return null;
-	}
+	public Object getReceiver(ProcessorMode mode);
 	
 	// TODO ! processor - add support
 	/**
@@ -30,7 +26,5 @@ public abstract class Processor {
 	 * 
 	 * @param mode for which should be the argument array retrieved
 	 */
-	public static Object[] getArgs(ProcessorMode mode) {
-		return null;
-	}
+	public Object[] getArgs(ProcessorMode mode);
 }

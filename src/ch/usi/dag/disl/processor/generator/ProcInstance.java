@@ -2,7 +2,7 @@ package ch.usi.dag.disl.processor.generator;
 
 import java.util.List;
 
-import ch.usi.dag.disl.processor.ProcessorMode;
+import ch.usi.dag.disl.processorcontext.ProcessorMode;
 
 public class ProcInstance {
 

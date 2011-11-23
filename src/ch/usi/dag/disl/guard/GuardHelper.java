@@ -13,7 +13,7 @@ import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.GuardRuntimeException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.guardcontext.GuardContext;
-import ch.usi.dag.disl.processor.ArgumentContext;
+import ch.usi.dag.disl.processorcontext.ArgumentContext;
 import ch.usi.dag.disl.runtimecache.StConCache;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.staticcontext.StaticContext;

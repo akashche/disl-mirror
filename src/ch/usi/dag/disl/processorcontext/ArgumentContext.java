@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.processor;
+package ch.usi.dag.disl.processorcontext;
 
 public interface ArgumentContext {
 

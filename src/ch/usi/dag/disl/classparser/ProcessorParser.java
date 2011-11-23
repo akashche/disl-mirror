@@ -26,7 +26,7 @@ import ch.usi.dag.disl.exception.ProcessorParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.GuardHelper;
-import ch.usi.dag.disl.processor.ArgumentContext;
+import ch.usi.dag.disl.processorcontext.ArgumentContext;
 import ch.usi.dag.disl.snippet.processor.Proc;
 import ch.usi.dag.disl.snippet.processor.ProcArgType;
 import ch.usi.dag.disl.snippet.processor.ProcMethod;

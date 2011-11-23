@@ -3,7 +3,7 @@ package ch.usi.dag.disl.test.processor;
 import ch.usi.dag.disl.annotation.ArgsProcessor;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
-import ch.usi.dag.disl.processor.ArgumentContext;
+import ch.usi.dag.disl.processorcontext.ArgumentContext;
 
 @ArgsProcessor
 public class ProcessorTest2 {

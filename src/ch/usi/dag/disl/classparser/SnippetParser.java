@@ -31,6 +31,7 @@ import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.marker.Parameter;
+import ch.usi.dag.disl.processorcontext.ProcessorContext;
 import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.Snippet;
@@ -152,7 +153,7 @@ class SnippetParser extends AbstractParser {
 		SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(className,
 				method.name, method.instructions, method.tryCatchBlocks,
 				context.getStaticContexts(), context.usesDynamicContext(),
-				annotData.dynamicBypass);
+				annotData.dynamicBypass, context.usesProcessorContext());
 
 		// return whole snippet
 		return new Snippet(className, method.name, annotData.type, marker,
@@ -268,11 +269,14 @@ class SnippetParser extends AbstractParser {
 
 		private Set<String> staticContexts;
 		private boolean usesDynamicContext;
+		private boolean usesProcessorContext;
 
-		public Contexts(Set<String> staticContexts, boolean usesDynamicContext) {
+		public Contexts(Set<String> staticContexts, boolean usesDynamicContext,
+				boolean usesProcessorContext) {
 			super();
 			this.staticContexts = staticContexts;
 			this.usesDynamicContext = usesDynamicContext;
+			this.usesProcessorContext = usesProcessorContext;
 		}
 
 		public Set<String> getStaticContexts() {
@@ -282,6 +286,10 @@ class SnippetParser extends AbstractParser {
 		public boolean usesDynamicContext() {
 			return usesDynamicContext;
 		}
+		
+		public boolean usesProcessorContext() {
+			return usesProcessorContext;
+		}
 	}
 
 	private Contexts parseUsedContexts(String methodDesc)
@@ -289,12 +297,19 @@ class SnippetParser extends AbstractParser {
 
 		Set<String> knownStCo = new HashSet<String>();
 		boolean usesDynamicContext = false;
+		boolean usesProcessorContext = false;
 
 		for (Type argType : Type.getArgumentTypes(methodDesc)) {
 
 			// skip dynamic context class - don't check anything
 			if (argType.equals(Type.getType(DynamicContext.class))) {
 				usesDynamicContext = true;
+				continue;
+			}
+			
+			// skip processor context class - don't check anything
+			if (argType.equals(Type.getType(ProcessorContext.class))) {
+				usesProcessorContext = true;
 				continue;
 			}
 
@@ -312,7 +327,7 @@ class SnippetParser extends AbstractParser {
 			knownStCo.add(argType.getInternalName());
 		}
 
-		return new Contexts(knownStCo, usesDynamicContext);
+		return new Contexts(knownStCo, usesDynamicContext, usesProcessorContext);
 	}
 
 	private void usesContextProperly(String className, String methodName,

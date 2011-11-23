@@ -25,8 +25,8 @@ import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.marker.Marker;
-import ch.usi.dag.disl.processor.Processor;
-import ch.usi.dag.disl.processor.ProcessorMode;
+import ch.usi.dag.disl.processorcontext.ProcessorContext;
+import ch.usi.dag.disl.processorcontext.ProcessorMode;
 import ch.usi.dag.disl.snippet.processor.Proc;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
@@ -35,16 +35,18 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	private String className;
 	private String methodName;
 	private boolean dynamicBypass;
+	private boolean usesProcessorContext;
 
 	public SnippetUnprocessedCode(String className, String methodName,
 			InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
 			Set<String> declaredStaticContexts, boolean usesDynamicContext,
-			boolean dynamicBypass) {
+			boolean dynamicBypass, boolean usesProcessorContext) {
 		super(instructions, tryCatchBlocks, declaredStaticContexts,
 				usesDynamicContext);
 		this.className = className;
 		this.methodName = methodName;
 		this.dynamicBypass = dynamicBypass;
+		this.usesProcessorContext = usesProcessorContext;
 	}
 
 	public SnippetCode process(LocalVars allLVs,
@@ -97,7 +99,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		return new SnippetCode(instructions, tryCatchBlocks,
 				code.getReferencedSLVs(), code.getReferencedTLVs(),
 				code.containsHandledException(), code.getStaticContexts(),
-				code.usesDynamicContext(), invokedProcessors);
+				code.usesDynamicContext(), usesProcessorContext,
+				invokedProcessors);
 	}
 
 	private static class ProcessorInfo {
@@ -134,7 +137,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		MethodInsnNode min = (MethodInsnNode) instr;
 
 		// check if the invocation is processor invocation
-		if (!(min.owner.equals(Type.getInternalName(Processor.class))
+		if (!(min.owner.equals(Type.getInternalName(ProcessorContext.class))
 				&& min.name.equals(APPLY_METHOD))) {
 			return null;
 		}
