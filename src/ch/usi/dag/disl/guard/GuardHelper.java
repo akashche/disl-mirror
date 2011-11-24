@@ -7,14 +7,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import ch.usi.dag.disl.annotation.GuardMethod;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.GuardRuntimeException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.guardcontext.GuardContext;
 import ch.usi.dag.disl.processorcontext.ArgumentContext;
-import ch.usi.dag.disl.runtimecache.StConCache;
+import ch.usi.dag.disl.resolver.GuardMethod;
+import ch.usi.dag.disl.resolver.GuardResolver;
+import ch.usi.dag.disl.resolver.StConResolver;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.ReflectionHelper;
@@ -28,72 +29,72 @@ public abstract class GuardHelper {
 			return null;
 		}
 		
-		Method guardMethod = findGuardMethod(guardClass);
+		GuardMethod guardMethod = 
+				GuardResolver.getInstance().getGuardMethod(guardClass);
 		validateGuardMethod(guardMethod, validArgs);
-		return guardMethod;
+		return guardMethod.getMethod();
 	}
 	
 	// TODO ! guard - introduce caching for guardClass -> guardMethod using singleton hash map
 	// GuardMethod will not contain only method object but also all contexts set - for quick validation
 	
-	private static Method findGuardMethod(Class<?> guardClass)
-			throws GuardException {
-		
-		Method guardMethod = null;
-		
-		// check all methods
-		for(Method method : guardClass.getMethods()) {
-			
-			if(method.isAnnotationPresent(GuardMethod.class)) {
-				
-				// detect multiple annotations
-				if(guardMethod != null) {
-					throw new GuardException("Detected several "
-							+ GuardMethod.class.getName()
-							+ " annotations on guard class "
-							+ guardClass.getName());
-				}
-				
-				guardMethod = method;
-			}
-		}
-		
-		// detect no annotation
-		if(guardMethod == null) {
-			throw new GuardException("No "
-					+ GuardMethod.class.getName()
-					+ " annotation on guard class "
-					+ guardClass.getName());
-		}
-		
-		return guardMethod;
-	}
-	
-	private static void validateGuardMethod(Method guardMethod,
+	private static void validateGuardMethod(GuardMethod guardMethod,
 			Set<Class<?>> validArgs) throws GuardException {
 		
-		String guardMethodName = guardMethod.getDeclaringClass().getName()
-				+ "." + guardMethod.getName();
+		// quick validation
+		if(guardMethod.getArgTypes() != null) {
+			
+			// only valid argument types are in the method - ok 
+			if(validArgs.containsAll(guardMethod.getArgTypes())) {
+				return;
+			}
+			
+			// we have some additional argument types then only valid ones 
+			
+			// prepare invalid argument type set 
+			Set<Class<?>> invalidArgTypes = 
+					new HashSet<Class<?>>(guardMethod.getArgTypes());
+			invalidArgTypes.removeAll(validArgs);
+			
+			// construct the error massage
+			throw new GuardException("Guard "
+					+ guardMethod.getMethod().getDeclaringClass().getName()
+					+ " is using interface "
+					+ invalidArgTypes.iterator().next().getName()
+					+ " not allowed in this particular case (misused guard??)");
+		}
 		
-		if(! guardMethod.getReturnType().equals(boolean.class)) {
+		// validate properly
+		Method method = guardMethod.getMethod(); 
+		
+		String guardMethodName = method.getDeclaringClass().getName()
+				+ "." + method.getName();
+		
+		if(! method.getReturnType().equals(boolean.class)) {
 			throw new GuardException("Guard method " + guardMethodName
 					+ " should return boolean type");
 		}
 		
-		if(! Modifier.isStatic(guardMethod.getModifiers())) {
+		if(! Modifier.isStatic(method.getModifiers())) {
 			throw new GuardException("Guard method " + guardMethodName
 					+ " should be static");
 		}
 		
+		// remember argument types for quick validation
+		Set<Class<?>> argTypes = new HashSet<Class<?>>();
+		
 		// for all arguments
-		for(Class<?> argType : guardMethod.getParameterTypes()) {
+		for(Class<?> argType : method.getParameterTypes()) {
 		
 			// throws exception in the case of invalidity
-			validateArgument(guardMethodName, argType, validArgs);
+			argTypes.add(validateArgument(guardMethodName, argType, validArgs));
 		}
+		
+		// set argument types for quick validation
+		guardMethod.setArgTypes(argTypes);
 	}
 	
-	private static void validateArgument(String guardMethodName,
+	private static Class<?> validateArgument(String guardMethodName,
 			Class<?> argClass, Set<Class<?>> validArgClasses)
 			throws GuardException {
 	
@@ -102,13 +103,13 @@ public abstract class GuardHelper {
 
 			// valid
 			if(argClass.equals(allowedInterface)) {
-				return;
+				return allowedInterface;
 			}
 			
 			// valid - note that static context has to be implemented
 			if(allowedInterface.equals(StaticContext.class) && ReflectionHelper
 					.implementsInterface(argClass, allowedInterface)) {
-				return;
+				return allowedInterface;
 			}
 		}
 		
@@ -116,7 +117,8 @@ public abstract class GuardHelper {
 		StringBuilder sb = new StringBuilder("Guard argument "
 				+ argClass.getName()
 				+ " in " + guardMethodName
-				+ " does not implement any of the allowed interfaces: ");
+				+ " is not in the set of allowed interfaces"
+				+ " (misused guard??): ");
 		
 		for(Class<?> allowedInterface : validArgClasses) {
 
@@ -179,7 +181,8 @@ public abstract class GuardHelper {
 			ArgumentContext ac) throws GuardException {
 		
 		// find and validate method first
-		Method guardMethod = findGuardMethod(guardClass);
+		GuardMethod guardMethod = 
+				GuardResolver.getInstance().getGuardMethod(guardClass);
 
 		Set<Class<?>> validationSet;
 
@@ -193,7 +196,8 @@ public abstract class GuardHelper {
 
 		validateGuardMethod(guardMethod, validationSet);
 
-		return invokeGuardMethod(guardMethod, shadow, ac);
+		// invoke method
+		return invokeGuardMethod(guardMethod.getMethod(), shadow, ac);
 		
 	}
 	
@@ -236,7 +240,7 @@ public abstract class GuardHelper {
 			try {
 				
 				// get static context
-				StaticContext scInst = StConCache.getInstance()
+				StaticContext scInst = StConResolver.getInstance()
 						.getStaticContextInstance(argType);
 				
 				// populate with data

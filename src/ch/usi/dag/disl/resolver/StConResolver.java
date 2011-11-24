@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.runtimecache;
+package ch.usi.dag.disl.resolver;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,17 +8,19 @@ import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
 
-public class StConCache {
+public class StConResolver {
 	
 	// NOTE: This is internal DiSL cache. For user static context cache see
 	// ch.usi.dag.disl.staticcontext.cache.StaticContextCache
 
+	private static StConResolver instance = null;
+	
 	// list of static context instances
 	// validity of an instance is for whole instrumentation run
 	// instances are created lazily when needed
-	Map<Class<?>, Object> staticContextInstances =
+	private Map<Class<?>, Object> staticContextInstances =
 			new HashMap<Class<?>, Object>();
-	
+
 	public synchronized StaticContext getStaticContextInstance(
 			Class<?> staticContextClass) throws ReflectionException {
 		
@@ -38,12 +40,10 @@ public class StConCache {
 		return (StaticContext) scInst;
 	}
 	
-	private static StConCache instance = null;
-	
-	public static synchronized StConCache getInstance() {
+	public static synchronized StConResolver getInstance() {
 		
 		if (instance == null) {
-			instance = new StConCache();
+			instance = new StConResolver();
 		}
 		return instance;
 	}

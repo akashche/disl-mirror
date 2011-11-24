@@ -165,8 +165,9 @@ public class UnprocessedCode {
 				|| methodReturn.equals(Type.FLOAT_TYPE)
 				|| methodReturn.equals(Type.INT_TYPE)
 				|| methodReturn.equals(Type.LONG_TYPE)
-				|| methodReturn.equals(Type.SHORT_TYPE) || methodReturn
-				.equals(Type.getType(String.class)))) {
+				|| methodReturn.equals(Type.SHORT_TYPE)
+				|| methodReturn.equals(Type.getType(String.class))
+				)) {
 
 			throw new StaticContextGenException("Static context method "
 					+ methodInstr.name + " in the class " + methodInstr.owner
