@@ -33,7 +33,7 @@
 		<mkdir dir="build"/>
 		<jar jarfile="build/agent-light.jar">
 			<manifest>
-				<attribute name="Premain-Class" value="ch.usi.dag.disl.test.agent.Agent"/>
+				<attribute name="Premain-Class" value="ch.usi.dag.disl.testtools.agent.Agent"/>
 			</manifest>
 		</jar>
 	</target>

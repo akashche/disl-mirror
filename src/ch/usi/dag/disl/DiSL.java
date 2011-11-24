@@ -1,5 +1,6 @@
 package ch.usi.dag.disl;
 
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -386,6 +387,14 @@ public class DiSL implements Instrumentation {
 	
 	public byte[] instrument(byte[] classAsBytes) throws Exception {
 
+		// output bytes into the file
+		if(debug) {
+			String errFile = "err.class";
+			FileOutputStream fos = new FileOutputStream(errFile);
+			fos.write(classAsBytes);
+			fos.close();
+		}
+			
 		ClassReader cr = new ClassReader(classAsBytes);
 
 		return instrument(cr);

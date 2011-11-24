@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.test.jarrewriter;
+package ch.usi.dag.disl.testtools.jarrewriter;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;

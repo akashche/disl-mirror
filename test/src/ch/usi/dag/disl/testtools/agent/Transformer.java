@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.test.agent;
+package ch.usi.dag.disl.testtools.agent;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
