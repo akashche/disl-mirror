@@ -35,9 +35,6 @@ public abstract class GuardHelper {
 		return guardMethod.getMethod();
 	}
 	
-	// TODO ! guard - introduce caching for guardClass -> guardMethod using singleton hash map
-	// GuardMethod will not contain only method object but also all contexts set - for quick validation
-	
 	private static void validateGuardMethod(GuardMethod guardMethod,
 			Set<Class<?>> validArgs) throws GuardException {
 		
