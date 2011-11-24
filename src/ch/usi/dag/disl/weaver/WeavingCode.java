@@ -44,27 +44,28 @@ public class WeavingCode {
 	private WeavingInfo info;
 	private MethodNode method;
 	private SnippetCode code;
+	private AbstractInsnNode weavingLocation;
 	private InsnList iList;
 	private AbstractInsnNode[] iArray;
 	private Snippet snippet;
-	private Shadow region;
+	private Shadow shadow;
 	private int index;
 	private int maxLocals;
 
-	public WeavingCode(WeavingInfo weavingInfo, SnippetCode src,
-			MethodNode method, Snippet snippet, Shadow region, int index) {
+	public WeavingCode(WeavingInfo weavingInfo, MethodNode method,
+			SnippetCode src, AbstractInsnNode loc, Snippet snippet,
+			Shadow shadow, int index) {
 
-		info = weavingInfo;
-
-		code = src.clone();
-
-		iList = code.getInstructions();
-		iArray = iList.toArray();
-
+		this.info = weavingInfo;
 		this.method = method;
+		this.code = src.clone();
+		this.weavingLocation = loc;
 		this.snippet = snippet;
-		this.region = region;
+		this.shadow = shadow;
 		this.index = index;
+
+		this.iList = code.getInstructions();
+		this.iArray = iList.toArray();
 
 		maxLocals = MaxCalculator
 				.getMaxLocal(iList, method.desc, method.access);
@@ -86,10 +87,10 @@ public class WeavingCode {
 
 			MethodInsnNode invocation = (MethodInsnNode) instr;
 
-			if (staticInfoHolder.contains(region, invocation.owner,
+			if (staticInfoHolder.contains(shadow, invocation.owner,
 					invocation.name)) {
 
-				Object const_var = staticInfoHolder.get(region,
+				Object const_var = staticInfoHolder.get(shadow,
 						invocation.owner, invocation.name);
 
 				if (const_var != null) {
@@ -474,7 +475,7 @@ public class WeavingCode {
 		for (int i : code.getInvokedProcessors().keySet()) {
 
 			AbstractInsnNode instr = iArray[i];
-			ProcInstance processor = piResolver.get(region, i);
+			ProcInstance processor = piResolver.get(shadow, i);
 
 			if (processor != null) {
 				if (processor.getProcApplyType() == ProcessorMode.METHOD_ARGS) {
@@ -492,7 +493,7 @@ public class WeavingCode {
 		}
 	}
 
-	public InsnList createGetArgsCode(String methodDescriptor) {
+	private InsnList createGetArgsCode(String methodDescriptor) {
 
 		InsnList insnList = new InsnList();
 
@@ -551,16 +552,17 @@ public class WeavingCode {
 				continue;
 			}
 
+			AbstractInsnNode prev = instr.getPrevious();
+
+			if (prev.getOpcode() != Opcodes.GETSTATIC) {
+				throw new DiSLFatalException("Unknown processor mode");
+			}
+
+			ProcessorMode procApplyType = ProcessorMode
+					.valueOf(((FieldInsnNode) prev).name);
+
 			if (invoke.name.equals("getArgs")) {
 
-				AbstractInsnNode prev = instr.getPrevious();
-
-				if (prev.getOpcode() != Opcodes.GETSTATIC) {
-					throw new DiSLFatalException("Unknown processor mode");
-				}
-				
-				ProcessorMode procApplyType = ProcessorMode
-						.valueOf(((FieldInsnNode) prev).name);
 				InsnList args = null;
 
 				if (procApplyType == ProcessorMode.METHOD_ARGS) {
@@ -572,7 +574,7 @@ public class WeavingCode {
 				} else {
 
 					AbstractInsnNode callee = AsmHelper.skipVirualInsns(
-							region.getRegionStart(), true);
+							shadow.getRegionStart(), true);
 					
 					if (!(callee instanceof MethodInsnNode)) {
 						throw new DiSLFatalException("Unexpected instruction");
@@ -582,6 +584,10 @@ public class WeavingCode {
 					Type[] argTypes = Type.getArgumentTypes(desc);
 
 					Frame<SourceValue> frame = info.getSourceFrame(callee);
+					
+					if (frame == null) {
+						throw new DiSLFatalException("Unknown target");
+					}
 					
 					int argIndex = 0;
 					
@@ -600,8 +606,6 @@ public class WeavingCode {
 							method.instructions.insert(itr,
 									new InsnNode(type.getSize() == 2 ? Opcodes.DUP2
 													: Opcodes.DUP));
-							method.instructions.insert(itr,
-									new InsnNode(Opcodes.NOP));
 						}
 
 						argIndex += type.getSize();
@@ -613,6 +617,58 @@ public class WeavingCode {
 				}
 
 				iList.insert(instr, args);
+			} else if (invoke.name.equals("getReceiver")) {
+
+				if (procApplyType == ProcessorMode.METHOD_ARGS) {
+
+					if ((method.access & Opcodes.ACC_STATIC) != 0) {
+						iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
+					} else if (method.name.equals("<init>")
+							&& AsmHelper.before(weavingLocation,
+									AsmHelper.findFirstValidMark(method))) {
+						// TODO warn user that fetching object before initialization will violate the verifying
+						iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
+					} else {
+						iList.insert(instr, new VarInsnNode(Opcodes.ALOAD,
+								-method.maxLocals));
+					}
+				} else {
+
+					AbstractInsnNode callee = AsmHelper.skipVirualInsns(
+							shadow.getRegionStart(), true);
+					
+					if (!(callee instanceof MethodInsnNode)) {
+						throw new DiSLFatalException("Unexpected instruction");
+					}
+
+					Frame<SourceValue> frame = info.getSourceFrame(callee);
+
+					if (frame == null) {
+						throw new DiSLFatalException("Unknown target");
+					}
+
+					if (callee.getOpcode() == Opcodes.INVOKESTATIC) {
+						iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
+					} else {
+						String desc = ((MethodInsnNode) callee).desc;
+						SourceValue source = StackUtil.getStackByIndex(frame,
+								Type.getArgumentTypes(desc).length);
+						
+						for (AbstractInsnNode itr : source.insns) {
+							method.instructions.insert(itr, new VarInsnNode(
+									Opcodes.ASTORE,
+							// TRICK: the value has to be set properly because
+							// method code will be not adjusted by fixLocalIndex
+									method.maxLocals + maxLocals));
+							method.instructions.insert(itr, new InsnNode(
+									Opcodes.DUP));
+						}
+
+						iList.insert(instr, new VarInsnNode(Opcodes.ALOAD,
+								method.maxLocals + maxLocals));
+						maxLocals++;
+					}
+				}
 			}
 
 			iList.remove(instr.getPrevious());

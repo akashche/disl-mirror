@@ -220,7 +220,7 @@ public class Weaver {
 				snippetMarkings);
 
 		for (Snippet snippet : info.getSortedSnippets()) {
-			List<Shadow> regions = snippetMarkings.get(snippet);
+			List<Shadow> shadows = snippetMarkings.get(snippet);
 			SnippetCode code = snippet.getCode();
 
 			// skip snippet with empty code
@@ -232,12 +232,12 @@ public class Weaver {
 			// For @Before, instrument the snippet just before the
 			// entrance of a region.
 			if (snippet.getAnnotationClass().equals(Before.class)) {
-				for (Shadow region : regions) {
+				for (Shadow shadow : shadows) {
 
 					AbstractInsnNode loc = info.getWeavingStart().get(
-							region.getRegionStart());
+							shadow.getRegionStart());
 					int index = info.getStackStart().get(
-							region.getRegionStart());
+							shadow.getRegionStart());
 
 					// exception handler will discard the stack and push the
 					// exception object. Thus, before entering this snippet,
@@ -258,8 +258,8 @@ public class Weaver {
 						loc = temp;
 					}
 
-					WeavingCode wCode = new WeavingCode(info, code, methodNode,
-							snippet, region, index);
+					WeavingCode wCode = new WeavingCode(info, methodNode, code,
+							loc, snippet, shadow, index);
 					wCode.transform(staticInfoHolder, piResolver);
 
 					methodNode.instructions.insertBefore(loc, wCode.getiList());
@@ -272,7 +272,7 @@ public class Weaver {
 			// after each adjusted exit of a region.
 			if (snippet.getAnnotationClass().equals(AfterReturning.class)
 					|| snippet.getAnnotationClass().equals(After.class)) {
-				for (Shadow region : regions) {
+				for (Shadow region : shadows) {
 
 					for (AbstractInsnNode exit : region.getRegionEnds()) {
 
@@ -297,8 +297,8 @@ public class Weaver {
 							loc = temp;
 						}
 
-						WeavingCode wCode = new WeavingCode(info, code,
-								methodNode, snippet, region, index);
+						WeavingCode wCode = new WeavingCode(info, methodNode,
+								code, loc.getNext(), snippet, region, index);
 						wCode.transform(staticInfoHolder, piResolver);
 
 						methodNode.instructions.insert(loc, wCode.getiList());
@@ -313,7 +313,7 @@ public class Weaver {
 			if (snippet.getAnnotationClass().equals(AfterThrowing.class)
 					|| snippet.getAnnotationClass().equals(After.class)) {
 
-				for (Shadow region : regions) {
+				for (Shadow region : shadows) {
 					// after-throwing inserts the snippet once, and marks
 					// the start and the very end as the scope
 					AbstractInsnNode last = info.getWeavingThrow().get(region);
@@ -333,8 +333,9 @@ public class Weaver {
 						last_index = info.getStackEnd().get(last);
 					}
 
-					WeavingCode wCode = new WeavingCode(info, code, methodNode,
-							snippet, region, last_index);
+					WeavingCode wCode = new WeavingCode(info, methodNode, code,
+							region.getRegionStart(), snippet, region,
+							last_index);
 					wCode.transform(staticInfoHolder, piResolver);
 
 					// Create a try-catch clause

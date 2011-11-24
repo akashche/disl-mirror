@@ -10,7 +10,6 @@ public interface ProcessorContext {
 	 */
 	public void apply(Class<?> processorClass, ProcessorMode mode);
 
-	// TODO ! processor - add support
 	/**
 	 * Returns the object on which is the processed method (arguments of that
 	 * method) called.
