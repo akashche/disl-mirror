@@ -4,9 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import ch.usi.dag.disl.snippet.Shadow;
+import ch.usi.dag.disl.staticcontext.cache.CacheableStaticContext;
 import ch.usi.dag.disl.staticcontext.cache.StaticContextCache;
 
-public abstract class AbstractStaticContext implements StaticContext {
+public abstract class AbstractStaticContext implements StaticContext,
+		CacheableStaticContext {
 
 	protected Shadow staticContextData;
 
@@ -19,6 +21,10 @@ public abstract class AbstractStaticContext implements StaticContext {
 		retValCache.put(methodName, new StaticContextCache(keyCacheClass));
 	}
 
+	public StaticContextCache getRetValCache(String method) {
+		return retValCache.get(method);
+	}
+	
 	public void staticContextData(Shadow sa) {
 
 		staticContextData = sa;
