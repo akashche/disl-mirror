@@ -10,6 +10,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 
 public final class TLVInserter extends ClassVisitor {
@@ -109,10 +110,8 @@ public final class TLVInserter extends ClassVisitor {
 				}
 				else {
 
-					int tlvSort = tlv.getType().getSort();
-					
 					// if object or array
-					if(tlvSort == Type.OBJECT || tlvSort == Type.ARRAY) {
+					if(AsmHelper.isReferenceType(tlv.getType())) {
 						// insert null
 						visitInsn(ACONST_NULL);
 					}

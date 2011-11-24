@@ -250,7 +250,13 @@ public class WeavingCode {
 				int size = StackUtil.dupStack(sourceframe, method, operand,
 						sopcode, method.maxLocals + max);
 				// load the stack value
-				iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
+				
+				// box value if applicable
+				// boxing is removed by partial evaluator if not needed
+				if(! AsmHelper.isReferenceType(t)) {
+					iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
+				}
+				
 				iList.insert(instr, new VarInsnNode(lopcode, max));
 				max += size;
 			}
@@ -276,7 +282,11 @@ public class WeavingCode {
 							+ targetType + "\", while user needs \"" + t + "\"");
 				}
 
-				iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
+				// box value if applicable
+				// boxing is removed by partial evaluator if not needed
+				if(! AsmHelper.isReferenceType(t)) {
+					iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
+				}
 				iList.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
 						slot - method.maxLocals));
 			} else if (invoke.name.equals("localVariableValue")) {
@@ -296,7 +306,11 @@ public class WeavingCode {
 							+ targetType + "\", while user needs \"" + t + "\"");
 				}
 
-				iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
+				// box value if applicable
+				// boxing is removed by partial evaluator if not needed
+				if(! AsmHelper.isReferenceType(t)) {
+					iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
+				}
 				iList.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
 						operand - method.maxLocals));
 			}
@@ -524,7 +538,7 @@ public class WeavingCode {
 			insnList.add(new VarInsnNode(loadOpcode, argIndex));
 
 			// box non-reference type
-			if (!(argType.getSort() == Type.OBJECT || argType.getSort() == Type.ARRAY)) {
+			if (! AsmHelper.isReferenceType(argType)) {
 				insnList.add(AsmHelper.boxValueOnStack(argType));
 			}
 

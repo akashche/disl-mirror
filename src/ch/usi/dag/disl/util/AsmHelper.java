@@ -381,6 +381,10 @@ public abstract class AsmHelper {
 		return instr;
 	}
 
+	public static boolean isReferenceType(Type type) {
+		return type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY;
+	}
+	
 	public static boolean isVirtualInstr(AbstractInsnNode instr) {
 		
 		return instr.getOpcode() == -1;
