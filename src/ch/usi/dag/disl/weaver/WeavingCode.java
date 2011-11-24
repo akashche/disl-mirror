@@ -245,6 +245,7 @@ public class WeavingCode {
 				int size = StackUtil.dupStack(sourceframe, method, operand,
 						sopcode, method.maxLocals + max);
 				// load the stack value
+				iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
 				iList.insert(instr, new VarInsnNode(lopcode, max));
 				max += size;
 			}
@@ -270,6 +271,7 @@ public class WeavingCode {
 							+ targetType + "\", while user needs \"" + t + "\"");
 				}
 
+				iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
 				iList.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
 						slot - method.maxLocals));
 			} else if (invoke.name.equals("localVariableValue")) {
@@ -289,6 +291,7 @@ public class WeavingCode {
 							+ targetType + "\", while user needs \"" + t + "\"");
 				}
 
+				iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
 				iList.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
 						operand - method.maxLocals));
 			}
@@ -301,13 +304,8 @@ public class WeavingCode {
 			// remove invoke
 			iList.remove(instr);
 
-			// remove checkcast, invoke
+			// remove checkcast
 			if (next.getOpcode() == Opcodes.CHECKCAST) {
-
-				if (next.getNext().getOpcode() == Opcodes.INVOKEVIRTUAL) {
-					iList.remove(next.getNext());
-				}
-
 				iList.remove(next);
 			}
 		}

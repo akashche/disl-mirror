@@ -7,12 +7,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -594,6 +596,54 @@ public class PartialEvaluator {
 
 		return isOptimized;
 	}
+	
+	private static List<String> primitiveTypes;
+
+	static {
+		primitiveTypes = new LinkedList<String>();
+		primitiveTypes.add("java/lang/Boolean");
+		primitiveTypes.add("java/lang/Byte");
+		primitiveTypes.add("java/lang/Character");
+		primitiveTypes.add("java/lang/Double");
+		primitiveTypes.add("java/lang/Float");
+		primitiveTypes.add("java/lang/Integer");
+		primitiveTypes.add("java/lang/Long");
+	}
+
+	private static boolean removeBoxingAndUnboxing(InsnList ilist) {
+
+		boolean isOptimized = false;
+
+		for (AbstractInsnNode instr : ilist.toArray()) {
+
+			AbstractInsnNode prev = instr.getPrevious();
+
+			if (prev == null || (prev.getOpcode() != Opcodes.INVOKESTATIC)
+					|| (instr.getOpcode() != Opcodes.INVOKEVIRTUAL)) {
+				continue;
+			}
+
+			MethodInsnNode valueOf = (MethodInsnNode) prev;
+			MethodInsnNode toValue = (MethodInsnNode) instr;
+
+			if (!(primitiveTypes.contains(valueOf.owner)
+					&& valueOf.owner.equals(toValue.owner) && valueOf.name
+						.equals("valueOf")) && toValue.name.endsWith("Value")) {
+				continue;
+			}
+
+			if (!Type.getArgumentTypes(valueOf.desc)[0].equals(Type
+					.getReturnType(toValue.desc))) {
+				continue;
+			}
+
+			ilist.remove(prev);
+			ilist.remove(instr);
+			isOptimized = true;
+		}
+
+		return isOptimized;
+	}
 
 	public static boolean evaluate(InsnList ilist,
 			List<TryCatchBlockNode> tryCatchBlocks, String desc, int access) {
@@ -636,6 +686,7 @@ public class PartialEvaluator {
 		isOptimized |= removeUnusedJump(ilist);
 		isOptimized |= removeUnusedHandler(cfg, ilist, tryCatchBlocks);
 		isOptimized |= removePop(ilist, method);
+		isOptimized |= removeBoxingAndUnboxing(ilist);
 
 		if (flag) {
 			ilist.remove(ilist.getLast());
