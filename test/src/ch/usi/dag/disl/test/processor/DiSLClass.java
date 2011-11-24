@@ -2,6 +2,7 @@ package ch.usi.dag.disl.test.processor;
 
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.processorcontext.ProcessorContext;
@@ -14,12 +15,14 @@ public class DiSLClass {
 	public static String flag = "Start";
 
 	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.*")
-	public static void insideMethod(MethodSC ci, ProcessorContext pc) {
+	public static void insideMethod(MethodSC ci, ProcessorContext pc, DynamicContext dc) {
 		
 		System.out.println("(In) Method " + ci.thisMethodName() + ": ");
 		System.out.println(flag);
 		
 		pc.apply(ProcessorTest.class, ProcessorMode.METHOD_ARGS);
+		System.out.println("Receiver is " + pc.getReceiver(ProcessorMode.METHOD_ARGS));
+		System.out.println("This is " + dc.thisValue());
 		
 		System.out.println(flag);
 		System.out.println(ProcessorTest.flag);
@@ -31,6 +34,7 @@ public class DiSLClass {
 		System.out.println("(Before) Method : ");
 		
 		pc.apply(ProcessorTest.class, ProcessorMode.CALLSITE_ARGS);
+		System.out.println("Receiver is " + pc.getReceiver(ProcessorMode.CALLSITE_ARGS));
 		
 		System.out.println(ProcessorTest.flag);
 	}
