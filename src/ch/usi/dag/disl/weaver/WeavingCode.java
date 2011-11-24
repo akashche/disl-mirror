@@ -197,11 +197,16 @@ public class WeavingCode {
 
 			if (invoke.name.equals("thisValue")) {
 
-				if ((method.access & Opcodes.ACC_STATIC) == 0) {
+				if ((method.access & Opcodes.ACC_STATIC) != 0) {
+					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
+				} else if (method.name.equals("<init>")
+						&& AsmHelper.before(weavingLocation,
+								AsmHelper.findFirstValidMark(method))) {
+					// TODO warn user that fetching object before initialization will violate the verifying
+					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
+				} else {
 					iList.insert(instr, new VarInsnNode(Opcodes.ALOAD,
 							-method.maxLocals));
-				} else {
-					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 				}
 
 				iList.remove(invoke);
@@ -663,7 +668,7 @@ public class WeavingCode {
 						}
 
 						iList.insert(instr, new VarInsnNode(Opcodes.ALOAD,
-								method.maxLocals + maxLocals));
+								maxLocals));
 						maxLocals++;
 					}
 				}
