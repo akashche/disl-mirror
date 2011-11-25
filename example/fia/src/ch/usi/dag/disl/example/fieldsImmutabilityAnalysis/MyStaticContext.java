@@ -11,6 +11,6 @@ public class MyStaticContext extends AbstractStaticContext {
 	}
 	
 	public boolean isInTheStaticInitializer() {
-		return (staticContextData.getMethodNode().name.equals("<clinit>") ? false : true);
+		return (staticContextData.getMethodNode().name.equals("<clinit>") ? true : false);
 	}
 }

@@ -47,7 +47,6 @@ public class DiSLClass {
 		ImmutabilityAnalysis.onObjectInitialization(allocatedObj, allocationSite);
 	}	
 	
-	//guard = NoClInit.class,
 	
 
 	/** FIELD ACCESSES **/

@@ -153,39 +153,6 @@ public final class MyWeakKeyIdentityHashMap<K,V> {
         return null;
     }
 
-//    /**
-//     * Removes the mapping for this key from this map if present.
-//     * 
-//     * The implementation is NOT thread safe.
-//     * 
-//     * @param key key whose mapping is to be removed from the map
-//     * @return the previous value associated with <tt>key</tt>, or
-//     *         <tt>null</tt> if there was no mapping for <tt>key</tt>.
-//     *         (A <tt>null</tt> return can also indicate that the map
-//     *         previously associated <tt>null</tt> with <tt>key</tt>.)
-//     */
-//    public V remove(Object key) {
-//        Object[] tab = table;
-//        int index = hash(key, currentSize);
-//
-//        MyWeakReference<K> item;
-//        while (true) {
-//            item = (MyWeakReference<K>)tab[index];
-//            if (item.get() == key) {
-//                size--;
-//                V oldValue = (V)tab[index + 1];
-//                tab[index + 1] = null;
-//                tab[index] = null;
-//                //TODO: to be implemented
-//                closeDeletion(index);
-//                return oldValue;
-//            }
-//            if (item == null)
-//                return null;
-//            index = nextKeyIndex(index, currentSize);
-//        }
-//    }
-
     /**
      * Dumps all entries using the registered dumper.
      * 
@@ -270,13 +237,6 @@ public final class MyWeakKeyIdentityHashMap<K,V> {
         return registerEntryDumper(null);
     }
 
-//    /**
-//     * This method has not been implemented.
-//     * Throws a RuntimeException.
-//     */
-//    public Set<java.util.Map.Entry<K, V>> entrySet() {
-//        throw new RuntimeException("Method " + this.getClass().getName() + ".entrySet() has not been implemented");
-//    }
 
     @SuppressWarnings("hiding")
 	public interface EntryDumper<MyWeakReference, V> {

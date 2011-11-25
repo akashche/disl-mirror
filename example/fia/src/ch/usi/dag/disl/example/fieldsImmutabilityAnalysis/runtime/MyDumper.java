@@ -1,18 +1,12 @@
 package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 
 import java.io.PrintStream;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 
 import ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime.MyWeakKeyIdentityHashMap.EntryDumper;
 
 
 
-public class MyDumper implements EntryDumper<MyWeakReference<Object>, ConcurrentHashMap<String, FieldState>>{
-	
-	private static final String OFFSET = "\t\t";
-	private static final String SEPARATOR = "\t";
-
+public class MyDumper implements EntryDumper<MyWeakReference<Object>, FieldStateList>{
 	private final PrintStream ps;
 
 	public MyDumper(PrintStream ps) {
@@ -20,12 +14,10 @@ public class MyDumper implements EntryDumper<MyWeakReference<Object>, Concurrent
 	}
 
 	@Override
-	public synchronized void dumpEntry(MyWeakReference<Object> key, ConcurrentHashMap<String, FieldState> value) {
+	public synchronized void dumpEntry(MyWeakReference<Object> key, FieldStateList value) {
 		String shortId = (String) key.objectID.subSequence(key.objectID.indexOf(":")+1,  key.objectID.length());
 		ps.println(shortId);
-		for(Entry<String, FieldState> entry : value.entrySet()) {
-			ps.println(OFFSET + entry.getKey() + SEPARATOR + entry.getValue().toString());
-		}
+		value.dump(ps);
 		ps.flush();
 	}
 
@@ -33,6 +25,5 @@ public class MyDumper implements EntryDumper<MyWeakReference<Object>, Concurrent
 	public void close() {
 		ps.flush();
 		ps.close();
-
 	}
 }

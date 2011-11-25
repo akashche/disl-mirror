@@ -6,6 +6,6 @@ public abstract class NoClInit {
   
 	@GuardMethod
 	public static boolean isApplicable(MyStaticContext sc) {
-		return sc.isInTheStaticInitializer();
+		return (!sc.isInTheStaticInitializer());
 	}
 }
