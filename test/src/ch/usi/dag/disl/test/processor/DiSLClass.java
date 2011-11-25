@@ -14,7 +14,7 @@ public class DiSLClass {
 	@SyntheticLocal
 	public static String flag = "Start";
 
-	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.*")
+	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.m*")
 	public static void insideMethod(MethodSC ci, ProcessorContext pc, DynamicContext dc) {
 		
 		System.out.println("(In) Method " + ci.thisMethodName() + ": ");
@@ -28,7 +28,7 @@ public class DiSLClass {
 		System.out.println(ProcessorTest.flag);
 	}
 	
-	@Before(marker = BytecodeMarker.class, args="invokevirtual", order = 0, scope = "TargetClass.*")
+	@Before(marker = BytecodeMarker.class, args="invokevirtual", order = 0, scope = "TargetClass.m*")
 	public static void beforeInvocation(MethodSC ci, ProcessorContext pc) {
 		
 		System.out.println("(Before) Method : ");

@@ -1,0 +1,2 @@
+Exception in thread "main" java.lang.VerifyError: (class: ..., method: ... signature: ... Expecting to find object/array on stack
+ - this error ocures if the user accesses and uses uninitialized object
