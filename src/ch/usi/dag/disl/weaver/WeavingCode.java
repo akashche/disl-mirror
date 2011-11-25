@@ -44,7 +44,6 @@ public class WeavingCode {
 	private WeavingInfo info;
 	private MethodNode method;
 	private SnippetCode code;
-	private AbstractInsnNode weavingLocation;
 	private InsnList iList;
 	private AbstractInsnNode[] iArray;
 	private Snippet snippet;
@@ -53,13 +52,11 @@ public class WeavingCode {
 	private int maxLocals;
 
 	public WeavingCode(WeavingInfo weavingInfo, MethodNode method,
-			SnippetCode src, AbstractInsnNode loc, Snippet snippet,
-			Shadow shadow, int index) {
+			SnippetCode src, Snippet snippet, Shadow shadow, int index) {
 
 		this.info = weavingInfo;
 		this.method = method;
 		this.code = src.clone();
-		this.weavingLocation = loc;
 		this.snippet = snippet;
 		this.shadow = shadow;
 		this.index = index;
@@ -198,11 +195,6 @@ public class WeavingCode {
 			if (invoke.name.equals("thisValue")) {
 
 				if ((method.access & Opcodes.ACC_STATIC) != 0) {
-					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
-				} else if (method.name.equals("<init>")
-						&& AsmHelper.before(weavingLocation,
-								AsmHelper.findFirstValidMark(method))) {
-					// TODO warn user that fetching object before initialization will violate the verifying
 					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 				} else {
 					iList.insert(instr, new VarInsnNode(Opcodes.ALOAD,
@@ -639,11 +631,6 @@ public class WeavingCode {
 				if (procApplyType == ProcessorMode.METHOD_ARGS) {
 
 					if ((method.access & Opcodes.ACC_STATIC) != 0) {
-						iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
-					} else if (method.name.equals("<init>")
-							&& AsmHelper.before(weavingLocation,
-									AsmHelper.findFirstValidMark(method))) {
-						// TODO warn user that fetching object before initialization will violate the verifying
 						iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 					} else {
 						iList.insert(instr, new VarInsnNode(Opcodes.ALOAD,
