@@ -18,7 +18,7 @@ import ch.usi.dag.disl.staticcontext.MethodSC;
 public class DiSLClass {
 
 	@ThreadLocal
-	static Stack<Object> stackTL;
+	private static Stack<Object> stackTL;
 	
 
 
@@ -35,8 +35,11 @@ public class DiSLClass {
 
 	@After(marker = BodyMarker.class, scope = "*.*", guard = OnlyInit.class, order = 1)
 	public static void after() {
-		ImmutabilityAnalysis.afterConstructor(stackTL);
-
+		if(stackTL != null) {
+			stackTL.pop();
+		} else {
+			System.err.println("The stack is null " + Thread.currentThread().getName());
+		}
 	}
 	
 	/** ALLOCATION SITE **/

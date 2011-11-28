@@ -94,14 +94,6 @@ public class ImmutabilityAnalysis {
 		}
 	}
 
-	public static void afterConstructor(Stack<Object> stack) {
-		if(stack != null) {
-			stack.pop();
-		} else {
-			System.err.println("The stack is null " + Thread.currentThread().getName());
-		}
-	}
-
 	private static FieldState getOrCreateInstanceField(Object accessedObj, String objectId, String fieldName) {
 		try{
 			FieldStateList smallMap;
