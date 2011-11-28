@@ -264,7 +264,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		
 		// put error report on the stack
 		instructions.add(new LdcInsnNode(
-				"Some of the snippets introduced exception that was not"
+				"Snippet " + className + "." + methodName
+				+ " introduced exception that was not"
 				+ " handled. This would change the application control flow."
 				+ " Exiting..."));
 		
