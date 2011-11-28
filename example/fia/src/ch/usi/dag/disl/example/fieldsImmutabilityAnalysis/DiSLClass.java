@@ -52,19 +52,15 @@ public class DiSLClass {
 	/** FIELD ACCESSES **/
 	@Before(marker=BytecodeMarker.class, args = "putfield", guard = NoClInit.class, scope = "*.*",  order = 0)
 	public static void onFieldWrite(MethodSC sc, MyAnalysis ma, DynamicContext dc) {
-		String accessSite = sc.thisMethodFullName() + " [" + ma.getInMethodIndex() + "]";
 		Object accessedObj = dc.stackValue(1, Object.class);
 		String accessedFieldName = ma.getAccessedFieldsName();
-
-		ImmutabilityAnalysis.onFieldWrite(accessedObj, accessedFieldName, accessSite, stackTL);
+		ImmutabilityAnalysis.onFieldWrite(accessedObj, accessedFieldName, stackTL);
 	}
 
 	@Before(marker=BytecodeMarker.class, args = "getfield", guard = NoClInit.class, scope = "*.*", order = 0)
 	public static void onFieldRead(MethodSC sc, MyAnalysis ma, DynamicContext dc) {
-		String accessSite = sc.thisMethodFullName() + " [" + ma.getInMethodIndex() + "]";
 		Object accessedObj = dc.stackValue(0, Object.class);
 		String accessedFieldName = ma.getAccessedFieldsName();
-
-		ImmutabilityAnalysis.onFieldRead(accessedObj, accessedFieldName, accessSite);
+		ImmutabilityAnalysis.onFieldRead(accessedObj, accessedFieldName);
 	}
 }	

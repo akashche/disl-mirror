@@ -25,7 +25,7 @@ public class ImmutabilityAnalysis {
 		try{
 			PrintStream ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(DUMP_FILE)));
 			myDumper = new MyDumper(ps);
-			bigMap = new MyWeakKeyIdentityHashMap();
+			bigMap = new MyWeakKeyIdentityHashMap(myDumper);
 
 			Thread shutdownHook = new Thread(){
 				public void run() {
@@ -46,7 +46,7 @@ public class ImmutabilityAnalysis {
 		}
 	}
 
-	public static void onFieldRead(Object accessedObj, String accessedFieldName, String accessSite ) {
+	public static void onFieldRead(Object accessedObj, String accessedFieldName ) {
 		try{
 			
 			String objectID = getObjectID(accessedObj, null);
@@ -77,7 +77,7 @@ public class ImmutabilityAnalysis {
 	}
 
 
-	public static void onFieldWrite(Object accessedObj, String accessedFieldName, String accessSite, Stack<Object> stack) {
+	public static void onFieldWrite(Object accessedObj, String accessedFieldName, Stack<Object> stack) {
 		try{
 			boolean  isInDynamicExtendOfConstructor = false;
 			if(stack != null) {
