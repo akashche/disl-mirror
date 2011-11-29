@@ -220,6 +220,10 @@ public class WeavingInfo {
 		return sourceFrameMap.get(instr);
 	}
 
+	public boolean stackNotEmpty(int index) {
+		return basicFrames[index].getStackSize() > 0;
+	}
+
 	public InsnList backupStack(int index, int startFrom) {
 		return StackUtil.enter(basicFrames[index], startFrom);
 	}

@@ -242,7 +242,8 @@ public class Weaver {
 					// exception handler will discard the stack and push the
 					// exception object. Thus, before entering this snippet,
 					// weaver must backup the stack and restore when exiting
-					if (code.containsHandledException()) {
+					if (code.containsHandledException()
+							&& info.stackNotEmpty(index)) {
 
 						InsnList backup = info.backupStack(index,
 								methodNode.maxLocals);
@@ -281,7 +282,8 @@ public class Weaver {
 						int index = info.getStackEnd().get(exit);
 
 						// backup and restore the stack
-						if (code.containsHandledException()) {
+						if (code.containsHandledException()
+								&& info.stackNotEmpty(index)) {
 
 							InsnList backup = info.backupStack(index,
 									methodNode.maxLocals);
