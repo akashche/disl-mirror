@@ -77,11 +77,12 @@ public class Snippet implements Comparable<Snippet> {
 	}
 
 	public void init(LocalVars allLVs, Map<Type, Proc> processors,
-			boolean allDynamicBypass) throws StaticContextGenException,
-			ReflectionException, ProcessorException {
+			boolean exceptHandler, boolean allDynamicBypass)
+			throws StaticContextGenException, ReflectionException,
+			ProcessorException {
 
 		code = unprocessedCode.process(allLVs, processors, marker,
-				allDynamicBypass);
+				exceptHandler, allDynamicBypass);
 		unprocessedCode = null;
 	}
 }

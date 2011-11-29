@@ -51,8 +51,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		this.usesProcessorContext = usesProcessorContext;
 	}
 
-	public SnippetCode process(LocalVars allLVs,
-			Map<Type, Proc> processors, Marker marker, boolean allDynamicBypass)
+	public SnippetCode process(LocalVars allLVs, Map<Type, Proc> processors,
+			Marker marker, boolean exceptHandler, boolean allDynamicBypass)
 			throws StaticContextGenException, ReflectionException,
 			ProcessorException {
 
@@ -74,9 +74,11 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 			insertDynamicBypass(instructions);
 		}
 		
-		// catch all exceptions
-		// it is forbidden to throw an exception in a snippet
-		insertExceptionHandler(instructions, tryCatchBlocks);
+		if (exceptHandler) {
+			// catch all exceptions
+			// it is forbidden to throw an exception in a snippet
+			insertExceptionHandler(instructions, tryCatchBlocks);
+		}
 
 		// *** CODE ANALYSIS ***
 

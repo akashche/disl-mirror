@@ -47,6 +47,11 @@ public class DiSL implements Instrumentation {
 	final String PROP_DYNAMIC_BYPASS = "disl.dynbypass";
 	final boolean allDynamicBypass = Boolean.getBoolean(PROP_DYNAMIC_BYPASS);
 	
+	// default is that exception handler is inserted
+	// this is the reason for double negation in assignment
+	final String PROP_NO_EXCEPT_HANDLER = "disl.noexcepthandler";
+	final boolean exceptHandler = ! Boolean.getBoolean(PROP_NO_EXCEPT_HANDLER);
+	
 	final String PROP_DEBUG = "disl.debug";
 	final boolean debug = Boolean.getBoolean(PROP_DEBUG);
 
@@ -103,7 +108,7 @@ public class DiSL implements Instrumentation {
 			// initialize snippets
 			for (Snippet snippet : parsedSnippets) {
 				snippet.init(parser.getAllLocalVars(), processors,
-						allDynamicBypass);
+						exceptHandler, allDynamicBypass);
 			}
 			
 			// initialize snippets variable
