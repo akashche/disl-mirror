@@ -1,6 +1,7 @@
 package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis;
 
-import java.util.Stack;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.AfterReturning;
@@ -18,13 +19,13 @@ import ch.usi.dag.disl.staticcontext.MethodSC;
 public class DiSLClass {
 
 	@ThreadLocal
-	private static Stack<Object> stackTL;
+	private static Deque<Object> stackTL;
 	
 	/** STACK MAINTENANCE **/
 	@Before(marker = BodyMarker.class, scope = "*.*", guard = OnlyInit.class, order = 1)
 	public static void before(DynamicContext dc, MethodSC sc) {
 		if(stackTL == null) {
-			stackTL = new Stack<Object>();
+			stackTL = new ArrayDeque<Object>();
 		}
 		Object alloc = dc.thisValue();
 		stackTL.push(alloc);

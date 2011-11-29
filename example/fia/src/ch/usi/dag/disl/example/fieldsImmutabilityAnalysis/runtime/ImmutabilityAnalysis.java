@@ -4,7 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.Iterator;
-import java.util.Stack;
+import java.util.Deque;
 
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
@@ -77,7 +77,7 @@ public class ImmutabilityAnalysis {
 	}
 
 
-	public static void onFieldWrite(Object accessedObj, String accessedFieldName, Stack<Object> stack) {
+	public static void onFieldWrite(Object accessedObj, String accessedFieldName, Deque<Object> stack) {
 		try{
 			boolean  isInDynamicExtendOfConstructor = false;
 			if(stack != null) {
@@ -121,7 +121,7 @@ public class ImmutabilityAnalysis {
 
 
 
-	public static boolean isIncluded(Stack<Object> stack, Object accessedObject) {
+	public static boolean isIncluded(Deque<Object> stack, Object accessedObject) {
 		for(Iterator<Object> iter = stack.iterator(); iter.hasNext();) {
 			if(iter.next() == accessedObject) {
 				return true;
@@ -144,7 +144,7 @@ public class ImmutabilityAnalysis {
 		}
 	}
 
-	public static void popStackIfNonNull(Stack<Object> stackTL) {
+	public static void popStackIfNonNull(Deque<Object> stackTL) {
 		if(stackTL != null) {
 			stackTL.pop();
 		} else {
