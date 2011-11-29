@@ -1,6 +1,8 @@
 package ch.usi.dag.disl.test.exception;
 
+import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 
 public class DiSLClass {
@@ -14,4 +16,12 @@ public class DiSLClass {
 		}
 	}
 
+	@After(marker = BodyMarker.class, scope = "TargetClass.<init>")
+	public static void after() {
+		try {
+			System.out.println("exception body from snippet");
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
+	}
 }
