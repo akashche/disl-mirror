@@ -20,8 +20,6 @@ public class DiSLClass {
 	@ThreadLocal
 	private static Stack<Object> stackTL;
 	
-
-
 	/** STACK MAINTENANCE **/
 	@Before(marker = BodyMarker.class, scope = "*.*", guard = OnlyInit.class, order = 1)
 	public static void before(DynamicContext dc, MethodSC sc) {
@@ -30,18 +28,13 @@ public class DiSLClass {
 		}
 		Object alloc = dc.thisValue();
 		stackTL.push(alloc);
-		
 	}
 
 	@After(marker = BodyMarker.class, scope = "*.*", guard = OnlyInit.class, order = 1)
 	public static void after() {
-		if(stackTL != null) {
-			stackTL.pop();
-		} else {
-			System.err.println("The stack is null " + Thread.currentThread().getName());
-		}
+		ImmutabilityAnalysis.popStackIfNonNull(stackTL);
 	}
-	
+
 	/** ALLOCATION SITE **/
 	@AfterReturning(marker = BytecodeMarker.class, args = "new", guard = NoClInit.class, scope = "*.*", order = 0)
 	public static void BeforeInitialization(MethodSC sc, MyAnalysis ma, DynamicContext dc) {

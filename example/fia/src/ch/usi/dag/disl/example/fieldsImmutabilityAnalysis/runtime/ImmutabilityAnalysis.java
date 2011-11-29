@@ -143,4 +143,12 @@ public class ImmutabilityAnalysis {
 			e.printStackTrace();
 		}
 	}
+
+	public static void popStackIfNonNull(Stack<Object> stackTL) {
+		if(stackTL != null) {
+			stackTL.pop();
+		} else {
+			System.err.println("The stack is null " + Thread.currentThread().getName());
+		}
+	}
 }
