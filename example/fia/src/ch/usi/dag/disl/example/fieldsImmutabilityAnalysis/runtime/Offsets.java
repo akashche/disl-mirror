@@ -2,7 +2,6 @@ package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
