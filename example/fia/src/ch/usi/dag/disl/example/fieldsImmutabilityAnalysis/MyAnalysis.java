@@ -39,15 +39,13 @@ public class MyAnalysis extends AbstractStaticContext {
 		}
 	}
 	
-	public String getAccessedFieldsName() {
+	public String getFieldId() {
 		AbstractInsnNode instr = staticContextData.getRegionStart();
 
-		if (instr.getOpcode() == Opcodes.PUTFIELD
-				|| instr.getOpcode() == Opcodes.GETFIELD) {
-			return  ((FieldInsnNode) instr).owner + "." + ((FieldInsnNode) instr).name;
+		if (instr.getOpcode() == Opcodes.PUTFIELD || instr.getOpcode() == Opcodes.GETFIELD) {
+			return ((FieldInsnNode) instr).owner + ":" + ((FieldInsnNode) instr).name + ":" + ((FieldInsnNode) instr).desc;
 		} else {
 			return "ERROR!";
 		}
 	}
 }
-
