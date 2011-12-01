@@ -1,15 +1,15 @@
 <project name="disl-test" default="compile" basedir=".">
 
-	<property file="../../disl.version"/>
-	<property file="../../build.properties"/>
+    <property file="../../disl.version"/>
+    <property file="../../build.properties"/>
 	<property file="build.properties"/>
-	<property name="disl.jar.path" value="../../build/disl-${disl.version}.jar"/>
-	
-	<path id="buildpath">
-		<pathelement location="${disl.jar.path}"/>
-		<pathelement location="../../${asm.path}"/>
-		<pathelement location="../../${jborat.path}"/>
-		<pathelement location="../../${jborat-runtime.path}"/>
+    <property name="disl.jar.path" value="../../build/disl-${disl.version}.jar"/>
+    
+    <path id="buildpath">
+        <pathelement location="${disl.jar.path}"/>
+        <pathelement location="../../${asm.path}"/>
+        <pathelement location="../../${jborat.path}"/>
+        <pathelement location="../../${jborat-runtime.path}"/>
 		<pathelement location="lib/stp.jar"/>
 	</path>
 
@@ -56,7 +56,7 @@
 		     basedir="./bin"
 		     includes="${test.path}/runtime/**">
 		</jar>
-		<jar jarfile="../../build/${instr.jar.name}"
+        <jar jarfile="../../build/${instr.jar.name}"
 		     basedir="./bin"
 		     includes="${test.path}/*"
 		     excludes="${test.path}/runtime ${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF"

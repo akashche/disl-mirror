@@ -27,10 +27,12 @@ fi
 # to enable socket, add ",ipc.socket" to the options
 JBORAT_AGENT_OPTS="1234,localhost,ipc.socket"
 
-java -noverify -XX:MaxPermSize=128m \
+java -noverify \
+    -XX:MaxPermSize=128m \
     -Xmx2G \
-    -javaagent:lib/agent.jar \
-    -Xbootclasspath/p:lib/remote-runtime.jar:../../lib/jborat-runtime.jar:build/test-runtime.jar \
-    -agentpath:lib/${JBORAT_AGENT}=${JBORAT_AGENT_OPTS} \
+    -javaagent:../../test/lib/agent.jar \
+    -Xbootclasspath/p:../../test/lib/remote-runtime.jar:../../lib/jborat-runtime.jar:build/fia-runtime.jar \
+    -agentpath:../../test/lib/${JBORAT_AGENT}=${JBORAT_AGENT_OPTS} \
     -cp ./bin \
-     $*
+    $*
+#  -jar /home/sarimbea/workspace/lib/dacapo-9.12-bach.jar  luindex lusearch pmd h2 tradebeans tradesoap sunflow tomcat   

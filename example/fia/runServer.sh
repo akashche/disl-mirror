@@ -22,16 +22,18 @@ else
   exit -1
 fi
 
-CLASSPATH=../../lib/jborat-agent.jar:../../lib/jborat-runtime.jar:../../lib/jborat-interface.jar:lib/remote-server.jar
+CLASSPATH=../../lib/jborat-agent.jar:../../lib/jborat-runtime.jar:../../lib/jborat-interface.jar:../../test/lib/remote-server.jar
 
-java -Dch.usi.dag.jborat.instrumented="instrumented" \
+java \
+    -Dch.usi.dag.jborat.uninstrumented="uninstrumented" \
+    -Dch.usi.dag.jborat.instrumented="instrumented" \
     -Djborat.debug \
     -Ddisl.dynbypass=true \
-    -Ddisl.debug \
+    -Ddisl.debug=false \
     -Djborat.ipc.socket=true \
     -Djava.library.path=./lib/${JBORAT_AGENT_PATH} \
     -Dch.usi.dag.jborat.instrumentation="ch.usi.dag.disl.DiSL" \
-    -Dch.usi.dag.jborat.codemergerList="conf/codemerger.lst" \
+    -Dch.usi.dag.jborat.codemergerList="../../test/conf/codemerger.lst" \
     -Dch.usi.dag.jborat.liblist="conf/lib.lst" \
     -Dch.usi.dag.jborat.udiliblist="conf/udilib.lst" \
     -Dch.usi.dag.jborat.exclusionList="conf/exclusion.lst" \

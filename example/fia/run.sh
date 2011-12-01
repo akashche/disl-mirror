@@ -2,9 +2,9 @@
 
 EXPECTED_ARGS=1
 
-if [ $# -lt $EXPECTED_ARGS ]
+if [ $# -gt $EXPECTED_ARGS ]
 then
-    echo "Usage: `basename $0` test-case [pkg]"
+    echo "Usage: `basename $0` [pkg]"
     exit
 fi
 
@@ -17,13 +17,13 @@ then
     rm .server.pid
 fi
 
-DISL_CLASS="./bin/ch/usi/dag/disl/example/$1/DiSLClass.class"
-TARGET_CLASS="ch.usi.dag.disl.example.$1.TargetClass"
+DISL_CLASS="./bin/ch/usi/dag/disl/example/fieldsImmutabilityAnalysis/DiSLClass.class"
+TARGET_CLASS="ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.TargetClass"
 
-if [ "$2" = "pkg" ]
+if [ "$1" = "pkg" ]
 then
     # start server and take pid
-    ant package -Dtest.name=$1
+    ant package -Dtest.name=fieldsImmutabilityAnalysis
     ./runServer.sh
 else
     # start server and take pid
