@@ -21,6 +21,9 @@ public abstract class ClassByteLoader {
 	
 	public static final String ATTR_DISL_CLASSES = "DiSL-Classes";
 	public static final String DISL_CLASSES_DELIM = ":";
+	public static final String DISL_CLASSES_EXT = ".class";
+	public static final char CLASS_DELIM = '.';
+	public static final char FILE_DELIM = '/';
 	
 	// How to use jar support
 	// 1) Create jar with a name specified in build.properties (instr.jar.name)
@@ -85,8 +88,12 @@ public abstract class ClassByteLoader {
 			
 			List<InputStream> dislClasses = new LinkedList<InputStream>();
 		
-			for (String fileName : classesList.split(DISL_CLASSES_DELIM)) {
+			for (String className : classesList.split(DISL_CLASSES_DELIM)) {
 
+				// create file name from class name
+				String fileName = className.replace(CLASS_DELIM, FILE_DELIM)
+						+ DISL_CLASSES_EXT;
+				
 				dislClasses.add(cl.getResourceAsStream(fileName));
 			}
 

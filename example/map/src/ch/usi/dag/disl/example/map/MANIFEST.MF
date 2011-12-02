@@ -1,2 +1,2 @@
 Manifest-Version: 1.0
-DiSL-Classes: ch/usi/dag/disl/example/map/DiSLClass.class
+DiSL-Classes: ch.usi.dag.disl.example.map.DiSLClass
