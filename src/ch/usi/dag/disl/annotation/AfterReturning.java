@@ -12,7 +12,7 @@ public @interface AfterReturning {
 	
 	Class<? extends Marker> marker();
 	String args() default ""; // cannot be null :(
-	String scope();
+	String scope() default "*";
 	Class<? extends Object> guard() default Object.class; // cannot be null :(
 	int order() default 100;
 	// NOTE if the DiSL property disl.dynbypass is set to yes, dynamic bypass is

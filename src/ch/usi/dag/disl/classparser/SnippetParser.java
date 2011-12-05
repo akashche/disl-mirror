@@ -195,7 +195,7 @@ class SnippetParser extends AbstractParser {
 		// annotation values
 		public Type marker = null;
 		public String args = null; // default
-		public String scope = null;
+		public String scope = "*"; // default
 		public Type guard = null; // default
 		public int order = 100; // default
 		public boolean dynamicBypass = false; // default
@@ -211,7 +211,7 @@ class SnippetParser extends AbstractParser {
 		SnippetAnnotationData sad = new SnippetAnnotationData(type);
 		ParserHelper.parseAnnotation(sad, annotation);
 		
-		if (sad.marker == null || sad.scope == null) {
+		if (sad.marker == null) {
 
 			throw new DiSLFatalException("Missing attribute in annotation "
 					+ type.toString()
