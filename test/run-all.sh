@@ -1,6 +1,6 @@
 #!/bin/sh
 
-TESTS="after args bbmarker bodymarker bytecodemarker dynamicinfo exception exceptionhandler guard loop processor scope staticinfo syntheticlocal threadlocal tryclause"
+TESTS=`ls src/ch/usi/dag/disl/test/`
 
 for TEST in ${TESTS}
 do
