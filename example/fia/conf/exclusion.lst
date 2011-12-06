@@ -3,6 +3,8 @@ ch.usi.dag.jborat.*
 sun.instrument.*
 # THESE ARE THE RUNTIME CLASSES THAT MUST NOT BE WOVEN
 ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime.*
+# PROBLEM WITH FOP (CODE TOO BIG)
+org/apache/fop/fonts/CodePointMapping
 # BEGIN JDK WEAVING
 # COMMENT THE FOLLOWING FOR FULL COVERAGE
 #org.jcp.*

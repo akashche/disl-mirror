@@ -3,72 +3,74 @@ package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.util.Iterator;
 import java.util.Deque;
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLongArray;
 
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
-
-
-@SuppressWarnings("unchecked")
 public class ImmutabilityAnalysis {
+	private static final ImmutabilityAnalysis instanceOfIA;
 
-	private static MyWeakKeyIdentityHashMap<Object,FieldStateList> bigMap;
-	
-	private static final String DUMP_FILE = System.getProperty("dump", "dump.log");
+	private final String dumpFile;
 
-	private static MyDumper myDumper;
-	
-	
+	private final MyWeakKeyIdentityHashMap<Object, AtomicLongArray> fields;
+	private final MyDumper myDumper;
+
 	static {
-		boolean oldState = DynamicBypass.getAndSet();
-		try{
-			PrintStream ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(DUMP_FILE)));
-			myDumper = new MyDumper(ps);
-			bigMap = new MyWeakKeyIdentityHashMap(myDumper);
+		instanceOfIA = new ImmutabilityAnalysis();
+	}
 
-			Thread shutdownHook = new Thread(){
-				public void run() {
-					DynamicBypass.set(true);
-					System.err.println("In shutdown hook!");
-					dump();
-					myDumper.close();
-				}
-			};
-			Runtime.getRuntime().addShutdownHook(shutdownHook);
+	private ImmutabilityAnalysis() {
+		dumpFile = System.getProperty("dump", "dump.log");
+
+		PrintStream ps = null;
+		try{
+			ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(dumpFile)));
 		}
 		catch(Throwable t){
 			t.printStackTrace();
 			System.exit(-1);
 		}
-		finally{
-			DynamicBypass.set(oldState);
-		}
+
+		myDumper = new MyDumper(ps);
+		fields = new MyWeakKeyIdentityHashMap<Object, AtomicLongArray>(myDumper);
+
+		Thread shutdownHook = new Thread(){
+			public void run() {
+				DynamicBypass.set(true);
+				System.err.println("In shutdown hook!");
+				dump();
+				myDumper.close();
+
+			}
+
+		};
+		Runtime.getRuntime().addShutdownHook(shutdownHook);
 	}
 
-	public static void onFieldRead(Object accessedObj, String accessedFieldName ) {
-		try{
-			
-			String objectID = getObjectID(accessedObj, null);
-			FieldState fs = getOrCreateInstanceField(accessedObj, objectID, accessedFieldName);
-			fs.onRead();
-
-		}
-		catch(Throwable t){
-			t.printStackTrace();
-		}
+	public static ImmutabilityAnalysis instanceOf() {
+		return instanceOfIA;
 	}
 
-	public static void onObjectInitialization(Object allocatedObj, String allocSite) {
-		try{
+	public void onObjectInitialization(Object allocatedObj, String allocSite) {
+		try {
 			String objectID = getObjectID(allocatedObj, allocSite);
-			synchronized (bigMap) {
-				if(bigMap.get(allocatedObj) == null) {
-					bigMap.put(allocatedObj, new FieldStateList(),objectID);
-				}	
-				else{
-					System.err.println("object is already  in the table!");
-				}
+			AtomicLongArray fieldsArray = getFieldsArray(allocatedObj, objectID);
+			if(fieldsArray == null) {
+				Offsets.registerIfNeeded(allocatedObj.getClass());
+				fieldsArray = getOrCreateFieldsArray(allocatedObj, objectID);
+			}
+		}
+		catch(Throwable t) {
+			t.printStackTrace();
+		}
+	}
+
+	public void onFieldWrite(Object accessedObj, String accessedFieldId, Deque<Object> stack) {
+		try {
+			if(isInDynamicExtendOfConstructor(stack, accessedObj)) {
+				updateFieldsArray(accessedObj, accessedFieldId);
 			}
 		}
 		catch(Throwable t){
@@ -76,78 +78,75 @@ public class ImmutabilityAnalysis {
 		}
 	}
 
-
-	public static void onFieldWrite(Object accessedObj, String accessedFieldName, Deque<Object> stack) {
-		try{
-			boolean  isInDynamicExtendOfConstructor = false;
-			if(stack != null) {
-				if(isIncluded(stack, accessedObj)) {
-					isInDynamicExtendOfConstructor = true;
-				}
-			}
+	private void updateFieldsArray(Object accessedObj, String fieldName) {
+		try {
 			String objectID = getObjectID(accessedObj, null);
-			FieldState fs = getOrCreateInstanceField(accessedObj, objectID, accessedFieldName);
-			fs.onWrite(isInDynamicExtendOfConstructor);
+			AtomicLongArray fieldsArray = getFieldsArray(accessedObj, objectID);
+			if(fieldsArray == null) {
+				Offsets.registerIfNeeded(accessedObj.getClass());
+				fieldsArray = getOrCreateFieldsArray(accessedObj, objectID);
+			}
+			Short s = Offsets.getFieldOffset(fieldName); 
+			if(s != null) {
+				fieldsArray.incrementAndGet(s);
+			}
+			else {
+				System.err.println("[ImmutabilityAnalysis.updateFieldsArray] Warning: unregistered access to: "
+						+ fieldName
+						+ "; skipping event");
+			}
 		}
 		catch(Throwable t){
 			t.printStackTrace();
+			System.exit(-1);
 		}
 	}
 
-	private static FieldState getOrCreateInstanceField(Object accessedObj, String objectId, String fieldName) {
-		try{
-			FieldStateList smallMap;
-			FieldState fs = null;
-
-			synchronized(bigMap){
-				if((smallMap = bigMap.get(accessedObj)) == null) {
-					bigMap.put(accessedObj, smallMap = new FieldStateList(), objectId);
-				}
-			}
-
-			synchronized(smallMap) {
-				if((fs = smallMap.get(fieldName)) == null) {
-					fs = smallMap.put(fieldName);
-				}
-			}
-
-			return fs;
-		}
-		catch(Throwable t){
-			t.printStackTrace();
-			return null;
+	private AtomicLongArray getFieldsArray(Object ownerObj, String objectID ) {
+		synchronized (fields) {
+			return fields.get(ownerObj);
 		}
 	}
 
+	private AtomicLongArray getOrCreateFieldsArray(Object ownerObj, String objectID) {
+		AtomicLongArray fieldsArray;
+		synchronized (fields) {
+			if ((fieldsArray = fields.get(ownerObj)) == null) {
+				fields.put(ownerObj, fieldsArray =  new AtomicLongArray(Offsets.getNumberOfFields(ownerObj.getClass())), objectID);
+			}
+		}
+		return fieldsArray;
+	}
 
-
-	public static boolean isIncluded(Deque<Object> stack, Object accessedObject) {
-		for(Iterator<Object> iter = stack.iterator(); iter.hasNext();) {
-			if(iter.next() == accessedObject) {
-				return true;
+	public boolean isInDynamicExtendOfConstructor(Deque<Object> stack, Object accessedObject) {
+		if(stack != null) {
+			for(Iterator<Object> iter = stack.iterator(); iter.hasNext();) {
+				if(iter.next() == accessedObject) {
+					return true;
+				}
 			}
 		}
 		return false;
 	}
 
-	private static String getObjectID(Object accessedObj, String allocSite) {
-		return System.identityHashCode(accessedObj) + ":" + accessedObj.getClass().getName() + ":" + allocSite;
+	private String getObjectID(Object accessedObj, String allocSite) {
+		return accessedObj.getClass().getName() + ":" + allocSite;
 	}
 
-	private static void dump() {
+	private void dump() {
 		try {
-			synchronized(bigMap) {
-				bigMap.dump();		
+			synchronized(fields) {
+				fields.dump();
 			}
 		} catch(Throwable e) {
 			e.printStackTrace();
 		}
 	}
 
-	public static void popStackIfNonNull(Deque<Object> stackTL) {
-		if(stackTL != null) {
+	public void popStackIfNonNull(Deque<Object> stackTL) {
+		try {
 			stackTL.pop();
-		} else {
+		} catch(NullPointerException e) {
 			System.err.println("The stack is null " + Thread.currentThread().getName());
 		}
 	}
