@@ -124,7 +124,7 @@ public class WeavingCode {
 				continue;
 			}
 
-			if (invoke.name.equals("thisValue")) {
+			if (invoke.name.equals("getThis")) {
 				continue;
 			}
 
@@ -149,7 +149,7 @@ public class WeavingCode {
 						+ snippet.getOriginMethodName()
 						+ " - pass the first (pos)"
 						+ " argument of a dynamic context method direcltly."
-						+ " ex: stackValue(1, int.class)");
+						+ " ex: getStackValue(1, int.class)");
 			}
 
 			// second operand test
@@ -159,7 +159,7 @@ public class WeavingCode {
 						+ snippet.getOriginMethodName()
 						+ " - pass the second (type)"
 						+ " argument of a dynamic context method direcltly."
-						+ " ex: stackValue(1, int.class)");
+						+ " ex: getStackValue(1, int.class)");
 			}
 		}
 	}
@@ -192,7 +192,7 @@ public class WeavingCode {
 
 			AbstractInsnNode prev = instr.getPrevious();
 
-			if (invoke.name.equals("thisValue")) {
+			if (invoke.name.equals("getThis")) {
 
 				if ((method.access & Opcodes.ACC_STATIC) != 0) {
 					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
@@ -218,7 +218,7 @@ public class WeavingCode {
 			int operand = AsmHelper.getIConstOperand(prev.getPrevious());
 			Type t = AsmHelper.getClassType(prev);
 
-			if (invoke.name.equals("stackValue")) {
+			if (invoke.name.equals("getStackValue")) {
 				int sopcode = t.getOpcode(Opcodes.ISTORE);
 				int lopcode = t.getOpcode(Opcodes.ILOAD);
 
@@ -255,7 +255,7 @@ public class WeavingCode {
 			// TRICK: the following two situation will generate a VarInsnNode
 			// with a negative local slot. And it will be updated in
 			// method fixLocalIndex
-			else if (invoke.name.equals("methodArgumentValue")) {
+			else if (invoke.name.equals("getMethodArgumentValue")) {
 
 				int slot = AsmHelper.getInternalParamIndex(method, operand);
 
@@ -281,7 +281,7 @@ public class WeavingCode {
 				}
 				iList.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
 						slot - method.maxLocals));
-			} else if (invoke.name.equals("localVariableValue")) {
+			} else if (invoke.name.equals("getLocalVariableValue")) {
 
 				// index should be less than the size of local variables
 				if (operand >= basicframe.getLocals() || operand < 0) {

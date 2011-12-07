@@ -11,40 +11,40 @@ public class DiSLClass {
 
 	@Before(marker = BytecodeMarker.class, args = "isub", scope = "TargetClass.test1")
 	public static void precondition(DynamicContext di) {
-		int i = di.stackValue(1, int.class);
-		int j = di.stackValue(0, int.class);
+		int i = di.getStackValue(1, int.class);
+		int j = di.getStackValue(0, int.class);
 		System.out.println(i + " - " + j + " = " + (i - j));
 	}
 
 	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.test1")
 	public static void postcondition(DynamicContext di) {
-		int ret = di.localVariableValue(1, int.class);
+		int ret = di.getLocalVariableValue(1, int.class);
 		System.out.println("before return, local a is " + ret);
 	}
 
 	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.test2")
 	public static void postcondition2(DynamicContext di) {
-		int ret = di.stackValue(0, int.class);
+		int ret = di.getStackValue(0, int.class);
 		System.out.println("Return with " + ret);
 	}
 
 	@Before(marker = BytecodeMarker.class, args = "dsub", scope = "TargetClass.test3")
 	public static void precondition3(DynamicContext di) {
-		double i = di.stackValue(0, double.class);
-		double d = di.stackValue(1, double.class);
+		double i = di.getStackValue(0, double.class);
+		double d = di.getStackValue(1, double.class);
 		System.out.println(d + " - " + i + " = " + (d - i));
 	}
 	
 	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.test3")
 	public static void postcondition3(DynamicContext di) {
-		double d = di.localVariableValue(1, double.class);
+		double d = di.getLocalVariableValue(1, double.class);
 		System.out.println("before return, local d is " + d);
-		int i = di.methodArgumentValue(1, int.class);
+		int i = di.getMethodArgumentValue(1, int.class);
 		System.out.println("before return, local i is " + i);
 	}
 	
 	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.*")
 	public static void getThis(DynamicContext di, MethodStaticContext msc) {
-		System.out.println(msc.thisMethodName() + " - this: " + di.thisValue());
+		System.out.println(msc.thisMethodName() + " - this: " + di.getThis());
 	}
 }

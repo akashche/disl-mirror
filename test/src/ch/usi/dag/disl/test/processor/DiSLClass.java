@@ -22,7 +22,7 @@ public class DiSLClass {
 		
 		pc.apply(ProcessorTest.class, ProcessorMode.METHOD_ARGS);
 		System.out.println("Receiver is " + pc.getReceiver(ProcessorMode.METHOD_ARGS));
-		System.out.println("This is " + dc.thisValue());
+		System.out.println("This is " + dc.getThis());
 		
 		System.out.println(flag);
 		System.out.println(ProcessorTest.flag);

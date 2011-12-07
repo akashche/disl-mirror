@@ -27,7 +27,7 @@ public class DiSLClass {
 		}
 
 		stackTL.push(
-				dc.thisValue() //the allocated object
+				dc.getThis() //the allocated object
 			);
 	}
 
@@ -40,7 +40,7 @@ public class DiSLClass {
 	@AfterReturning(marker = BytecodeMarker.class, args = "new", scope = "*.*", order = 0)
 	public static void BeforeInitialization(MethodStaticContext sc, MyAnalysis ma, DynamicContext dc) {
 		ImmutabilityAnalysis.instanceOf().onObjectInitialization(
-				dc.stackValue(0, Object.class), //the allocated object
+				dc.getStackValue(0, Object.class), //the allocated object
 				ma.getAllocationSite() //the allocation site
 			);
 	}	
@@ -49,7 +49,7 @@ public class DiSLClass {
 	@Before(marker=BytecodeMarker.class, args = "putfield", scope = "*.*",  order = 0)
 	public static void onFieldWrite(MethodStaticContext sc, MyAnalysis ma, DynamicContext dc) {
 		ImmutabilityAnalysis.instanceOf().onFieldWrite(
-				dc.stackValue(1, Object.class), //the accessed object
+				dc.getStackValue(1, Object.class), //the accessed object
 				ma.getFieldId(), //the field identifier
 				stackTL //the stack of constructors
 			);

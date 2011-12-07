@@ -14,7 +14,7 @@ public class ProcessorTest2 {
 	public static void objPM(Object c, ArgumentContext ac, DynamicContext dc) {
 		System.out.println("Testing dynamic context in processor");
 		System.out.println("Accessed array index is "
-				+ dc.stackValue(1, int.class));
+				+ dc.getStackValue(1, int.class));
 		System.out.println("--------------------");
 
 		DiSLClass.flag = "OMG this is for the End";

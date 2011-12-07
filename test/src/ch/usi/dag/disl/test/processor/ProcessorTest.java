@@ -31,7 +31,7 @@ public class ProcessorTest {
 		System.out.println(ac.position());
 		System.out.println(ac.totalCount());
 		System.out.println(ac.typeDescriptor());
-		System.out.println(dc.thisValue());
+		System.out.println(dc.getThis());
 		System.out.println("--------------------");
 		
 		flag = "Processor flag for the End";

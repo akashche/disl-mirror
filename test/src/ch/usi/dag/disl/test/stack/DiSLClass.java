@@ -7,6 +7,6 @@ import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 public class DiSLClass {
 	@AfterReturning(marker = BytecodeMarker.class, args="new", scope = "TargetClass.*")
 	public static void precondition(DynamicContext dc) {
-		dc.stackValue(0, Object.class);
+		dc.getStackValue(0, Object.class);
 	}
 }
