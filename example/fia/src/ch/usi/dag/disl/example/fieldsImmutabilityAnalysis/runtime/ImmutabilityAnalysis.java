@@ -12,20 +12,17 @@ import ch.usi.dag.jborat.runtime.DynamicBypass;
 public class ImmutabilityAnalysis {
 	private static final ImmutabilityAnalysis instanceOfIA;
 
-	private final String dumpFile;
-
 	private final MyWeakKeyIdentityHashMap<Object, AtomicLongArray> fields;
-	private final MyDumper myDumper;
 
 	static {
 		instanceOfIA = new ImmutabilityAnalysis();
 	}
 
 	private ImmutabilityAnalysis() {
-		dumpFile = System.getProperty("dump", "dump.log");
 
 		PrintStream ps = null;
 		try{
+			String dumpFile = System.getProperty("dump", "dump.log");
 			ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(dumpFile)));
 		}
 		catch(Throwable t){
@@ -33,20 +30,24 @@ public class ImmutabilityAnalysis {
 			System.exit(-1);
 		}
 
-		myDumper = new MyDumper(ps);
+		final MyDumper myDumper = new MyDumper(ps);
 		fields = new MyWeakKeyIdentityHashMap<Object, AtomicLongArray>(myDumper);
 
-		Thread shutdownHook = new Thread(){
+		Runtime.getRuntime().addShutdownHook(new Thread(){
 			public void run() {
 				DynamicBypass.set(true);
 				System.err.println("In shutdown hook!");
-				dump();
-				myDumper.close();
-
+				try {
+					synchronized(fields) {
+						fields.dump();
+					}
+				} catch(Throwable e) {
+					e.printStackTrace();
+				} finally {
+					myDumper.close();
+				}
 			}
-
-		};
-		Runtime.getRuntime().addShutdownHook(shutdownHook);
+		});
 	}
 
 	public static ImmutabilityAnalysis instanceOf() {
@@ -131,16 +132,6 @@ public class ImmutabilityAnalysis {
 
 	private String getObjectID(Object accessedObj, String allocSite) {
 		return accessedObj.getClass().getName() + ":" + allocSite;
-	}
-
-	private void dump() {
-		try {
-			synchronized(fields) {
-				fields.dump();
-			}
-		} catch(Throwable e) {
-			e.printStackTrace();
-		}
 	}
 
 	public void popStackIfNonNull(Deque<Object> stackTL) {
