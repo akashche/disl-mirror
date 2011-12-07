@@ -1,12 +1,12 @@
 package ch.usi.dag.disl.test.after2;
 
 import ch.usi.dag.disl.annotation.GuardMethod;
-import ch.usi.dag.disl.staticcontext.MethodSC;
+import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 
 public class NotInitNorClinit {
     
 	@GuardMethod
-    public static boolean isApplicable(MethodSC msc) {
+    public static boolean isApplicable(MethodStaticContext msc) {
         return (msc.thisMethodName().endsWith("init>")) ? false : true;
     }
 }

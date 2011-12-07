@@ -6,7 +6,7 @@ import ch.usi.dag.disl.annotation.ProcessAlso.Type;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.processorcontext.ArgumentContext;
-import ch.usi.dag.disl.staticcontext.MethodSC;
+import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 
 @ArgsProcessor
 public class ProcessorTest {
@@ -14,7 +14,7 @@ public class ProcessorTest {
 	@SyntheticLocal
 	public static String flag;
 	
-	public static void objPM(Object c, ArgumentContext ac, MethodSC msc) {
+	public static void objPM(Object c, ArgumentContext ac, MethodStaticContext msc) {
 		System.out.println("processor for object in method " + msc.thisMethodFullName());
 		System.out.println(ac.position());
 		System.out.println(ac.totalCount());

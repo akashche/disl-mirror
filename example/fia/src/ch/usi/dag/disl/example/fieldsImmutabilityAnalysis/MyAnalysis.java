@@ -4,9 +4,9 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 
-import ch.usi.dag.disl.staticcontext.MethodSC;
+import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 
-public class MyAnalysis extends MethodSC {
+public class MyAnalysis extends MethodStaticContext {
 	public String getAllocationSite() {
         int idx = 0;
 

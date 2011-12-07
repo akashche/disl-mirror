@@ -7,7 +7,7 @@ import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.processorcontext.ProcessorContext;
 import ch.usi.dag.disl.processorcontext.ProcessorMode;
-import ch.usi.dag.disl.staticcontext.MethodSC;
+import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 
 public class DiSLClass {
 
@@ -15,7 +15,7 @@ public class DiSLClass {
 	public static String flag = "Start";
 
 	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.m*")
-	public static void insideMethod(MethodSC ci, ProcessorContext pc, DynamicContext dc) {
+	public static void insideMethod(MethodStaticContext ci, ProcessorContext pc, DynamicContext dc) {
 		
 		System.out.println("(In) Method " + ci.thisMethodName() + ": ");
 		System.out.println(flag);
@@ -29,7 +29,7 @@ public class DiSLClass {
 	}
 	
 	@Before(marker = BytecodeMarker.class, args="invokevirtual", order = 0, scope = "TargetClass.m*")
-	public static void beforeInvocation(MethodSC ci, ProcessorContext pc) {
+	public static void beforeInvocation(MethodStaticContext ci, ProcessorContext pc) {
 		
 		System.out.println("(Before) Method : ");
 		
@@ -40,7 +40,7 @@ public class DiSLClass {
 	}
 	
 	@Before(marker = BytecodeMarker.class, args="aastore", order = 1, scope = "TargetClass.main")
-	public static void beforeArrayStore(MethodSC ci, ProcessorContext pc) {
+	public static void beforeArrayStore(MethodStaticContext ci, ProcessorContext pc) {
 		
 		System.out.println("(Before) Array : ");
 		

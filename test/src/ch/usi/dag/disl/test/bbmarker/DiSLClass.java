@@ -4,7 +4,7 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.marker.BasicBlockMarker;
 import ch.usi.dag.disl.marker.PreciseBasicBlockMarker;
-import ch.usi.dag.disl.staticcontext.BasicBlockSC;
+import ch.usi.dag.disl.staticcontext.BasicBlockStaticContext;
 
 public class DiSLClass {
 
@@ -19,7 +19,7 @@ public class DiSLClass {
 	}
 
 	@Before(marker = BasicBlockMarker.class, scope = "TargetClass.print(boolean)", order = 2)
-	public static void precondition1(BasicBlockSC bba) {
+	public static void precondition1(BasicBlockStaticContext bba) {
 		System.out.println("Enter basic block 1! index: " + bba.getBBindex()
 				+ " size: " + bba.getBBSize());
 	}

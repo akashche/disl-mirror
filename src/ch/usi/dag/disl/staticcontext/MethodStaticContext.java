@@ -6,9 +6,9 @@ import ch.usi.dag.disl.staticcontext.cache.ClassCache;
 import ch.usi.dag.disl.staticcontext.cache.MethodCache;
 import ch.usi.dag.disl.util.Constants;
 
-public class MethodSC extends AbstractStaticContext {
+public class MethodStaticContext extends AbstractStaticContext {
 
-	public MethodSC() {
+	public MethodStaticContext() {
 		
 		registerCache("thisClassName", ClassCache.class);
 		registerCache("thisClassOuterClass", ClassCache.class);

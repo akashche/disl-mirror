@@ -6,7 +6,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
-public class BasicBlockSC extends AbstractStaticContext {
+public class BasicBlockStaticContext extends AbstractStaticContext {
 
 	public int getTotBBs() {
         CtrlFlowGraph cfg = new CtrlFlowGraph(

@@ -4,12 +4,12 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.processorcontext.ProcessorContext;
 import ch.usi.dag.disl.processorcontext.ProcessorMode;
-import ch.usi.dag.disl.staticcontext.MethodSC;
+import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 
 public class DiSLClass {
 
 	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.*")
-	public static void postcondition(MethodSC sc, ProcessorContext pc) {
+	public static void postcondition(MethodStaticContext sc, ProcessorContext pc) {
 		
 		System.out.println("args for " + sc.thisMethodFullName() + " " + sc.thisMethodDescriptor());
 		

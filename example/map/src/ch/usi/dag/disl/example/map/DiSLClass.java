@@ -10,7 +10,7 @@ import ch.usi.dag.disl.annotation.SyntheticLocal.Initialize;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
-import ch.usi.dag.disl.staticcontext.MethodSC;
+import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 import ch.usi.dag.disl.example.map.runtime.MemoryRuntime;
 
 // This is a DiSL implementation of the MAP tool
@@ -62,7 +62,7 @@ public class DiSLClass {
 	
 	// INIT THE SYNTHETIC LOCAL, only if a monitoenter is present in the body
 	@Before(marker = BodyMarker.class, scope = "*.*", order = 0, guard = HasMonitorGuard.class) 
-	public static void onMethodEnter(DynamicContext di, MethodSC sc) {
+	public static void onMethodEnter(DynamicContext di, MethodStaticContext sc) {
 	//	System.out.println("INIT STACK " + sc.thisMethodFullName());
 		objref = new Stack<Object>();
 	}

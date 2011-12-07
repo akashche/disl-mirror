@@ -8,7 +8,7 @@ import ch.usi.dag.disl.marker.AfterInitBodyMarker;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.processorcontext.ProcessorContext;
 import ch.usi.dag.disl.processorcontext.ProcessorMode;
-import ch.usi.dag.disl.staticcontext.BasicBlockSC;
+import ch.usi.dag.disl.staticcontext.BasicBlockStaticContext;
 import ch.usi.dag.disl.staticcontext.uid.UniqueMethodId;
 import ch.usi.dag.disl.example.senseo.runtime.Analysis;
 
@@ -32,7 +32,7 @@ public class DiSLClass {
      **                Constructors                  **
      **************************************************/
     @Before(marker = AfterInitBodyMarker.class, order = 1, scope = "*.*", guard = ConstructorHasOnlyPrimitiveArgs.class)
-    public static void onConstructorEntryPrimitiveArgs(UniqueMethodId id, BasicBlockSC bba) {
+    public static void onConstructorEntryPrimitiveArgs(UniqueMethodId id, BasicBlockStaticContext bba) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }
@@ -41,7 +41,7 @@ public class DiSLClass {
     }
 
     @Before(marker = AfterInitBodyMarker.class, order = 1, scope = "*.*", guard = ConstructorHasObjectArgs.class)
-    public static void onConstructorEntryObjectArgs(UniqueMethodId id, BasicBlockSC bba, ProcessorContext pc) {
+    public static void onConstructorEntryObjectArgs(UniqueMethodId id, BasicBlockStaticContext bba, ProcessorContext pc) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }
@@ -60,7 +60,7 @@ public class DiSLClass {
      **                   Methods                    **
      **************************************************/
     @Before(marker = BodyMarker.class, order = 1, scope = "*.*", guard = MethodHasOnlyPrimitiveArgs.class)
-    public static void onMethodEntryPrimitiveArgs(UniqueMethodId id, BasicBlockSC bba) {
+    public static void onMethodEntryPrimitiveArgs(UniqueMethodId id, BasicBlockStaticContext bba) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }
@@ -69,7 +69,7 @@ public class DiSLClass {
     }
 
     @Before(marker = BodyMarker.class, order = 1, scope = "*.*", guard = MethodHasObjectArgs.class)
-    public static void onMethodEntryObjectArgs(UniqueMethodId id, BasicBlockSC bba, ProcessorContext pc) {
+    public static void onMethodEntryObjectArgs(UniqueMethodId id, BasicBlockStaticContext bba, ProcessorContext pc) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }

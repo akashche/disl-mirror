@@ -4,7 +4,7 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.BytecodeMarker;
-import ch.usi.dag.disl.staticcontext.MethodSC;
+import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 
 public class DiSLClass {
@@ -44,7 +44,7 @@ public class DiSLClass {
 	}
 	
 	@AfterReturning(marker = BodyMarker.class, scope = "TargetClass.*")
-	public static void getThis(DynamicContext di, MethodSC msc) {
+	public static void getThis(DynamicContext di, MethodStaticContext msc) {
 		System.out.println(msc.thisMethodName() + " - this: " + di.thisValue());
 	}
 }

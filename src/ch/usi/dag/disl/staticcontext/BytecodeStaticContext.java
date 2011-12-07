@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.staticcontext;
 
 
-public class BytecodeSC extends AbstractStaticContext {
+public class BytecodeStaticContext extends AbstractStaticContext {
 
 	public int getBytecodeNumber() {
 		
