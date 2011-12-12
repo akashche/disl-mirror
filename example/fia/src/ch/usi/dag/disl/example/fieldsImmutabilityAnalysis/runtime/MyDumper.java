@@ -1,11 +1,10 @@
 package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 
 import java.io.PrintStream;
-import java.util.concurrent.atomic.AtomicLongArray;
 
 import ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime.MyWeakKeyIdentityHashMap.EntryDumper;
 
-public class MyDumper implements EntryDumper<MyWeakReference<Object>, AtomicLongArray>{
+public class MyDumper implements EntryDumper<MyWeakReference<Object>, FieldState[]>{
 	private final PrintStream ps;
 
 	public MyDumper(PrintStream ps) {
@@ -13,17 +12,17 @@ public class MyDumper implements EntryDumper<MyWeakReference<Object>, AtomicLong
 	}
 
 	@Override
-	public void dumpEntry(MyWeakReference<Object> key, AtomicLongArray value) {
+	public void dumpEntry(MyWeakReference<Object> key, FieldState[] value) {
 		ps.println(key.objectID);
-		StringBuilder str = new StringBuilder("[");
-		for(int i = 0; i < value.length(); i++){
-			str.append((value.get(i)));
-			str.append(",");
+		if(value != null) {
+			for(int i = 0; i < value.length; i++){
+				if(value[i] != null) {
+					ps.println(value[i].toString());
+				}
+				//TODO: do something for unaccessed fields!
+			}
 		}
-		if(str.indexOf(",")>0)
-			str.deleteCharAt(str.lastIndexOf(","));
-		str.append("]");
-		ps.println(str);
+		ps.println("");
 		ps.flush();
 	}
 

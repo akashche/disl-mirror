@@ -5,23 +5,20 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLongArray;
-
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class ImmutabilityAnalysis {
 	private static final ImmutabilityAnalysis instanceOfIA;
 
-	private final MyWeakKeyIdentityHashMap<Object, AtomicLongArray> fields;
+	private final MyWeakKeyIdentityHashMap<Object, FieldState[]> fieldStateMap;
 
 	static {
 		instanceOfIA = new ImmutabilityAnalysis();
 	}
 
 	private ImmutabilityAnalysis() {
-
 		PrintStream ps = null;
-		try{
+		try {
 			String dumpFile = System.getProperty("dump", "dump.log");
 			ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(dumpFile)));
 		}
@@ -31,15 +28,15 @@ public class ImmutabilityAnalysis {
 		}
 
 		final MyDumper myDumper = new MyDumper(ps);
-		fields = new MyWeakKeyIdentityHashMap<Object, AtomicLongArray>(myDumper);
+		fieldStateMap = new MyWeakKeyIdentityHashMap<Object, FieldState[]>(myDumper);
 
 		Runtime.getRuntime().addShutdownHook(new Thread(){
 			public void run() {
 				DynamicBypass.set(true);
 				System.err.println("In shutdown hook!");
 				try {
-					synchronized(fields) {
-						fields.dump();
+					synchronized(fieldStateMap) {
+						fieldStateMap.dump();
 					}
 				} catch(Throwable e) {
 					e.printStackTrace();
@@ -57,7 +54,7 @@ public class ImmutabilityAnalysis {
 	public void onObjectInitialization(Object allocatedObj, String allocSite) {
 		try {
 			String objectID = getObjectID(allocatedObj, allocSite);
-			AtomicLongArray fieldsArray = getFieldsArray(allocatedObj, objectID);
+			FieldState[] fieldsArray = getFieldsArray(allocatedObj);
 			if(fieldsArray == null) {
 				Offsets.registerIfNeeded(allocatedObj.getClass());
 				fieldsArray = getOrCreateFieldsArray(allocatedObj, objectID);
@@ -68,10 +65,12 @@ public class ImmutabilityAnalysis {
 		}
 	}
 
-	public void onFieldWrite(Object accessedObj, String accessedFieldId, Deque<Object> stack) {
+	public void onFieldWrite(Object accessedObj, String fieldId, Deque<Object> stack, String accessSite) {
 		try {
-			if(isInDynamicExtendOfConstructor(stack, accessedObj)) {
-				updateFieldsArray(accessedObj, accessedFieldId);
+//				System.err.println("===" + accessedFieldId + " in method " + accessSite);
+			FieldState fs = getOrCreateFieldState(accessedObj, fieldId);
+			if(fs != null) {
+				fs.onWrite(isInDynamicExtendOfConstructor(stack, accessedObj));
 			}
 		}
 		catch(Throwable t){
@@ -79,21 +78,43 @@ public class ImmutabilityAnalysis {
 		}
 	}
 
-	private void updateFieldsArray(Object accessedObj, String fieldName) {
+	public void onFieldRead(Object accessedObj, String fieldId, Deque<Object> stackTL) {
+		try {
+			FieldState fs = getOrCreateFieldState(accessedObj, fieldId);
+			if(fs != null) {
+				fs.onRead();
+			}
+		}
+		catch(Throwable t) {
+			t.printStackTrace();
+		}
+	}
+
+	private FieldState getOrCreateFieldState(Object accessedObj, String fieldId) {
+		FieldState fieldState = null;
 		try {
 			String objectID = getObjectID(accessedObj, null);
-			AtomicLongArray fieldsArray = getFieldsArray(accessedObj, objectID);
+			FieldState[] fieldsArray = getFieldsArray(accessedObj);
+
 			if(fieldsArray == null) {
+//				System.err.println("fieldsArray is null!");
 				Offsets.registerIfNeeded(accessedObj.getClass());
 				fieldsArray = getOrCreateFieldsArray(accessedObj, objectID);
 			}
-			Short s = Offsets.getFieldOffset(fieldName); 
+
+			Short s = Offsets.getFieldOffset(fieldId); 
 			if(s != null) {
-				fieldsArray.incrementAndGet(s);
+				synchronized (fieldsArray) {
+					if ((fieldState = fieldsArray[s]) == null ){
+//						System.err.println("creating new fieldState!");
+						fieldState = new FieldState(fieldId);
+						fieldsArray[s] = fieldState;
+					}
+				}
 			}
 			else {
 				System.err.println("[ImmutabilityAnalysis.updateFieldsArray] Warning: unregistered access to: "
-						+ fieldName
+						+ fieldId
 						+ "; skipping event");
 			}
 		}
@@ -101,19 +122,20 @@ public class ImmutabilityAnalysis {
 			t.printStackTrace();
 			System.exit(-1);
 		}
+		return fieldState;
 	}
 
-	private AtomicLongArray getFieldsArray(Object ownerObj, String objectID ) {
-		synchronized (fields) {
-			return fields.get(ownerObj);
+	private FieldState[] getFieldsArray(Object ownerObj) {
+		synchronized (fieldStateMap) {
+			return fieldStateMap.get(ownerObj);
 		}
 	}
 
-	private AtomicLongArray getOrCreateFieldsArray(Object ownerObj, String objectID) {
-		AtomicLongArray fieldsArray;
-		synchronized (fields) {
-			if ((fieldsArray = fields.get(ownerObj)) == null) {
-				fields.put(ownerObj, fieldsArray =  new AtomicLongArray(Offsets.getNumberOfFields(ownerObj.getClass())), objectID);
+	private FieldState[] getOrCreateFieldsArray(Object ownerObj, String objectID) {
+		FieldState[] fieldsArray;
+		synchronized (fieldStateMap) {
+			if ((fieldsArray = fieldStateMap.get(ownerObj)) == null) {
+				fieldStateMap.put(ownerObj, fieldsArray = new FieldState[Offsets.getNumberOfFields(ownerObj.getClass())], objectID);
 			}
 		}
 		return fieldsArray;

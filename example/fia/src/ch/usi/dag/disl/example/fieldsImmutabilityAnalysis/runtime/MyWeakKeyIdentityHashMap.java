@@ -237,7 +237,6 @@ public final class MyWeakKeyIdentityHashMap<K,V> {
         return registerEntryDumper(null);
     }
 
-
     @SuppressWarnings("hiding")
 	public interface EntryDumper<MyWeakReference, V> {
         void dumpEntry(MyWeakReference key, V value);

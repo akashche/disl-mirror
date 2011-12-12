@@ -26,15 +26,4 @@ public class MyAnalysis extends MethodStaticContext {
 			return "ERROR!";
 		}
 	}
-
-//	public String getAccessedObjectClassName() {
-//		AbstractInsnNode instr = staticContextData.getRegionStart();
-//
-//		if (instr.getOpcode() == Opcodes.GETSTATIC
-//				|| instr.getOpcode() == Opcodes.PUTSTATIC) {
-//			return  ((FieldInsnNode) instr).owner + "." + ((FieldInsnNode) instr).name;
-//		} else {
-//			return "ERROR!";
-//		}
-//	}
 }
