@@ -38,7 +38,8 @@ public class FieldState {
 		}
 	}
 
-	public String toString() {
+	//this method is synchronized to guarantee visibility
+	public synchronized String toString() {
 		return fieldId + " " + currentState + " default init:" + defaultInit + " writes: " + numWrites + " reads: " + numReads;
 	}
 }

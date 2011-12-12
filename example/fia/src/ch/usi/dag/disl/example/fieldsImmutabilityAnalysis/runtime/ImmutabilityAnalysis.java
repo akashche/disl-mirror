@@ -67,7 +67,6 @@ public class ImmutabilityAnalysis {
 
 	public void onFieldWrite(Object accessedObj, String fieldId, Deque<Object> stack, String accessSite) {
 		try {
-//				System.err.println("===" + accessedFieldId + " in method " + accessSite);
 			FieldState fs = getOrCreateFieldState(accessedObj, fieldId);
 			if(fs != null) {
 				fs.onWrite(isInDynamicExtendOfConstructor(stack, accessedObj));
@@ -97,7 +96,6 @@ public class ImmutabilityAnalysis {
 			FieldState[] fieldsArray = getFieldsArray(accessedObj);
 
 			if(fieldsArray == null) {
-//				System.err.println("fieldsArray is null!");
 				Offsets.registerIfNeeded(accessedObj.getClass());
 				fieldsArray = getOrCreateFieldsArray(accessedObj, objectID);
 			}
@@ -106,14 +104,13 @@ public class ImmutabilityAnalysis {
 			if(s != null) {
 				synchronized (fieldsArray) {
 					if ((fieldState = fieldsArray[s]) == null ){
-//						System.err.println("creating new fieldState!");
 						fieldState = new FieldState(fieldId);
 						fieldsArray[s] = fieldState;
 					}
 				}
 			}
 			else {
-				System.err.println("[ImmutabilityAnalysis.updateFieldsArray] Warning: unregistered access to: "
+				System.err.println("[ImmutabilityAnalysis.getOrCreateFieldState] Warning: unregistered access to: "
 						+ fieldId
 						+ "; skipping event");
 			}

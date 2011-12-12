@@ -20,7 +20,6 @@ public class DiSLClass {
 	private static Deque<Object> stackTL;
 
 	/** STACK MAINTENANCE **/
-//	@Before(marker = BodyMarker.class, scope = "*.*", guard = OnlyInit.class, order = 1)
 	@Before(marker = BodyMarker.class, guard = OnlyInit.class)
 	public static void before(DynamicContext dc, MethodStaticContext sc) {
 		if(stackTL == null) {
@@ -32,16 +31,14 @@ public class DiSLClass {
 			);
 	}
 
-//	@After(marker = BodyMarker.class, scope = "*.*", guard = OnlyInit.class, order = 1)
 	@After(marker = BodyMarker.class, guard = OnlyInit.class)
 	public static void after() {
 		ImmutabilityAnalysis.instanceOf().popStackIfNonNull(stackTL);
 	}
 
 	/** ALLOCATION SITE **/
-//	@AfterReturning(marker = BytecodeMarker.class, args = "new", scope = "*.*", order = 0)
 	@AfterReturning(marker = BytecodeMarker.class, args = "new")
-	public static void BeforeInitialization(MethodStaticContext sc, MyAnalysis ma, DynamicContext dc) {
+	public static void BeforeInitialization(MethodStaticContext sc, MyMethodStaticContext ma, DynamicContext dc) {
 		ImmutabilityAnalysis.instanceOf().onObjectInitialization(
 				dc.getStackValue(0, Object.class), //the allocated object
 				ma.getAllocationSite() //the allocation site
@@ -49,9 +46,8 @@ public class DiSLClass {
 	}
 
 	/** FIELD ACCESSES **/
-//	@Before(marker=BytecodeMarker.class, args = "putfield", scope = "*.*",  order = 0)
 	@Before(marker = BytecodeMarker.class, args = "putfield")
-	public static void onFieldWrite(MethodStaticContext sc, MyAnalysis ma, DynamicContext dc) {
+	public static void onFieldWrite(MethodStaticContext sc, MyMethodStaticContext ma, DynamicContext dc) {
 		ImmutabilityAnalysis.instanceOf().onFieldWrite(
 				dc.getStackValue(1, Object.class), //the accessed object
 				ma.getFieldId(), //the field identifier
@@ -60,9 +56,8 @@ public class DiSLClass {
 			);
 	}
 
-//	@Before(marker=BytecodeMarker.class, args = "getfield", scope = "*.*",  order = 0)
 	@Before(marker = BytecodeMarker.class, args = "getfield")
-	public static void onFieldRead(MethodStaticContext sc, MyAnalysis ma, DynamicContext dc) {
+	public static void onFieldRead(MethodStaticContext sc, MyMethodStaticContext ma, DynamicContext dc) {
 		ImmutabilityAnalysis.instanceOf().onFieldRead(
 				dc.getStackValue(0, Object.class), //the accessed object
 				ma.getFieldId(), //the field identifier

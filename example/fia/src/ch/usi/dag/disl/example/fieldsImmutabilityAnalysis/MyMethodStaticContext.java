@@ -6,7 +6,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 
 import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 
-public class MyAnalysis extends MethodStaticContext {
+public class MyMethodStaticContext extends MethodStaticContext {
 	public String getAllocationSite() {
         int idx = 0;
 
