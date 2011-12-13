@@ -3,6 +3,8 @@ package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.zip.GZIPOutputStream;
@@ -60,6 +62,12 @@ public class ImmutabilityAnalysis {
 			if (fieldsArray == null) {
 				Offsets.registerIfNeeded(allocatedObj.getClass());
 				fieldsArray = getOrCreateFieldsArray(allocatedObj, objectID);
+				
+				for (Field f: Offsets.getObjectFields(allocatedObj.getClass())) {
+					if (!Modifier.isStatic(f.getModifiers())){
+						getOrCreateFieldState(allocatedObj, Offsets.getFieldId(allocatedObj.getClass(), f.getName(), f.getType()));
+					}
+				}
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();

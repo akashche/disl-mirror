@@ -8,6 +8,9 @@ import java.util.List;
 public class TargetClass {
 	private int immutable;
 	private int mutable;
+	private int neverAccessed1;
+	private int neverAccessed2;
+	
 	public TargetClass() {
 		immutable = 3;
 	}

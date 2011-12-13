@@ -50,6 +50,10 @@ public class TabSeparatedValuesDumper implements EntryDumper<MyWeakReference<Obj
 				//TODO: do something for unaccessed fields!
 			}
 		}
+		// This should never happen
+		else {
+			System.err.println("[TabSeparatedValuesDumper.dumpEntry] Unaccessed field is not registered!");
+		}
 		ps.print('\n');
 		ps.flush();
 	}

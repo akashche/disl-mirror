@@ -10,7 +10,7 @@ public class Offsets {
 	//TODO: check if we can use a ConcurrentHashMap
 	private static final Map<Class<?>, Short> numberOfFields = new WeakHashMap<Class<?>, Short>();
 	private static final Map<String, Short> fieldOffsets = new ConcurrentHashMap<String, Short>();
-
+	private static final Map<Class<?>, Field[]> classFields = new ConcurrentHashMap<Class<?>, Field[]>();
 	static {
 		//TODO: check if this is necessary
 		numberOfFields.put(null, (short) 0); // Register Object's "superclass" as a Null object.
@@ -20,11 +20,11 @@ public class Offsets {
 		Object synchClazz = (clazz.getClassLoader() == null) ? numberOfFields : clazz.getClassLoader();
 		synchronized (synchClazz) {
 			synchronized (numberOfFields) {
-				if (numberOfFields.containsKey(clazz)) {
+				if(numberOfFields.containsKey(clazz)) {
 					return;
 				}
 				Class<?> superClass = clazz.getSuperclass();
-				if (superClass != null) {
+				if(superClass != null) {
 					registerIfNeeded(superClass);
 				}
 				Short s = registerFieldOffsets(clazz);
@@ -35,6 +35,12 @@ public class Offsets {
 
 	public static short getNumberOfFields(Class<?> clazz) {
 		return numberOfFields.get(clazz);
+	}
+
+	public static boolean NotNull(String fieldId){
+		if (fieldOffsets.get(fieldId) != null )
+			return true;
+		return false;
 	}
 
 	public static Short getFieldOffset(String fieldId) {
@@ -66,36 +72,43 @@ public class Offsets {
 		for (Field field : declaringClass.getDeclaredFields()){
 			if (!Modifier.isStatic(field.getModifiers())){
 				fieldOffsets.put(getFieldId(clazz, field.getName(), field.getType()), numberOfFields++);
+				
 			}
+		}
+		if (classFields.get(declaringClass) == null) {
+			classFields.put(declaringClass, declaringClass.getDeclaredFields());
 		}
 
 		return numberOfFields;
 	}
+	public static Field[] getObjectFields (Class<?> declaringClass) {
+		return classFields.get(declaringClass);
+	}
 
-	//	private static String asDescriptor(Class<?> type) throws AssertionError {
-	//		if (type.isPrimitive()) {
-	//			if (type == Integer.TYPE)
-	//				return "I";
-	//			else if (type == Long.TYPE)
-	//				return "J";
-	//			else if (type == Float.TYPE)
-	//				return "F";
-	//			else if (type == Double.TYPE)
-	//				return "D";
-	//			else if (type == Character.TYPE)
-	//				return "C";
-	//			else if (type == Boolean.TYPE)
-	//				return "Z";
-	//			else if (type == Byte.TYPE)
-	//				return "B";
-	//			else if (type == Short.TYPE)
-	//				return "S";
-	//			else
-	//				throw new AssertionError("Unknown primitive: " + type);
-	//		} else if (type.isArray()) {
-	//			return type.getName(); // getName() already returns type descriptor syntax
-	//		} else {
-	//			return "L" + type.getName().replace('.', '/') + ";";
-	//		}
-	//	}
+//	private static String asDescriptor(Class<?> type) throws AssertionError {
+//		if (type.isPrimitive()) {
+//			if (type == Integer.TYPE)
+//				return "I";
+//			else if (type == Long.TYPE)
+//				return "J";
+//			else if (type == Float.TYPE)
+//				return "F";
+//			else if (type == Double.TYPE)
+//				return "D";
+//			else if (type == Character.TYPE)
+//				return "C";
+//			else if (type == Boolean.TYPE)
+//				return "Z";
+//			else if (type == Byte.TYPE)
+//				return "B";
+//			else if (type == Short.TYPE)
+//				return "S";
+//			else
+//				throw new AssertionError("Unknown primitive: " + type);
+//		} else if (type.isArray()) {
+//			return type.getName(); // getName() already returns type descriptor syntax
+//		} else {
+//			return "L" + type.getName().replace('.', '/') + ";";
+//		}
+//	}
 }
