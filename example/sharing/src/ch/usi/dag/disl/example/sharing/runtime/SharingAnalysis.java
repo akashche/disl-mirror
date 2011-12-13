@@ -3,6 +3,9 @@ package ch.usi.dag.disl.example.sharing.runtime;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
 
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
@@ -59,6 +62,11 @@ public class SharingAnalysis {
 				Offsets.registerIfNeeded(allocatedObj.getClass());
 				fieldsArray = getOrCreateFieldsArray(allocatedObj, objectID);
 			}
+			for (Field f: Offsets.getObjectFields(allocatedObj.getClass())) {
+				if (!Modifier.isStatic(f.getModifiers())){
+					getOrCreateFieldState(allocatedObj, Offsets.getFieldId(allocatedObj.getClass(), f.getName(), f.getType()));
+				}
+			}
 		}
 		catch(Throwable t) {
 			t.printStackTrace();
@@ -103,7 +111,7 @@ public class SharingAnalysis {
 			if(s != null) {
 				synchronized (fieldsArray) {
 					if ((fieldState = fieldsArray[s]) == null ){
-						fieldState = new FieldState(fieldId);
+						fieldState = new FieldState(fieldId, Thread.currentThread());
 						fieldsArray[s] = fieldState;
 					}
 				}

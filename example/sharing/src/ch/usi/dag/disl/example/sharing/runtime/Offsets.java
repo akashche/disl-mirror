@@ -10,7 +10,7 @@ public class Offsets {
 	//TODO: check if we can use a ConcurrentHashMap
 	private static final Map<Class<?>, Short> numberOfFields = new WeakHashMap<Class<?>, Short>();
 	private static final Map<String, Short> fieldOffsets = new ConcurrentHashMap<String, Short>();
-
+	private static final Map<Class<?>, Field[]> classFields = new ConcurrentHashMap<Class<?>, Field[]>();
 	static {
 		//TODO: check if this is necessary
 		numberOfFields.put(null, (short) 0); // Register Object's "superclass" as a Null object.
@@ -72,10 +72,17 @@ public class Offsets {
 		for (Field field : declaringClass.getDeclaredFields()){
 			if (!Modifier.isStatic(field.getModifiers())){
 				fieldOffsets.put(getFieldId(clazz, field.getName(), field.getType()), numberOfFields++);
+				
 			}
+		}
+		if (classFields.get(declaringClass) == null) {
+			classFields.put(declaringClass, declaringClass.getDeclaredFields());
 		}
 
 		return numberOfFields;
+	}
+	public static Field[] getObjectFields (Class<?> declaringClass) {
+		return classFields.get(declaringClass);
 	}
 
 //	private static String asDescriptor(Class<?> type) throws AssertionError {
