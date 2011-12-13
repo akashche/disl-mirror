@@ -20,11 +20,11 @@ public class Offsets {
 		Object synchClazz = (clazz.getClassLoader() == null) ? numberOfFields : clazz.getClassLoader();
 		synchronized (synchClazz) {
 			synchronized (numberOfFields) {
-				if(numberOfFields.containsKey(clazz)) {
+				if (numberOfFields.containsKey(clazz)) {
 					return;
 				}
 				Class<?> superClass = clazz.getSuperclass();
-				if(superClass != null) {
+				if (superClass != null) {
 					registerIfNeeded(superClass);
 				}
 				Short s = registerFieldOffsets(clazz);
@@ -35,12 +35,6 @@ public class Offsets {
 
 	public static short getNumberOfFields(Class<?> clazz) {
 		return numberOfFields.get(clazz);
-	}
-
-	public static boolean NotNull(String fieldId){
-		if (fieldOffsets.get(fieldId) != null )
-			return true;
-		return false;
 	}
 
 	public static Short getFieldOffset(String fieldId) {
@@ -78,30 +72,30 @@ public class Offsets {
 		return numberOfFields;
 	}
 
-//	private static String asDescriptor(Class<?> type) throws AssertionError {
-//		if (type.isPrimitive()) {
-//			if (type == Integer.TYPE)
-//				return "I";
-//			else if (type == Long.TYPE)
-//				return "J";
-//			else if (type == Float.TYPE)
-//				return "F";
-//			else if (type == Double.TYPE)
-//				return "D";
-//			else if (type == Character.TYPE)
-//				return "C";
-//			else if (type == Boolean.TYPE)
-//				return "Z";
-//			else if (type == Byte.TYPE)
-//				return "B";
-//			else if (type == Short.TYPE)
-//				return "S";
-//			else
-//				throw new AssertionError("Unknown primitive: " + type);
-//		} else if (type.isArray()) {
-//			return type.getName(); // getName() already returns type descriptor syntax
-//		} else {
-//			return "L" + type.getName().replace('.', '/') + ";";
-//		}
-//	}
+	//	private static String asDescriptor(Class<?> type) throws AssertionError {
+	//		if (type.isPrimitive()) {
+	//			if (type == Integer.TYPE)
+	//				return "I";
+	//			else if (type == Long.TYPE)
+	//				return "J";
+	//			else if (type == Float.TYPE)
+	//				return "F";
+	//			else if (type == Double.TYPE)
+	//				return "D";
+	//			else if (type == Character.TYPE)
+	//				return "C";
+	//			else if (type == Boolean.TYPE)
+	//				return "Z";
+	//			else if (type == Byte.TYPE)
+	//				return "B";
+	//			else if (type == Short.TYPE)
+	//				return "S";
+	//			else
+	//				throw new AssertionError("Unknown primitive: " + type);
+	//		} else if (type.isArray()) {
+	//			return type.getName(); // getName() already returns type descriptor syntax
+	//		} else {
+	//			return "L" + type.getName().replace('.', '/') + ";";
+	//		}
+	//	}
 }

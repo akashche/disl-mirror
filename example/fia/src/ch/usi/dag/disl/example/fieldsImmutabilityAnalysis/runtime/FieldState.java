@@ -16,15 +16,15 @@ public class FieldState {
 		this.fieldId = fieldId;
 	}
 
-	public String getFieldId() { return fieldId; }
+	public synchronized String getFieldId() { return fieldId; }
 
-	public State getState() { return currentState; }
+	public synchronized State getState() { return currentState; }
 
-	public long getNumReads() { return numReads; }
+	public synchronized long getNumReads() { return numReads; }
 
-	public long getNumWrites() { return numWrites; }
+	public synchronized long getNumWrites() { return numWrites; }
 
-	public boolean isDefaultInit() { return defaultInit; }
+	public synchronized boolean isDefaultInit() { return defaultInit; }
 
 	public synchronized void onRead() {
 		numReads++;

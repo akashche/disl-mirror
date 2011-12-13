@@ -70,7 +70,7 @@ public class ImmutabilityAnalysis {
 		try {
 			FieldState fs = getOrCreateFieldState(accessedObj, fieldId);
 			if(fs != null) {
-				fs.onWrite(isInDynamicExtendOfConstructor(stack, accessedObj));
+				fs.onWrite(isUnderConstruction(accessedObj, stack));
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();
@@ -129,16 +129,17 @@ public class ImmutabilityAnalysis {
 		FieldState[] fieldsArray;
 		synchronized (fieldStateMap) {
 			if ((fieldsArray = fieldStateMap.get(ownerObj)) == null) {
-				fieldStateMap.put(ownerObj, fieldsArray = new FieldState[Offsets.getNumberOfFields(ownerObj.getClass())], objectID);
+				fieldsArray = new FieldState[Offsets.getNumberOfFields(ownerObj.getClass())];
+				fieldStateMap.put(ownerObj, fieldsArray, objectID);
 			}
 		}
 		return fieldsArray;
 	}
 
-	public boolean isInDynamicExtendOfConstructor(Deque<Object> stack, Object accessedObject) {
-		if (stack != null) {
-			for (Iterator<Object> iter = stack.iterator(); iter.hasNext();) {
-				if (iter.next() == accessedObject) {
+	public boolean isUnderConstruction(Object object, Deque<Object> objectsUnderConstruction) {
+		if (objectsUnderConstruction != null) {
+			for (Iterator<Object> iter = objectsUnderConstruction.iterator(); iter.hasNext();) {
+				if (iter.next() == object) {
 					return true;
 				}
 			}
