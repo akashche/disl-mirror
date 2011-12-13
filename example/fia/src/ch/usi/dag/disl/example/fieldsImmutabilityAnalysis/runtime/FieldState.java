@@ -2,24 +2,38 @@ package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 
 public class FieldState {
 
-	private final String fieldId; 
-	private long numWrites;
-	private long numReads;
-	private enum MyState {VIRGIN, IMMUTABLE, MUTABLE };
+	private final String fieldId;
+
+	private State currentState = State.VIRGIN;
+
+	private long numReads, numWrites;
+
 	private boolean defaultInit = false;
-	private MyState currentState;
+
+	private enum State { VIRGIN, IMMUTABLE, MUTABLE };
 
 	public FieldState(String fieldId) {
 		this.fieldId = fieldId;
-		this.currentState = MyState.VIRGIN;
 	}
+
+	public String getFieldId() { return fieldId; }
+
+	public State getState() { return currentState; }
+
+	public long getNumReads() { return numReads; }
+
+	public long getNumWrites() { return numWrites; }
+
+	public boolean isDefaultInit() { return defaultInit; }
 
 	public synchronized void onRead() {
 		numReads++;
 
-		if(currentState == MyState.VIRGIN) {
+		switch (currentState) {
+		case VIRGIN:
 			defaultInit = true;
-			currentState = MyState.IMMUTABLE;
+			currentState = State.IMMUTABLE;
+			break;
 		}
 	}
 
@@ -28,18 +42,9 @@ public class FieldState {
 
 		switch(currentState) {
 		case VIRGIN:
-			currentState = isInDynamicExtendOfConstructor ? MyState.IMMUTABLE : MyState.MUTABLE;
-			break;
 		case IMMUTABLE:
-			if(!isInDynamicExtendOfConstructor) {
-				currentState = MyState.MUTABLE;
-			}
+			currentState = isInDynamicExtendOfConstructor ? State.IMMUTABLE : State.MUTABLE;
 			break;
 		}
-	}
-
-	//this method is synchronized to guarantee visibility
-	public synchronized String toString() {
-		return fieldId + " " + currentState + " default init:" + defaultInit + " writes: " + numWrites + " reads: " + numReads;
 	}
 }

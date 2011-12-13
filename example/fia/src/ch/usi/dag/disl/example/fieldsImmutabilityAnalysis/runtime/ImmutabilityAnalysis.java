@@ -5,10 +5,11 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.zip.GZIPOutputStream;
+
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
 public class ImmutabilityAnalysis {
-	private static final ImmutabilityAnalysis instanceOfIA;
 
 	private final MyWeakKeyIdentityHashMap<Object, FieldState[]> fieldStateMap;
 
@@ -16,32 +17,33 @@ public class ImmutabilityAnalysis {
 		instanceOfIA = new ImmutabilityAnalysis();
 	}
 
+	private static final ImmutabilityAnalysis instanceOfIA;
+
 	private ImmutabilityAnalysis() {
 		PrintStream ps = null;
 		try {
-			String dumpFile = System.getProperty("dump", "dump.log");
-			ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(dumpFile)));
-		}
-		catch(Throwable t){
+			String dumpFile = System.getProperty("dump", "dump.tsv.gz");
+			ps = new PrintStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(dumpFile))));
+		} catch (Throwable t) {
 			t.printStackTrace();
 			System.exit(-1);
 		}
 
-		final MyDumper myDumper = new MyDumper(ps);
-		fieldStateMap = new MyWeakKeyIdentityHashMap<Object, FieldState[]>(myDumper);
+		final TabSeparatedValuesDumper dumper = new TabSeparatedValuesDumper(ps);
+		fieldStateMap = new MyWeakKeyIdentityHashMap<Object, FieldState[]>(dumper);
 
-		Runtime.getRuntime().addShutdownHook(new Thread(){
+		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
 				DynamicBypass.set(true);
 				System.err.println("In shutdown hook!");
 				try {
-					synchronized(fieldStateMap) {
+					synchronized (fieldStateMap) {
 						fieldStateMap.dump();
 					}
-				} catch(Throwable e) {
+				} catch (Throwable e) {
 					e.printStackTrace();
 				} finally {
-					myDumper.close();
+					dumper.close();
 				}
 			}
 		});
@@ -55,12 +57,11 @@ public class ImmutabilityAnalysis {
 		try {
 			String objectID = getObjectID(allocatedObj, allocSite);
 			FieldState[] fieldsArray = getFieldsArray(allocatedObj);
-			if(fieldsArray == null) {
+			if (fieldsArray == null) {
 				Offsets.registerIfNeeded(allocatedObj.getClass());
 				fieldsArray = getOrCreateFieldsArray(allocatedObj, objectID);
 			}
-		}
-		catch(Throwable t) {
+		} catch (Throwable t) {
 			t.printStackTrace();
 		}
 	}
@@ -71,8 +72,7 @@ public class ImmutabilityAnalysis {
 			if(fs != null) {
 				fs.onWrite(isInDynamicExtendOfConstructor(stack, accessedObj));
 			}
-		}
-		catch(Throwable t){
+		} catch (Throwable t) {
 			t.printStackTrace();
 		}
 	}
@@ -83,8 +83,7 @@ public class ImmutabilityAnalysis {
 			if(fs != null) {
 				fs.onRead();
 			}
-		}
-		catch(Throwable t) {
+		} catch(Throwable t) {
 			t.printStackTrace();
 		}
 	}
@@ -101,21 +100,19 @@ public class ImmutabilityAnalysis {
 			}
 
 			Short s = Offsets.getFieldOffset(fieldId); 
-			if(s != null) {
+			if (s != null) {
 				synchronized (fieldsArray) {
 					if ((fieldState = fieldsArray[s]) == null ){
 						fieldState = new FieldState(fieldId);
 						fieldsArray[s] = fieldState;
 					}
 				}
-			}
-			else {
+			} else {
 				System.err.println("[ImmutabilityAnalysis.getOrCreateFieldState] Warning: unregistered access to: "
 						+ fieldId
 						+ "; skipping event");
 			}
-		}
-		catch(Throwable t){
+		} catch (Throwable t) {
 			t.printStackTrace();
 			System.exit(-1);
 		}
@@ -139,9 +136,9 @@ public class ImmutabilityAnalysis {
 	}
 
 	public boolean isInDynamicExtendOfConstructor(Deque<Object> stack, Object accessedObject) {
-		if(stack != null) {
-			for(Iterator<Object> iter = stack.iterator(); iter.hasNext();) {
-				if(iter.next() == accessedObject) {
+		if (stack != null) {
+			for (Iterator<Object> iter = stack.iterator(); iter.hasNext();) {
+				if (iter.next() == accessedObject) {
 					return true;
 				}
 			}
