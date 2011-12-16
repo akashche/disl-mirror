@@ -10,7 +10,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
-import ch.usi.dag.disl.annotation.ArgsProcessor;
+import ch.usi.dag.disl.annotation.ArgumentProcessor;
 import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ParserException;
@@ -62,9 +62,9 @@ public class ClassParser {
 		Type annotationType = Type.getType(annotation.desc);
 
 		// check for processor annotation
-		if (! annotationType.equals(Type.getType(ArgsProcessor.class))) {
+		if (! annotationType.equals(Type.getType(ArgumentProcessor.class))) {
 			throw new ParserException("Class " + classNode.name
-					+ " may have only ArgsProcessor anotation");
+					+ " may have only ArgumentProcessor anotation");
 		}
 		
 		processorParser.parse(classNode);

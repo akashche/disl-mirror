@@ -30,12 +30,14 @@ public class SnippetCode extends Code {
 			boolean containsHandledException,
 			Set<StaticContextMethod> staticContexts,
 			boolean usesDynamicContext,
+			boolean usesClassContext,
 			boolean usesProcessorContext,
 			Map<Integer, ProcInvocation> invokedProcessors
 			) {
 		
 		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
-				staticContexts, usesDynamicContext, containsHandledException);
+				staticContexts, usesDynamicContext, usesClassContext,
+				containsHandledException);
 		this.invokedProcessors = invokedProcessors;
 		this.usesProcessorContext = usesProcessorContext;
 	}
@@ -56,6 +58,7 @@ public class SnippetCode extends Code {
 				containsHandledException(),
 				new HashSet<StaticContextMethod>(getStaticContexts()),
 				usesDynamicContext(),
+				usesClassContext(),
 				usesProcessorContext,
 				new HashMap<Integer, ProcInvocation>(invokedProcessors));
 	}

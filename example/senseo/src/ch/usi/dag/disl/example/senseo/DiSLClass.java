@@ -6,8 +6,9 @@ import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.annotation.ThreadLocal;
 import ch.usi.dag.disl.marker.AfterInitBodyMarker;
 import ch.usi.dag.disl.marker.BodyMarker;
-import ch.usi.dag.disl.processorcontext.ProcessorContext;
-import ch.usi.dag.disl.processorcontext.ProcessorMode;
+import ch.usi.dag.disl.processorcontext.ArgumentContext;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.staticcontext.BasicBlockStaticContext;
 import ch.usi.dag.disl.staticcontext.uid.UniqueMethodId;
 import ch.usi.dag.disl.example.senseo.runtime.Analysis;
@@ -41,14 +42,14 @@ public class DiSLClass {
     }
 
     @Before(marker = AfterInitBodyMarker.class, order = 1, scope = "*.*", guard = ConstructorHasObjectArgs.class)
-    public static void onConstructorEntryObjectArgs(UniqueMethodId id, BasicBlockStaticContext bba, ProcessorContext pc) {
+    public static void onConstructorEntryObjectArgs(UniqueMethodId id, BasicBlockStaticContext bba, ArgumentProcessorContext pc) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }
         //TODO: add method getTotBBs() to class BasicBlockAnalysis
         thisAnalysis.onEntry(id.get(), false, -1);//bba.getTotBBs());
 
-        pc.apply(ArgumentProcessor.class, ProcessorMode.METHOD_ARGS);     
+        pc.apply(ArgumentProcessor.class, ArgumentProcessorMode.METHOD_ARGS);
     }
 
     @After(marker = BodyMarker.class, order = 1, scope = "*.*", guard = OnlyInit.class)
@@ -69,14 +70,14 @@ public class DiSLClass {
     }
 
     @Before(marker = BodyMarker.class, order = 1, scope = "*.*", guard = MethodHasObjectArgs.class)
-    public static void onMethodEntryObjectArgs(UniqueMethodId id, BasicBlockStaticContext bba, ProcessorContext pc) {
+    public static void onMethodEntryObjectArgs(UniqueMethodId id, BasicBlockStaticContext bba, ArgumentProcessorContext pc) {
         if((thisAnalysis = currentAnalysis) == null) {
             thisAnalysis = (currentAnalysis = new Analysis());
         }
         //TODO: add method getTotBBs() to class BasicBlockAnalysis
         thisAnalysis.onEntry(id.get(), false, -1);//bba.getTotBBs());
 
-        pc.apply(ArgumentProcessor.class, ProcessorMode.METHOD_ARGS);
+        pc.apply(ArgumentProcessor.class, ArgumentProcessorMode.METHOD_ARGS);
     }
 
     @After(marker = BodyMarker.class, order = 1, scope = "*.*", guard = NotInitNorClinit.class)

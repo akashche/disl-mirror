@@ -16,7 +16,7 @@ import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.processor.ProcArgType;
 import ch.usi.dag.disl.processor.ProcMethod;
-import ch.usi.dag.disl.processorcontext.ProcessorMode;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
@@ -83,7 +83,7 @@ public class ProcGenerator {
 		ProcInstance procInst = insideMethodPIs.get(prcInv.getProcessor());
 
 		if (procInst == null) {
-			procInst = createProcInstance(ProcessorMode.METHOD_ARGS,
+			procInst = createProcInstance(ArgumentProcessorMode.METHOD_ARGS,
 					shadow.getMethodNode().desc, shadow, prcInv);
 		}
 
@@ -111,7 +111,7 @@ public class ProcGenerator {
 		
 		// check - method invocation
 		if (!(instr instanceof MethodInsnNode)) {
-			throw new ProcessorException("ArgsProcessor "
+			throw new ProcessorException("ArgumentProcessor "
 					+ prcInv.getProcessor().getName()
 					+ " is not applied before method invocation in method "
 					+ fullMethodName);
@@ -119,11 +119,11 @@ public class ProcGenerator {
 
 		MethodInsnNode methodInvocation = (MethodInsnNode) instr;
 
-		return createProcInstance(ProcessorMode.CALLSITE_ARGS,
+		return createProcInstance(ArgumentProcessorMode.CALLSITE_ARGS,
 				methodInvocation.desc, shadow, prcInv);
 	}
 
-	private ProcInstance createProcInstance(ProcessorMode procApplyType,
+	private ProcInstance createProcInstance(ArgumentProcessorMode procApplyType,
 			String methodDesc, Shadow shadow, ProcInvocation prcInv) {
 
 		List<ProcMethodInstance> procMethodInstances = 

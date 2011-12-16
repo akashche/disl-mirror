@@ -18,6 +18,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.annotation.Guarded;
 import ch.usi.dag.disl.annotation.ProcessAlso;
+import ch.usi.dag.disl.classcontext.ClassContext;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.GuardException;
@@ -74,7 +75,7 @@ class ProcessorParser extends AbstractParser {
 		}
 		
 		if(methods.isEmpty()) {
-			throw new ProcessorParserException("ArgsProcessor class "
+			throw new ProcessorParserException("ArgumentProcessor class "
 					+ classNode.name + " should contain methods");
 		}
 		
@@ -155,7 +156,7 @@ class ProcessorParser extends AbstractParser {
 		// code is processed after everything is parsed
 		ProcUnprocessedCode ucd = new ProcUnprocessedCode(method.instructions,
 				method.tryCatchBlocks, pmArgData.getStaticContexts(),
-				pmArgData.usesDynamicContext(),
+				pmArgData.usesDynamicContext(), pmArgData.usesClassContext(),
 				pmArgData.usesArgumentContext());
 
 		// return whole processor method
@@ -169,14 +170,17 @@ class ProcessorParser extends AbstractParser {
 		private ProcArgType type;
 		private Set<String> staticContexts;
 		private boolean usesDynamicContext;
+		private boolean usesClassContext;
 		private boolean usesArgumentContext;
 		
 		public PMArgData(ProcArgType type, Set<String> staticContexts,
-				boolean usesDynamicContext, boolean usesArgumentContext) {
+				boolean usesDynamicContext, boolean usesClassContext,
+				boolean usesArgumentContext) {
 			super();
 			this.type = type;
 			this.staticContexts = staticContexts;
 			this.usesDynamicContext = usesDynamicContext;
+			this.usesClassContext = usesClassContext;
 			this.usesArgumentContext = usesArgumentContext;
 		}
 
@@ -192,6 +196,10 @@ class ProcessorParser extends AbstractParser {
 			return usesDynamicContext;
 		}
 
+		public boolean usesClassContext() {
+			return usesClassContext;
+		}
+		
 		public boolean usesArgumentContext() {
 			return usesArgumentContext;
 		}
@@ -217,6 +225,7 @@ class ProcessorParser extends AbstractParser {
 		
 		Set<String> knownStCo = new HashSet<String>();
 		boolean usesDynamicContext = false;
+		boolean usesClassContext = false;
 		boolean usesArgumentContext = false;
 
 		// parse rest of the arguments
@@ -227,6 +236,12 @@ class ProcessorParser extends AbstractParser {
 			// skip dynamic context class - don't check anything
 			if (argType.equals(Type.getType(DynamicContext.class))) {
 				usesDynamicContext = true;
+				continue;
+			}
+			
+			// skip class context class - don't check anything
+			if (argType.equals(Type.getType(ClassContext.class))) {
+				usesClassContext = true;
 				continue;
 			}
 			
@@ -251,7 +266,7 @@ class ProcessorParser extends AbstractParser {
 		}
 
 		return new PMArgData(procArgType, knownStCo, usesDynamicContext,
-				usesArgumentContext);
+				usesClassContext, usesArgumentContext);
 	}
 	
 	// data holder for parseMethodAnnotation methods

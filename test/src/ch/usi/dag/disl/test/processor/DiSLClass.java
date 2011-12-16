@@ -5,8 +5,8 @@ import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.BytecodeMarker;
-import ch.usi.dag.disl.processorcontext.ProcessorContext;
-import ch.usi.dag.disl.processorcontext.ProcessorMode;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 
 public class DiSLClass {
@@ -15,13 +15,13 @@ public class DiSLClass {
 	public static String flag = "Start";
 
 	@Before(marker = BodyMarker.class, order = 0, scope = "TargetClass.m*")
-	public static void insideMethod(MethodStaticContext ci, ProcessorContext pc, DynamicContext dc) {
+	public static void insideMethod(MethodStaticContext ci, ArgumentProcessorContext pc, DynamicContext dc) {
 		
 		System.out.println("(In) Method " + ci.thisMethodName() + ": ");
 		System.out.println(flag);
 		
-		pc.apply(ProcessorTest.class, ProcessorMode.METHOD_ARGS);
-		System.out.println("Receiver is " + pc.getReceiver(ProcessorMode.METHOD_ARGS));
+		pc.apply(ProcessorTest.class, ArgumentProcessorMode.METHOD_ARGS);
+		System.out.println("Receiver is " + pc.getReceiver(ArgumentProcessorMode.METHOD_ARGS));
 		System.out.println("This is " + dc.getThis());
 		
 		System.out.println(flag);
@@ -29,21 +29,21 @@ public class DiSLClass {
 	}
 	
 	@Before(marker = BytecodeMarker.class, args="invokevirtual", order = 0, scope = "TargetClass.m*")
-	public static void beforeInvocation(MethodStaticContext ci, ProcessorContext pc) {
+	public static void beforeInvocation(MethodStaticContext ci, ArgumentProcessorContext pc) {
 		
 		System.out.println("(Before) Method : ");
 		
-		pc.apply(ProcessorTest.class, ProcessorMode.CALLSITE_ARGS);
-		System.out.println("Receiver is " + pc.getReceiver(ProcessorMode.CALLSITE_ARGS));
+		pc.apply(ProcessorTest.class, ArgumentProcessorMode.CALLSITE_ARGS);
+		System.out.println("Receiver is " + pc.getReceiver(ArgumentProcessorMode.CALLSITE_ARGS));
 		
 		System.out.println(ProcessorTest.flag);
 	}
 	
 	@Before(marker = BytecodeMarker.class, args="aastore", order = 1, scope = "TargetClass.main")
-	public static void beforeArrayStore(MethodStaticContext ci, ProcessorContext pc) {
+	public static void beforeArrayStore(MethodStaticContext ci, ArgumentProcessorContext pc) {
 		
 		System.out.println("(Before) Array : ");
 		
-		pc.apply(ProcessorTest2.class, ProcessorMode.METHOD_ARGS);
+		pc.apply(ProcessorTest2.class, ArgumentProcessorMode.METHOD_ARGS);
 	}
 }

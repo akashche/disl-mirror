@@ -1,14 +1,14 @@
 package ch.usi.dag.disl.snippet;
 
 import ch.usi.dag.disl.processor.Proc;
-import ch.usi.dag.disl.processorcontext.ProcessorMode;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 
 public class ProcInvocation {
 
 	private Proc processor;
-	private ProcessorMode procApplyType;
+	private ArgumentProcessorMode procApplyType;
 	
-	public ProcInvocation(Proc processor, ProcessorMode procApplyType) {
+	public ProcInvocation(Proc processor, ArgumentProcessorMode procApplyType) {
 		super();
 		this.processor = processor;
 		this.procApplyType = procApplyType;
@@ -18,7 +18,7 @@ public class ProcInvocation {
 		return processor;
 	}
 
-	public ProcessorMode getProcApplyType() {
+	public ArgumentProcessorMode getProcApplyType() {
 		return procApplyType;
 	}
 }

@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.processorcontext;
 
-public interface ProcessorContext {
+public interface ArgumentProcessorContext {
 	
 	/**
 	 * Applies mentioned processor for method or call-site arguments
@@ -8,7 +8,7 @@ public interface ProcessorContext {
 	 * @param processorClass processor class to apply
 	 * @param mode in which should be processor applied
 	 */
-	public void apply(Class<?> processorClass, ProcessorMode mode);
+	public void apply(Class<?> argumentProcessor, ArgumentProcessorMode mode);
 
 	/**
 	 * Returns the object on which is the processed method (arguments of that
@@ -16,7 +16,7 @@ public interface ProcessorContext {
 	 * 
 	 * @param mode for which should be the object retrieved
 	 */
-	public Object getReceiver(ProcessorMode mode);
+	public Object getReceiver(ArgumentProcessorMode mode);
 
 	/**
 	 * Returns the object array composed from the method arguments. Note that
@@ -24,5 +24,5 @@ public interface ProcessorContext {
 	 * 
 	 * @param mode for which should be the argument array retrieved
 	 */
-	public Object[] getArgs(ProcessorMode mode);
+	public Object[] getArgs(ArgumentProcessorMode mode);
 }

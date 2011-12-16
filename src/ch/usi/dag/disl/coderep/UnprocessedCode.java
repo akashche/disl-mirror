@@ -32,15 +32,18 @@ public class UnprocessedCode {
 	private List<TryCatchBlockNode> tryCatchBlocks;
 	private Set<String> declaredStaticContexts;
 	private boolean usesDynamicContext;
+	private boolean usesClassContext;
 	
 	public UnprocessedCode(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks,
-			Set<String> declaredStaticContexts, boolean usesDynamicContext) {
+			Set<String> declaredStaticContexts, boolean usesDynamicContext,
+			boolean usesClassContext) {
 		super();
 		this.instructions = instructions;
 		this.tryCatchBlocks = tryCatchBlocks;
 		this.declaredStaticContexts = declaredStaticContexts;
 		this.usesDynamicContext = usesDynamicContext;
+		this.usesClassContext = usesClassContext;
 	}
 
 	public Code process(LocalVars allLVs) throws StaticContextGenException,
@@ -110,7 +113,7 @@ public class UnprocessedCode {
 
 		return new Code(instructions, tryCatchBlocks, slvList, tlvList,
 				new HashSet<StaticContextMethod>(staticContexts.values()),
-				usesDynamicContext, containsHandledException);
+				usesDynamicContext, usesClassContext, containsHandledException);
 	}
 	
 	/**

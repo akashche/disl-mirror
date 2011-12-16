@@ -21,6 +21,7 @@ public class Code {
 	private Set<ThreadLocalVar> referencedTLVs;
 	private Set<StaticContextMethod> staticContexts;
 	private boolean usesDynamicContext;
+	private boolean usesClassContext;
 	// the code contains handler that handles exception and doesn't propagate
 	// it further - can cause stack inconsistency that has to be handled
 	private boolean containsHandledException;
@@ -29,7 +30,9 @@ public class Code {
 			Set<SyntheticLocalVar> referencedSLVs,
 			Set<ThreadLocalVar> referencedTLVs,
 			Set<StaticContextMethod> staticContexts,
-			boolean usesDynamicContext, boolean containsHandledException) {
+			boolean usesDynamicContext,
+			boolean usesClassContext,
+			boolean containsHandledException) {
 		super();
 		this.instructions = instructions;
 		this.tryCatchBlocks = tryCatchBlocks;
@@ -37,6 +40,7 @@ public class Code {
 		this.referencedTLVs = referencedTLVs;
 		this.staticContexts = staticContexts;
 		this.usesDynamicContext = usesDynamicContext;
+		this.usesClassContext = usesClassContext; 
 		this.containsHandledException = containsHandledException;
 	}
 	
@@ -64,6 +68,10 @@ public class Code {
 		return usesDynamicContext;
 	}
 	
+	public boolean usesClassContext() {
+		return usesClassContext;
+	}
+	
 	public boolean containsHandledException() {
 		return containsHandledException;
 	}
@@ -78,6 +86,6 @@ public class Code {
 				new HashSet<SyntheticLocalVar>(referencedSLVs),
 				new HashSet<ThreadLocalVar>(referencedTLVs),
 				new HashSet<StaticContextMethod>(staticContexts),
-				usesDynamicContext, containsHandledException);
+				usesDynamicContext, usesClassContext, containsHandledException);
 	}
 }

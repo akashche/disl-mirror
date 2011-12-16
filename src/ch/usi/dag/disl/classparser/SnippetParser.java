@@ -16,6 +16,7 @@ import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
+import ch.usi.dag.disl.classcontext.ClassContext;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.GuardException;
@@ -28,7 +29,7 @@ import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.marker.Parameter;
-import ch.usi.dag.disl.processorcontext.ProcessorContext;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
 import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.Snippet;
@@ -150,7 +151,8 @@ class SnippetParser extends AbstractParser {
 		SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(className,
 				method.name, method.instructions, method.tryCatchBlocks,
 				context.getStaticContexts(), context.usesDynamicContext(),
-				annotData.dynamicBypass, context.usesProcessorContext());
+				context.usesClassContext(), annotData.dynamicBypass,
+				context.usesProcessorContext());
 
 		// return whole snippet
 		return new Snippet(className, method.name, annotData.type, marker,
@@ -266,13 +268,15 @@ class SnippetParser extends AbstractParser {
 
 		private Set<String> staticContexts;
 		private boolean usesDynamicContext;
+		private boolean usesClassContext;
 		private boolean usesProcessorContext;
 
 		public Contexts(Set<String> staticContexts, boolean usesDynamicContext,
-				boolean usesProcessorContext) {
+				boolean usesClassContext, boolean usesProcessorContext) {
 			super();
 			this.staticContexts = staticContexts;
 			this.usesDynamicContext = usesDynamicContext;
+			this.usesClassContext = usesClassContext;
 			this.usesProcessorContext = usesProcessorContext;
 		}
 
@@ -282,6 +286,10 @@ class SnippetParser extends AbstractParser {
 
 		public boolean usesDynamicContext() {
 			return usesDynamicContext;
+		}
+		
+		public boolean usesClassContext() {
+			return usesClassContext;
 		}
 		
 		public boolean usesProcessorContext() {
@@ -294,7 +302,8 @@ class SnippetParser extends AbstractParser {
 
 		Set<String> knownStCo = new HashSet<String>();
 		boolean usesDynamicContext = false;
-		boolean usesProcessorContext = false;
+		boolean usesClassContext = false;
+		boolean usesArgProcContext = false;
 
 		for (Type argType : Type.getArgumentTypes(methodDesc)) {
 
@@ -303,13 +312,19 @@ class SnippetParser extends AbstractParser {
 				usesDynamicContext = true;
 				continue;
 			}
-			
-			// skip processor context class - don't check anything
-			if (argType.equals(Type.getType(ProcessorContext.class))) {
-				usesProcessorContext = true;
+
+			// skip class context class - don't check anything
+			if (argType.equals(Type.getType(ClassContext.class))) {
+				usesClassContext = true;
 				continue;
 			}
-
+			
+			// skip processor context class - don't check anything
+			if (argType.equals(Type.getType(ArgumentProcessorContext.class))) {
+				usesArgProcContext = true;
+				continue;
+			}
+			
 			Class<?> argClass = ReflectionHelper.resolveClass(argType);
 
 			// static context should implement static context interface
@@ -324,6 +339,7 @@ class SnippetParser extends AbstractParser {
 			knownStCo.add(argType.getInternalName());
 		}
 
-		return new Contexts(knownStCo, usesDynamicContext, usesProcessorContext);
+		return new Contexts(knownStCo, usesDynamicContext, usesClassContext,
+				usesArgProcContext);
 	}
 }

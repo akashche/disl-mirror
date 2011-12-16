@@ -27,8 +27,8 @@ import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.processor.Proc;
-import ch.usi.dag.disl.processorcontext.ProcessorContext;
-import ch.usi.dag.disl.processorcontext.ProcessorMode;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.jborat.runtime.DynamicBypass;
 
@@ -42,9 +42,11 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	public SnippetUnprocessedCode(String className, String methodName,
 			InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
 			Set<String> declaredStaticContexts, boolean usesDynamicContext,
-			boolean dynamicBypass, boolean usesProcessorContext) {
+			boolean dynamicBypass, boolean usesClassContext,
+			boolean usesProcessorContext) {
+		
 		super(instructions, tryCatchBlocks, declaredStaticContexts,
-				usesDynamicContext);
+				usesDynamicContext, usesClassContext);
 		this.className = className;
 		this.methodName = methodName;
 		this.dynamicBypass = dynamicBypass;
@@ -107,8 +109,8 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		return new SnippetCode(instructions, tryCatchBlocks,
 				code.getReferencedSLVs(), code.getReferencedTLVs(),
 				code.containsHandledException(), code.getStaticContexts(),
-				code.usesDynamicContext(), usesProcessorContext,
-				invokedProcessors);
+				code.usesDynamicContext(), code.usesClassContext(),
+				usesProcessorContext, invokedProcessors);
 	}
 
 	private static class ProcessorInfo {
@@ -145,7 +147,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		MethodInsnNode min = (MethodInsnNode) instr;
 
 		// check if the invocation is processor invocation
-		if (!(min.owner.equals(Type.getInternalName(ProcessorContext.class))
+		if (!(min.owner.equals(Type.getInternalName(ArgumentProcessorContext.class))
 				&& min.name.equals(APPLY_METHOD))) {
 			return null;
 		}
@@ -162,7 +164,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 					+ methodName + " - pass the first (class)"
 					+ " argument of a ProcMethod.apply method direcltly."
 					+ " ex: ProcMethod.apply(ProcMethod.class,"
-					+ " ProcessorMode.METHOD_ARGS)");
+					+ " ArgumentProcessorMode.METHOD_ARGS)");
 		}
 
 		// second parameter has to be loaded by GETSTATIC
@@ -171,7 +173,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 					+ methodName + " - pass the second (type)"
 					+ " argument of a ProcMethod.apply method direcltly."
 					+ " ex: ProcMethod.apply(ProcMethod.class,"
-					+ " ProcessorMode.METHOD_ARGS)");
+					+ " ArgumentProcessorMode.METHOD_ARGS)");
 		}
 
 		Object asmType = ((LdcInsnNode) firstParam).cst;
@@ -184,15 +186,15 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		Type processorType = (Type) asmType;
 		
-		ProcessorMode procApplyType = ProcessorMode
+		ArgumentProcessorMode procApplyType = ArgumentProcessorMode
 				.valueOf(((FieldInsnNode) secondParam).name);
 		
 		// if the processor apply type is CALLSITE_ARGS
 		// the only allowed marker is BytecodeMarker
-		if(ProcessorMode.CALLSITE_ARGS.equals(procApplyType)
+		if(ArgumentProcessorMode.CALLSITE_ARGS.equals(procApplyType)
 				&& marker.getClass() != BytecodeMarker.class) {
 			throw new ProcessorException(
-					"ArgsProcessor applied in mode CALLSITE_ARGS in method "
+					"ArgumentProcessor applied in mode CALLSITE_ARGS in method "
 					+ className + "." + methodName
 					+ " can be used only with BytecodeMarker");
 		}

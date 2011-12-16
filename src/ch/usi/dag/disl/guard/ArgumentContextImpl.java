@@ -17,15 +17,15 @@ class ArgumentContextImpl implements ArgumentContext {
 		this.totalCount = totalCount;
 	}
 
-	public int position() {
+	public int getPosition() {
 		return position;
 	}
 
-	public String typeDescriptor() {
+	public String getTypeDescriptor() {
 		return typeDescriptor;
 	}
 
-	public int totalCount() {
+	public int getTotalCount() {
 		return totalCount;
 	}
 

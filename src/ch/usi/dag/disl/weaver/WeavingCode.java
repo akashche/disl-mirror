@@ -26,8 +26,8 @@ import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.processorcontext.ArgumentContext;
-import ch.usi.dag.disl.processorcontext.ProcessorContext;
-import ch.usi.dag.disl.processorcontext.ProcessorMode;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
@@ -383,11 +383,11 @@ public class WeavingCode {
 				continue;
 			}
 
-			if (invoke.name.equals("position")) {
+			if (invoke.name.equals("getPosition")) {
 				instructions.insert(instr, AsmHelper.loadConst(position));
-			} else if (invoke.name.equals("totalCount")) {
+			} else if (invoke.name.equals("getTotalCount")) {
 				instructions.insert(instr, AsmHelper.loadConst(totalCount));
-			} else if (invoke.name.equals("typeDescriptor")) {
+			} else if (invoke.name.equals("getTypeDescriptor")) {
 				instructions
 						.insert(instr, AsmHelper.loadConst(type.toString()));
 			}
@@ -487,7 +487,7 @@ public class WeavingCode {
 			ProcInstance processor = piResolver.get(shadow, i);
 
 			if (processor != null) {
-				if (processor.getProcApplyType() == ProcessorMode.METHOD_ARGS) {
+				if (processor.getProcApplyType() == ArgumentProcessorMode.METHOD_ARGS) {
 					iList.insert(instr, procInMethod(processor));
 				} else {
 					iList.insert(instr, procBeforeInvoke(processor, index));
@@ -555,9 +555,9 @@ public class WeavingCode {
 
 			MethodInsnNode invoke = (MethodInsnNode) instr;
 
-			// ... of ProcessorContext
+			// ... of ArgumentProcessorContext
 			if (!invoke.owner.equals(Type
-					.getInternalName(ProcessorContext.class))) {
+					.getInternalName(ArgumentProcessorContext.class))) {
 				continue;
 			}
 
@@ -567,14 +567,14 @@ public class WeavingCode {
 				throw new DiSLFatalException("Unknown processor mode");
 			}
 
-			ProcessorMode procApplyType = ProcessorMode
+			ArgumentProcessorMode procApplyType = ArgumentProcessorMode
 					.valueOf(((FieldInsnNode) prev).name);
 
 			if (invoke.name.equals("getArgs")) {
 
 				InsnList args = null;
 
-				if (procApplyType == ProcessorMode.METHOD_ARGS) {
+				if (procApplyType == ArgumentProcessorMode.METHOD_ARGS) {
 
 					args = createGetArgsCode(method.desc);
 					fixLocalIndex(args,
@@ -628,7 +628,7 @@ public class WeavingCode {
 				iList.insert(instr, args);
 			} else if (invoke.name.equals("getReceiver")) {
 
-				if (procApplyType == ProcessorMode.METHOD_ARGS) {
+				if (procApplyType == ArgumentProcessorMode.METHOD_ARGS) {
 
 					if ((method.access & Opcodes.ACC_STATIC) != 0) {
 						iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));

@@ -19,9 +19,10 @@ public class ProcUnprocessedCode extends UnprocessedCode {
 	public ProcUnprocessedCode(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks,
 			Set<String> declaredStaticContexts, boolean usesDynamicContext,
+			boolean usesClassContext,
 			boolean usesArgumentContext) {
 		super(instructions, tryCatchBlocks, declaredStaticContexts,
-				usesDynamicContext);
+				usesDynamicContext, usesClassContext);
 		this.usesArgumentContext = usesArgumentContext;
 	}
 
@@ -34,6 +35,7 @@ public class ProcUnprocessedCode extends UnprocessedCode {
 		return new ProcCode(code.getInstructions(), code.getTryCatchBlocks(),
 				code.getReferencedSLVs(), code.getReferencedTLVs(),
 				code.containsHandledException(), code.getStaticContexts(),
-				code.usesDynamicContext(), usesArgumentContext);
+				code.usesDynamicContext(), code.usesClassContext(),
+				usesArgumentContext);
 	}
 }

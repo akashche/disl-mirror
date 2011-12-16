@@ -26,11 +26,13 @@ public class ProcCode extends Code {
 			boolean containsHandledException,
 			Set<StaticContextMethod> staticContexts,
 			boolean usesDynamicContext,
+			boolean usesClassContext,
 			boolean usesArgumentContext
 			) {
 		
 		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
-				staticContexts, usesDynamicContext, containsHandledException);
+				staticContexts, usesDynamicContext, usesClassContext,
+				containsHandledException);
 		this.usesArgumentContext = usesArgumentContext;
 	}
 
@@ -50,6 +52,7 @@ public class ProcCode extends Code {
 				containsHandledException(),
 				new HashSet<StaticContextMethod>(getStaticContexts()),
 				usesDynamicContext(),
+				usesClassContext(),
 				usesArgumentContext);
 	}
 }

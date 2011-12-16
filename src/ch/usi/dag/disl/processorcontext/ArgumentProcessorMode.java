@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.processorcontext;
 
-public enum ProcessorMode {
+public enum ArgumentProcessorMode {
 
 	METHOD_ARGS,
 	CALLSITE_ARGS
