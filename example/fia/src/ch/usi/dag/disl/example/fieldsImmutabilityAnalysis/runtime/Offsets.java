@@ -2,60 +2,80 @@ package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Offsets {
-	//TODO: check if we can use a ConcurrentHashMap
-	private static final Map<Class<?>, Short> numberOfFields = new WeakHashMap<Class<?>, Short>();
-	private static final Map<String, Short> fieldOffsets = new ConcurrentHashMap<String, Short>();
-	private static final Map<Class<?>, Field[]> classFields = new ConcurrentHashMap<Class<?>, Field[]>();
+
+	/**
+	 * A mapping from registered classes to the canonical IDs of their respective instance fields (declared by the class or
+	 * one of its superclasses).
+	 */
+	private static Map<Class<?>, String[]> canonicalFieldIDs = new WeakHashMap<Class<?>, String[]>();
+
+	/**
+	 * A mapping from field IDs to the respective field's offset. The field IDs need not be canonical.
+	 */
+	private static ConcurrentHashMap<String, Short> fieldOffsets = new ConcurrentHashMap<String, Short>();
+
 	static {
-		//TODO: check if this is necessary
-		numberOfFields.put(null, (short) 0); // Register Object's "superclass" as a Null object.
+		canonicalFieldIDs.put(null, new String[0]); // Register Object's "superclass" as a Null object.
 	}
 
 	public static void registerIfNeeded(Class<?> clazz) {
-		Object synchClazz = (clazz.getClassLoader() == null) ? numberOfFields : clazz.getClassLoader();
-		synchronized (synchClazz) {
-			synchronized (numberOfFields) {
-				if(numberOfFields.containsKey(clazz)) {
-					return;
-				}
-				Class<?> superClass = clazz.getSuperclass();
-				if(superClass != null) {
-					registerIfNeeded(superClass);
-				}
-				Short s = registerFieldOffsets(clazz);
-				numberOfFields.put(clazz, (short) s);
+		synchronized (canonicalFieldIDs) {
+			if (!isRegistered(clazz)) {
+				registerIfNeeded(clazz.getSuperclass());
+				registerCanonicalFieldIDs(clazz);
+				registerFieldOffsets(clazz);
 			}
 		}
 	}
 
-	public static short getNumberOfFields(Class<?> clazz) {
-		return numberOfFields.get(clazz);
+	public static boolean isRegistered(Class<?> clazz) {
+		synchronized (canonicalFieldIDs) {
+			return canonicalFieldIDs.containsKey(clazz);
+		}
 	}
 
-	public static boolean NotNull(String fieldId){
-		if (fieldOffsets.get(fieldId) != null )
-			return true;
-		return false;
+	public static int getNumberOfFields(Class<?> clazz) {
+		synchronized (canonicalFieldIDs) {
+			return canonicalFieldIDs.get(clazz).length;
+		}
+	}
+
+	public static String[] getCanonicalFieldIDs(Class<?> clazz) {
+		synchronized (canonicalFieldIDs) {
+			return canonicalFieldIDs.get(clazz);
+		}
 	}
 
 	public static Short getFieldOffset(String fieldId) {
 		return fieldOffsets.get(fieldId);
 	}
 
-	public static String getFieldId(Class<?> owner, String name, Class<?> type) {
-		return owner.getName().replace('.', '/') + ":" + name ;
+	private static void registerFieldOffsets(Class<?> clazz) {
+		registerFieldOffsets(clazz, clazz);
 	}
 
-	/**
-	 * @return the number of fields that an instance of {@code clazz} has
-	 */
-	private static short registerFieldOffsets(Class<?> clazz) {
-		return registerFieldOffsets(clazz, clazz);
+	private static void registerCanonicalFieldIDs(Class<?> clazz) {
+		int numberOfNonStaticDeclaredFields = 0;
+		for (Field field : clazz.getDeclaredFields())
+			if (!Modifier.isStatic(field.getModifiers()))
+				numberOfNonStaticDeclaredFields++;
+
+		String[] canonicalFieldIDsOfSuperClass = canonicalFieldIDs.get(clazz.getSuperclass());
+		String[] canonicalFieldIDsOfClass =
+				Arrays.copyOf(canonicalFieldIDsOfSuperClass, canonicalFieldIDsOfSuperClass.length + numberOfNonStaticDeclaredFields);
+
+		int currentOffset = canonicalFieldIDsOfSuperClass.length;
+		for (Field field : clazz.getDeclaredFields())
+			if (!Modifier.isStatic(field.getModifiers())){
+				canonicalFieldIDsOfClass[currentOffset++] = getFieldId(field);
+			}
+		canonicalFieldIDs.put(clazz, canonicalFieldIDsOfClass);
 	}
 
 	/**
@@ -64,51 +84,55 @@ public class Offsets {
 	 * 
 	 * @return the number of fields that an instance of {@code clazz} has
 	 */
-	private static short registerFieldOffsets(Class<?> declaringClass, Class<?> clazz) {
-		short numberOfFields = 0;
+	private static int registerFieldOffsets(Class<?> declaringClass, Class<?> clazz) {
+		int numberOfFields = 0;
 
 		if (declaringClass.getSuperclass() != null)
 			numberOfFields += registerFieldOffsets(declaringClass.getSuperclass(), clazz);
-		for (Field field : declaringClass.getDeclaredFields()){
-			if (!Modifier.isStatic(field.getModifiers())){
-				fieldOffsets.put(getFieldId(clazz, field.getName(), field.getType()), numberOfFields++);
-				
-			}
-		}
-		if (classFields.get(declaringClass) == null) {
-			classFields.put(declaringClass, declaringClass.getDeclaredFields());
-		}
+
+		for (Field field : declaringClass.getDeclaredFields())
+			if (!Modifier.isStatic(field.getModifiers()))
+				fieldOffsets.put(getFieldId(clazz, field.getName(), field.getType()), (short) numberOfFields++);
 
 		return numberOfFields;
 	}
-	public static Field[] getObjectFields (Class<?> declaringClass) {
-		return classFields.get(declaringClass);
+
+	public static String getFieldId(Field field) {
+		return getFieldId(field.getDeclaringClass(), field.getName(), field.getType());
 	}
 
-//	private static String asDescriptor(Class<?> type) throws AssertionError {
-//		if (type.isPrimitive()) {
-//			if (type == Integer.TYPE)
-//				return "I";
-//			else if (type == Long.TYPE)
-//				return "J";
-//			else if (type == Float.TYPE)
-//				return "F";
-//			else if (type == Double.TYPE)
-//				return "D";
-//			else if (type == Character.TYPE)
-//				return "C";
-//			else if (type == Boolean.TYPE)
-//				return "Z";
-//			else if (type == Byte.TYPE)
-//				return "B";
-//			else if (type == Short.TYPE)
-//				return "S";
-//			else
-//				throw new AssertionError("Unknown primitive: " + type);
-//		} else if (type.isArray()) {
-//			return type.getName(); // getName() already returns type descriptor syntax
-//		} else {
-//			return "L" + type.getName().replace('.', '/') + ";";
-//		}
-//	}
+	public static String getFieldId(Class<?> owner, String name, Class<?> type) {
+		return asInternalName(owner) + ":" + name + ':' + asDescriptor(type);
+	}
+
+	private static String asInternalName(Class<?> clazz) {
+		return clazz.getName().replace('.', '/');
+	}
+
+	private static String asDescriptor(Class<?> type) throws AssertionError {
+		if (type.isPrimitive()) {
+			if (type == Integer.TYPE)
+				return "I";
+			else if (type == Long.TYPE)
+				return "J";
+			else if (type == Float.TYPE)
+				return "F";
+			else if (type == Double.TYPE)
+				return "D";
+			else if (type == Character.TYPE)
+				return "C";
+			else if (type == Boolean.TYPE)
+				return "Z";
+			else if (type == Byte.TYPE)
+				return "B";
+			else if (type == Short.TYPE)
+				return "S";
+			else
+				throw new AssertionError("Unknown primitive: " + type);
+		} else if (type.isArray()) {
+			return type.getName().replace('.', '/');  // getName() already returns the name in type descriptor syntax
+		} else {
+			return "L" + type.getName().replace('.', '/') + ";";
+		}
+	}
 }

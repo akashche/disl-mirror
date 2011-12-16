@@ -63,11 +63,6 @@ public class ImmutabilityAnalysis {
 				Offsets.registerIfNeeded(allocatedObj.getClass());
 				fieldsArray = getOrCreateFieldsArray(allocatedObj, objectID);
 				
-				for (Field f: Offsets.getObjectFields(allocatedObj.getClass())) {
-					if (!Modifier.isStatic(f.getModifiers())){
-						getOrCreateFieldState(allocatedObj, Offsets.getFieldId(allocatedObj.getClass(), f.getName(), f.getType()));
-					}
-				}
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();
@@ -77,6 +72,7 @@ public class ImmutabilityAnalysis {
 	public void onFieldWrite(Object accessedObj, String fieldId, Deque<Object> stack, String accessSite) {
 		try {
 			FieldState fs = getOrCreateFieldState(accessedObj, fieldId);
+			
 			if(fs != null) {
 				fs.onWrite(isUnderConstruction(accessedObj, stack));
 			}
@@ -88,6 +84,7 @@ public class ImmutabilityAnalysis {
 	public void onFieldRead(Object accessedObj, String fieldId, Deque<Object> stackTL) {
 		try {
 			FieldState fs = getOrCreateFieldState(accessedObj, fieldId);
+			
 			if(fs != null) {
 				fs.onRead();
 			}

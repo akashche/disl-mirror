@@ -21,7 +21,7 @@ public class MyMethodStaticContext extends MethodStaticContext {
 		AbstractInsnNode instr = staticContextData.getRegionStart();
 
 		if (instr.getOpcode() == Opcodes.PUTFIELD || instr.getOpcode() == Opcodes.GETFIELD) {
-			return ((FieldInsnNode) instr).owner + ":" + ((FieldInsnNode) instr).name;
+			return ((FieldInsnNode) instr).owner + ":" + ((FieldInsnNode) instr).name + ":" + ((FieldInsnNode) instr).desc.replace('.', '/');
 		} else {
 			return "ERROR!";
 		}
