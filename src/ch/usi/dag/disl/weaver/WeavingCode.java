@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
@@ -104,6 +105,34 @@ public class WeavingCode {
 				iList.remove(previous);
 				iList.remove(instr);
 			}
+		}
+	}
+
+	public void fixClassInfo() {
+
+		for (AbstractInsnNode instr : iList.toArray()) {
+
+			AbstractInsnNode previous = instr.getPrevious();
+
+			if (instr.getOpcode() != Opcodes.INVOKEINTERFACE
+					|| previous == null || previous.getOpcode() != Opcodes.LDC) {
+				continue;
+			}
+
+			LdcInsnNode ldc = (LdcInsnNode) previous;
+			MethodInsnNode invocation = (MethodInsnNode) instr;
+
+			if (!(ldc.cst instanceof String)) {
+				continue;
+			}
+
+			// User should guarantee that internal name of a class is passed to
+			// the ClassContext.
+			Type clazz = Type.getObjectType(ldc.cst.toString());
+			iList.insert(instr, new LdcInsnNode(clazz));
+			iList.remove(ldc.getPrevious());
+			iList.remove(ldc);
+			iList.remove(invocation);
 		}
 	}
 
@@ -694,6 +723,7 @@ public class WeavingCode {
 		fixProcessor(piResolver);
 		fixProcessorInfo();
 		fixStaticInfo(staticInfoHolder);
+		fixClassInfo();
 		fixDynamicInfo();
 		fixLocalIndex();
 

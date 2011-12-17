@@ -151,7 +151,7 @@ class SnippetParser extends AbstractParser {
 		SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(className,
 				method.name, method.instructions, method.tryCatchBlocks,
 				context.getStaticContexts(), context.usesDynamicContext(),
-				context.usesClassContext(), annotData.dynamicBypass,
+				annotData.dynamicBypass, context.usesClassContext(),
 				context.usesProcessorContext());
 
 		// return whole snippet
