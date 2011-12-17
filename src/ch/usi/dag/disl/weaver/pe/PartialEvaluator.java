@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.weaver.pe;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +32,20 @@ import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 import ch.usi.dag.disl.util.stack.StackUtil;
 
 public class PartialEvaluator {
+
+	public final static ArrayList<String> CONST = new ArrayList<String>();
+
+	static {
+		CONST.add("java/lang/Boolean");
+		CONST.add("java/lang/Byte");
+		CONST.add("java/lang/Character");
+		CONST.add("java/lang/Double");
+		CONST.add("java/lang/Float");
+		CONST.add("java/lang/Integer");
+		CONST.add("java/lang/Long");
+		CONST.add("java/lang/Short");
+		CONST.add("java/lang/String");
+	}
 
 	private static MethodNode wrap(InsnList ilist,
 			List<TryCatchBlockNode> tryCatchBlocks, String desc, int access) {

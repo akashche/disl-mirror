@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.weaver.pe;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -9,18 +10,16 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
+import ch.usi.dag.disl.util.Constants;
+
 public class InvocationInterpreter {
 
 	private static InvocationInterpreter instance = null;
 
-	private HashSet<String> registeredClasses;
+	private HashSet<String> registeredMethods;
 
 	private InvocationInterpreter() {
-		registeredClasses = new HashSet<String>();
-	}
-
-	private void register(Class<?> clazz) {
-		registeredClasses.add(Type.getInternalName(clazz));
+		registeredMethods = new HashSet<String>();
 	}
 
 	private Class<?> getClassFromType(Type type) throws ClassNotFoundException {
@@ -47,6 +46,28 @@ public class InvocationInterpreter {
 			return Class.forName(type.getClassName());
 		default:
 			return null;
+		}
+	}
+
+	private boolean isConstType(Type type) {
+
+		switch (type.getSort()) {
+
+		case Type.BOOLEAN:
+		case Type.BYTE:
+		case Type.CHAR:
+		case Type.DOUBLE:
+		case Type.FLOAT:
+		case Type.INT:
+		case Type.LONG:
+		case Type.SHORT:
+			return true;
+
+		case Type.OBJECT:
+			return PartialEvaluator.CONST.contains(type.getInternalName());
+
+		default:
+			return false;
 		}
 	}
 
@@ -161,7 +182,7 @@ public class InvocationInterpreter {
 			return null;
 		}
 
-		if (!registeredClasses.contains(instr.owner)) {
+		if (!registeredMethods.contains(getMethodID(instr))) {
 			return null;
 		}
 
@@ -191,8 +212,7 @@ public class InvocationInterpreter {
 			Object retValue = clazz.getMethod(instr.name, parameters).invoke(
 					obj, args);
 
-			if (!registeredClasses.contains(Type.getInternalName(retValue
-					.getClass()))) {
+			if (!isConstType(Type.getType(retValue.getClass()))) {
 				return null;
 			}
 
@@ -202,13 +222,40 @@ public class InvocationInterpreter {
 		}
 	}
 
+	public void register(String full) {
+		registeredMethods.add(full);
+	}
+
+	public void register(String owner, String name, String desc) {
+		register(owner + Constants.CLASS_DELIM + name + desc);
+	}
+
+	public void register(String owner, Method method) {
+		register(owner, method.getName(), Type.getMethodDescriptor(method));
+	}
+
+	public void register(Class<?> clazz) {
+
+		String owner = Type.getInternalName(clazz);
+
+		for (Method method : clazz.getMethods()) {
+			if (!method.getName().endsWith("init>")) {
+				register(owner, method);
+			}
+		}
+	}
+
+	private String getMethodID(MethodInsnNode min) {
+		return min.owner + Constants.CLASS_DELIM + min.name + min.desc;
+	}
+
 	public boolean isRegistered(AbstractInsnNode instr) {
 
 		if (!(instr.getOpcode() == Opcodes.INVOKEVIRTUAL || instr.getOpcode() == Opcodes.INVOKESTATIC)) {
 			return false;
 		}
 
-		return registeredClasses.contains(((MethodInsnNode) instr).owner);
+		return registeredMethods.contains(getMethodID((MethodInsnNode) instr));
 	}
 
 	public static InvocationInterpreter getInstance() {
