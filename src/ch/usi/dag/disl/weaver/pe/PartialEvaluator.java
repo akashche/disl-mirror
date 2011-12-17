@@ -577,21 +577,41 @@ public class PartialEvaluator {
 
 			for (AbstractInsnNode source : sources) {
 
-				if (!ConstInterpreter.mightBeNewConstOperation(source)) {
+				if (!(ConstInterpreter.mightBeNewConstOperation(source) || InvocationInterpreter
+						.getInstance().isRegistered(source))) {
 					flag = false;
 					break;
 				}
 			}
 
-			if (flag) {
-				ilist.remove(instr);
+			if (!flag) {
+				continue;
+			}
 
-				for (AbstractInsnNode source : sources) {
-					ilist.remove(source);
+			ilist.remove(instr);
+
+			for (AbstractInsnNode source : sources) {
+
+				if (InvocationInterpreter.getInstance().isRegistered(source)) {
+
+					String desc = ((MethodInsnNode) source).desc;
+
+					if (source.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+						ilist.insert(source, new InsnNode(Opcodes.POP));
+					}
+
+					for (Type arg : Type.getArgumentTypes(desc)) {
+						ilist.insert(source,
+								new InsnNode(arg.getSize() == 2 ? Opcodes.POP2
+										: Opcodes.POP));
+					}
 				}
 
-				isOptimized = true;
+				ilist.remove(source);
 			}
+
+			isOptimized = true;
+
 		}
 
 		return isOptimized;
@@ -685,7 +705,15 @@ public class PartialEvaluator {
 				interpreter);
 		isOptimized |= removeUnusedJump(ilist);
 		isOptimized |= removeUnusedHandler(cfg, ilist, tryCatchBlocks);
-		isOptimized |= removePop(ilist, method);
+
+		while (true) {
+			if (removePop(ilist, method)) {
+				isOptimized = true;
+			} else {
+				break;
+			}
+		}
+
 		isOptimized |= removeBoxingAndUnboxing(ilist);
 
 		if (flag) {

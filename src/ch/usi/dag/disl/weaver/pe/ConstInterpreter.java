@@ -16,6 +16,8 @@ import org.objectweb.asm.tree.analysis.Interpreter;
 
 public class ConstInterpreter extends Interpreter<ConstValue> {
 
+	final static String PROP_RESOLVER = "disl.resolver";
+
 	protected ConstInterpreter() {
 		super(Opcodes.ASM4);
 	}
@@ -573,19 +575,28 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 	@Override
 	public ConstValue naryOperation(final AbstractInsnNode insn,
 			final List<? extends ConstValue> values) {
-		int size;
+
 		int opcode = insn.getOpcode();
 
 		if (opcode == Opcodes.MULTIANEWARRAY) {
-			size = 1;
+			return new ConstValue(1);
+		} else if (opcode == Opcodes.INVOKEDYNAMIC) {
+			return new ConstValue(Type.getReturnType(
+					((InvokeDynamicInsnNode) insn).desc).getSize());
 		} else {
 
-			String desc = (opcode == Opcodes.INVOKEDYNAMIC) ? ((InvokeDynamicInsnNode) insn).desc
-					: ((MethodInsnNode) insn).desc;
-			size = Type.getReturnType(desc).getSize();
+			int size = Type.getReturnType(((MethodInsnNode) insn).desc)
+					.getSize();
+			Object cst = null;
+
+			if (Boolean.getBoolean(PROP_RESOLVER)) {
+				cst = InvocationInterpreter.getInstance().execute(
+						(MethodInsnNode) insn, values);
+			}
+			
+			return new ConstValue(size, cst);
 		}
 
-		return new ConstValue(size);
 	}
 
 	@Override
