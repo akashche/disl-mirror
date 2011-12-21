@@ -52,6 +52,15 @@ public class Offsets {
 		}
 	}
 
+	public static String[] getFieldIDs(Class<?> clazz) {
+		String[] canonicalFieldIDs = getCanonicalFieldIDs(clazz);
+		String[] fieldIDs = new String[canonicalFieldIDs.length];
+		for(int i = 0; i < canonicalFieldIDs.length; i++) {
+			 fieldIDs[i] = clazz.getName() + ":" + canonicalFieldIDs[i].substring(canonicalFieldIDs[i].indexOf(':') + 1);
+		}
+		return fieldIDs;
+	}
+
 	public static Short getFieldOffset(String fieldId) {
 		return fieldOffsets.get(fieldId);
 	}

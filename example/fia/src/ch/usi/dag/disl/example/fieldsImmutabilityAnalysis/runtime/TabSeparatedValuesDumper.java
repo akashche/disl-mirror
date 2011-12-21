@@ -9,7 +9,7 @@ public class TabSeparatedValuesDumper implements EntryDumper<MyWeakReference<Obj
 
 	public TabSeparatedValuesDumper(PrintStream ps) {
 		this.ps = ps;
-		
+
 		dumpHeader();
 	}
 
@@ -30,25 +30,19 @@ public class TabSeparatedValuesDumper implements EntryDumper<MyWeakReference<Obj
 
 	@Override
 	public void dumpEntry(MyWeakReference<Object> key, FieldState[] value) {
-		if (value != null) {
-			for (int i = 0; i < value.length; i++){
-				ps.print(key.objectID);
-				ps.print('\t');
-				if (value[i] != null) {
-					ps.print(value[i].getFieldId());
-					ps.print('\t');
-					ps.print(value[i].getState());
-					ps.print('\t');
-					ps.print(value[i].isDefaultInit());
-					ps.print('\t');
-					ps.print(value[i].getNumReads());
-					ps.print('\t');
-					ps.print(value[i].getNumWrites());
-				}
-				ps.print('\n');
-				
-				//TODO: do something for unaccessed fields!
-			}
+		for (int i = 0; i < value.length; i++){
+			ps.print(key.objectID);
+			ps.print('\t');
+			ps.print(value[i].getFieldId());
+			ps.print('\t');
+			ps.print(value[i].getState());
+			ps.print('\t');
+			ps.print(value[i].isDefaultInit());
+			ps.print('\t');
+			ps.print(value[i].getNumReads());
+			ps.print('\t');
+			ps.print(value[i].getNumWrites());
+			ps.print('\n');
 		}
 
 		ps.print('\n');

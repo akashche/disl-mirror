@@ -3,9 +3,8 @@ package ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.zip.GZIPOutputStream;
 
@@ -14,6 +13,7 @@ import ch.usi.dag.jborat.runtime.DynamicBypass;
 public class ImmutabilityAnalysis {
 
 	private final MyWeakKeyIdentityHashMap<Object, FieldState[]> fieldStateMap;
+	private final HashSet<String> reflectionErrors;
 
 	static {
 		instanceOfIA = new ImmutabilityAnalysis();
@@ -33,6 +33,8 @@ public class ImmutabilityAnalysis {
 
 		final TabSeparatedValuesDumper dumper = new TabSeparatedValuesDumper(ps);
 		fieldStateMap = new MyWeakKeyIdentityHashMap<Object, FieldState[]>(dumper);
+
+		reflectionErrors = new HashSet<String>();
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
@@ -58,12 +60,7 @@ public class ImmutabilityAnalysis {
 	public void onObjectInitialization(Object allocatedObj, String allocSite) {
 		try {
 			String objectID = getObjectID(allocatedObj, allocSite);
-			FieldState[] fieldsArray = getFieldsArray(allocatedObj);
-			if (fieldsArray == null) {
-				Offsets.registerIfNeeded(allocatedObj.getClass());
-				fieldsArray = getOrCreateFieldsArray(allocatedObj, objectID);
-				
-			}
+			getOrCreateFieldsArray(allocatedObj, objectID);
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}
@@ -94,34 +91,28 @@ public class ImmutabilityAnalysis {
 	}
 
 	private FieldState getOrCreateFieldState(Object accessedObj, String fieldId) {
-		FieldState fieldState = null;
-		try {
+		FieldState[] fieldsArray = getFieldsArray(accessedObj);
+
+		if(fieldsArray == null) {
 			String objectID = getObjectID(accessedObj, null);
-			FieldState[] fieldsArray = getFieldsArray(accessedObj);
-
-			if(fieldsArray == null) {
-				Offsets.registerIfNeeded(accessedObj.getClass());
-				fieldsArray = getOrCreateFieldsArray(accessedObj, objectID);
-			}
-
-			Short s = Offsets.getFieldOffset(fieldId); 
-			if (s != null) {
-				synchronized (fieldsArray) {
-					if ((fieldState = fieldsArray[s]) == null ){
-						fieldState = new FieldState(fieldId);
-						fieldsArray[s] = fieldState;
-					}
-				}
-			} else {
-				System.err.println("[ImmutabilityAnalysis.getOrCreateFieldState] Warning: unregistered access to: "
-						+ fieldId
-						+ "; skipping event");
-			}
-		} catch (Throwable t) {
-			t.printStackTrace();
-			System.exit(-1);
+			fieldsArray = getOrCreateFieldsArray(accessedObj, objectID);
 		}
-		return fieldState;
+
+		Short s = Offsets.getFieldOffset(fieldId); 
+		try {
+			return fieldsArray[s];
+		}
+		catch(NullPointerException e) {
+			synchronized (reflectionErrors) {
+				if(!reflectionErrors.contains(fieldId)) {
+					reflectionErrors.add(fieldId);
+					System.err.println("[ImmutabilityAnalysis.getOrCreateFieldState] Warning: unregistered access to: "
+							+ fieldId
+							+ "; skipping event");
+				}
+			}
+			return null;
+		}
 	}
 
 	private FieldState[] getFieldsArray(Object ownerObj) {
@@ -131,10 +122,18 @@ public class ImmutabilityAnalysis {
 	}
 
 	private FieldState[] getOrCreateFieldsArray(Object ownerObj, String objectID) {
+		Offsets.registerIfNeeded(ownerObj.getClass());
+
 		FieldState[] fieldsArray;
 		synchronized (fieldStateMap) {
 			if ((fieldsArray = fieldStateMap.get(ownerObj)) == null) {
-				fieldsArray = new FieldState[Offsets.getNumberOfFields(ownerObj.getClass())];
+				String[] fieldIDs = Offsets.getFieldIDs(ownerObj.getClass());
+				fieldsArray = new FieldState[fieldIDs.length];
+
+				for(int i = 0; i < fieldIDs.length; i++) {
+					fieldsArray[i] = new FieldState(fieldIDs[i]);
+				}
+
 				fieldStateMap.put(ownerObj, fieldsArray, objectID);
 			}
 		}

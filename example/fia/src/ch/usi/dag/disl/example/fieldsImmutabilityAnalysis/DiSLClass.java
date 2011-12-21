@@ -13,27 +13,31 @@ import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 
 public class DiSLClass {
-
 	@ThreadLocal
 	private static Deque<Object> objectsUnderConstruction;
 
 	/** STACK MAINTENANCE **/
 	@Before(marker = BodyMarker.class, guard = OnlyInit.class)
-	public static void onConstructorEnter(DynamicContext dc) {
-		if (objectsUnderConstruction == null)
-			objectsUnderConstruction = new ArrayDeque<Object>();
+	public static void beforeConstructor(DynamicContext dc) {
+		try {
+			if (objectsUnderConstruction == null)
+				objectsUnderConstruction = new ArrayDeque<Object>();
 
-		objectsUnderConstruction.push(dc.getThis());
+			objectsUnderConstruction.push(dc.getThis());
+		}
+		catch (Throwable t) {
+			t.printStackTrace();
+		}
 	}
 
 	@After(marker = BodyMarker.class, guard = OnlyInit.class)
-	public static void onConstructorExit() {
+	public static void afterConstructor() {
 		ImmutabilityAnalysis.instanceOf().popStackIfNonNull(objectsUnderConstruction);
 	}
 
 	/** ALLOCATION SITE **/
 	@AfterReturning(marker = BytecodeMarker.class, args = "new")
-	public static void onObjectInitialization(MyMethodStaticContext sc, DynamicContext dc) {
+	public static void afterReturningInit(MyMethodStaticContext sc, DynamicContext dc) {
 		ImmutabilityAnalysis.instanceOf().onObjectInitialization(
 				dc.getStackValue(0, Object.class), //the allocated object
 				sc.getAllocationSite() //the allocation site
@@ -42,7 +46,7 @@ public class DiSLClass {
 
 	/** FIELD ACCESSES **/
 	@Before(marker = BytecodeMarker.class, args = "putfield")
-	public static void onFieldWrite(MyMethodStaticContext sc, DynamicContext dc) {
+	public static void beforeFieldWrite(MyMethodStaticContext sc, DynamicContext dc) {
 		ImmutabilityAnalysis.instanceOf().onFieldWrite(
 				dc.getStackValue(1, Object.class), //the accessed object
 				sc.getFieldId(), //the field identifier
@@ -52,7 +56,7 @@ public class DiSLClass {
 	}
 
 	@Before(marker = BytecodeMarker.class, args = "getfield")
-	public static void onFieldRead(MyMethodStaticContext sc, DynamicContext dc) {
+	public static void afterFieldWrite(MyMethodStaticContext sc, DynamicContext dc) {
 		ImmutabilityAnalysis.instanceOf().onFieldRead(
 				dc.getStackValue(0, Object.class), //the accessed object
 				sc.getFieldId(), //the field identifier

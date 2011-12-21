@@ -23,7 +23,7 @@ public class MyMethodStaticContext extends MethodStaticContext {
 		if (instr.getOpcode() == Opcodes.PUTFIELD || instr.getOpcode() == Opcodes.GETFIELD) {
 			return ((FieldInsnNode) instr).owner + ":" + ((FieldInsnNode) instr).name + ":" + ((FieldInsnNode) instr).desc.replace('.', '/');
 		} else {
-			return "ERROR!";
+			throw new RuntimeException("[MyMethodStaticContext.getFieldId] Error! Improper use of getFieldId()");
 		}
 	}
 }

@@ -12,7 +12,7 @@ import org.junit.Test;
 
 public class OffsetsTest {
 
-	protected static class TestClassA { public int a; }
+	protected static class TestClassA { public int[] a; }
 
 	protected static class TestClassB extends TestClassA { public int b; }
 
@@ -20,7 +20,7 @@ public class OffsetsTest {
 
 	protected static class TestClassD extends TestClassC { public int a; }
 
-	protected static class TestClassE extends TestClassD { }
+	protected static class TestClassE extends TestClassD {public int[] array;  }
 
 	@BeforeClass
 	public static void setUpBeforeClass() {
