@@ -15,5 +15,5 @@ public class DiSLClass {
 	@Before(marker = BodyMarker.class, scope = "ch.usi.dag.disl.test.scope.TargetClass.complete(java.lang.String,boolean,boolean)")
 	public static void beforeComplete() {
 	    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        }
+    }
 }

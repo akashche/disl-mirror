@@ -19,6 +19,7 @@ public class ScopeImpl implements Scope {
 	private final String PACKAGE_DELIM = ".";
 	private final String PARAM_MATCH_REST = "..";
 	
+	private String packageWildCard;
 	private String classWildCard;
 	private String methodWildCard;
 	private String returnWildCard;
@@ -124,7 +125,7 @@ public class ScopeImpl implements Scope {
 					+ "\" should have defined method at least as \"*\"");
 		}
 		
-		// -- full class name --
+		// -- full class name + package --
 		if(restOfExpr != null) {
 
 			// remove whitespace
@@ -132,6 +133,7 @@ public class ScopeImpl implements Scope {
 			
 			if(! restOfExpr.isEmpty()) {
 
+				// extract class name
 				int classDelim = lastWhitespace(restOfExpr);
 				if(classDelim != -1) {
 					// + 1 - don't include whitespace
@@ -143,11 +145,13 @@ public class ScopeImpl implements Scope {
 					restOfExpr = null;
 				}
 				
-				// if there is no package specified - allow any
-				if(classWildCard.indexOf(PACKAGE_DELIM) == -1
-						&& ! classWildCard.startsWith(WildCard.WILDCARD_STR)) {
-					classWildCard = 
-						WildCard.WILDCARD_STR + PACKAGE_DELIM + classWildCard;
+				// extract package name
+				int packageEnd = classWildCard.lastIndexOf(PACKAGE_DELIM);
+				if(packageEnd != -1) {
+					
+					packageWildCard =  classWildCard.substring(0, packageEnd);
+					// do not include PACKAGE_DELIM
+					classWildCard = classWildCard.substring(packageEnd + 1);
 				}
 			}
 		}
@@ -174,11 +178,26 @@ public class ScopeImpl implements Scope {
 
 	public boolean matches(String className, MethodNode method) {
 		
-		// -- match class --
+		// -- match class (package) --
 		
 		// replace delimiters for matching
 		className = className.replace(
 				Constants.PACKAGE_ASM_DELIM, Constants.PACKAGE_STD_DELIM);
+		String packageName = null;
+		
+		// extract package name from class name if any
+		int packageEnd = className.lastIndexOf(PACKAGE_DELIM);
+		if(packageEnd != -1) {
+			
+			packageName =  className.substring(0, packageEnd);
+			// do not include PACKAGE_DELIM
+			className = className.substring(packageEnd + 1);
+		}
+		
+		if(packageWildCard != null
+				&& ! WildCard.match(packageName, packageWildCard)) {
+			return false;
+		}
 		
 		if(classWildCard != null
 				&& ! WildCard.match(className, classWildCard)) {

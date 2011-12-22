@@ -49,7 +49,7 @@ public class GuardResolver {
 		if(guardMethod == null) {
 			throw new GuardException("No "
 					+ ch.usi.dag.disl.annotation.GuardMethod.class.getName()
-					+ " annotation on guard class "
+					+ " annotation on some public method in guard class "
 					+ guardClass.getName());
 		}
 		
