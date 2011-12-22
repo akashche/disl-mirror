@@ -384,8 +384,19 @@ public class DiSL implements Instrumentation {
 			insrCN.version = REQUIRED_VERSION;
 		}
 		
+		// Use compute frames for newer classes
+		// It is required for >= 1.7
+		final int COMPUTEFRAMES_VERSION = Opcodes.V1_6;
+		ClassWriter cw = null;
+		
+		if(classMajorVersion >= COMPUTEFRAMES_VERSION) {
+			cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+		}
+		else {
+			cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+		}
+
 		// return as bytes
-		ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 		insrCN.accept(cw);
 		return cw.toByteArray();
 	}
