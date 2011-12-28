@@ -248,43 +248,60 @@ public class WeavingCode {
 			Type t = AsmHelper.getClassType(prev);
 
 			if (invoke.name.equals("getStackValue")) {
-				int sopcode = t.getOpcode(Opcodes.ISTORE);
-				int lopcode = t.getOpcode(Opcodes.ILOAD);
 
-				// index should be less than the stack height
-				if (operand >= basicframe.getStackSize() || operand < 0) {
-					throw new DiSLFatalException("Illegal access of index "
-							+ operand + " on a stack with "
-							+ basicframe.getStackSize() + " operands");
+				if (basicframe == null) {
+					// TODO warn user that weaving location is unreachable.
+					iList.insert(instr, AsmHelper.loadNull(t));
+
+					if (!AsmHelper.isReferenceType(t)) {
+						iList.insert(instr, AsmHelper.boxValueOnStack(t));
+					}
+				} else {
+
+					int sopcode = t.getOpcode(Opcodes.ISTORE);
+					int lopcode = t.getOpcode(Opcodes.ILOAD);
+
+					// index should be less than the stack height
+					if (operand >= basicframe.getStackSize() || operand < 0) {
+						throw new DiSLFatalException("Illegal access of index "
+								+ operand + " on a stack with "
+								+ basicframe.getStackSize() + " operands");
+					}
+
+					// Type checking
+					Type targetType = StackUtil.getStackByIndex(basicframe,
+							operand).getType();
+
+					if (t.getSort() != targetType.getSort()) {
+						throw new DiSLFatalException("Unwanted type \""
+								+ targetType + "\", while user needs \"" + t
+								+ "\"");
+					}
+
+					// store the stack value without changing the semantic
+					int size = StackUtil.dupStack(sourceframe, method, operand,
+							sopcode, method.maxLocals + max);
+					// load the stack value
+
+					// box value if applicable
+					// boxing is removed by partial evaluator if not needed
+					if (!AsmHelper.isReferenceType(t)) {
+						iList.insert(instr, AsmHelper.boxValueOnStack(t));
+					}
+
+					iList.insert(instr, new VarInsnNode(lopcode, max));
+					max += size;
 				}
-
-				// Type checking
-				Type targetType = StackUtil
-						.getStackByIndex(basicframe, operand).getType();
-
-				if (t.getSort() != targetType.getSort()) {
-					throw new DiSLFatalException("Unwanted type \""
-							+ targetType + "\", while user needs \"" + t + "\"");
-				}
-
-				// store the stack value without changing the semantic
-				int size = StackUtil.dupStack(sourceframe, method, operand,
-						sopcode, method.maxLocals + max);
-				// load the stack value
-				
-				// box value if applicable
-				// boxing is removed by partial evaluator if not needed
-				if(! AsmHelper.isReferenceType(t)) {
-					iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
-				}
-				
-				iList.insert(instr, new VarInsnNode(lopcode, max));
-				max += size;
 			}
 			// TRICK: the following two situation will generate a VarInsnNode
 			// with a negative local slot. And it will be updated in
 			// method fixLocalIndex
 			else if (invoke.name.equals("getMethodArgumentValue")) {
+
+				if (basicframe == null) {
+					// TODO warn user that weaving location is unreachable.
+					basicframe = info.getRetFrame();
+				}
 
 				int slot = AsmHelper.getInternalParamIndex(method, operand);
 
@@ -306,11 +323,16 @@ public class WeavingCode {
 				// box value if applicable
 				// boxing is removed by partial evaluator if not needed
 				if(! AsmHelper.isReferenceType(t)) {
-					iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
+					iList.insert(instr, AsmHelper.boxValueOnStack(t));
 				}
 				iList.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
 						slot - method.maxLocals));
 			} else if (invoke.name.equals("getLocalVariableValue")) {
+
+				if (basicframe == null) {
+					// TODO warn user that weaving location is unreachable.
+					basicframe = info.getRetFrame();
+				}
 
 				// index should be less than the size of local variables
 				if (operand >= basicframe.getLocals() || operand < 0) {
@@ -330,7 +352,7 @@ public class WeavingCode {
 				// box value if applicable
 				// boxing is removed by partial evaluator if not needed
 				if(! AsmHelper.isReferenceType(t)) {
-					iList.insert(instr, AsmHelper.boxValueOnStack(targetType));
+					iList.insert(instr, AsmHelper.boxValueOnStack(t));
 				}
 				iList.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
 						operand - method.maxLocals));

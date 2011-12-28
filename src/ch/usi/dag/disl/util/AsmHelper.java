@@ -163,6 +163,26 @@ public abstract class AsmHelper {
 		}
 	}
 
+	public static AbstractInsnNode loadNull(Type type) {
+
+		switch (type.getSort()) {
+		case Type.BOOLEAN:
+		case Type.BYTE:
+		case Type.CHAR:
+		case Type.INT:
+		case Type.SHORT:
+			return new InsnNode(Opcodes.ICONST_0);
+		case Type.LONG:
+			return new InsnNode(Opcodes.LCONST_0);
+		case Type.FLOAT:
+			return new InsnNode(Opcodes.FCONST_0);
+		case Type.DOUBLE:
+			return new InsnNode(Opcodes.DCONST_0);
+		default:
+			return new InsnNode(Opcodes.ACONST_NULL);
+		}
+	}
+
 	public static int getInternalParamIndex(MethodNode method, int parIndex) {
 
 		Type[] types = Type.getArgumentTypes(method.desc);

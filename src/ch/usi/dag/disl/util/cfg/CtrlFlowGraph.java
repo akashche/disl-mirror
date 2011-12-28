@@ -238,6 +238,20 @@ public class CtrlFlowGraph {
 		return joins;
 	}
 
+	public List<AbstractInsnNode> getEnds() {
+
+		List<AbstractInsnNode> ends = new LinkedList<AbstractInsnNode>();
+
+		for (BasicBlock bb : nodes) {
+
+			if (bb.getSuccessors().size() == 0) {
+				ends.add(bb.getExit());
+			}
+		}
+
+		return ends;
+	}
+
 	// test if the current instruction rewrites a field
 	// add to 'source' if it does rewrite
 	private boolean testStore(Set<AbstractInsnNode> source,

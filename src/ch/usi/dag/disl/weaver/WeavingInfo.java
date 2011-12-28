@@ -25,6 +25,7 @@ import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 import ch.usi.dag.disl.util.stack.StackUtil;
 
 public class WeavingInfo {
@@ -41,6 +42,8 @@ public class WeavingInfo {
 	private Frame<BasicValue>[] basicFrames;
 	private Frame<SourceValue>[] sourceFrames;
 	private Map<AbstractInsnNode, Frame<SourceValue>> sourceFrameMap;
+
+	private Frame<BasicValue> retFrame;
 
 	public WeavingInfo(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<Shadow>> snippetMarkings) {
@@ -174,6 +177,10 @@ public class WeavingInfo {
 		for (int i = 0; i < sourceFrames.length; i++) {
 			sourceFrameMap.put(methodNode.instructions.get(i), sourceFrames[i]);
 		}
+
+		List<AbstractInsnNode> ends = CtrlFlowGraph.build(methodNode).getEnds();
+		AbstractInsnNode last_end = ends.get(ends.size()-1);
+		retFrame = basicFrames[methodNode.instructions.indexOf(last_end)];		
 	}
 
 	public Map<AbstractInsnNode, AbstractInsnNode> getWeavingStart() {
@@ -210,6 +217,10 @@ public class WeavingInfo {
 
 	public Frame<BasicValue> getBasicFrame(int index) {
 		return basicFrames[index];
+	}
+
+	public Frame<BasicValue> getRetFrame() {
+		return retFrame;
 	}
 
 	public Frame<SourceValue> getSourceFrame(int index) {
