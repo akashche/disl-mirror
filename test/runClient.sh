@@ -23,9 +23,9 @@ else
   exit -1
 fi
 
-# shared memory is the default communication
-# to enable socket, add ",ipc.socket" to the options
-JBORAT_AGENT_OPTS="1234,localhost"
+# ipc.socket is the default communication
+# to enable shared memory, remove ",ipc.socket" from the options
+JBORAT_AGENT_OPTS="1234,localhost,ipc.socket"
 
 java -XX:MaxPermSize=128m \
     -Xmx2G \

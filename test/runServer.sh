@@ -24,7 +24,11 @@ fi
 
 CLASSPATH=../lib/jborat-agent.jar:../lib/jborat-runtime.jar:../lib/jborat-interface.jar:lib/remote-server.jar
 
+# ipc.socket is the default communication
+# to enable shared memory, set -Djborat.ipc.socket to false
+
 java -Dch.usi.dag.jborat.instrumented="instrumented" \
+    -Djborat.ipc.socket=true \
     -Djborat.debug \
     -Ddisl.dynbypass=true \
     -Ddisl.debug \
