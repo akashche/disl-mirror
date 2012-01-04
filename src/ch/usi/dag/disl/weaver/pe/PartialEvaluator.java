@@ -244,6 +244,7 @@ public class PartialEvaluator {
 			case AbstractInsnNode.JUMP_INSN: {
 
 				ConstValue result = null;
+				boolean popTwice = false;
 
 				switch (opcode) {
 				case Opcodes.JSR:
@@ -262,6 +263,7 @@ public class PartialEvaluator {
 					ConstValue value1 = StackUtil.getStackByIndex(frame, 1);
 					ConstValue value2 = StackUtil.getStackByIndex(frame, 0);
 					result = interpreter.binaryOperation(instr, value1, value2);
+					popTwice = true;
 					break;
 				}
 
@@ -283,6 +285,10 @@ public class PartialEvaluator {
 					bb.getSuccessors().remove(successor);
 					successor.getPredecessors().remove(bb);
 
+					if (popTwice) {
+						ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
+					}
+
 					ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
 					ilist.insertBefore(instr, new JumpInsnNode(Opcodes.GOTO,
 							((JumpInsnNode) instr).label));
@@ -294,6 +300,10 @@ public class PartialEvaluator {
 							.getBB(((JumpInsnNode) instr).label);
 					bb.getSuccessors().remove(successor);
 					successor.getPredecessors().remove(bb);
+
+					if (popTwice) {
+						ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
+					}
 
 					ilist.insertBefore(instr, new InsnNode(Opcodes.POP));
 					bb.setExit(instr.getPrevious());
