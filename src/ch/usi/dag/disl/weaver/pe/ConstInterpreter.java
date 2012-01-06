@@ -31,33 +31,6 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 		return new ConstValue(type == null ? 1 : type.getSize());
 	}
 
-	public static boolean mightBeNewConstOperation(final AbstractInsnNode insn) {
-
-		switch (insn.getOpcode()) {
-		case Opcodes.ACONST_NULL:
-		case Opcodes.ICONST_M1:
-		case Opcodes.ICONST_0:
-		case Opcodes.ICONST_1:
-		case Opcodes.ICONST_2:
-		case Opcodes.ICONST_3:
-		case Opcodes.ICONST_4:
-		case Opcodes.ICONST_5:
-		case Opcodes.LCONST_0:
-		case Opcodes.LCONST_1:
-		case Opcodes.FCONST_0:
-		case Opcodes.FCONST_1:
-		case Opcodes.FCONST_2:
-		case Opcodes.DCONST_0:
-		case Opcodes.DCONST_1:
-		case Opcodes.BIPUSH:
-		case Opcodes.SIPUSH:
-		case Opcodes.LDC:
-			return true;
-		default:
-			return false;
-		}
-	}
-
 	@Override
 	public ConstValue newOperation(final AbstractInsnNode insn) {
 
@@ -103,6 +76,12 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 		case Opcodes.GETSTATIC:
 			return new ConstValue(Type.getType(((FieldInsnNode) insn).desc)
 					.getSize());
+		// TODO Remove hack for StringBuilder
+		case Opcodes.NEW:
+			if (((TypeInsnNode) insn).desc.equals("java/lang/StringBuilder")) {
+				return new ConstValue(1, new Reference(new StringBuilder()));
+			}
+
 		default:
 			return new ConstValue(1);
 		}
@@ -531,12 +510,10 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 			}
 
 		case Opcodes.IF_ICMPEQ:
-			return new ConstValue(1,
-					(Boolean) ((Integer) value1.cst == (Integer) value2.cst));
+			return new ConstValue(1, value1.cst.equals(value2.cst));
 
 		case Opcodes.IF_ICMPNE:
-			return new ConstValue(1,
-					(Boolean) ((Integer) value1.cst != (Integer) value2.cst));
+			return new ConstValue(1, !value1.cst.equals(value2.cst));
 
 		case Opcodes.IF_ICMPLT:
 			return new ConstValue(1,

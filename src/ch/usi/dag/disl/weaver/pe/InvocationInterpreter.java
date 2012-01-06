@@ -14,6 +14,20 @@ import ch.usi.dag.disl.util.Constants;
 
 public class InvocationInterpreter {
 
+	public final static ArrayList<String> CONST = new ArrayList<String>();
+
+	static {
+		CONST.add("java/lang/Boolean");
+		CONST.add("java/lang/Byte");
+		CONST.add("java/lang/Character");
+		CONST.add("java/lang/Double");
+		CONST.add("java/lang/Float");
+		CONST.add("java/lang/Integer");
+		CONST.add("java/lang/Long");
+		CONST.add("java/lang/Short");
+		CONST.add("java/lang/String");
+	}
+
 	private static InvocationInterpreter instance = null;
 
 	private HashSet<String> registeredMethods;
@@ -64,7 +78,7 @@ public class InvocationInterpreter {
 			return true;
 
 		case Type.OBJECT:
-			return PartialEvaluator.CONST.contains(type.getInternalName());
+			return CONST.contains(type.getInternalName());
 
 		default:
 			return false;
@@ -93,10 +107,24 @@ public class InvocationInterpreter {
 	private Object getObj(MethodInsnNode instr,
 			List<? extends ConstValue> values) {
 
-		if (instr.getOpcode() == Opcodes.INVOKEVIRTUAL) {
-			return values.get(0).cst;
-		} else {
+		if (instr.getOpcode() == Opcodes.INVOKESTATIC) {
 			return null;
+		} else {
+
+			Object obj = values.get(0).cst;
+
+			if (obj instanceof Reference) {
+
+				Reference ref = (Reference) obj;
+
+				if (ref.isValid()) {
+					return ref.getObj();
+				} else {
+					return null;
+				}
+			}
+
+			return obj;
 		}
 	}
 
@@ -177,8 +205,36 @@ public class InvocationInterpreter {
 	public Object execute(MethodInsnNode instr,
 			List<? extends ConstValue> values) {
 
-		if (instr.getOpcode() == Opcodes.INVOKESPECIAL
-				|| instr.getOpcode() == Opcodes.INVOKEDYNAMIC) {
+		if (instr.getOpcode() == Opcodes.INVOKEDYNAMIC) {
+			return null;
+		}
+
+		// TODO remove hack of StringBuilder
+		if (instr.getOpcode() == Opcodes.INVOKESPECIAL) {
+			// TRICK: Special Case for Constructing String Builder
+			// NOTE that normally the constructor returns nothing,
+			// but before the constructor, the reference is duplicated
+			// on the stack.
+			if (instr.owner.equals("java/lang/StringBuilder")
+					&& instr.name.equals("<init>") && values.size() > 1) {
+
+				Object obj = getObj(instr, values);
+				Object cst = values.get(1).cst;
+				
+				if (obj == null){
+					return null;
+				}
+
+				if (cst == null) {
+					((Reference) obj).setValid(false);
+					return null;
+				}
+				
+				if ((cst instanceof String)) {
+					((StringBuilder) obj).append(cst);
+				}
+			}
+
 			return null;
 		}
 
@@ -191,7 +247,7 @@ public class InvocationInterpreter {
 				return null;
 			}
 		}
-
+		
 		try {
 
 			Class<?> clazz = Class.forName(instr.owner.replace('/', '.'));
@@ -237,6 +293,7 @@ public class InvocationInterpreter {
 	public void register(Class<?> clazz) {
 
 		String owner = Type.getInternalName(clazz);
+		CONST.add(owner);
 
 		for (Method method : clazz.getMethods()) {
 			if (!method.getName().endsWith("init>")) {
@@ -251,6 +308,20 @@ public class InvocationInterpreter {
 
 	public boolean isRegistered(AbstractInsnNode instr) {
 
+		if (!(instr instanceof MethodInsnNode)) {
+			return false;
+		}
+
+		MethodInsnNode min = (MethodInsnNode) instr;
+
+		// TODO remove hack of StringBuilder
+		if (min.getOpcode() == Opcodes.INVOKESPECIAL) {
+			if (min.owner.equals("java/lang/StringBuilder")
+					&& min.name.equals("<init>")) {
+				return true;
+			}
+		}
+		
 		if (!(instr.getOpcode() == Opcodes.INVOKEVIRTUAL || instr.getOpcode() == Opcodes.INVOKESTATIC)) {
 			return false;
 		}
@@ -271,6 +342,7 @@ public class InvocationInterpreter {
 			instance.register(Long.class);
 			instance.register(Short.class);
 			instance.register(String.class);
+			instance.register(StringBuilder.class);
 		}
 
 		return instance;
