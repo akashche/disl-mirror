@@ -742,54 +742,6 @@ public class PartialEvaluator {
 		return isOptimized;
 	}
 
-	private static List<String> primitiveTypes;
-
-	static {
-		primitiveTypes = new LinkedList<String>();
-		primitiveTypes.add("java/lang/Boolean");
-		primitiveTypes.add("java/lang/Byte");
-		primitiveTypes.add("java/lang/Character");
-		primitiveTypes.add("java/lang/Double");
-		primitiveTypes.add("java/lang/Float");
-		primitiveTypes.add("java/lang/Integer");
-		primitiveTypes.add("java/lang/Long");
-	}
-
-	private static boolean removeBoxingAndUnboxing(InsnList ilist) {
-
-		boolean isOptimized = false;
-
-		for (AbstractInsnNode instr : ilist.toArray()) {
-
-			AbstractInsnNode prev = instr.getPrevious();
-
-			if (prev == null || (prev.getOpcode() != Opcodes.INVOKESTATIC)
-					|| (instr.getOpcode() != Opcodes.INVOKEVIRTUAL)) {
-				continue;
-			}
-
-			MethodInsnNode valueOf = (MethodInsnNode) prev;
-			MethodInsnNode toValue = (MethodInsnNode) instr;
-
-			if (!(primitiveTypes.contains(valueOf.owner)
-					&& valueOf.owner.equals(toValue.owner) && valueOf.name
-						.equals("valueOf")) && toValue.name.endsWith("Value")) {
-				continue;
-			}
-
-			if (!Type.getArgumentTypes(valueOf.desc)[0].equals(Type
-					.getReturnType(toValue.desc))) {
-				continue;
-			}
-
-			ilist.remove(prev);
-			ilist.remove(instr);
-			isOptimized = true;
-		}
-
-		return isOptimized;
-	}
-
 	public static boolean evaluate(InsnList ilist,
 			List<TryCatchBlockNode> tryCatchBlocks, String desc, int access) {
 
@@ -826,7 +778,6 @@ public class PartialEvaluator {
 				interpreter);
 
 		isOptimized |= replaceLoadWithLDC(ilist, interpreter, frames);
-		isOptimized |= removeBoxingAndUnboxing(ilist);
 		
 		do {
 			removed = false;

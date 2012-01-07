@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.weaver;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import org.objectweb.asm.Opcodes;
@@ -193,6 +194,19 @@ public class WeavingCode {
 		}
 	}
 
+	private static List<String> primitiveTypes;
+
+	static {
+		primitiveTypes = new LinkedList<String>();
+		primitiveTypes.add("java/lang/Boolean");
+		primitiveTypes.add("java/lang/Byte");
+		primitiveTypes.add("java/lang/Character");
+		primitiveTypes.add("java/lang/Double");
+		primitiveTypes.add("java/lang/Float");
+		primitiveTypes.add("java/lang/Integer");
+		primitiveTypes.add("java/lang/Long");
+	}
+
 	// Search for an instruction sequence that stands for a request for dynamic
 	// information, and replace them with a load instruction.
 	// NOTE that if the user requests for the stack value, some store
@@ -202,7 +216,6 @@ public class WeavingCode {
 
 		preFixDynamicInfoCheck();
 
-		int max = AsmHelper.calcMaxLocal(iList);
 		Frame<BasicValue> basicframe = info.getBasicFrame(index);
 		Frame<SourceValue> sourceframe = info.getSourceFrame(index);
 
@@ -226,8 +239,7 @@ public class WeavingCode {
 				if ((method.access & Opcodes.ACC_STATIC) != 0) {
 					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 				} else {
-					iList.insert(instr, new VarInsnNode(Opcodes.ALOAD,
-							-method.maxLocals));
+					iList.insert(instr, new VarInsnNode(Opcodes.ALOAD, 0));
 				}
 
 				iList.remove(invoke);
@@ -280,17 +292,16 @@ public class WeavingCode {
 
 					// store the stack value without changing the semantic
 					int size = StackUtil.dupStack(sourceframe, method, operand,
-							sopcode, method.maxLocals + max);
+							sopcode, method.maxLocals);
 					// load the stack value
 
 					// box value if applicable
-					// boxing is removed by partial evaluator if not needed
 					if (!AsmHelper.isReferenceType(t)) {
 						iList.insert(instr, AsmHelper.boxValueOnStack(t));
 					}
 
-					iList.insert(instr, new VarInsnNode(lopcode, max));
-					max += size;
+					iList.insert(instr, new VarInsnNode(lopcode, method.maxLocals));
+					method.maxLocals += size;
 				}
 			}
 			// TRICK: the following two situation will generate a VarInsnNode
@@ -326,7 +337,7 @@ public class WeavingCode {
 					iList.insert(instr, AsmHelper.boxValueOnStack(t));
 				}
 				iList.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
-						slot - method.maxLocals));
+						slot));
 			} else if (invoke.name.equals("getLocalVariableValue")) {
 
 				if (basicframe == null) {
@@ -355,7 +366,7 @@ public class WeavingCode {
 					iList.insert(instr, AsmHelper.boxValueOnStack(t));
 				}
 				iList.insert(instr, new VarInsnNode(t.getOpcode(Opcodes.ILOAD),
-						operand - method.maxLocals));
+						operand));
 			}
 
 			// remove aload, iconst, ldc
@@ -370,6 +381,33 @@ public class WeavingCode {
 			if (next.getOpcode() == Opcodes.CHECKCAST) {
 				iList.remove(next);
 			}
+		}
+		
+		for (AbstractInsnNode instr : iList.toArray()) {
+
+			AbstractInsnNode prev = instr.getPrevious();
+
+			if (prev == null || (prev.getOpcode() != Opcodes.INVOKESTATIC)
+					|| (instr.getOpcode() != Opcodes.INVOKEVIRTUAL)) {
+				continue;
+			}
+
+			MethodInsnNode valueOf = (MethodInsnNode) prev;
+			MethodInsnNode toValue = (MethodInsnNode) instr;
+
+			if (!(primitiveTypes.contains(valueOf.owner)
+					&& valueOf.owner.equals(toValue.owner) && valueOf.name
+						.equals("valueOf")) && toValue.name.endsWith("Value")) {
+				continue;
+			}
+
+			if (!Type.getArgumentTypes(valueOf.desc)[0].equals(Type
+					.getReturnType(toValue.desc))) {
+				continue;
+			}
+
+			iList.remove(prev);
+			iList.remove(instr);
 		}
 	}
 
@@ -746,10 +784,10 @@ public class WeavingCode {
 		fixProcessorInfo();
 		fixStaticInfo(staticInfoHolder);
 		fixClassInfo();
-		fixDynamicInfo();
 		fixLocalIndex();
-
 		optimize();
+
+		fixDynamicInfo();
 	}
 
 	public void optimize() {
