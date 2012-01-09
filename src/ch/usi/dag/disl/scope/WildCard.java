@@ -30,14 +30,14 @@ public class WildCard {
     	}
     	
     	if(pattern.isEmpty()) {
-    		return false;
+    		
+    		if(text.isEmpty()) {
+    			return true;
+    		}
+    		else {
+    			return false;
+    		}
     	}
-
-    	//TODO: please double check this condition////////////////////
-    	if(text == null && pattern != null) {
-    	    return false;
-    	}
-    	//////////////////////////////////////////////////////////////
 
         // Create the cards by splitting using a RegEx. If more speed 
         // is desired, a simpler character based splitting can be done.
