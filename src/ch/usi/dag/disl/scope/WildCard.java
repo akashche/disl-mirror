@@ -32,7 +32,13 @@ public class WildCard {
     	if(pattern.isEmpty()) {
     		return false;
     	}
-    	
+
+    	//TODO: please double check this condition////////////////////
+    	if(text == null && pattern != null) {
+    	    return false;
+    	}
+    	//////////////////////////////////////////////////////////////
+
         // Create the cards by splitting using a RegEx. If more speed 
         // is desired, a simpler character based splitting can be done.
         String [] cards = pattern.split(WILDCARD_PATTERN);
