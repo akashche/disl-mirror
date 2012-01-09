@@ -5,7 +5,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.util.Constants;
@@ -176,7 +175,8 @@ public class ScopeImpl implements Scope {
 		}
 	}
 
-	public boolean matches(String className, MethodNode method) {
+	@Override
+	public boolean matches(String className, String methodName, String methodDesc) {
 		
 		// -- match class (package) --
 		
@@ -207,7 +207,7 @@ public class ScopeImpl implements Scope {
 		// -- match method name --
 		
 		if(methodWildCard != null
-				&& ! WildCard.match(method.name, methodWildCard)) {
+				&& ! WildCard.match(methodName, methodWildCard)) {
 			return false;
 		}
 		
@@ -216,7 +216,7 @@ public class ScopeImpl implements Scope {
 		if(paramsWildCard != null) {
 
 			// get parameters and match one by one
-			Type[] parameters = Type.getArgumentTypes(method.desc);
+			Type[] parameters = Type.getArgumentTypes(methodDesc);
 			
 			// get last param
 			String lastParamWC = null;
@@ -250,7 +250,7 @@ public class ScopeImpl implements Scope {
 		// -- match return type --
 		
 		if(returnWildCard != null) {
-			Type returnType = Type.getReturnType(method.desc);
+			Type returnType = Type.getReturnType(methodDesc);
 			String typeName = returnType.getClassName();
 			
 			if(! WildCard.match(typeName, returnWildCard)) {

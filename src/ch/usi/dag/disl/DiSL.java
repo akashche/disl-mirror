@@ -170,7 +170,7 @@ public class DiSL implements Instrumentation {
 		for (Snippet snippet : snippets) {
 
 			// snippet matching
-			if (snippet.getScope().matches(classNode.name, methodNode)) {
+			if (snippet.getScope().matches(classNode.name, methodNode.name, methodNode.desc)) {
 				matchedSnippets.add(snippet);
 			}
 		}
