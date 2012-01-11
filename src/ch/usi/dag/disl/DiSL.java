@@ -286,7 +286,7 @@ public class DiSL implements Instrumentation {
 				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
 				
 				// dynamic bypass
-				ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass", Type.getType(boolean.class), true);
+				ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass", Type.getType(boolean.class), false);
 				tlv.setDefaultValue(0);
 				insertTLVs.add(tlv);
 				
