@@ -11,11 +11,12 @@ import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
 
+import org.objectweb.asm.Type;
+
 import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.scope.WildCard;
-
-import com.sun.xml.internal.ws.org.objectweb.asm.Type;
+import ch.usi.dag.disl.util.Constants;
 
 public class Worker extends Thread {
 
@@ -120,10 +121,8 @@ public class Worker extends Thread {
 	
 	private String internClassName(String normalClassName) {
 		
-		final char NORMAL_DELIM = '.';
-		final char INTERN_DELIM = '/';
-		
-		return normalClassName.replace(NORMAL_DELIM, INTERN_DELIM);
+		return normalClassName.replace(
+				Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_ASM_DELIM);
 	}
 	
 	private void instrumentationLoop() throws DiSLServerException, DiSLException {
@@ -209,13 +208,10 @@ public class Worker extends Thread {
 	private void dump(String className, byte[] codeAsBytes, String path)
 			throws DiSLServerException {
 		
-		final String CLASS_DELIM = "/"; 
-		final String CLASS_EXT = ".class";
-		
 		try {
 		
 			// extract the class name and package name
-			int i = className.lastIndexOf(CLASS_DELIM);
+			int i = className.lastIndexOf(Constants.PACKAGE_ASM_DELIM);
 			String onlyClassName = className.substring(i + 1);
 			String packageName = className.substring(0, i + 1);
 			
@@ -227,7 +223,7 @@ public class Worker extends Thread {
 
 			// dump the class code
 			FileOutputStream fo = new FileOutputStream(pathWithPkg
-					+ onlyClassName + CLASS_EXT);
+					+ onlyClassName + Constants.CLASS_EXT);
 			fo.write(codeAsBytes);
 			fo.close();
 		}

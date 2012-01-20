@@ -296,6 +296,8 @@ public class DiSL {
 				
 				// dynamic bypass
 				if(useDynamicBypass) {
+					
+					// prepare dynamic bypass thread local variable
 					ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass",
 							Type.getType(boolean.class), false);
 					tlv.setDefaultValue(0);

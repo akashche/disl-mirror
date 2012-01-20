@@ -20,7 +20,7 @@
 #include <jvmti.h>
 #include <jni.h>
 
-#include "jboratagent.h"
+#include "dislagent.h"
 
 static int total = 0;
 static long contention = 0;

@@ -4,8 +4,8 @@ include Makefile.local
 endif
 
 # Source lists
-LIBNAME=jboratagent
-SOURCES= jboratagent.c
+LIBNAME=dislagent
+SOURCES= dislagent.c
 
 # Object files needed to create library
 OBJECTS=$(SOURCES:%.c=%.o)

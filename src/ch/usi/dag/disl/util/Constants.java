@@ -4,6 +4,7 @@ public class Constants {
 	
 	final public static String STATIC_CONTEXT_METHOD_DELIM = ".";
 	
+	// TODO ! rename to PACKAGE_INTERN_DELIM
 	final public static char PACKAGE_ASM_DELIM = '/';
 	final public static char PACKAGE_STD_DELIM = '.';
 	
@@ -11,4 +12,6 @@ public class Constants {
 	final public static String STATIC_INIT_NAME = "<clinit>";
 	
 	final public static String CLASS_DELIM = ".";
+	
+	final public static String CLASS_EXT = ".class";
 }

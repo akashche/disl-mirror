@@ -5,33 +5,38 @@
 
 	<path id="buildpath">
 		<pathelement location="${asm.path}"/>
-		<pathelement location="./bin"/>
+		<pathelement location="${bin}"/>
 	</path>
 
-	<target name="compileTLVInserter">
-		<mkdir dir="bin"/>
-		<javac srcdir="src-jborat" includes="ch/usi/dag/tlvinserter/" destdir="bin" debug="true" includeAntRuntime="false">
+	<!-- it automatically compiles all other necessary stuff :) -->
+	<target name="compile-tlvinserter">
+		<mkdir dir="${bin}"/>
+		<javac srcdir="${src.disl}" includes="ch/usi/dag/disl/tlvinserter/" destdir="${bin}" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath"/>
 		</javac>
 	</target>
 
-	<target name="extendThread"/>
-
-	<target name="compile-dynamicbypass">
-		<mkdir dir="bin"/>
-		<javac srcdir="src-dynamicbypass" destdir="bin" debug="true" includeAntRuntime="false">
+	<target name="prepare-extendedthread" depends="compile-tlvinserter">
+		<mkdir dir="bin-thread/java/lang"/>
+		<java fork="true" classname="ch.usi.dag.disl.tlvinserter.ExtendThread">
 			<classpath refid="buildpath"/>
-		</javac>
+		</java>
+		<mkdir dir="${build}"/>
+		<jar basedir="bin-thread" destfile="${extendthread.path}" />
+		<delete dir="bin-thread"/>
 	</target>
 
-	<target name="compile-jborat" depends="compile-dynamicbypass">
-		<javac srcdir="src-jborat" destdir="bin" debug="true" includeAntRuntime="false">
+	<target name="compile-dynamicbypass" depends="prepare-extendedthread">
+		<mkdir dir="${bin}"/>
+		<javac srcdir="${src.dynbypass}" destdir="${bin}" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath"/>
+			<compilerarg value="-Xbootclasspath/p:${extendthread.path}"/>
 		</javac>
+		<delete file="${extendthread.path}"/>
 	</target>
 
-	<target name="compile-disl" depends="compile-jborat">
-		<javac srcdir="src" destdir="bin" debug="true" includeAntRuntime="false">
+	<target name="compile-disl" depends="compile-dynamicbypass">
+		<javac srcdir="${src.disl}" destdir="${bin}" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath"/>
 		</javac>
 	</target>
@@ -41,17 +46,20 @@
 	<target name="prepare-dynamicbypass-afterbootstrap"/>
 
 	<target name="package" depends="compile,prepare-dynamicbypass-afterbootstrap">
-		<mkdir dir="build"/>
-		<jar basedir="bin" destfile="build/disl-${disl.version}.jar">
+		<jar basedir="${bin}" destfile="${build}/disl-${disl.version}.jar">
 			 <manifest>
 				<attribute name="Class-Path" value="${instr.jar.name}"/>
 			</manifest>
 		</jar>
 	</target>
+	
+	<target name="eclipse" depends="compile-dynamicbypass">
+		<jar basedir="${bin}" destfile="${build}/eclipse-dynamicbypass.jar" includes="ch/usi/dag/disl/dynamicbypass/" />
+	</target>
 
 	<target name="clean">
-		<delete dir="bin"/>
-		<delete dir="build"/>
+		<delete dir="${bin}"/>
+		<delete dir="${build}"/>
 	</target>
 
 </project>

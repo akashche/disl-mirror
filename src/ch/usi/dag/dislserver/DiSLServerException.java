@@ -8,11 +8,6 @@ public class DiSLServerException extends Exception {
 		super();
 	}
 
-	public DiSLServerException(String message, Throwable cause,
-			boolean enableSuppression, boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
-	}
-
 	public DiSLServerException(String message, Throwable cause) {
 		super(message, cause);
 	}
