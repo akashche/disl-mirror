@@ -18,8 +18,8 @@ public class OnPlaceTransformer {
 		// -Ddisltest.transform=bin/ch/usi/dag/disl/test/bodymarker/TargetClass.class
 		// -Ddisl.classes=bin/ch/usi/dag/disl/test/bodymarker/DiSLClass.class
 		
-		DiSL disl = new DiSL();
-		disl.initialize();
+		// do not use dynamic bypass
+		DiSL disl = new DiSL(false);
 		
 		String classToTransform = null;
 		

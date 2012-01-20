@@ -30,7 +30,7 @@ import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.util.AsmHelper;
-import ch.usi.dag.jborat.runtime.DynamicBypass;
+import ch.usi.dag.dynamicbypass.DynamicBypass;
 
 public class SnippetUnprocessedCode extends UnprocessedCode {
 
@@ -54,7 +54,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	}
 
 	public SnippetCode process(LocalVars allLVs, Map<Type, Proc> processors,
-			Marker marker, boolean exceptHandler, boolean allDynamicBypass)
+			Marker marker, boolean exceptHandler, boolean useDynamicBypass)
 			throws StaticContextGenException, ReflectionException,
 			ProcessorException {
 
@@ -72,7 +72,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		// analysis may be wrong
 		// NOTE: methods are modifying arguments
 
-		if (allDynamicBypass || dynamicBypass) {
+		if (useDynamicBypass && dynamicBypass) {
 			insertDynamicBypass(instructions);
 		}
 		

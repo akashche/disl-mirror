@@ -3,7 +3,7 @@ package ch.usi.dag.disl.scope;
 public class WildCard {
 
     // thx: http://www.adarshr.com/papers/wildcard/
-	// version that test beginning and end
+	// modified version
 
     /**
      * Performs a wildcard matching for the text and pattern 

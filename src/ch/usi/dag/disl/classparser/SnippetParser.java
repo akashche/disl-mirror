@@ -200,7 +200,7 @@ class SnippetParser extends AbstractParser {
 		public String scope = "*"; // default
 		public Type guard = null; // default
 		public int order = 100; // default
-		public boolean dynamicBypass = false; // default
+		public boolean dynamicBypass = true; // default
 		
 		public SnippetAnnotationData(Class<?> type) {
 			this.type = type;

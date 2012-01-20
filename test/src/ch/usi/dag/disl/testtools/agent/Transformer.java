@@ -18,9 +18,8 @@ public class Transformer implements ClassFileTransformer {
     	
     	try {
     	
-	    	
-			DiSL disl = new DiSL();
-			disl.initialize();
+    		// do not use dynamic bypass
+			DiSL disl = new DiSL(false);
 			instrumentedClass = disl.instrument(classfileBuffer);
 			
 			if(instrumentedClass != null) {

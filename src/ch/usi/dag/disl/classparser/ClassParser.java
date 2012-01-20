@@ -30,11 +30,17 @@ public class ClassParser {
 	
 	public void parse(InputStream is) throws ParserException,
 			SnippetParserException, ReflectionException, ScopeParserException,
-			StaticContextGenException, ProcessorParserException, IOException,
+			StaticContextGenException, ProcessorParserException,
 			MarkerException, GuardException {
 
 		// prepare class node
-		ClassReader cr = new ClassReader(is);
+		ClassReader cr;
+		try {
+			cr = new ClassReader(is);
+		} catch (IOException e) {
+			// rethrow exception as DiSL exception
+			throw new ParserException(e);
+		}
 		ClassNode classNode = new ClassNode();
 
 		cr.accept(classNode, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);

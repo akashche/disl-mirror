@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.weaver;
+package ch.usi.dag.tlvinserter;
 
 import java.util.Set;
 

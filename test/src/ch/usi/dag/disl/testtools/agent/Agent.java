@@ -7,7 +7,7 @@ public class Agent {
 	// INSTRUCTIONS: run ant agent
 	// under Eclipse create runner for desired target class
 	// add these jvm parameters (example)
-	// -javaagent:build/agent-light.jar
+	// -javaagent:test/build/agent-light.jar
 	// -Ddisl.classes=bin/ch/usi/dag/disl/test/bodymarker/DiSLClass.class
 	
     /**

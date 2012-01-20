@@ -1,6 +1,7 @@
 package ch.usi.dag.disl;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ import ch.usi.dag.disl.cbloader.ClassByteLoader;
 import ch.usi.dag.disl.classparser.ClassParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.DiSLIOException;
 import ch.usi.dag.disl.exception.DynamicInfoException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
@@ -37,45 +39,26 @@ import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
-import ch.usi.dag.disl.weaver.TLVInserter;
 import ch.usi.dag.disl.weaver.Weaver;
-import ch.usi.dag.jborat.agent.Instrumentation;
+import ch.usi.dag.tlvinserter.TLVInserter;
 
 // TODO javadoc comment all
-public class DiSL implements Instrumentation {
+public class DiSL {
 
-	final String PROP_DYNAMIC_BYPASS = "disl.dynbypass";
-	final boolean allDynamicBypass = Boolean.getBoolean(PROP_DYNAMIC_BYPASS);
+	public final String PROP_DEBUG = "debug";
+	private final boolean debug = Boolean.getBoolean(PROP_DEBUG);
 	
 	// default is that exception handler is inserted
 	// this is the reason for double negation in assignment
-	final String PROP_NO_EXCEPT_HANDLER = "disl.noexcepthandler";
-	final boolean exceptHandler = ! Boolean.getBoolean(PROP_NO_EXCEPT_HANDLER);
+	private final String PROP_NO_EXCEPT_HANDLER = "disl.noexcepthandler";
+	private final boolean exceptHandler = ! Boolean.getBoolean(PROP_NO_EXCEPT_HANDLER);
 	
-	final String PROP_DEBUG = "disl.debug";
-	final boolean debug = Boolean.getBoolean(PROP_DEBUG);
-
 	List<Snippet> snippets;
 
-	private void reportError(Exception e) {
-
-		// error report for user (input) errors
-		System.err.println("DiSL error: " + e.getMessage());
-		Throwable cause = e.getCause();
-		while (cause != null) {
-			System.err.println("  Inner error: " + cause.getMessage());
-			cause = cause.getCause();
-		}
-	}
-	
 	// this method should be called only once
-	public synchronized void initialize() throws Exception {
+	public DiSL(boolean useDynamicBypass) throws Exception {
 
-		if(snippets != null) {
-			throw new DiSLFatalException("DiSL cannot be initialized twice");
-		}
-		
-		// report every exception within our code - don't let anyone mask it
+		// report DiSL exception within our code
 		try {
 
 			List<InputStream> dislClasses = ClassByteLoader.loadDiSLClasses();
@@ -108,7 +91,7 @@ public class DiSL implements Instrumentation {
 			// initialize snippets
 			for (Snippet snippet : parsedSnippets) {
 				snippet.init(parser.getAllLocalVars(), processors,
-						exceptHandler, allDynamicBypass);
+						exceptHandler, useDynamicBypass);
 			}
 			
 			// initialize snippets variable
@@ -124,16 +107,27 @@ public class DiSL implements Instrumentation {
 			// also it can warn about unknown opcodes if you let user to
 			// specify this for InstructionMarker
 		}
-		catch (Exception e) {
+		catch (DiSLException e) {
 			
 			reportError(e);
 
-			if(debug) {
-				e.printStackTrace();
-			}
-			
 			// signal error
 			throw e;
+		}
+	}
+	
+	private void reportError(DiSLException e) {
+
+		// error report for user (input) errors
+		System.err.println("DiSL error: " + e.getMessage());
+		Throwable cause = e.getCause();
+		while (cause != null) {
+			System.err.println("  Inner error: " + cause.getMessage());
+			cause = cause.getCause();
+		}
+		
+		if(debug) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -270,7 +264,7 @@ public class DiSL implements Instrumentation {
 	// this method is thread safe after initialization
 	private ClassNode instrument(ClassNode classNode) throws DiSLException {
 
-		// report every exception within our code - don't let anyone mask it
+		// report DiSL exception within our code
 		try {
 			
 			if (snippets == null) {
@@ -280,7 +274,7 @@ public class DiSL implements Instrumentation {
 			boolean classChanged = false;
 
 			//*
-			// TODO ! nasty fix for thread local
+			// TODO jb ! nasty fix for thread local
 			if (Type.getType(Thread.class).getInternalName().equals(classNode.name)) {
 				
 				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
@@ -313,7 +307,10 @@ public class DiSL implements Instrumentation {
 				classChanged = classChanged || methodChanged;
 			}
 			
-			/* TODO ! uncomment when ASM is fixed
+			/* TODO jb ! uncomment when ASM is fixed
+			 * TODO jb ! extract it to the dynamic bypass routine
+			 *  - add code merger
+			 *  - dynamic bypass has to be applied always
 			// instrument thread local fields
 			String threadInternalName = 
 				Type.getType(Thread.class).getInternalName();
@@ -350,10 +347,6 @@ public class DiSL implements Instrumentation {
 			
 			reportError(e);
 
-			if(debug) {
-				e.printStackTrace();
-			}
-			
 			// signal error
 			throw e;
 		}
@@ -401,14 +394,20 @@ public class DiSL implements Instrumentation {
 		return cw.toByteArray();
 	}
 	
-	public byte[] instrument(byte[] classAsBytes) throws Exception {
+	public byte[] instrument(byte[] classAsBytes) throws DiSLException {
 
 		// output bytes into the file
-		if(debug) {
-			String errFile = "err.class";
-			FileOutputStream fos = new FileOutputStream(errFile);
-			fos.write(classAsBytes);
-			fos.close();
+		try {
+			
+			if(debug) {
+				String errFile = "err.class";
+				FileOutputStream fos = new FileOutputStream(errFile);
+				fos.write(classAsBytes);
+				fos.close();
+			}
+		}
+		catch (IOException e) {
+			throw new DiSLIOException(e);
 		}
 			
 		ClassReader cr = new ClassReader(classAsBytes);
@@ -416,15 +415,21 @@ public class DiSL implements Instrumentation {
 		return instrument(cr);
 	}
 	
-	public byte[] instrument(InputStream classAsStream) throws Exception {
+	public byte[] instrument(InputStream classAsStream) throws DiSLException {
 		
-    	ClassReader cr = new ClassReader(classAsStream);
+		ClassReader cr;
+		
+		try {
+			cr = new ClassReader(classAsStream);
+		}
+		catch (IOException e) {
+			throw new DiSLIOException(e);
+		}
     	
     	return instrument(cr);
 	}
 
-	@Override
-	public void terminate() throws Exception {
+	public void terminate() {
 		
 	}
 }

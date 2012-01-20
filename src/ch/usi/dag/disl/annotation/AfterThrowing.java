@@ -15,7 +15,7 @@ public @interface AfterThrowing {
 	String scope() default "*";
 	Class<? extends Object> guard() default Object.class; // cannot be null :(
 	int order() default 100;
-	// NOTE if the DiSL property disl.dynbypass is set to yes, dynamic bypass is
-	// automatically enabled for each snippet
-	boolean dynamicBypass() default false;
+	// NOTE that activation of dynamic bypass is decided by the instrumentation
+	// framework in first place
+	boolean dynamicBypass() default true;
 }
