@@ -20,6 +20,7 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.coderep.UnprocessedCode;
+import ch.usi.dag.disl.dynamicbypass.DynamicBypass;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
@@ -30,7 +31,6 @@ import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.util.AsmHelper;
-import ch.usi.dag.dynamicbypass.DynamicBypass;
 
 public class SnippetUnprocessedCode extends UnprocessedCode {
 

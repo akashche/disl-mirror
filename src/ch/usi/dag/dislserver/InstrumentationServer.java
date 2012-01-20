@@ -1,4 +1,4 @@
-package ch.usi.dag.jborat.server;
+package ch.usi.dag.dislserver;
 
 import java.net.ServerSocket;
 import java.util.concurrent.atomic.AtomicInteger;

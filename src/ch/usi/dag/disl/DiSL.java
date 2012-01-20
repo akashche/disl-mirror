@@ -20,6 +20,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.cbloader.ClassByteLoader;
 import ch.usi.dag.disl.classparser.ClassParser;
+import ch.usi.dag.disl.dynamicbypass.CodeMerger;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.DiSLIOException;
@@ -39,9 +40,8 @@ import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
+import ch.usi.dag.disl.tlvinserter.TLVInserter;
 import ch.usi.dag.disl.weaver.Weaver;
-import ch.usi.dag.dynamicbypass.CodeMerger;
-import ch.usi.dag.tlvinserter.TLVInserter;
 
 // TODO javadoc comment all
 public class DiSL {

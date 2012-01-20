@@ -1,8 +1,8 @@
-package ch.usi.dag.jborat.agent;
+package ch.usi.dag.dislagent;
 
 import java.lang.instrument.Instrumentation;
 
-import ch.usi.dag.dynamicbypass.Bootstrap;
+import ch.usi.dag.disl.dynamicbypass.Bootstrap;
 
 public class JavaAgent {
 

@@ -5,11 +5,42 @@
 
 	<path id="buildpath">
 		<pathelement location="${asm.path}"/>
-		<pathelement location="${jborat-runtime.path}"/>
-		<pathelement location="${jborat-interface.path}"/>
+		<pathelement location="./bin"/>
 	</path>
 
-	<target name="package" depends="compile">
+	<target name="compileTLVInserter">
+		<mkdir dir="bin"/>
+		<javac srcdir="src-jborat" includes="ch/usi/dag/tlvinserter/" destdir="bin" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath"/>
+		</javac>
+	</target>
+
+	<target name="extendThread"/>
+
+	<target name="compile-dynamicbypass">
+		<mkdir dir="bin"/>
+		<javac srcdir="src-dynamicbypass" destdir="bin" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath"/>
+		</javac>
+	</target>
+
+	<target name="compile-jborat" depends="compile-dynamicbypass">
+		<javac srcdir="src-jborat" destdir="bin" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath"/>
+		</javac>
+	</target>
+
+	<target name="compile-disl" depends="compile-jborat">
+		<javac srcdir="src" destdir="bin" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath"/>
+		</javac>
+	</target>
+
+	<target name="compile" depends="compile-disl"/>
+
+	<target name="prepare-dynamicbypass-afterbootstrap"/>
+
+	<target name="package" depends="compile,prepare-dynamicbypass-afterbootstrap">
 		<mkdir dir="build"/>
 		<jar basedir="bin" destfile="build/disl-${disl.version}.jar">
 			 <manifest>
@@ -18,14 +49,6 @@
 		</jar>
 	</target>
 
-
-	<target name="compile">
-		<mkdir dir="bin"/>
-		<javac srcdir="src" destdir="bin" debug="true" includeAntRuntime="false">
-			<classpath refid="buildpath"/>
-		</javac>
-	</target>
-	
 	<target name="clean">
 		<delete dir="bin"/>
 		<delete dir="build"/>

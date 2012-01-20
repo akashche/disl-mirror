@@ -1,4 +1,4 @@
-package ch.usi.dag.dynamicbypass;
+package ch.usi.dag.disl.dynamicbypass;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;

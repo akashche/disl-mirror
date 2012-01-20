@@ -1,4 +1,4 @@
-package ch.usi.dag.dynamicbypass;
+package ch.usi.dag.disl.dynamicbypass;
 
 public class DynamicBypass {
 
