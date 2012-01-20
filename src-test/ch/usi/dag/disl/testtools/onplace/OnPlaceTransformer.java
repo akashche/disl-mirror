@@ -1,6 +1,10 @@
 package ch.usi.dag.disl.testtools.onplace;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 
 import org.objectweb.asm.ClassReader;
@@ -36,12 +40,7 @@ public class OnPlaceTransformer {
 		}
 
 		// get code as bytes
-		byte[] origCode = null;
-		
-		/* TODO java 7 only
-		Path cttPath = FileSystems.getDefault().getPath(classToTransform);
-		origCode = Files.readAllBytes(cttPath);
-		/**/
+		byte[] origCode = loadAsBytes(classToTransform);
 		
 		// check class first
 		ClassReader cr = new ClassReader(origCode);
@@ -57,5 +56,28 @@ public class OnPlaceTransformer {
 			fos.write(instrCode);
 			fos.close();
 		}
+	}
+	
+	// thx: http://www.java2s.com/Tutorial/Java/0180__File/Loadfiletobytearray.htm
+	public final static byte[] loadAsBytes(String file) throws IOException {
+		FileInputStream fin = new FileInputStream(file);
+		return loadAsBytes(fin);
+	}
+
+	public final static byte[] loadAsBytes(InputStream is) throws IOException {
+
+		byte readBuf[] = new byte[512 * 1024];
+
+		ByteArrayOutputStream bout = new ByteArrayOutputStream();
+
+		int readCnt = is.read(readBuf);
+		while (0 < readCnt) {
+			bout.write(readBuf, 0, readCnt);
+			readCnt = is.read(readBuf);
+		}
+
+		is.close();
+
+		return bout.toByteArray();
 	}
 }

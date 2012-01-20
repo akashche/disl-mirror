@@ -408,4 +408,8 @@ public class DiSL {
 		instrCN.accept(cw);
 		return cw.toByteArray();
 	}
+	
+	public void terminate() {
+		
+	}
 }

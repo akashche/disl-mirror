@@ -3,12 +3,9 @@ package ch.usi.dag.dynamicbypass;
 public class DynamicBypassCheck {
 
 	// this version is executed before bootstrap phase
-	// and will be replaced by ...AfterBootstrap() after bootstrap
+	// it will be after bootstrap replaced by with version in src-dynbypass-a
+	// directory
 	public static boolean executeUninstrumented() {
 		return true;
-	}
-	
-	public static boolean executeUninstrumentedAfterBootstrap() {
-		return DynamicBypass.isActivated();
 	}
 }

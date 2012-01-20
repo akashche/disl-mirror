@@ -10,7 +10,7 @@ public class JavaAgent {
 			Instrumentation instrumentation) {
 
 		if (!Boolean.getBoolean("jborat.noBootstrap")) {
-			Bootstrap.completed();
+			Bootstrap.completed(instrumentation);
 		}
 	}
 }
