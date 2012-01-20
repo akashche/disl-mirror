@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.tlvinserter;
+package ch.usi.dag.disl.utilinstr.tlvinserter;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.dynamicbypass;
+package ch.usi.dag.disl.utilinstr.codemerger;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -8,6 +8,8 @@ import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+
+import ch.usi.dag.disl.dynamicbypass.DynamicBypassCheck;
 
 public abstract class CodeMerger {
 

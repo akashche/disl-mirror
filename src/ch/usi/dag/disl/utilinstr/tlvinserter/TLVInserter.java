@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.tlvinserter;
+package ch.usi.dag.disl.utilinstr.tlvinserter;
 
 import java.util.Set;
 
