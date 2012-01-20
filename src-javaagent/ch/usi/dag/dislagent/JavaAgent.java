@@ -9,7 +9,7 @@ public class JavaAgent {
 	public static void premain(String agentArguments,
 			Instrumentation instrumentation) {
 
-		if (!Boolean.getBoolean("jborat.noBootstrap")) {
+		if (!Boolean.getBoolean("dislserver.noBootstrap")) {
 			Bootstrap.completed(instrumentation);
 		}
 	}

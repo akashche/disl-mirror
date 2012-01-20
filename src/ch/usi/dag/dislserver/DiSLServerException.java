@@ -1,27 +1,27 @@
 package ch.usi.dag.dislserver;
 
-public class JboratException extends Exception {
+public class DiSLServerException extends Exception {
 
 	private static final long serialVersionUID = 5272000884539359236L;
 
-	public JboratException() {
+	public DiSLServerException() {
 		super();
 	}
 
-	public JboratException(String message, Throwable cause,
+	public DiSLServerException(String message, Throwable cause,
 			boolean enableSuppression, boolean writableStackTrace) {
 		super(message, cause, enableSuppression, writableStackTrace);
 	}
 
-	public JboratException(String message, Throwable cause) {
+	public DiSLServerException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
-	public JboratException(String message) {
+	public DiSLServerException(String message) {
 		super(message);
 	}
 
-	public JboratException(Throwable cause) {
+	public DiSLServerException(Throwable cause) {
 		super(cause);
 	}
 }

@@ -22,15 +22,15 @@ public class Worker extends Thread {
 	private static final boolean debug = Boolean
 			.getBoolean(InstrumentationServer.PROP_DEBUG);
 
-	private static final String PROP_EXCLIST = "jborat.exclusionList";
+	private static final String PROP_EXCLIST = "dislserver.exclusionList";
 	private static final String excListPath = 
 			System.getProperty(PROP_EXCLIST, null);
 
-	private static final String PROP_UNINSTR = "jborat.uninstrumented";
+	private static final String PROP_UNINSTR = "dislserver.uninstrumented";
 	private static final String uninstrPath = 
 			System.getProperty(PROP_UNINSTR, null);
 
-	private static final String PROP_INSTR = "jborat.instrumented";
+	private static final String PROP_INSTR = "dislserver.instrumented";
 	private static final String instrPath = 
 			System.getProperty(PROP_INSTR, null);
 
@@ -60,7 +60,7 @@ public class Worker extends Thread {
 		}
 	}
 
-	private boolean filterClass(String className) throws JboratException {
+	private boolean filterClass(String className) throws DiSLServerException {
 
 		// race condition can be here (invocation from multiple threads)
 		// but this is not serious problem
@@ -81,14 +81,14 @@ public class Worker extends Thread {
 		}
 
 		if (className.equals(Type.getInternalName(Thread.class))) {
-			throw new JboratException(Thread.class.getName()
+			throw new DiSLServerException(Thread.class.getName()
 					+ " cannot be excluded in exclusion list");
 		}
 
 		return true;
 	}
 
-	private Set<String> readExlusionList() throws JboratException {
+	private Set<String> readExlusionList() throws DiSLServerException {
 
 		final String COMMENT_START = "#";
 		
@@ -114,7 +114,7 @@ public class Worker extends Thread {
 			return exclSet;
 		
 		} catch(FileNotFoundException e) {
-			throw new JboratException(e);
+			throw new DiSLServerException(e);
 		}
 	}
 	
@@ -126,7 +126,7 @@ public class Worker extends Thread {
 		return normalClassName.replace(NORMAL_DELIM, INTERN_DELIM);
 	}
 	
-	private void instrumentationLoop() throws JboratException, DiSLException {
+	private void instrumentationLoop() throws DiSLServerException, DiSLException {
 
 		try {
 		
@@ -173,12 +173,12 @@ public class Worker extends Thread {
 		
 		}
 		catch (IOException e) {
-			throw new JboratException(e);
+			throw new DiSLServerException(e);
 		}
 	}
 	
 	private byte[] instrument(String className, byte[] origCode)
-			throws JboratException, DiSLException {
+			throws DiSLServerException, DiSLException {
 		
 		// dump uninstrumented
 		if (uninstrPath != null) {
@@ -207,7 +207,7 @@ public class Worker extends Thread {
 	}
 
 	private void dump(String className, byte[] codeAsBytes, String path)
-			throws JboratException {
+			throws DiSLServerException {
 		
 		final String CLASS_DELIM = "/"; 
 		final String CLASS_EXT = ".class";
@@ -232,10 +232,10 @@ public class Worker extends Thread {
 			fo.close();
 		}
 		catch (FileNotFoundException e) {
-			throw new JboratException(e);
+			throw new DiSLServerException(e);
 		}
 		catch (IOException e) {
-			throw new JboratException(e);
+			throw new DiSLServerException(e);
 		}
 	}
 }

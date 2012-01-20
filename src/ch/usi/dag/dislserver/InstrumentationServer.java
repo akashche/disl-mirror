@@ -11,7 +11,7 @@ public abstract class InstrumentationServer {
 	public static final String PROP_DEBUG = "debug";
 	private static final boolean debug = Boolean.getBoolean(PROP_DEBUG);
 
-	private static final String PROP_PORT = "jborat.port";
+	private static final String PROP_PORT = "dislserver.port";
 	private static final int DEFAULT_PORT = 11217;
 	private static final int port = Integer.getInteger(PROP_PORT, DEFAULT_PORT);
 
@@ -59,9 +59,9 @@ public abstract class InstrumentationServer {
 			return;
 		}
 
-		if (e instanceof JboratException) {
+		if (e instanceof DiSLServerException) {
 
-			System.err.println("Jborat error: " + e.getMessage());
+			System.err.println("DiSL server error: " + e.getMessage());
 
 			if (debug) {
 				e.printStackTrace();
