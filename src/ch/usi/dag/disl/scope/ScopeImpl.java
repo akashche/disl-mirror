@@ -182,7 +182,7 @@ public class ScopeImpl implements Scope {
 		
 		// replace delimiters for matching
 		className = className.replace(
-				Constants.PACKAGE_ASM_DELIM, Constants.PACKAGE_STD_DELIM);
+				Constants.PACKAGE_INTERN_DELIM, Constants.PACKAGE_STD_DELIM);
 		String packageName = new String();
 		
 		// extract package name from class name if any

@@ -46,7 +46,7 @@ public final class ExtendThread {
 		// prepare Thread file name
 		String threadFileName = tc.getName();
 		threadFileName = threadFileName.replace(
-				Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_ASM_DELIM);
+				Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_INTERN_DELIM);
 		threadFileName += Constants.CLASS_EXT;
 		
 		// output Thread code into special thread bin directory

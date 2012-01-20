@@ -21,7 +21,7 @@ import ch.usi.dag.disl.util.Constants;
 public class Worker extends Thread {
 
 	private static final boolean debug = Boolean
-			.getBoolean(InstrumentationServer.PROP_DEBUG);
+			.getBoolean(DiSLServer.PROP_DEBUG);
 
 	private static final String PROP_EXCLIST = "dislserver.exclusionList";
 	private static final String excListPath = 
@@ -54,10 +54,10 @@ public class Worker extends Thread {
 			sc.close();
 		}
 		catch (Throwable e) {
-			InstrumentationServer.reportError(e);
+			DiSLServer.reportError(e);
 		}
 		finally {
-			InstrumentationServer.workerDone();
+			DiSLServer.workerDone();
 		}
 	}
 
@@ -122,7 +122,7 @@ public class Worker extends Thread {
 	private String internClassName(String normalClassName) {
 		
 		return normalClassName.replace(
-				Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_ASM_DELIM);
+				Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_INTERN_DELIM);
 	}
 	
 	private void instrumentationLoop() throws DiSLServerException, DiSLException {
@@ -211,7 +211,7 @@ public class Worker extends Thread {
 		try {
 		
 			// extract the class name and package name
-			int i = className.lastIndexOf(Constants.PACKAGE_ASM_DELIM);
+			int i = className.lastIndexOf(Constants.PACKAGE_INTERN_DELIM);
 			String onlyClassName = className.substring(i + 1);
 			String packageName = className.substring(0, i + 1);
 			

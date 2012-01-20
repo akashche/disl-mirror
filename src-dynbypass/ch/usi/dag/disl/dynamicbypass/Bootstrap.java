@@ -15,11 +15,12 @@ public class Bootstrap {
 			ClassLoader cl = Bootstrap.class.getClassLoader();
 			
 			// find our class in resources
-			InputStream dbcIS = 
-					cl.getResourceAsStream("DynamicBypass-DynamicBypassCheck");
+			InputStream dbcIS = cl.getResourceAsStream(
+					"DynamicBypassCheck-AfterBootstrap.class");
 			
 			byte[] newDBCCode = loadAsBytes(dbcIS);
-			instr.redefineClasses(new ClassDefinition(DynamicBypassCheck.class, newDBCCode));
+			instr.redefineClasses(new ClassDefinition(DynamicBypassCheck.class,
+					newDBCCode));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

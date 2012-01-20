@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.exception.DiSLException;
 
-public abstract class InstrumentationServer {
+public abstract class DiSLServer {
 
 	public static final String PROP_DEBUG = "debug";
 	private static final boolean debug = Boolean.getBoolean(PROP_DEBUG);

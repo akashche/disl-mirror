@@ -1,96 +1,126 @@
 <project name="disl" default="package" basedir=".">
 
-	<property file="build.properties"/>
-	<property file="disl.version"/>
+	<property file="build.properties" />
+	<property file="disl.version" />
 
 	<path id="buildpath">
-		<pathelement location="${asm.path}"/>
-		<pathelement location="${bin}"/>
+		<pathelement location="${asm.path}" />
+		<pathelement location="${bin}" />
 	</path>
 
 	<!-- it automatically compiles all other necessary stuff :) -->
 	<target name="compile-tlvinserter">
-		<mkdir dir="${bin}"/>
+		<mkdir dir="${bin}" />
 		<javac srcdir="${src.disl}" includes="ch/usi/dag/disl/utilinstr/tlvinserter/" destdir="${bin}" debug="true" includeAntRuntime="false">
-			<classpath refid="buildpath"/>
+			<classpath refid="buildpath" />
 		</javac>
 	</target>
 
 	<target name="prepare-extendedthread" depends="compile-tlvinserter">
-		<mkdir dir="bin-thread/java/lang"/>
+		<mkdir dir="bin-thread/java/lang" />
 		<java fork="true" classname="ch.usi.dag.disl.utilinstr.tlvinserter.ExtendThread">
-			<classpath refid="buildpath"/>
+			<classpath refid="buildpath" />
 		</java>
-		<mkdir dir="${build}"/>
-		<jar basedir="bin-thread" destfile="${extendthread.path}" />
-		<delete dir="bin-thread"/>
+		<mkdir dir="${build}" />
+		<jar basedir="bin-thread" destfile="${extendedthread.path}" />
+		<delete dir="bin-thread" />
 	</target>
 
 	<target name="compile-dynamicbypass" depends="prepare-extendedthread">
-		<mkdir dir="${bin}"/>
+		<mkdir dir="${bin}" />
 		<javac srcdir="${src.dynbypass}" destdir="${bin}" debug="true" includeAntRuntime="false">
-			<classpath refid="buildpath"/>
-			<compilerarg value="-Xbootclasspath/p:${extendthread.path}"/>
+			<classpath refid="buildpath" />
+			<compilerarg value="-Xbootclasspath/p:${extendedthread.path}" />
 		</javac>
-		<delete file="${extendthread.path}"/>
+		<delete file="${extendedthread.path}" />
 	</target>
 
 	<target name="compile-disl" depends="compile-dynamicbypass">
 		<javac srcdir="${src.disl}" destdir="${bin}" debug="true" includeAntRuntime="false">
-			<classpath refid="buildpath"/>
+			<classpath refid="buildpath" />
 		</javac>
 	</target>
 
 	<target name="compile-agent-java" depends="compile-dynamicbypass">
 		<javac srcdir="${src.agent.java}" destdir="${bin}" debug="true" includeAntRuntime="false">
-			<classpath refid="buildpath"/>
+			<classpath refid="buildpath" />
 		</javac>
 	</target>
 
 	<target name="compile-test" depends="compile-disl">
 		<javac srcdir="${src.test}" destdir="bin" debug="true" includeAntRuntime="false">
-			<classpath refid="buildpath"/>
+			<classpath refid="buildpath" />
 		</javac>
 	</target>
 
-	<target name="compile" depends="compile-disl,compile-agent-java,compile-test"/>
+	<target name="compile" depends="compile-disl,compile-agent-java,compile-test" />
 
-	<target name="prepare-dynamicbypass-afterbootstrap"/>
-
-	<target name="package-dislserver" depends="compile-disl,prepare-dynamicbypass-afterbootstrap">
-		<jar basedir="${bin}" destfile="${build}/disl-${disl.version}.jar">
+	<target name="package-dislserver" depends="compile-disl">
+		<jar basedir="${bin}" destfile="${build}/dislserver-${disl.version}.jar"
+			includes="ch/usi/dag/disl/**,ch/usi/dag/dislserver/**"
+			excludes="ch/usi/dag/disl/test/**,ch/usi/dag/disl/testtools/**">
+			
 			<manifest>
-				<attribute name="Class-Path" value="${instr.jar.name}"/>
+				<attribute name="Class-Path" value="${instr.jar.name}" />
+				<attribute name="Main-Class" value="ch.usi.dag.dislserver.DiSLServer" />
 			</manifest>
 		</jar>
 	</target>
 
-	<target name="package" depends="compile,prepare-dynamicbypass-afterbootstrap">
-		<jar basedir="${bin}" destfile="${build}/disl-${disl.version}.jar">
-			<manifest>
-				<attribute name="Class-Path" value="${instr.jar.name}"/>
-			</manifest>
-		</jar>
+	<target name="compile-dynamicbypass-afterbootstrap">
+		<mkdir dir="${build.afterbootstrap}" />
+		<javac srcdir="${src.dynbypass.act}" destdir="${build.afterbootstrap}" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
 	</target>
 
-	<target name="eclipse-agent" description="creates simple agent jar file for eclipse" >
-		<mkdir dir="build"/>
+	<target name="package-dislagent-java" depends="compile-agent-java,compile-dynamicbypass,compile-dynamicbypass-afterbootstrap">
+
+		<!-- rename after bootstrap class -->
+		<move file="${build.afterbootstrap}/ch/usi/dag/disl/dynamicbypass/DynamicBypassCheck.class"
+			tofile="${build.afterbootstrap}/DynamicBypassCheck-AfterBootstrap.class" />
+		
+		<jar basedir="${bin}" destfile="${build}/dislagent-${disl.version}.jar"
+			includes="ch/usi/dag/dislagent/**,ch/usi/dag/disl/dynamicbypass/**">
+			
+			<manifest>
+				<attribute name="Class-Path" value="${instr.jar.name}" />
+				<attribute name="Premain-Class" value="ch.usi.dag.dislagent.DiSLAgent" />
+			</manifest>
+
+			<!-- include after bootstrap class -->
+			<fileset file="${build.afterbootstrap}/DynamicBypassCheck-AfterBootstrap.class" />
+		</jar>
+
+		<!-- delete dir with after bootstrap class -->
+		<delete dir="${build.afterbootstrap}" />
+	</target>
+
+	<target name="package" depends="package-dislserver,package-dislagent-java" />
+
+	<target name="eclipse-agent" description="creates simple agent jar file for eclipse">
+		<mkdir dir="build" />
 		<jar jarfile="build/eclipse-agent.jar">
 			<manifest>
-				<attribute name="Premain-Class" value="ch.usi.dag.disl.testtools.agent.Agent"/>
+				<attribute name="Premain-Class" value="ch.usi.dag.disl.testtools.agent.Agent" />
 			</manifest>
 		</jar>
 	</target>
-	
-	<target name="eclipse-dynamicbypass" depends="compile-dynamicbypass" description="creates support library for DiSL development under eclipse">
-		<jar basedir="${bin}" destfile="${build}/eclipse-dynamicbypass.jar" includes="ch/usi/dag/disl/dynamicbypass/" />
+
+	<target name="eclipse-dynamicbypass" depends="compile-dynamicbypass"
+		description="creates support library for DiSL development under eclipse">
+		
+		<jar basedir="${bin}" destfile="${build}/eclipse-dynamicbypass.jar"
+			includes="ch/usi/dag/disl/dynamicbypass/" />
 	</target>
-	
-	<target name="eclipse" depends="eclipse-dynamicbypass,eclipse-agent"/>
+
+	<target name="eclipse" depends="eclipse-dynamicbypass,eclipse-agent" />
 
 	<target name="clean">
-		<delete dir="${bin}"/>
-		<delete dir="${build}"/>
+		<delete dir="${bin}" />
+		<delete dir="${build}" />
+		<delete dir="${build.thread}" />
+		<delete dir="${build.afterbootstrap}" />
 	</target>
 
 </project>
