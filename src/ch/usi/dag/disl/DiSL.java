@@ -40,6 +40,7 @@ import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.weaver.Weaver;
+import ch.usi.dag.dynamicbypass.CodeMerger;
 import ch.usi.dag.tlvinserter.TLVInserter;
 
 // TODO javadoc comment all
@@ -53,11 +54,15 @@ public class DiSL {
 	private final String PROP_NO_EXCEPT_HANDLER = "disl.noexcepthandler";
 	private final boolean exceptHandler = ! Boolean.getBoolean(PROP_NO_EXCEPT_HANDLER);
 	
+	private final boolean useDynamicBypass;
+	
 	List<Snippet> snippets;
 
 	// this method should be called only once
 	public DiSL(boolean useDynamicBypass) throws Exception {
 
+		this.useDynamicBypass = useDynamicBypass;
+		
 		// report DiSL exception within our code
 		try {
 
@@ -273,32 +278,6 @@ public class DiSL {
 			
 			boolean classChanged = false;
 
-			//*
-			// TODO jb ! nasty fix for thread local
-			if (Type.getType(Thread.class).getInternalName().equals(classNode.name)) {
-				
-				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
-				
-				// dynamic bypass
-				ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass", Type.getType(boolean.class), false);
-				tlv.setDefaultValue(0);
-				insertTLVs.add(tlv);
-				
-				// get all thread locals in snippets
-				for(Snippet snippet : snippets) {
-					insertTLVs.addAll(snippet.getCode().getReferencedTLVs());
-				}
-
-				// instrument fields
-				ClassNode cnWithFields = new ClassNode(Opcodes.ASM4);
-				classNode.accept(new TLVInserter(cnWithFields, insertTLVs));
-				
-				// replace original code with instrumented one
-				classNode = cnWithFields;
-				classChanged = true;
-			}
-			/**/
-			
 			// instrument all methods in a class
 			for (MethodNode methodNode : classNode.methods) {
 
@@ -307,10 +286,6 @@ public class DiSL {
 				classChanged = classChanged || methodChanged;
 			}
 			
-			/* TODO jb ! uncomment when ASM is fixed
-			 * TODO jb ! extract it to the dynamic bypass routine
-			 *  - add code merger
-			 *  - dynamic bypass has to be applied always
 			// instrument thread local fields
 			String threadInternalName = 
 				Type.getType(Thread.class).getInternalName();
@@ -319,25 +294,32 @@ public class DiSL {
 				
 				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
 				
+				// dynamic bypass
+				if(useDynamicBypass) {
+					ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass",
+							Type.getType(boolean.class), false);
+					tlv.setDefaultValue(0);
+					insertTLVs.add(tlv);
+				}
+				
 				// get all thread locals in snippets
 				for(Snippet snippet : snippets) {
 					insertTLVs.addAll(snippet.getCode().getReferencedTLVs());
 				}
 
 				if(! insertTLVs.isEmpty()) {
-
+				
 					// instrument fields
 					ClassNode cnWithFields = new ClassNode(Opcodes.ASM4);
 					classNode.accept(new TLVInserter(cnWithFields, insertTLVs));
-					
+	
 					// replace original code with instrumented one
 					classNode = cnWithFields;
 					classChanged = true;
 				}
 			}
-			*/
 			
-			if(classChanged) {
+			if(! classChanged) {
 				return classNode;
 			}
 			
@@ -352,18 +334,51 @@ public class DiSL {
 		}
 	}
 
-	private byte[] instrument(ClassReader classReader) throws DiSLException {
+	public byte[] instrument(byte[] classAsBytes) throws DiSLException {
 	
+		// output bytes into the file
+		try {
+			
+			if(debug) {
+				String errFile = "err.class";
+				FileOutputStream fos = new FileOutputStream(errFile);
+				fos.write(classAsBytes);
+				fos.close();
+			}
+		}
+		catch (IOException e) {
+			throw new DiSLIOException(e);
+		}
+		
+		// create class reader
+		ClassReader classReader = new ClassReader(classAsBytes);
+		
 		// AfterInitBodyMarker uses AdviceAdapter
 		//  - classNode with API param is required by ASM 4.0 guidelines
 		ClassNode classNode = new ClassNode(Opcodes.ASM4);
+
+		// TODO jb - try without SKIP_DEBUG
 		classReader.accept(classNode, ClassReader.SKIP_DEBUG
 				| ClassReader.EXPAND_FRAMES);
 		
-		ClassNode insrCN = instrument(classNode);
+		ClassNode instrCN = instrument(classNode);
 		
-		if(insrCN == null) {
+		if(instrCN == null) {
 			return null;
+		}
+		
+		// if dynamic bypass is enabled use code merger
+		if(useDynamicBypass) {
+			
+			ClassReader origCR = new ClassReader(classAsBytes);
+			ClassNode origCN = new ClassNode();
+
+			// TODO jb - try without SKIP_DEBUG
+			origCR.accept(origCN, ClassReader.SKIP_DEBUG
+					| ClassReader.EXPAND_FRAMES);
+
+			// output of the merge is automatically in instrCN
+			CodeMerger.mergeClasses(origCN, instrCN);
 		}
 		
 		// DiSL uses some instructions available only in higher versions
@@ -371,10 +386,10 @@ public class DiSL {
 		final int MAJOR_V_MASK = 0xFFFF;
 		
 		int requiredMajorVersion = REQUIRED_VERSION & MAJOR_V_MASK;
-		int classMajorVersion = insrCN.version & MAJOR_V_MASK;
+		int classMajorVersion = instrCN.version & MAJOR_V_MASK;
 		
 		if (classMajorVersion < requiredMajorVersion) {
-			insrCN.version = REQUIRED_VERSION;
+			instrCN.version = REQUIRED_VERSION;
 		}
 		
 		// Use compute frames for newer classes
@@ -390,46 +405,7 @@ public class DiSL {
 		}
 
 		// return as bytes
-		insrCN.accept(cw);
+		instrCN.accept(cw);
 		return cw.toByteArray();
-	}
-	
-	public byte[] instrument(byte[] classAsBytes) throws DiSLException {
-
-		// output bytes into the file
-		try {
-			
-			if(debug) {
-				String errFile = "err.class";
-				FileOutputStream fos = new FileOutputStream(errFile);
-				fos.write(classAsBytes);
-				fos.close();
-			}
-		}
-		catch (IOException e) {
-			throw new DiSLIOException(e);
-		}
-			
-		ClassReader cr = new ClassReader(classAsBytes);
-
-		return instrument(cr);
-	}
-	
-	public byte[] instrument(InputStream classAsStream) throws DiSLException {
-		
-		ClassReader cr;
-		
-		try {
-			cr = new ClassReader(classAsStream);
-		}
-		catch (IOException e) {
-			throw new DiSLIOException(e);
-		}
-    	
-    	return instrument(cr);
-	}
-
-	public void terminate() {
-		
 	}
 }

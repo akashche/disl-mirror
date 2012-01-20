@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.testtools.onplace;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
@@ -35,19 +34,27 @@ public class OnPlaceTransformer {
 			System.err.println("No class to transform...");
 			System.exit(1);
 		}
+
+		// get code as bytes
+		byte[] origCode = null;
+		
+		/* TODO java 7 only
+		Path cttPath = FileSystems.getDefault().getPath(classToTransform);
+		origCode = Files.readAllBytes(cttPath);
+		/**/
 		
 		// check class first
-		ClassReader cr = new ClassReader(new FileInputStream(classToTransform));
+		ClassReader cr = new ClassReader(origCode);
 		cr.accept(new CheckClassAdapter(
 				new TraceClassVisitor(new PrintWriter(System.out))), 0);
 		
-		byte[] instrOut = disl.instrument(new FileInputStream(classToTransform));
+		// instrument class
+		byte[] instrCode = disl.instrument(origCode);
 		
-		if(instrOut != null) {
+		if(instrCode != null) {
 		
 			FileOutputStream fos = new FileOutputStream("ModifiedClass.class");
-			fos.write(instrOut);
-			fos.flush();
+			fos.write(instrCode);
 			fos.close();
 		}
 	}
