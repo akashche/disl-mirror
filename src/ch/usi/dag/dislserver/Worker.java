@@ -100,20 +100,25 @@ public class Worker extends Thread {
 		
 			Set<String> exclSet = new HashSet<String>();
 
-			// read exclusion list line by line
-			Scanner scanner = new Scanner(new FileInputStream(excListPath));
-			while (scanner.hasNextLine()) {
-				
-				String line = scanner.nextLine();
-				
-				if(! line.startsWith(COMMENT_START)) {
-					exclSet.add(internClassName(line));
+			// if exclusion list path exits
+			if(excListPath != null) {
+			
+				// read exclusion list line by line
+				Scanner scanner = new Scanner(new FileInputStream(excListPath));
+				while (scanner.hasNextLine()) {
+					
+					String line = scanner.nextLine();
+					
+					if(! line.startsWith(COMMENT_START)) {
+						exclSet.add(internClassName(line));
+					}
 				}
+	
+				scanner.close();
 			}
 
-			scanner.close();
-
-			// TODO jb ! add classes from agent and instrumentation jar
+			// add classes that are excluded by default
+			addDefaultExcludes(exclSet);
 			
 			return exclSet;
 		
@@ -122,6 +127,20 @@ public class Worker extends Thread {
 		}
 	}
 	
+	private void addDefaultExcludes(Set<String> exclSet) {
+		
+		// all DiSL agent classes
+		exclSet.add(internClassName("ch.usi.dag.dislagent.*"));
+		
+		// all dynamic bypass classes
+		exclSet.add(internClassName("ch.usi.dag.disl.dynamicbypass.*"));
+		
+		// all java instrument classes
+		exclSet.add(internClassName("sun.instrument.*"));
+		
+		// TODO jb ! add classes from instrumentation jar
+	}
+
 	private String internClassName(String normalClassName) {
 		
 		return normalClassName.replace(

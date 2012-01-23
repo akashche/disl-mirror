@@ -1,4 +1,4 @@
-<project name="disl" default="package" basedir=".">
+<project name="disl" default="prepare-all" basedir=".">
 
 	<property file="build.properties" />
 	<property file="disl.version" />
@@ -61,7 +61,7 @@
 			excludes="ch/usi/dag/disl/test/**,ch/usi/dag/disl/testtools/**">
 			
 			<manifest>
-				<attribute name="Class-Path" value="${instr.jar.name}" />
+				<attribute name="Class-Path" value="${asm.lib} ${instr.jar.name}" />
 				<attribute name="Main-Class" value="ch.usi.dag.dislserver.DiSLServer" />
 			</manifest>
 		</jar>
@@ -86,6 +86,7 @@
 			<manifest>
 				<attribute name="Class-Path" value="${instr.jar.name}" />
 				<attribute name="Premain-Class" value="ch.usi.dag.dislagent.DiSLAgent" />
+				<attribute name="Can-Redefine-Classes" value="true" />
 			</manifest>
 
 			<!-- include after bootstrap class -->
@@ -115,6 +116,12 @@
 	</target>
 
 	<target name="eclipse" depends="eclipse-dynamicbypass,eclipse-agent" />
+
+	<target name="copy-asm">
+		<copy file="${asm.path}" tofile="${build}/${asm.lib}" />
+	</target>
+
+	<target name="prepare-all" depends="package,eclipse,compile-test,copy-asm" />
 
 	<target name="clean">
 		<delete dir="${bin}" />

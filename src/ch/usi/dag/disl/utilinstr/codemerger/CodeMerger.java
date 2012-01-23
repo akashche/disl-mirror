@@ -35,7 +35,6 @@ public abstract class CodeMerger {
 
 			boolean methodAbstract = (instrMN.access & Opcodes.ACC_ABSTRACT) != 0;
 			boolean methodNative = (instrMN.access & Opcodes.ACC_NATIVE) != 0;
-			// TODO jb ! test
 			boolean methodFinalizeInObject = instrumentedCN.name.equals(Type
 					.getInternalName(Object.class))
 					&& instrMN.name.equals(METHOD_FINALIZE);

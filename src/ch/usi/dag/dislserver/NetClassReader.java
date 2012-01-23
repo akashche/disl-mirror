@@ -28,8 +28,12 @@ public class NetClassReader {
 		// bytes[cnl] - class name
 		// bytes[cl] - class code
 		
-		int nameLength = is.readInt();
-		int codeLength = is.readInt();
+		// TODO jb !
+		//int nameLength = is.readInt();
+		//int codeLength = is.readInt();
+		
+		int nameLength = readInt(is);
+		int codeLength = readInt(is);
 
 		// end of communication
 		if(nameLength == 0 && codeLength == 0) {
@@ -61,10 +65,56 @@ public class NetClassReader {
 		// bytes[cnl] - class name
 		// bytes[cl] - class code
 		
-		os.write(cab.getName().length);
-		os.write(cab.getCode().length);
+		// TODO jb !
+		//os.write(cab.getName().length);
+		//os.write(cab.getCode().length);
+		
+		writeInt(os, cab.getName().length);
+		writeInt(os, cab.getCode().length);
+		
 		os.write(cab.getName());
 		os.write(cab.getCode());
 		os.flush();
+	}
+	
+	// TODO jb ! remove all below ===
+	
+	private static int readInt(DataInputStream dis) throws IOException {
+		
+		byte[] data = new byte[4];
+		dis.read(data);
+		return byteArrayToInt(data);
+	}
+	
+	private static void writeInt(OutputStream os, int value) throws IOException {
+		
+		os.write(intToByteArray(value));
+	}
+	
+	private static int byteArrayToInt(byte[] b) {
+		int value = 0;
+		// REVERT THE VALUE OF THE PART CONTAINING THE INT
+		byte[] mybuf = new byte[4];
+		for (int i = 0; i < 4; i++) {
+			mybuf[i] = b[3 - i];
+		}
+
+		for (int i = 0; i < 4; i++) {
+			int shift = (4 - 1 - i) * 8;
+			// value += (mybuf[i + offset] & 0x000000FF) << shift;
+			value += (mybuf[i] & 0x000000FF) << shift;
+		}
+		return value;
+	}
+
+	private static byte[] intToByteArray(int value) {
+
+		byte[] dest = new byte[4];
+
+		for (int idx = 0; idx < 4; idx++) {
+			dest[idx] = ((byte) (value >>> (idx * 8)));
+		}
+
+		return dest;
 	}
 }
