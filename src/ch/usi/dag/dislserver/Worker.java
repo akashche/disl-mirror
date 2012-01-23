@@ -73,20 +73,23 @@ public class Worker extends Thread {
 		for(String pattern : exclusionList) {
 			
 			if(WildCard.match(className, pattern)) {
-				return false;
+			
+				// excluding class...
+				
+				if (debug) {
+					System.out.println("Excluding class: " + className);
+				}
+
+				if (className.equals(Type.getInternalName(Thread.class))) {
+					throw new DiSLServerException(Thread.class.getName()
+							+ " cannot be excluded in exclusion list");
+				}
+				
+				return true;
 			}
 		}
 
-		if (debug) {
-			System.out.println("Excluding class: " + className);
-		}
-
-		if (className.equals(Type.getInternalName(Thread.class))) {
-			throw new DiSLServerException(Thread.class.getName()
-					+ " cannot be excluded in exclusion list");
-		}
-
-		return true;
+		return false;
 	}
 
 	private Set<String> readExlusionList() throws DiSLServerException {
@@ -125,7 +128,7 @@ public class Worker extends Thread {
 				Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_INTERN_DELIM);
 	}
 	
-	private void instrumentationLoop() throws DiSLServerException, DiSLException {
+	private void instrumentationLoop() throws Exception {
 
 		try {
 		
@@ -147,19 +150,25 @@ public class Worker extends Thread {
 				instrClass = instrument(new String(cab.getName()),
 						cab.getCode());
 			}
-			catch (DiSLException e) {
+			catch (Exception e) {
 
 				// instrumentation error
 				// send the client a description of the server-side error
 
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
+				String errToReport = e.getMessage();
+				
+				// during debug send the whole message
+				if(debug) {
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+					errToReport = sw.toString();
+				}
 
 				// error protocol:
 				// class name contains the description of the server-side error
 				// class code is an array of size zero
-				String errMsg = "Error in class " + cab.getName() + ": "
-						+ sw.toString();
+				String errMsg = "Instrumentation error for class "
+						+ new String(cab.getName()) + ": " + errToReport;
 
 				sc.sendClassAsBytes(new ClassAsBytes(errMsg.getBytes(),
 						new byte[0]));
@@ -167,7 +176,15 @@ public class Worker extends Thread {
 				throw e;
 			}
 
-			sc.sendClassAsBytes(new ClassAsBytes(cab.getName(), instrClass));
+			// default answer - no modification
+			ClassAsBytes replyData = cab;
+			
+			// class was modified - send modified data
+			if(instrClass != null) {
+				replyData = new ClassAsBytes(cab.getName(), instrClass);
+			}
+			
+			sc.sendClassAsBytes(replyData);
 		}
 		
 		}

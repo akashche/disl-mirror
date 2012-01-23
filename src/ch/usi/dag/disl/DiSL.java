@@ -21,7 +21,6 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.cbloader.ClassByteLoader;
 import ch.usi.dag.disl.classparser.ClassParser;
 import ch.usi.dag.disl.exception.DiSLException;
-import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.DiSLIOException;
 import ch.usi.dag.disl.exception.DynamicInfoException;
 import ch.usi.dag.disl.exception.InitException;
@@ -272,10 +271,6 @@ public class DiSL {
 		// report DiSL exception within our code
 		try {
 			
-			if (snippets == null) {
-				throw new DiSLFatalException("DiSL was not initialized");
-			}
-			
 			boolean classChanged = false;
 
 			// instrument all methods in a class
@@ -321,7 +316,7 @@ public class DiSL {
 				}
 			}
 			
-			if(! classChanged) {
+			if(classChanged) {
 				return classNode;
 			}
 			

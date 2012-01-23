@@ -11,8 +11,11 @@ public class Bootstrap {
 	public static void completed(Instrumentation instr) {
 		
 		try {
-			// get class loader
-			ClassLoader cl = Bootstrap.class.getClassLoader();
+			// get system class loader
+			// this class is loaded by bootstrap classloader which does not help
+			// system classloader should be able to locate the class because of
+			// disl agent is there
+			ClassLoader cl = ClassLoader.getSystemClassLoader();
 			
 			// find our class in resources
 			InputStream dbcIS = cl.getResourceAsStream(

@@ -1,6 +1,7 @@
 package ch.usi.dag.dislserver;
 
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ch.usi.dag.disl.DiSL;
@@ -34,15 +35,17 @@ public abstract class DiSLServer {
 
 			while (true) {
 
-				NetClassReader sc = 
-						new NetClassReader(listenSocket.accept());
+				Socket newClient = listenSocket.accept();
+				
+				NetClassReader sc = new NetClassReader(newClient);
 				
 				aliveWorkers.incrementAndGet();
 				
 				new Worker(sc, disl).start();
 
 				if (debug) {
-					System.out.println("New connection accepted...");
+					System.out.println("Accpeting new connection from "
+							+ newClient.getInetAddress().toString());
 				}
 			}
 			
