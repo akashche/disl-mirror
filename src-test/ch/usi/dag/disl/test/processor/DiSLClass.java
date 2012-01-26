@@ -46,4 +46,10 @@ public class DiSLClass {
 		
 		pc.apply(ProcessorTest2.class, ArgumentProcessorMode.METHOD_ARGS);
 	}
+	
+	@Before(marker = BodyMarker.class, order = 1, scope = "TargetClass.method1")
+	public static void onlyProc(MethodStaticContext ci, ArgumentProcessorContext pc) {
+		
+		pc.apply(ProcessorTest.class, ArgumentProcessorMode.METHOD_ARGS);
+	}
 }
