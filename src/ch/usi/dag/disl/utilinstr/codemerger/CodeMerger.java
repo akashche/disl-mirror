@@ -40,6 +40,12 @@ public abstract class CodeMerger {
 			 return instrumentedCN;
 		 }
 
+		 // TODO jb ! add splitting for to long methods
+		 //  - splitting is off by default
+		 //  - measure the length of the resulting method and split if necessary
+		 //  - ignore clinit - output warning
+		 //  - output warning if splitted is to large and ignore
+		 
 		for (MethodNode instrMN : instrumentedCN.methods) {
 			
 			// We will construct the merged method node in the instrumented

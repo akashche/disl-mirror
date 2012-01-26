@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.concurrent.atomic.AtomicLong;
 
 import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.exception.DiSLException;
@@ -26,6 +27,8 @@ public class Worker extends Thread {
 
 	private final NetClassReader sc;
 	private final DiSL disl;
+	
+	private final AtomicLong instrumentationTime = new AtomicLong();
 
 	Worker(NetClassReader sc, DiSL disl) {
 		this.sc = sc;
@@ -44,7 +47,7 @@ public class Worker extends Thread {
 			DiSLServer.reportError(e);
 		}
 		finally {
-			DiSLServer.workerDone();
+			DiSLServer.workerDone(instrumentationTime.get());
 		}
 	}
 
@@ -65,10 +68,12 @@ public class Worker extends Thread {
 
 			try {
 				
-				// TODO jb - weave time stats
+				long startTime = System.nanoTime();
 				
 				instrClass = instrument(new String(cab.getName()),
 						cab.getCode());
+				
+				instrumentationTime.addAndGet(System.nanoTime() - startTime);
 			}
 			catch (Exception e) {
 

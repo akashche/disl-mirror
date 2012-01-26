@@ -8,6 +8,7 @@
 #    -Ddislserver.instrumented="path" \
 #    -Ddislserver.uninstrumented="path" \
 #    -Ddislserver.port="portNum" \
+#    -Ddislserver.timestat=true \
 
 
 java -Ddislserver.port="1234" \

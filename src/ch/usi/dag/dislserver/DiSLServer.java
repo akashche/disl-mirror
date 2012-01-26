@@ -3,6 +3,7 @@ package ch.usi.dag.dislserver;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.exception.DiSLException;
@@ -15,8 +16,13 @@ public abstract class DiSLServer {
 	private static final String PROP_PORT = "dislserver.port";
 	private static final int DEFAULT_PORT = 11217;
 	private static final int port = Integer.getInteger(PROP_PORT, DEFAULT_PORT);
+	
+	private static final String PROP_TIME_STAT = "dislserver.timestat";
+	private static final boolean timeStat = Boolean.getBoolean(PROP_TIME_STAT);
 
 	private static final AtomicInteger aliveWorkers = new AtomicInteger();
+	private static final AtomicLong instrumentationTime = new AtomicLong();
+	
 	private static DiSL disl;
 
 	public static void main(String args[]) {
@@ -77,11 +83,18 @@ public abstract class DiSLServer {
 		e.printStackTrace();
 	}
 	
-	public static void workerDone() {
+	public static void workerDone(long instrTime) {
 
+		instrumentationTime.addAndGet(instrTime);
+		
 		if (aliveWorkers.decrementAndGet() == 0) {
 			
 			disl.terminate();
+			
+			if (timeStat) {
+				System.out.println("Instrumentation took " +
+						instrumentationTime.get() / 1000000 + " milliseconds");
+			}
 			
 			if (debug) {
 				System.out.println("Instrumentation server is shutting down");
