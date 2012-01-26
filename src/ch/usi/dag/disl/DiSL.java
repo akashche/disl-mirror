@@ -160,6 +160,14 @@ public class DiSL {
 		if ((methodNode.access & Opcodes.ACC_NATIVE) != 0) {
 			return false;
 		}
+
+		// TODO jb ! document
+		// skip finalize method in java.lang.Object
+		final String METHOD_FINALIZE = "finalize";
+		if (methodNode.name.equals(METHOD_FINALIZE) &&
+				classNode.name.equals(Type.getInternalName(Object.class))) {
+			return false;
+		}
 		
 		// *** match snippet scope ***
 
@@ -265,27 +273,55 @@ public class DiSL {
 		return selectedMarking;
 	}
 
+	private static class InstrumentedClass {
+		
+		private ClassNode classNode;
+		private Set<MethodNode> changedMethods;
+		
+		public InstrumentedClass(ClassNode classNode,
+				Set<MethodNode> changedMethods) {
+			super();
+			this.classNode = classNode;
+			this.changedMethods = changedMethods;
+		}
+
+		public ClassNode getClassNode() {
+			return classNode;
+		}
+
+		public Set<MethodNode> getChangedMethods() {
+			return changedMethods;
+		}
+	}
+	
 	// this method is thread safe after initialization
-	private ClassNode instrument(ClassNode classNode) throws DiSLException {
+	private InstrumentedClass instrument(ClassNode classNode)
+			throws DiSLException {
 
 		// report DiSL exception within our code
 		try {
-			
+
+			// NOTE that class can be changed without changing any method
+			//  - adding thread local fields
 			boolean classChanged = false;
+
+			// track changed methods for code merging
+			Set<MethodNode> changedMethods = new HashSet<MethodNode>();
 
 			// instrument all methods in a class
 			for (MethodNode methodNode : classNode.methods) {
 
 				boolean methodChanged = instrumentMethod(classNode, methodNode);
 				
-				classChanged = classChanged || methodChanged;
+				// add method to the set of changed methods
+				if(methodChanged) {
+					changedMethods.add(methodNode);
+					classChanged = true;
+				}
 			}
 			
 			// instrument thread local fields
-			String threadInternalName = 
-				Type.getType(Thread.class).getInternalName();
-			
-			if (threadInternalName.equals(classNode.name)) {
+			if (Type.getInternalName(Thread.class).equals(classNode.name)) {
 				
 				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
 				
@@ -316,8 +352,9 @@ public class DiSL {
 				}
 			}
 			
+			// we have changed some methods
 			if(classChanged) {
-				return classNode;
+				return new InstrumentedClass(classNode, changedMethods);
 			}
 			
 			return null;
@@ -358,11 +395,13 @@ public class DiSL {
 		classReader.accept(classNode, ClassReader.SKIP_DEBUG
 				| ClassReader.EXPAND_FRAMES);
 		
-		ClassNode instrCN = instrument(classNode);
+		InstrumentedClass instrClass = instrument(classNode);
 		
-		if(instrCN == null) {
+		if(instrClass == null) {
 			return null;
 		}
+		
+		ClassNode instrCN = instrClass.getClassNode();
 		
 		// if dynamic bypass is enabled use code merger
 		if(useDynamicBypass) {
@@ -374,8 +413,9 @@ public class DiSL {
 			origCR.accept(origCN, ClassReader.SKIP_DEBUG
 					| ClassReader.EXPAND_FRAMES);
 
-			// output of the merge is automatically in instrCN
-			CodeMerger.mergeClasses(origCN, instrCN);
+			// origCN and instrCN are destroyed during the merging
+			instrCN = CodeMerger.mergeClasses(origCN, instrCN,
+					instrClass.getChangedMethods());
 		}
 		
 		// DiSL uses some instructions available only in higher versions

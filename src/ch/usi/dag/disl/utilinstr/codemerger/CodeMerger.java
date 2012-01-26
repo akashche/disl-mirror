@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.utilinstr.codemerger;
 
+import java.util.Set;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -10,37 +12,41 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.dynamicbypass.DynamicBypassCheck;
+import ch.usi.dag.disl.exception.DiSLFatalException;
 
 public abstract class CodeMerger {
-
-	private static final String METHOD_FINALIZE = "finalize";
 
 	private static final String DBCHECK_CLASS = Type.getInternalName(
 			DynamicBypassCheck.class);
 	private static final String DBCHECK_METHOD = "executeUninstrumented";
 	private static final String DBCHECK_DESC = "()Z";
 
-	// NOTE: the instrumented class node will serve as an output
-	public static void mergeClasses(ClassNode originalCN,
-			ClassNode instrumentedCN) {
+	// NOTE: the originalCN and instrumentedCN will be destroyed in the process
+	// NOTE: abstract or native methods should not be included in the
+	//       changedMethods list
+	public static ClassNode mergeClasses(ClassNode originalCN,
+			ClassNode instrumentedCN, Set<MethodNode> changedMethods) {
 
-		// do not merge interfaces
-		if ((originalCN.access & Opcodes.ACC_INTERFACE) != 0) {
-			return;
+		// NOTE: that instrumentedCN can contain added fields
+		//       - has to be returned
+		
+		if(changedMethods == null) {
+			throw new DiSLFatalException(
+					"Set of changed methods cannot be null");
 		}
 
+		// no changed method - no merging
+		 if(changedMethods.isEmpty()) {
+			 return instrumentedCN;
+		 }
+
 		for (MethodNode instrMN : instrumentedCN.methods) {
-
-			// evaluation is done always but is more visible then in single if
-
-			boolean methodAbstract = (instrMN.access & Opcodes.ACC_ABSTRACT) != 0;
-			boolean methodNative = (instrMN.access & Opcodes.ACC_NATIVE) != 0;
-			boolean methodFinalizeInObject = instrumentedCN.name.equals(Type
-					.getInternalName(Object.class))
-					&& instrMN.name.equals(METHOD_FINALIZE);
-
-			// skip methods that should not be merged
-			if (methodAbstract | methodNative | methodFinalizeInObject) {
+			
+			// We will construct the merged method node in the instrumented
+			// class node
+			
+			// skip unchanged methods 
+			if(! changedMethods.contains(instrMN)) {
 				continue;
 			}
 
@@ -48,8 +54,6 @@ public abstract class CodeMerger {
 					instrMN.desc);
 
 			InsnList ilist = instrMN.instructions;
-
-			// TODO jb - check for similarity of the instructions
 
 			// add reference to the original code
 			LabelNode origCodeL = new LabelNode();
@@ -66,6 +70,8 @@ public abstract class CodeMerger {
 			ilist.insert(new MethodInsnNode(Opcodes.INVOKESTATIC,
 					DBCHECK_CLASS, DBCHECK_METHOD, DBCHECK_DESC));
 		}
+		
+		return instrumentedCN;
 	}
 
 	private static MethodNode getMethodNode(ClassNode cnToSearch,
