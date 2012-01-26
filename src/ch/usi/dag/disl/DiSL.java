@@ -27,6 +27,7 @@ import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
+import ch.usi.dag.disl.exclusion.ExclusionSet;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
@@ -35,9 +36,11 @@ import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
+import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
+import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.utilinstr.codemerger.CodeMerger;
 import ch.usi.dag.disl.utilinstr.tlvinserter.TLVInserter;
 import ch.usi.dag.disl.weaver.Weaver;
@@ -55,7 +58,9 @@ public class DiSL {
 	
 	private final boolean useDynamicBypass;
 	
-	List<Snippet> snippets;
+	private final Set<Scope> exclusionSet;
+	
+	private final List<Snippet> snippets;
 
 	// this method should be called only once
 	public DiSL(boolean useDynamicBypass) throws Exception {
@@ -74,6 +79,9 @@ public class DiSL {
 						+ " and proper manifest");
 			}
 
+			// prepare exclusion set
+			exclusionSet = ExclusionSet.prepare();
+			
 			// *** parse disl classes ***
 			// - create snippets
 			// - create static context methods
@@ -161,12 +169,23 @@ public class DiSL {
 			return false;
 		}
 
-		// TODO jb ! document
-		// skip finalize method in java.lang.Object
-		final String METHOD_FINALIZE = "finalize";
-		if (methodNode.name.equals(METHOD_FINALIZE) &&
-				classNode.name.equals(Type.getInternalName(Object.class))) {
-			return false;
+		String className = classNode.name;
+		String methodName = methodNode.name;
+		String methodDesc = methodNode.desc;
+		
+		// evaluate exclusions
+		for (Scope exclScope : exclusionSet) {
+
+			if (exclScope.matches(className, methodName, methodDesc)) {
+
+				if (debug) {
+					System.out.println("Excluding method: " + className
+							+ Constants.CLASS_DELIM + methodName + "("
+							+ methodDesc + ")");
+				}
+
+				return false;
+			}
 		}
 		
 		// *** match snippet scope ***
@@ -176,7 +195,7 @@ public class DiSL {
 		for (Snippet snippet : snippets) {
 
 			// snippet matching
-			if (snippet.getScope().matches(classNode.name, methodNode.name, methodNode.desc)) {
+			if (snippet.getScope().matches(className, methodName, methodDesc)) {
 				matchedSnippets.add(snippet);
 			}
 		}
@@ -245,8 +264,9 @@ public class DiSL {
 				piResolver);
 
 		if(debug) {
-			System.out.println("--- instumentation of " + classNode.name + "."
-					+ methodNode.name);
+			System.out.println("Instumenting method: " + className
+					+ Constants.CLASS_DELIM + methodName + "(" + methodDesc
+					+ ")");
 		}
 		
 		return true;
