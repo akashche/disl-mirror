@@ -296,10 +296,10 @@ public class DiSL {
 	private static class InstrumentedClass {
 		
 		private ClassNode classNode;
-		private Set<MethodNode> changedMethods;
+		private Set<String> changedMethods;
 		
 		public InstrumentedClass(ClassNode classNode,
-				Set<MethodNode> changedMethods) {
+				Set<String> changedMethods) {
 			super();
 			this.classNode = classNode;
 			this.changedMethods = changedMethods;
@@ -309,7 +309,7 @@ public class DiSL {
 			return classNode;
 		}
 
-		public Set<MethodNode> getChangedMethods() {
+		public Set<String> getChangedMethods() {
 			return changedMethods;
 		}
 	}
@@ -326,7 +326,7 @@ public class DiSL {
 			boolean classChanged = false;
 
 			// track changed methods for code merging
-			Set<MethodNode> changedMethods = new HashSet<MethodNode>();
+			Set<String> changedMethods = new HashSet<String>();
 
 			// instrument all methods in a class
 			for (MethodNode methodNode : classNode.methods) {
@@ -335,7 +335,7 @@ public class DiSL {
 				
 				// add method to the set of changed methods
 				if(methodChanged) {
-					changedMethods.add(methodNode);
+					changedMethods.add(methodNode.name + methodNode.desc);
 					classChanged = true;
 				}
 			}

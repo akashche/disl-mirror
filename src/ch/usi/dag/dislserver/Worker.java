@@ -148,7 +148,7 @@ public class Worker extends Thread {
 			String packageName = className.substring(0, i + 1);
 			
 			// construct path to the class
-			String pathWithPkg = path + File.pathSeparator + packageName;
+			String pathWithPkg = path + File.separator + packageName;
 
 			// create directories
 			new File(pathWithPkg).mkdirs();

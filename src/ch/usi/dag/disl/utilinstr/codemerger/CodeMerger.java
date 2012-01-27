@@ -25,7 +25,7 @@ public abstract class CodeMerger {
 	// NOTE: abstract or native methods should not be included in the
 	//       changedMethods list
 	public static ClassNode mergeClasses(ClassNode originalCN,
-			ClassNode instrumentedCN, Set<MethodNode> changedMethods) {
+			ClassNode instrumentedCN, Set<String> changedMethods) {
 
 		// NOTE: that instrumentedCN can contain added fields
 		//       - has to be returned
@@ -52,7 +52,7 @@ public abstract class CodeMerger {
 			// class node
 			
 			// skip unchanged methods 
-			if(! changedMethods.contains(instrMN)) {
+			if(! changedMethods.contains(instrMN.name + instrMN.desc)) {
 				continue;
 			}
 
