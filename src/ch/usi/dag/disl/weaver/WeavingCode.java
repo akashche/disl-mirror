@@ -396,8 +396,9 @@ public class WeavingCode {
 			MethodInsnNode toValue = (MethodInsnNode) instr;
 
 			if (!(primitiveTypes.contains(valueOf.owner)
-					&& valueOf.owner.equals(toValue.owner) && valueOf.name
-						.equals("valueOf")) && toValue.name.endsWith("Value")) {
+					&& valueOf.owner.equals(toValue.owner)
+					&& valueOf.name.equals("valueOf")
+					&& toValue.name.endsWith("Value"))) {
 				continue;
 			}
 
