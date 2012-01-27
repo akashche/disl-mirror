@@ -226,6 +226,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		// ... original code
 		// } finally {
 		//   System.err.println("...");
+		//   e.printStackTrace(); // possible here :)
 		//   System.exit(...);
 		// }
 
@@ -233,6 +234,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		Type typeSystem = Type.getType(System.class);
 		Type typePS = Type.getType(PrintStream.class);
 		Type typeString = Type.getType(String.class);
+		Type typeThrowable = Type.getType(Throwable.class);
 
 		// add try label at the beginning
 		LabelNode tryBegin = new LabelNode();
@@ -278,6 +280,15 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 				typePS.getInternalName(),
 				"println",
 				"(" + typeString.getDescriptor() + ")V"));
+		
+		// duplicate exception reference on the stack
+		instructions.add(new InsnNode(Opcodes.DUP));
+		
+		// invoke printing stack trace
+		instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+				typeThrowable.getInternalName(),
+				"printStackTrace",
+				"()V"));
 		
 		// add system exit
 		

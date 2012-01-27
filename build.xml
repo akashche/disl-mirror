@@ -148,7 +148,7 @@
 		<mkdir dir="${build}"/>
 		<jar jarfile="${build}/${instr.jar.name}"
 		     basedir="${bin}"
-		     includes="${test.path}/*"
+		     includes="${test.path}/**"
 		     excludes="${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF"
 		     manifest="${src.test}/${test.path}/MANIFEST.MF">
 		</jar>
