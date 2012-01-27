@@ -242,16 +242,16 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 
 		// ## }
 
-		// add try label at the end
-		LabelNode tryEnd = new LabelNode();
-		instructions.add(tryEnd);
-
-		// ## after normal flow
-
 		// normal flow should jump after handler
 		LabelNode handlerEnd = new LabelNode();
 		instructions.add(new JumpInsnNode(Opcodes.GOTO, handlerEnd));
 
+		// ## after normal flow
+		
+		// add try label at the end
+		LabelNode tryEnd = new LabelNode();
+		instructions.add(tryEnd);
+		
 		// ## after abnormal flow - exception handler
 
 		// add handler begin
