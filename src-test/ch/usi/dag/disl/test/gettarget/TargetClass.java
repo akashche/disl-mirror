@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.test.getTarget;
+package ch.usi.dag.disl.test.gettarget;
 
 class A {
 	public void foo() {

@@ -1,4 +1,4 @@
-package ch.usi.dag.disl.test.getTarget;
+package ch.usi.dag.disl.test.gettarget;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
