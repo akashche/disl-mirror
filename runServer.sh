@@ -12,6 +12,7 @@
 
 
 java -Ddislserver.port="1234" \
+     -Ddebug=true \
      $* \
      -jar build/dislserver-unspec.jar \
      &

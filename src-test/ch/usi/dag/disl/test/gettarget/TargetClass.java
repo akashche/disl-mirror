@@ -1,18 +1,18 @@
 package ch.usi.dag.disl.test.gettarget;
 
-class A {
+class TargetClassA {
 	public void foo() {
-		B.callFoo(0, 1);
+		TargetClassB.callFoo(0, 1);
 	}
 }
 
-class B {
+class TargetClassB {
 	public void foo(int i, int j) {
 		System.out.println("Inside b.foo");
 	}
 
 	public static void callFoo(int i, int j) {
-		B b = new B();
+		TargetClassB b = new TargetClassB();
 		b.foo(i, j);
 	}
 }
@@ -20,7 +20,7 @@ class B {
 public class TargetClass {
 
 	public static void main(String[] args) {
-		A a = new A();
+		TargetClassA a = new TargetClassA();
 		a.foo();
 	}
 }
