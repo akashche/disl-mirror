@@ -2,14 +2,23 @@ package ch.usi.dag.disl.exclusion;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
-import ch.usi.dag.disl.exception.DiSLIOException;
+import ch.usi.dag.disl.cbloader.ManifestHelper;
+import ch.usi.dag.disl.cbloader.ManifestHelper.ManifestInfo;
+import ch.usi.dag.disl.exception.ExclusionPrepareException;
+import ch.usi.dag.disl.exception.ManifestInfoException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeImpl;
+import ch.usi.dag.disl.util.Constants;
 
 public abstract class ExclusionSet {
 
@@ -17,8 +26,15 @@ public abstract class ExclusionSet {
 	private static final String excListPath = 
 			System.getProperty(PROP_EXCLIST, null);
 	
-	public static Set<Scope> prepare() throws DiSLIOException,
-			ScopeParserException {
+	private static final String JAR_PATH_BEGIN = "/";
+	private static final String JAR_PATH_END = "!";
+	
+	private static final char JAR_ENTRY_DELIM = '/';
+	private static final char CLASS_DELIM = '.';
+	private static final String ALL_METHODS = ".*";
+	
+	public static Set<Scope> prepare() throws ScopeParserException,
+			ManifestInfoException, ExclusionPrepareException {
 
 		Set<Scope> exclSet = defaultExcludes();
 		exclSet.addAll(instrumentationJar());
@@ -29,16 +45,23 @@ public abstract class ExclusionSet {
 
 	private static Set<Scope> defaultExcludes() throws ScopeParserException {
 		
+		// if appended to the package name (for scoping purposes),
+		// excludes all methods in all classes in the package and sub-packages
+		final String EXCLUDE_CLASSES = ".*.*";
+		
 		Set<Scope> exclSet = new HashSet<Scope>();
 		
 		// DiSL agent classes
-		exclSet.add(new ScopeImpl("ch.usi.dag.dislagent.*.*"));
+		exclSet.add(new ScopeImpl(
+				"ch.usi.dag.dislagent" + EXCLUDE_CLASSES));
 		
 		// dynamic bypass classes
-		exclSet.add(new ScopeImpl("ch.usi.dag.disl.dynamicbypass.*.*"));
+		exclSet.add(new ScopeImpl(
+				"ch.usi.dag.disl.dynamicbypass" + EXCLUDE_CLASSES));
 		
 		// java instrument classes could cause troubles if instrumented
-		exclSet.add(new ScopeImpl("sun.instrument.*.*"));
+		exclSet.add(new ScopeImpl(
+				"sun.instrument" + EXCLUDE_CLASSES));
 		
 		// TODO jb - rally has to be excluded ?
 		// finalize method in java.lang.Object can cause problems 
@@ -47,17 +70,75 @@ public abstract class ExclusionSet {
 		return exclSet;
 	}
 	
-	private static Set<Scope> instrumentationJar() {
+	private static Set<Scope> instrumentationJar()
+			throws ManifestInfoException, ExclusionPrepareException,
+			ScopeParserException {
+
+		try {
 		
-		Set<Scope> exclSet = new HashSet<Scope>();
+			// add classes from instrumentation jar
+			
+			Set<Scope> exclSet = new HashSet<Scope>();
+			
+			// get DiSL manifest info
+			ManifestInfo mi = ManifestHelper.getDiSLManifestInfo();
+			
+			// no manifest found
+			if(mi == null) {
+				return exclSet;
+			}
+			
+			// get URL of the instrumentation jar manifest
+			URL manifestURL = 
+					ManifestHelper.getDiSLManifestInfo().getResource();
+			
+			// manifest path contains "file:" + jar name + "!" + manifest path
+			String manifestPath = manifestURL.getPath();
+			
+			// extract jar path
+			int jarPathBegin = manifestPath.indexOf(JAR_PATH_BEGIN);
+			int jarPathEnd = manifestPath.indexOf(JAR_PATH_END);
+			String jarPath = manifestPath.substring(jarPathBegin, jarPathEnd);
+			
+			// open jar... 
+			JarFile jarFile = new JarFile(jarPath);
+			
+			// ... and iterate over items
+			Enumeration<JarEntry> entries = jarFile.entries();
+			while (entries.hasMoreElements()) {
+				
+				JarEntry entry = entries.nextElement();
+				
+				// get entry name
+				String entryName = entry.getName();
+				
+				// add all classes to the exclusion list
+				if (entryName.endsWith(Constants.CLASS_EXT)) {
+					
+					String className = 
+							entryName.replace(JAR_ENTRY_DELIM, CLASS_DELIM);
+					
+					// remove class ext
+					int classNameEnd = 
+							className.lastIndexOf(Constants.CLASS_EXT);
+					className = className.substring(0, classNameEnd);
+					
+					// add exclusion for all methods
+					String classExcl = className + ALL_METHODS;
+					
+					exclSet.add(new ScopeImpl(classExcl));
+				}
+			}
+	
+			return exclSet;
 		
-		// TODO jb ! add classes from instrumentation jar
-		
-		return exclSet;
+		} catch(IOException e) {
+			throw new ExclusionPrepareException(e);
+		}
 	}
 	
-	private static Set<Scope> readExlusionList() throws DiSLIOException,
-			ScopeParserException {
+	private static Set<Scope> readExlusionList()
+			throws ExclusionPrepareException, ScopeParserException {
 
 		final String COMMENT_START = "#";
 		
@@ -85,7 +166,7 @@ public abstract class ExclusionSet {
 			return exclSet;
 		
 		} catch(FileNotFoundException e) {
-			throw new DiSLIOException(e);
+			throw new ExclusionPrepareException(e);
 		}
 	}
 }

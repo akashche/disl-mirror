@@ -7,7 +7,9 @@ import java.security.ProtectionDomain;
 import ch.usi.dag.disl.DiSL;
 
 public class Transformer implements ClassFileTransformer {
-    
+
+	private static DiSL disl = null;
+	
     @Override
     public byte [] transform (ClassLoader loader, String className,
         Class <?> classBeingRedefined, ProtectionDomain protectionDomain,
@@ -18,8 +20,13 @@ public class Transformer implements ClassFileTransformer {
     	
     	try {
     	
-    		// do not use dynamic bypass
-			DiSL disl = new DiSL(false);
+    		// init DiSL
+    		if(disl == null) {
+
+    			// false - do not use dynamic bypass
+    			disl = new DiSL(false);
+    		}
+    		
 			instrumentedClass = disl.instrument(classfileBuffer);
 			
 			if(instrumentedClass != null) {

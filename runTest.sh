@@ -22,7 +22,9 @@ DISL_CLASS="./bin/ch/usi/dag/disl/test/$1/DiSLClass.class"
 TARGET_CLASS="ch.usi.dag.disl.test.$1.TargetClass"
 
 # start server and take pid
-./runServer.sh -Ddisl.classes=${DISL_CLASS}
+# suppress output
+ant package-test -Dtest.name=$1 > /dev/null
+./runServer.sh
 
 # wait for server startup
 sleep 3

@@ -4,22 +4,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 
+import ch.usi.dag.disl.cbloader.ManifestHelper.ManifestInfo;
 import ch.usi.dag.disl.exception.InitException;
+import ch.usi.dag.disl.exception.ManifestInfoException;
 
 public abstract class ClassByteLoader {
 
-	private static final String MANIFEST = "META-INF/MANIFEST.MF";
-	
 	public static final String PROP_DISL_CLASSES = "disl.classes";
 	
-	public static final String ATTR_DISL_CLASSES = "DiSL-Classes";
 	public static final String DISL_CLASSES_DELIM = ":";
 	public static final String DISL_CLASSES_EXT = ".class";
 	public static final char CLASS_DELIM = '.';
@@ -51,7 +46,11 @@ public abstract class ClassByteLoader {
 			
 			return result;
 		
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
+			throw new InitException(e);
+		}
+		catch (ManifestInfoException e) {
 			throw new InitException(e);
 		}
 	}
@@ -61,73 +60,58 @@ public abstract class ClassByteLoader {
 		
 		String classesList = System.getProperty(PROP_DISL_CLASSES);
 		
-		if ( (classesList != null) && (! classesList.isEmpty()) ) {
-			
-			List<InputStream> dislClasses = new LinkedList<InputStream>();
-		
-			for (String fileName : classesList.split(DISL_CLASSES_DELIM)) {
-
-				File file = new File(fileName);
-				dislClasses.add(new FileInputStream(file));
-			}
-
-			return dislClasses;
+		// no classes found
+		if ( (classesList == null) || classesList.isEmpty() ) {
+			return null;
 		}
 		
-		return null;
+		// get streams from class names
+		
+		List<InputStream> dislClasses = new LinkedList<InputStream>();
+
+		for (String fileName : classesList.split(DISL_CLASSES_DELIM)) {
+
+			File file = new File(fileName);
+			dislClasses.add(new FileInputStream(file));
+		}
+
+		return dislClasses;
+		
 	}
 	
 	private static List<InputStream> loadClassesFromManifest()
-			throws IOException {
+			throws IOException, ManifestInfoException {
 
-		ClassLoader cl = ClassByteLoader.class.getClassLoader();
+		// get DiSL manifest info
+		ManifestInfo mi = ManifestHelper.getDiSLManifestInfo();
 		
-		String classesList = getClassesListFromManifest(cl);
-		
-		if ( (classesList != null) && (! classesList.isEmpty()) ) {
-			
-			List<InputStream> dislClasses = new LinkedList<InputStream>();
-		
-			for (String className : classesList.split(DISL_CLASSES_DELIM)) {
-
-				// create file name from class name
-				String fileName = className.replace(CLASS_DELIM, FILE_DELIM)
-						+ DISL_CLASSES_EXT;
-				
-				dislClasses.add(cl.getResourceAsStream(fileName));
-			}
-
-			return dislClasses;
+		// no manifest found
+		if(mi == null) {
+			return null;
 		}
 		
-		return null;
-	}
-	
-	private static String getClassesListFromManifest(ClassLoader classLoader)
-			throws IOException {
-
-		// get all manifests...
-		Enumeration<URL> resources = classLoader.getResources(MANIFEST);
+		String classesList = mi.getDislClasses();
 		
-		// and find ours...
-		while (resources.hasMoreElements()) {
-
-			Manifest manifest = 
-				new Manifest(resources.nextElement().openStream());
-			
-			Attributes attrs = manifest.getMainAttributes();
-			
-			// contains disl classes
-			if(attrs != null) {
-				
-				String dislClasses = attrs.getValue(ATTR_DISL_CLASSES);
-				
-				if(dislClasses != null) {
-					return dislClasses;
-				}
-			}
+		// empty class list in manifest
+		if(classesList.isEmpty()) {
+			return null;
 		}
 		
-		return null;
+		// get streams from class names
+		
+		List<InputStream> dislClasses = new LinkedList<InputStream>();
+
+		for (String className : classesList.split(DISL_CLASSES_DELIM)) {
+
+			// create file name from class name
+			String fileName = className.replace(CLASS_DELIM, FILE_DELIM)
+					+ DISL_CLASSES_EXT;
+
+			ClassLoader cl = ClassByteLoader.class.getClassLoader();
+
+			dislClasses.add(cl.getResourceAsStream(fileName));
+		}
+
+		return dislClasses;
 	}
 }
