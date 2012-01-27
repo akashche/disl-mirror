@@ -129,6 +129,18 @@ public class StackUtil {
 				dupStack(frame, method, operand + (4 - x2.size), sopcode, slot);
 				continue;
 
+			case Opcodes.SWAP:
+				if (operand > 0
+						&& StackUtil.getStackByIndex(frame, operand - 1).insns
+								.contains(itr)) {
+					// insert 'dup' instruction and then store to a local slot
+					method.instructions.insertBefore(itr, new InsnNode(
+							Opcodes.DUP));
+					method.instructions.insertBefore(itr, new VarInsnNode(
+							sopcode, slot));
+					continue;
+				}
+
 			default:
 				break;
 			}
