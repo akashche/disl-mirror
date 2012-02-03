@@ -1,18 +1,23 @@
 package ch.usi.dag.disl.utilinstr.codemerger;
 
+import java.util.List;
 import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.CodeSizeEvaluator;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.dynamicbypass.DynamicBypassCheck;
 import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
 
 public abstract class CodeMerger {
 
@@ -20,12 +25,15 @@ public abstract class CodeMerger {
 			DynamicBypassCheck.class);
 	private static final String DBCHECK_METHOD = "executeUninstrumented";
 	private static final String DBCHECK_DESC = "()Z";
+	
+	private static final int ALLOWED_SIZE = 64 * 1024; // 64KB limit
 
 	// NOTE: the originalCN and instrumentedCN will be destroyed in the process
 	// NOTE: abstract or native methods should not be included in the
 	//       changedMethods list
 	public static ClassNode mergeClasses(ClassNode originalCN,
-			ClassNode instrumentedCN, Set<String> changedMethods) {
+			ClassNode instrumentedCN, Set<String> changedMethods,
+			boolean splitLongMethods) {
 
 		// NOTE: that instrumentedCN can contain added fields
 		//       - has to be returned
@@ -36,22 +44,17 @@ public abstract class CodeMerger {
 		}
 
 		// no changed method - no merging
-		 if(changedMethods.isEmpty()) {
-			 return instrumentedCN;
-		 }
+		if (changedMethods.isEmpty()) {
+			return instrumentedCN;
+		}
 
-		 // TODO jb ! add splitting for to long methods
-		 //  - splitting is off by default
-		 //  - measure the length of the resulting method and split if necessary
-		 //  - ignore clinit - output warning
-		 //  - output warning if splitted is to large and ignore
-		 
+		// merge methods one by one
 		for (MethodNode instrMN : instrumentedCN.methods) {
 			
 			// We will construct the merged method node in the instrumented
 			// class node
 			
-			// skip unchanged methods 
+			// skip unchanged methods
 			if(! changedMethods.contains(instrMN.name + instrMN.desc)) {
 				continue;
 			}
@@ -60,6 +63,15 @@ public abstract class CodeMerger {
 					instrMN.desc);
 
 			InsnList ilist = instrMN.instructions;
+			List<TryCatchBlockNode> tcblist = instrMN.tryCatchBlocks;
+			
+			// create copy of the lists for splitting
+			ClonedCode splitCopy = null;
+			
+			if(splitLongMethods) {
+				
+				splitCopy = AsmHelper.cloneCode(ilist, tcblist);
+			}
 
 			// add reference to the original code
 			LabelNode origCodeL = new LabelNode();
@@ -68,16 +80,54 @@ public abstract class CodeMerger {
 			// add original code
 			ilist.add(origMN.instructions);
 			// add exception handlers of the original code
-			instrMN.tryCatchBlocks.addAll(origMN.tryCatchBlocks);
+			tcblist.addAll(origMN.tryCatchBlocks);
 
 			// if the dynamic bypass is activated (non-zero value returned)
 			// then jump to original code
 			ilist.insert(new JumpInsnNode(Opcodes.IFNE, origCodeL));
 			ilist.insert(new MethodInsnNode(Opcodes.INVOKESTATIC,
 					DBCHECK_CLASS, DBCHECK_METHOD, DBCHECK_DESC));
+			
+			// calculate the code size and if it is larger then allowed size,
+			// skip it
+			CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
+			instrMN.accept(cse);
+			
+			if (cse.getMaxSize() > ALLOWED_SIZE) {
+				
+				if(splitLongMethods) {
+					
+					// return originally instrumented code back to the instrMN
+					origMN.instructions = splitCopy.getInstructions();
+					origMN.tryCatchBlocks = splitCopy.getTryCatchBlocks();
+					
+					// split methods
+					splitLongMethods(origMN, instrMN);
+				}
+				
+				// insert original code into the instrumented method node
+				instrMN.instructions = origMN.instructions;
+				instrMN.tryCatchBlocks = origMN.tryCatchBlocks;
+				
+				// print error msg
+				System.err.println("WARNING: code of the method"
+						+ instrumentedCN.name + "." + instrMN.name
+						+ "is larger ("
+						+ cse.getMaxSize()
+						+ ") then allowed size (" +
+						+ ALLOWED_SIZE
+						+ ") - skipping");
+			}
 		}
 		
 		return instrumentedCN;
+	}
+
+	private static void splitLongMethods(MethodNode origMN, MethodNode instrMN) {
+		
+		// TODO jb ! add splitting for to long methods
+		//  - ignore clinit - output warning
+		//  - output warning if splitted is to large and ignore
 	}
 
 	private static MethodNode getMethodNode(ClassNode cnToSearch,

@@ -328,6 +328,40 @@ public abstract class AsmHelper {
 		}
 	}
 
+	public static class ClonedCode {
+		
+		private InsnList instructions;
+		private List<TryCatchBlockNode> tryCatchBlocks;
+		
+		public ClonedCode(InsnList instructions,
+				List<TryCatchBlockNode> tryCatchBlocks) {
+			super();
+			this.instructions = instructions;
+			this.tryCatchBlocks = tryCatchBlocks;
+		}
+
+		public InsnList getInstructions() {
+			return instructions;
+		}
+
+		public List<TryCatchBlockNode> getTryCatchBlocks() {
+			return tryCatchBlocks;
+		}
+	}
+	
+	public static ClonedCode cloneCode(InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks) {
+		
+		Map<LabelNode, LabelNode> tmpLblMap = 
+				AsmHelper.createLabelMap(instructions);
+	
+		InsnList clonedInstructions = 
+				AsmHelper.cloneInsnList(instructions, tmpLblMap);
+		List<TryCatchBlockNode> clonedTryCatchBlocks = 
+				AsmHelper.cloneTryCatchBlocks(tryCatchBlocks, tmpLblMap);
+		
+		return new ClonedCode(clonedInstructions, clonedTryCatchBlocks);
+	}
+	
 	// makes a clone of an instruction list
 	public static InsnList cloneInsnList(InsnList src) {
 
@@ -335,7 +369,7 @@ public abstract class AsmHelper {
 		return cloneInsnList(src, map);
 	}
 
-	public static Map<LabelNode, LabelNode> createLabelMap(InsnList src) {
+	private static Map<LabelNode, LabelNode> createLabelMap(InsnList src) {
 
 		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
 
@@ -350,7 +384,7 @@ public abstract class AsmHelper {
 		return map;
 	}
 
-	public static InsnList cloneInsnList(InsnList src,
+	private static InsnList cloneInsnList(InsnList src,
 			Map<LabelNode, LabelNode> map) {
 
 		InsnList dst = new InsnList();
@@ -377,7 +411,7 @@ public abstract class AsmHelper {
 		return dst;
 	}
 
-	public static List<TryCatchBlockNode> cloneTryCatchBlocks(
+	private static List<TryCatchBlockNode> cloneTryCatchBlocks(
 			List<TryCatchBlockNode> src, Map<LabelNode, LabelNode> map) {
 
 		List<TryCatchBlockNode> dst = new LinkedList<TryCatchBlockNode>();

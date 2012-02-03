@@ -2,16 +2,15 @@ package ch.usi.dag.disl.coderep;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
 
 public class Code {
 
@@ -78,11 +77,11 @@ public class Code {
 	
 	public Code clone() {
 		
-		Map<LabelNode, LabelNode> map = 
-			AsmHelper.createLabelMap(instructions);
+		// clone code first
+		ClonedCode cc = 
+				AsmHelper.cloneCode(instructions, tryCatchBlocks);
 		
-		return new Code(AsmHelper.cloneInsnList(instructions, map),
-				AsmHelper.cloneTryCatchBlocks(tryCatchBlocks, map),
+		return new Code(cc.getInstructions(), cc.getTryCatchBlocks(),
 				new HashSet<SyntheticLocalVar>(referencedSLVs),
 				new HashSet<ThreadLocalVar>(referencedTLVs),
 				new HashSet<StaticContextMethod>(staticContexts),

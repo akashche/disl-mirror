@@ -52,9 +52,14 @@ public class DiSL {
 	private final boolean debug = Boolean.getBoolean(PROP_DEBUG);
 	
 	// default is that exception handler is inserted
-	// this is the reason for double negation in assignment
+	// this is the reason for "double" negation in assignment
 	private final String PROP_NO_EXCEPT_HANDLER = "disl.noexcepthandler";
-	private final boolean exceptHandler = ! Boolean.getBoolean(PROP_NO_EXCEPT_HANDLER);
+	private final boolean exceptHandler =
+			! Boolean.getBoolean(PROP_NO_EXCEPT_HANDLER);
+	
+	private final String PROP_SPLIT_LONG_METHODS = "disl.splitmethods";
+	private final boolean splitLongMethods = 
+			Boolean.getBoolean(PROP_SPLIT_LONG_METHODS);
 	
 	private final boolean useDynamicBypass;
 	
@@ -435,7 +440,7 @@ public class DiSL {
 
 			// origCN and instrCN are destroyed during the merging
 			instrCN = CodeMerger.mergeClasses(origCN, instrCN,
-					instrClass.getChangedMethods());
+					instrClass.getChangedMethods(), splitLongMethods);
 		}
 		
 		// DiSL uses some instructions available only in higher versions

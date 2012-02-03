@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.coderep.Code;
@@ -15,6 +14,7 @@ import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
 
 public class SnippetCode extends Code {
 
@@ -48,11 +48,11 @@ public class SnippetCode extends Code {
 	
 	public SnippetCode clone() {
 
-		Map<LabelNode, LabelNode> map = 
-			AsmHelper.createLabelMap(getInstructions());
+		// clone code first
+		ClonedCode cc = 
+				AsmHelper.cloneCode(getInstructions(), getTryCatchBlocks());
 
-		return new SnippetCode(AsmHelper.cloneInsnList(getInstructions(), map),
-				AsmHelper.cloneTryCatchBlocks(getTryCatchBlocks(), map),
+		return new SnippetCode(cc.getInstructions(), cc.getTryCatchBlocks(),
 				new HashSet<SyntheticLocalVar>(getReferencedSLVs()),
 				new HashSet<ThreadLocalVar>(getReferencedTLVs()),
 				containsHandledException(),
