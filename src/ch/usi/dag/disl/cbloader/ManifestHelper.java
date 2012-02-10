@@ -13,14 +13,17 @@ public class ManifestHelper {
 	private static final String MANIFEST = "META-INF/MANIFEST.MF";
 	
 	public static final String ATTR_DISL_CLASSES = "DiSL-Classes";
+	public static final String ATTR_DISL_TRANSFORMER = "DiSL-Transformer";
 	
 	public static class ManifestInfo {
 		
 		private URL resource;
 		private Manifest manifest;
 		private String dislClasses;
+		private String dislTransformer;
 		
-		public ManifestInfo(URL resource, Manifest manifest, String dislClasses) {
+		public ManifestInfo(URL resource, Manifest manifest, String dislClasses,
+				String dislTransformer) {
 			super();
 			this.resource = resource;
 			this.manifest = manifest;
@@ -38,11 +41,32 @@ public class ManifestHelper {
 		public String getDislClasses() {
 			return dislClasses;
 		}
+		
+		public String getDislTransformer() {
+			return dislTransformer;
+		}
 	}
 	
+	private static ManifestInfo cachedMI = null;
+	private static boolean cacheValid = false;
+	
+	// caching layer
 	public static ManifestInfo getDiSLManifestInfo()
 			throws ManifestInfoException {
-
+		
+		// resolve manifest info
+		if(! cacheValid) {
+			cachedMI = resolveDiSLManifestInfo();
+			cacheValid = true;
+		}
+		
+		// return manifest info
+		return cachedMI;
+	}
+	
+	private static ManifestInfo resolveDiSLManifestInfo()
+			throws ManifestInfoException {
+		
 		try {
 		
 			ClassLoader cl = ManifestInfo.class.getClassLoader();
@@ -63,9 +87,11 @@ public class ManifestHelper {
 				if(attrs != null) {
 					
 					String dislClasses = attrs.getValue(ATTR_DISL_CLASSES);
+					String dislTrans = attrs.getValue(ATTR_DISL_TRANSFORMER);
 					
 					if(dislClasses != null) {
-						return new ManifestInfo(resource, manifest, dislClasses);
+						return new ManifestInfo(resource, manifest,
+								dislClasses, dislTrans);
 					}
 				}
 			}

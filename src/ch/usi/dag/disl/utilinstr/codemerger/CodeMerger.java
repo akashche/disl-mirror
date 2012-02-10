@@ -98,11 +98,14 @@ public abstract class CodeMerger {
 				if(splitLongMethods) {
 					
 					// return originally instrumented code back to the instrMN
-					origMN.instructions = splitCopy.getInstructions();
-					origMN.tryCatchBlocks = splitCopy.getTryCatchBlocks();
+					instrMN.instructions = splitCopy.getInstructions();
+					instrMN.tryCatchBlocks = splitCopy.getTryCatchBlocks();
 					
 					// split methods
-					splitLongMethods(origMN, instrMN);
+					splitLongMethods(instrumentedCN, origMN, instrMN);
+					
+					// next method
+					continue;
 				}
 				
 				// insert original code into the instrumented method node
@@ -123,11 +126,17 @@ public abstract class CodeMerger {
 		return instrumentedCN;
 	}
 
-	private static void splitLongMethods(MethodNode origMN, MethodNode instrMN) {
+	private static void splitLongMethods(ClassNode instrumentedCN,
+			MethodNode origMN, MethodNode instrMN) {
 		
 		// TODO jb ! add splitting for to long methods
 		//  - ignore clinit - output warning
 		//  - output warning if splitted is to large and ignore
+		
+		// check the code size of the instrumented method
+		// add if to the original method that jumps to the renamed instrumented method
+		// add original method to the instrumented code
+		// rename instrumented method
 	}
 
 	private static MethodNode getMethodNode(ClassNode cnToSearch,

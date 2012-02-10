@@ -19,14 +19,18 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.cbloader.ClassByteLoader;
+import ch.usi.dag.disl.cbloader.ManifestHelper;
+import ch.usi.dag.disl.cbloader.ManifestHelper.ManifestInfo;
 import ch.usi.dag.disl.classparser.ClassParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLIOException;
 import ch.usi.dag.disl.exception.DynamicInfoException;
 import ch.usi.dag.disl.exception.InitException;
+import ch.usi.dag.disl.exception.ManifestInfoException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
+import ch.usi.dag.disl.exception.TransformerException;
 import ch.usi.dag.disl.exclusion.ExclusionSet;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
@@ -40,6 +44,7 @@ import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
+import ch.usi.dag.disl.transformer.Transformer;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.utilinstr.codemerger.CodeMerger;
 import ch.usi.dag.disl.utilinstr.tlvinserter.TLVInserter;
@@ -62,6 +67,8 @@ public class DiSL {
 			Boolean.getBoolean(PROP_SPLIT_LONG_METHODS);
 	
 	private final boolean useDynamicBypass;
+
+	private final Transformer transformer;
 	
 	private final Set<Scope> exclusionSet;
 	
@@ -75,6 +82,13 @@ public class DiSL {
 		// report DiSL exception within our code
 		try {
 
+			// *** resolve transformer ***
+			transformer = resolveTransformer();
+
+			// *** prepare exclusion set ***
+			exclusionSet = ExclusionSet.prepare();
+			
+			// *** load disl classes ***
 			List<InputStream> dislClasses = ClassByteLoader.loadDiSLClasses();
 			
 			if(dislClasses == null) {
@@ -84,9 +98,6 @@ public class DiSL {
 						+ " and proper manifest");
 			}
 
-			// prepare exclusion set
-			exclusionSet = ExclusionSet.prepare();
-			
 			// *** parse disl classes ***
 			// - create snippets
 			// - create static context methods
@@ -133,6 +144,44 @@ public class DiSL {
 		}
 	}
 	
+	private Transformer resolveTransformer() throws ManifestInfoException,
+			ReflectionException {
+		
+		ManifestInfo mi = ManifestHelper.getDiSLManifestInfo();
+		
+		if(mi == null) {
+			return null;
+		}
+		
+		String transformerClsName = mi.getDislTransformer();
+
+		if(transformerClsName == null) {
+			return null;
+		}
+		
+		try {
+			Class<?> transformerCls = Class.forName(transformerClsName);
+			return (Transformer) transformerCls.newInstance();
+		}
+		catch (ClassNotFoundException e) {
+			throw new ReflectionException("DiSL transformer "
+					+ transformerClsName + " cannot be resolved", e);
+		}
+		catch (InstantiationException e) {
+			throw new ReflectionException("DiSL transformer "
+					+ transformerClsName + " cannot be instantiated", e);
+		}
+		catch (IllegalAccessException e) {
+			throw new ReflectionException("DiSL transformer "
+					+ transformerClsName + " cannot be instantiated", e);
+		}
+		catch (ClassCastException e) {
+			throw new ReflectionException("DiSL transformer "
+					+ transformerClsName
+					+ " does not implement Transformer interface", e);
+		}
+	}
+
 	private void reportError(DiSLException e) {
 
 		// error report for user (input) errors
@@ -407,6 +456,16 @@ public class DiSL {
 		}
 		catch (IOException e) {
 			throw new DiSLIOException(e);
+		}
+		
+		// apply transformer first
+		if(transformer != null) {
+			try {
+				classAsBytes = transformer.transform(classAsBytes);
+			}
+			catch (Exception e) {
+				throw new TransformerException("Transformer error", e); 
+			}
 		}
 		
 		// create class reader
