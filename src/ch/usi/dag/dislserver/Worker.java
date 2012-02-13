@@ -101,12 +101,15 @@ public class Worker extends Thread {
 				throw e;
 			}
 
-			// default answer - no modification
-			ClassAsBytes replyData = cab;
+			ClassAsBytes replyData = null;
 			
-			// class was modified - send modified data
 			if(instrClass != null) {
+				// class was modified - send modified data
 				replyData = new ClassAsBytes(cab.getName(), instrClass);
+			}
+			else {
+				// zero length means no modification
+				replyData = new ClassAsBytes(new byte[0], new byte[0]);
 			}
 			
 			sc.sendClassAsBytes(replyData);

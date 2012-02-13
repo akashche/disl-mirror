@@ -293,6 +293,11 @@ class_as_bytes rcv_class(connection_item * conn) {
 	// convert from java representation
 	jint classcode_size = ntohl(nccs);
 
+	// *** no transformation done
+	if(classname_size == 0) {
+		return create_class_as_bytes(NULL, 0, NULL, 0);
+	}
+
 	// *** receive class name
 	char * classname = (char *) malloc(classname_size + 1); // +1 - ending 0
 
@@ -451,11 +456,7 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 		const unsigned char* class_data, jint* new_class_data_len,
 		unsigned char** new_class_data) {
 
-	*new_class_data_len = 0;
-	*new_class_data = NULL;
-
 	// ask the server to instrument
-
 	class_as_bytes instrclass = instrument_class(name, class_data, class_data_len);
 
 	// valid class recieved
