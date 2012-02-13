@@ -19,6 +19,9 @@ public abstract class DiSLServer {
 	
 	private static final String PROP_TIME_STAT = "dislserver.timestat";
 	private static final boolean timeStat = Boolean.getBoolean(PROP_TIME_STAT);
+	
+	private static final String PROP_CONT = "dislserver.continuous";
+	private static final boolean continuous = Boolean.getBoolean(PROP_CONT);
 
 	private static final AtomicInteger aliveWorkers = new AtomicInteger();
 	private static final AtomicLong instrumentationTime = new AtomicLong();
@@ -89,19 +92,22 @@ public abstract class DiSLServer {
 		
 		if (aliveWorkers.decrementAndGet() == 0) {
 			
-			disl.terminate();
-			
 			if (timeStat) {
 				System.out.println("Instrumentation took " +
 						instrumentationTime.get() / 1000000 + " milliseconds");
 			}
 			
-			if (debug) {
-				System.out.println("Instrumentation server is shutting down");
-			}
-			
 			// no workers - shutdown
-			System.exit(0);
+			if(! continuous) {
+
+				disl.terminate();
+				
+				if (debug) {
+					System.out.println("Instrumentation server is shutting down");
+				}
+				
+				System.exit(0);				
+			}
 		}
 	}
 }

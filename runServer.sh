@@ -9,10 +9,10 @@
 #    -Ddislserver.uninstrumented="path" \
 #    -Ddislserver.port="portNum" \
 #    -Ddislserver.timestat=true \
+#    -Ddislserver.continuous=true \
 
 
-java -Ddislserver.port="1234" \
-     $* \
+java $* \
      -jar build/dislserver-unspec.jar \
      &
 
