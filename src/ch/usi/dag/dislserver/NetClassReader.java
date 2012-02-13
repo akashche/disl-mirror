@@ -1,5 +1,7 @@
 package ch.usi.dag.dislserver;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -15,8 +17,8 @@ public class NetClassReader {
 		
 		this.socket = socket;
 
-		is = new DataInputStream(socket.getInputStream());
-		os = new DataOutputStream(socket.getOutputStream());
+		is = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+		os = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
 	}
 
 	public ClassAsBytes readClassAsBytes() throws IOException {
