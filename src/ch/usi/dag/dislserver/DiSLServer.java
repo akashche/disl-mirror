@@ -46,7 +46,7 @@ public abstract class DiSLServer {
 
 				Socket newClient = listenSocket.accept();
 				
-				NetClassReader sc = new NetClassReader(newClient);
+				NetMessageReader sc = new NetMessageReader(newClient);
 				
 				aliveWorkers.incrementAndGet();
 				

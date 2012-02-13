@@ -6,10 +6,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.exception.DiSLException;
+import ch.usi.dag.disl.exception.DiSLIOException;
 import ch.usi.dag.disl.util.Constants;
 
 public class Worker extends Thread {
@@ -25,12 +27,15 @@ public class Worker extends Thread {
 	private static final String instrPath = 
 			System.getProperty(PROP_INSTR, null);
 
-	private final NetClassReader sc;
+	// used for replays
+	private static final byte[] emptyByteArray = new byte[0];
+	
+	private final NetMessageReader sc;
 	private final DiSL disl;
 	
 	private final AtomicLong instrumentationTime = new AtomicLong();
 
-	Worker(NetClassReader sc, DiSL disl) {
+	Worker(NetMessageReader sc, DiSL disl) {
 		this.sc = sc;
 		this.disl = disl;
 	}
@@ -57,10 +62,10 @@ public class Worker extends Thread {
 		
 		while (true) {
 
-			ClassAsBytes cab = sc.readClassAsBytes();
+			NetMessage nm = sc.readMessage();
 
 			// communication closed by the client
-			if (cab == null) {
+			if (nm.getControl().length == 0 && nm.getClassCode().length == 0) {
 				return;
 			}
 
@@ -70,8 +75,8 @@ public class Worker extends Thread {
 				
 				long startTime = System.nanoTime();
 				
-				instrClass = instrument(new String(cab.getName()),
-						cab.getCode());
+				instrClass = instrument(new String(nm.getControl()),
+						nm.getClassCode());
 				
 				instrumentationTime.addAndGet(System.nanoTime() - startTime);
 			}
@@ -90,29 +95,29 @@ public class Worker extends Thread {
 				}
 
 				// error protocol:
-				// class name contains the description of the server-side error
+				// control contains the description of the server-side error
 				// class code is an array of size zero
 				String errMsg = "Instrumentation error for class "
-						+ new String(cab.getName()) + ": " + errToReport;
+						+ new String(nm.getControl()) + ": " + errToReport;
 
-				sc.sendClassAsBytes(new ClassAsBytes(errMsg.getBytes(),
-						new byte[0]));
+				sc.sendMessage(new NetMessage(errMsg.getBytes(),
+						emptyByteArray));
 
 				throw e;
 			}
 
-			ClassAsBytes replyData = null;
+			NetMessage replyData = null;
 			
 			if(instrClass != null) {
 				// class was modified - send modified data
-				replyData = new ClassAsBytes(cab.getName(), instrClass);
+				replyData = new NetMessage(emptyByteArray, instrClass);
 			}
 			else {
 				// zero length means no modification
-				replyData = new ClassAsBytes(new byte[0], new byte[0]);
+				replyData = new NetMessage(emptyByteArray, emptyByteArray);
 			}
 			
-			sc.sendClassAsBytes(replyData);
+			sc.sendMessage(replyData);
 		}
 		
 		}
@@ -123,6 +128,11 @@ public class Worker extends Thread {
 	
 	private byte[] instrument(String className, byte[] origCode)
 			throws DiSLServerException, DiSLException {
+		
+		// backup for empty class name
+		if(className == null || className.isEmpty()) {
+			className = UUID.randomUUID().toString();
+		}
 		
 		// dump uninstrumented
 		if (uninstrPath != null) {
