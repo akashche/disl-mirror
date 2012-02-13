@@ -11,8 +11,7 @@
 #    -Ddislserver.timestat=true \
 
 
-java -Ddislserver.port="1234" \
-     $* \
+java $* \
      -jar build/dislserver-unspec.jar \
      &
 

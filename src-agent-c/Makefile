@@ -5,7 +5,7 @@ endif
 
 # Source lists
 LIBNAME=dislagent
-SOURCES= dislagent.c
+SOURCES=dislagent.c
 
 # Object files needed to create library
 OBJECTS=$(SOURCES:%.c=%.o)
@@ -23,15 +23,9 @@ endif
 LINK_SHARED=$(LINK.c) -shared -o $@
 
 # GNU Compiler options needed to build it
-COMMON_FLAGS=-fno-strict-aliasing -fPIC -fno-omit-frame-pointer
+COMMON_FLAGS=-fPIC
 # Options that help find errors
 COMMON_FLAGS+= -W -Wall -Wextra -O3 -Wno-unused-parameter
-# To allow access to dladdr()
-COMMON_FLAGS+= -D_GNU_SOURCE
-# To prevent include of procfs.h
-COMMON_FLAGS+= -DLINUX
-# To make sure code is reentrant
-COMMON_FLAGS+= -D_REENTRANT
 
 CFLAGS += $(COMMON_FLAGS)
 

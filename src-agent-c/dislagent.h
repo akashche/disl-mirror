@@ -1,7 +1,7 @@
 #include <jvmti.h>
 
-#ifndef _JBORATCLIENTAGENT_H
-#define	_JBORATCLIENTAGENT_H
+#ifndef _DISLAGENT_H
+#define	_DISLAGENT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,4 +14,4 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved);
 #endif
 
 
-#endif	/* _JBORATCLIENTAGENT_H */
+#endif	/* _DISLAGENT_H */
