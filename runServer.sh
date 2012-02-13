@@ -9,6 +9,7 @@
 #    -Ddislserver.uninstrumented="path" \
 #    -Ddislserver.port="portNum" \
 #    -Ddislserver.timestat=true \
+#    -Ddislserver.continuous=true \
 
 
 java $* \
