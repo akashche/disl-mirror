@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.exception.DiSLException;
-import ch.usi.dag.disl.exception.DiSLIOException;
 import ch.usi.dag.disl.util.Constants;
 
 public class Worker extends Thread {
