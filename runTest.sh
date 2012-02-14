@@ -8,14 +8,16 @@ then
     exit
 fi
 
-SERVER_FILE=.server.pid
+SERVER_FILE=server.pid
 export SERVER_FILE
 
 # kill running server
 if [ -e ${SERVER_FILE} ]
 then
     kill -KILL `cat ${SERVER_FILE}`
-    rm .server.pid
+    kill -KILL `cat re_${SERVER_FILE}` 2> /dev/null
+    rm ${SERVER_FILE}
+    rm re_${SERVER_FILE}
 fi
 
 DISL_CLASS="./bin/ch/usi/dag/disl/test/$1/DiSLClass.class"
@@ -25,6 +27,7 @@ TARGET_CLASS="ch.usi.dag.disl.test.$1.TargetClass"
 # suppress output
 ant package-test -Dtest.name=$1 > /dev/null
 ./runServer.sh
+./runREServer.sh
 
 # wait for server startup
 sleep 3
@@ -35,6 +38,8 @@ sleep 3
 # wait for server shutdown
 sleep 1
 
-# kill server
+# kill servers
 kill -KILL `cat ${SERVER_FILE}` 2> /dev/null
-rm .server.pid
+kill -KILL `cat re_${SERVER_FILE}` 2> /dev/null
+rm ${SERVER_FILE}
+rm re_${SERVER_FILE}

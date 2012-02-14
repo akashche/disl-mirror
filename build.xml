@@ -47,13 +47,19 @@
 		</javac>
 	</target>
 
+	<target name="compile-dislre">
+		<javac srcdir="${src.dislre}" destdir="${bin}" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
+	</target>
+
 	<target name="compile-test" depends="compile-disl">
 		<javac srcdir="${src.test}" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath" />
 		</javac>
 	</target>
 
-	<target name="compile" depends="compile-disl,compile-agent-java,compile-test" />
+	<target name="compile" depends="compile-disl,compile-agent-java,compile-test,compile-dislre" />
 
 	<target name="package-dislserver" depends="compile-disl">
 		<jar basedir="${bin}" destfile="${build}/dislserver-${disl.version}.jar"
@@ -63,6 +69,17 @@
 			<manifest>
 				<attribute name="Class-Path" value="${asm.lib} ${instr.jar.name}" />
 				<attribute name="Main-Class" value="ch.usi.dag.dislserver.DiSLServer" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="package-dislreserver" depends="compile-dislre">
+		<jar basedir="${bin}" destfile="${build}/dislreserver-${disl.version}.jar"
+			includes="ch/usi/dag/dislreserver/**">
+			
+			<manifest>
+				<attribute name="Class-Path" value="${asm.lib} ${instr.jar.name}" />
+				<attribute name="Main-Class" value="ch.usi.dag.dislreserver.DiSLREServer" />
 			</manifest>
 		</jar>
 	</target>
@@ -97,7 +114,7 @@
 		<delete dir="${build.afterbootstrap}" />
 	</target>
 
-	<target name="package" depends="package-dislserver,package-dislagent-java" />
+	<target name="package" depends="package-dislserver,package-dislagent-java,package-dislreserver" />
 
 	<target name="eclipse-agent" description="creates simple agent jar file for eclipse">
 		<mkdir dir="build" />
