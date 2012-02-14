@@ -256,13 +256,13 @@ static void rcv_data(int sockfd, void * data, int data_len) {
 // sends class over network
 static void send_msg(connection_item * conn, message * msg) {
 
-	// send name and code size first and then data
+	// send control and code size first and then data
 
 	int sockfd = conn->sockfd;
 
 	// convert to java representation
-	jint ncns = htonl(msg->control_size);
-	send_data(sockfd, &ncns, sizeof(jint));
+	jint nctls = htonl(msg->control_size);
+	send_data(sockfd, &nctls, sizeof(jint));
 
 	// convert to java representation
 	jint nccs = htonl(msg->classcode_size);
@@ -276,16 +276,16 @@ static void send_msg(connection_item * conn, message * msg) {
 // receives class from network
 message rcv_msg(connection_item * conn) {
 
-	// receive name and code size first and then data
+	// receive control and code size first and then data
 
 	int sockfd = conn->sockfd;
 
-	// *** receive class name size - jint
-	jint ncns;
-	rcv_data(sockfd, &ncns, sizeof(jint));
+	// *** receive control size - jint
+	jint nctls;
+	rcv_data(sockfd, &nctls, sizeof(jint));
 
 	// convert from java representation
-	jint control_size = ntohl(ncns);
+	jint control_size = ntohl(nctls);
 
 	// *** receive class code size - jint
 	jint nccs;
