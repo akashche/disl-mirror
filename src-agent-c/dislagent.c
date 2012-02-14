@@ -527,23 +527,28 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 
 static void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
 
-	connection_item * cnode = conn_list;
+	enter_critical_section(jvmti_env, global_lock);
+	{
 
-	// will be deallocated in the while cycle
-	conn_list = NULL;
+		connection_item * cnode = conn_list;
 
-	// close all connections
-	while(cnode != NULL) {
+		// will be deallocated in the while cycle
+		conn_list = NULL;
 
-		// prepare for closing
-		connection_item * connToClose = cnode;
+		// close all connections
+		while(cnode != NULL) {
 
-		// advance first - pointer will be invalid after close
-		cnode = cnode->next;
+			// prepare for closing
+			connection_item * connToClose = cnode;
 
-		// close connection
-		close_connection(connToClose);
+			// advance first - pointer will be invalid after close
+			cnode = cnode->next;
+
+			// close connection
+			close_connection(connToClose);
+		}
 	}
+	exit_critical_section(jvmti_env, global_lock);
 }
 
 // ******************* JVMTI entry method *******************
