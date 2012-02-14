@@ -16,7 +16,7 @@ public class ScopeImpl implements Scope {
 	private final String PARAM_DELIM = ",";
 	private final String METHOD_DELIM = ".";
 	private final String PARAM_MATCH_REST = "..";
-	private final String DEFAULT_PKG = "(default)";
+	private final String DEFAULT_PKG = "[default]";
 	
 	private String classWildCard;
 	private String methodWildCard;
