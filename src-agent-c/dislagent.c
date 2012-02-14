@@ -256,6 +256,10 @@ static void rcv_data(int sockfd, void * data, int data_len) {
 // sends class over network
 static void send_msg(connection_item * conn, message * msg) {
 
+#ifdef DEBUG
+	printf("Sending - control: %d, code: %d ... ", msg->control_size, msg->classcode_size);
+#endif
+
 	// send control and code size first and then data
 
 	int sockfd = conn->sockfd;
@@ -271,10 +275,18 @@ static void send_msg(connection_item * conn, message * msg) {
 	send_data(sockfd, msg->control, msg->control_size);
 
 	send_data(sockfd, msg->classcode, msg->classcode_size);
+
+#ifdef DEBUG
+	printf("done\n");
+#endif
 }
 
 // receives class from network
 message rcv_msg(connection_item * conn) {
+
+#ifdef DEBUG
+	printf("Receiving ");
+#endif
 
 	// receive control and code size first and then data
 
@@ -307,6 +319,10 @@ message rcv_msg(connection_item * conn) {
 	unsigned char * classcode = (unsigned char *) malloc(classcode_size);
 
 	rcv_data(sockfd, classcode, classcode_size);
+
+#ifdef DEBUG
+	printf("- control: %d, code: %d ... done\n", control_size, classcode_size);
+#endif
 
 	// negative length - create_message adopts pointers
 	return create_message(control, -control_size, classcode, -classcode_size);
@@ -368,6 +384,10 @@ static void close_connection(connection_item * conn) {
 // get an available connection, create one if no one is available
 static connection_item * acquire_connection() {
 
+#ifdef DEBUG
+	printf("Acquiring connection ... ");
+#endif
+
 	connection_item * curr;
 
 	// the connection list requires access using critical section
@@ -398,11 +418,19 @@ static connection_item * acquire_connection() {
 	}
 	exit_critical_section(jvmti_env, global_lock);
 
+#ifdef DEBUG
+	printf("done\n");
+#endif
+
 	return curr;
 }
 
 // make the socket available again
 static void release_connection(connection_item * conn) {
+
+#ifdef DEBUG
+	printf("Releasing connection ... ");
+#endif
 
 	// the connection list requires access using critical section
 	// BUT :), release can be done without it
@@ -412,6 +440,10 @@ static void release_connection(connection_item * conn) {
 		conn->available = TRUE;
 	}
 	//exit_critical_section(jvmti_env, global_lock);
+
+#ifdef DEBUG
+	printf("done\n");
+#endif
 }
 
 // instruments remotely
@@ -441,6 +473,15 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 		const char* name, jobject protection_domain, jint class_data_len,
 		const unsigned char* class_data, jint* new_class_data_len,
 		unsigned char** new_class_data) {
+
+#ifdef DEBUG
+	if(name != NULL) {
+		printf("Instrumenting class %s\n", name);
+	}
+	else {
+		printf("Instrumenting unknown class\n");
+	}
+#endif
 
 	// ask the server to instrument
 	message instrclass = instrument_class(name, class_data, class_data_len);
@@ -475,6 +516,10 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 		// free memory
 		free_message(&instrclass);
 	}
+
+#ifdef DEBUG
+	printf("Instrumentation done\n");
+#endif
 
 }
 

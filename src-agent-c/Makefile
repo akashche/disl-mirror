@@ -31,6 +31,11 @@ CFLAGS += $(COMMON_FLAGS)
 
 CFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
 
+# add debugging output
+ifeq ($(DEBUG), TRUE)
+CFLAGS += -DDEBUG
+endif
+
 all: $(LIBRARY) 
 
 # Build native library
@@ -40,3 +45,6 @@ $(LIBRARY): $(OBJECTS)
 # Cleanup the built bits
 clean:
 	rm -f $(LIBRARY) $(OBJECTS)
+
+debug:
+	$(MAKE) DEBUG=TRUE
