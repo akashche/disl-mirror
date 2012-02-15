@@ -1,20 +1,20 @@
 # THESE ARE THE BASIC SETTINGS
-ch.usi.dag.jborat.*
-sun.instrument.*
+#sun.instrument.*
 # THESE ARE THE RUNTIME CLASSES THAT MUST NOT BE WOVEN
-ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime.*
+#ch.usi.dag.disl.example.fieldsImmutabilityAnalysis.runtime.*
 # PROBLEM WITH FOP (CODE TOO BIG)
-org/apache/fop/fonts/CodePointMapping
+#org/apache/fop/fonts/CodePointMapping
 # BEGIN JDK WEAVING
 # COMMENT THE FOLLOWING FOR FULL COVERAGE
 #org.jcp.*
 #org.omg.*
 #org.xml.*
 #org.ietf.*
-#java.*
-#javax.*
+#java.lang.Object.*
+#javax.*.*
 #com.sun.*
 #com.apple.*
-#sun.*
+#sun.*.*
 #sunx.*
+#org.apache.batik.xml.XMLCharacters.<clinit>
 # END JDK
