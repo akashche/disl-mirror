@@ -65,6 +65,12 @@ public abstract class CodeMerger {
 			InsnList ilist = instrMN.instructions;
 			List<TryCatchBlockNode> tcblist = instrMN.tryCatchBlocks;
 			
+			// crate copy of the original instruction list
+			// this copy will be destroyed during merging
+			// we need the original code if the method is too long
+			ClonedCode origCodeCopy = AsmHelper.cloneCode(origMN.instructions,
+					origMN.tryCatchBlocks);
+			
 			// create copy of the lists for splitting
 			ClonedCode splitCopy = null;
 			
@@ -78,9 +84,9 @@ public abstract class CodeMerger {
 			ilist.add(origCodeL);
 
 			// add original code
-			ilist.add(origMN.instructions);
+			ilist.add(origCodeCopy.getInstructions());
 			// add exception handlers of the original code
-			tcblist.addAll(origMN.tryCatchBlocks);
+			tcblist.addAll(origCodeCopy.getTryCatchBlocks());
 
 			// if the dynamic bypass is activated (non-zero value returned)
 			// then jump to original code
