@@ -59,7 +59,7 @@
 		</javac>
 	</target>
 
-	<target name="compile-test" depends="compile-disl">
+	<target name="compile-test" depends="compile-disl,compile-dislre-server,compile-dislre-dispatch">
 		<javac srcdir="${src.test}" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath" />
 		</javac>

@@ -1,13 +1,12 @@
 package ch.usi.dag.disl.test.dispatch;
 
 import ch.usi.dag.disl.annotation.After;
-import ch.usi.dag.disl.marker.BodyMarker;
-import ch.usi.dag.dislre.REDispatch;
+import ch.usi.dag.disl.marker.BasicBlockMarker;
 
 public class DiSLClass {
 	
-	@After(marker = BodyMarker.class, scope = "TargetClass.empty", order=0)
-	public static void emptypostcondition() {
-		REDispatch.analyse(1, 1);
+	@After(marker = BasicBlockMarker.class, scope = "TargetClass.*")
+	public static void invokedInstr(CodeLengthSC clsc) {
+		CodeExecutedRE.bytecodesExecuted(clsc.codeSize());
 	}
 }

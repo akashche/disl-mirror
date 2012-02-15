@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import ch.usi.dag.dislreserver.DiSLREServerException;
+import ch.usi.dag.dislreserver.msg.analyze.AnalysisHandler;
 import ch.usi.dag.dislreserver.msg.close.CloseHandler;
 
 public class RequestDispatcher {
@@ -19,7 +20,8 @@ public class RequestDispatcher {
 		
 		// close
 		requestMap.put(0, new CloseHandler());
-		// TODO analysis eval
+		// analyze
+		requestMap.put(1, new AnalysisHandler());
 	}
 	
 	public static boolean dispatch(int requestNo, DataInputStream is,
@@ -27,6 +29,10 @@ public class RequestDispatcher {
 
 		// request handler
 		RequestHandler rh = requestMap.get(requestNo);
+		
+		if(debug) {
+			System.out.println("Dispatching " + rh.getClass().getName());
+		}
 		
 		// process request
 		rh.handle(is, os, debug);

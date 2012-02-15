@@ -39,6 +39,7 @@ static int connection = 0;
 
 // closing connection
 static const jint MSG_CLOSE = 0;
+static const jint MSG_ANALYZE = 1;
 
 // TODO unify in header - helper
 // ******************* Helper routines *******************
@@ -422,7 +423,13 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 
 static void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
 
-	close_connection(connection);
+	enter_critical_section(jvmti_env, global_lock);
+	{
+
+		close_connection(connection);
+
+	}
+	exit_critical_section(jvmti_env, global_lock);
 }
 
 // ******************* JVMTI entry method *******************
@@ -488,12 +495,99 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	return 0;
 }
 
-// ******************* REDispatch methods *******************
+// ******************* REDispatch helper methods *******************
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analyse
-  (JNIEnv * jni_env, jclass this_class, jint objID, jint methodID, jobjectArray args) {
+// TODO if you add buffer as param it can server for other functions also
+void send_int(jint to_send) {
 
-	// TODO create send method for each basic type
-	printf("I'm here\n");
+	// TODO should go to the buffer
+
+	jint nts = htonl(to_send);
+	send_data(connection, &nts, sizeof(jint));
 }
 
+void analysis_start(jint analysis_method_id) {
+
+	// TODO should go to the buffer
+
+	// send analysis msg
+	send_int(MSG_ANALYZE);
+
+	// send method id
+	send_int(analysis_method_id);
+}
+
+void analysis_end() {
+
+	// TODO should send the buffer with critical section
+}
+
+// ******************* REDispatch methods *******************
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
+  (JNIEnv * jni_env, jclass this_class, jint analysis_method_id) {
+
+	analysis_start(analysis_method_id);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
+  (JNIEnv * jni_env, jclass this_class) {
+
+	analysis_end();
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean
+  (JNIEnv * jni_env, jclass this_class, jboolean to_send) {
+
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendByte
+  (JNIEnv * jni_env, jclass this_class, jbyte to_send) {
+
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendChar
+  (JNIEnv * jni_env, jclass this_class, jchar to_send) {
+
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendShort
+  (JNIEnv * jni_env, jclass this_class, jshort to_send) {
+
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendInt
+  (JNIEnv * jni_env, jclass this_class, jint to_send) {
+
+	send_int(to_send);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendLong
+  (JNIEnv * jni_env, jclass this_class, jlong to_send) {
+
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloat
+  (JNIEnv * jni_env, jclass this_class, jfloat to_send) {
+
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDouble
+  (JNIEnv * jni_env, jclass this_class, jdouble to_send) {
+
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendString
+  (JNIEnv * jni_env, jclass this_class, jstring to_send) {
+
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
+  (JNIEnv * jni_env, jclass this_class, jobject to_send) {
+
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendClass
+  (JNIEnv * jni_env, jclass this_class, jclass to_send) {
+
+}
