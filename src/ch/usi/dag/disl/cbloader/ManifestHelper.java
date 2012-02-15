@@ -28,6 +28,7 @@ public class ManifestHelper {
 			this.resource = resource;
 			this.manifest = manifest;
 			this.dislClasses = dislClasses;
+			this.dislTransformer = dislTransformer;
 		}
 
 		public URL getResource() {
