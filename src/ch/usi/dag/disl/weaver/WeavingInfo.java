@@ -99,8 +99,15 @@ public class WeavingInfo {
 					weavingEnd.put(end, lend);
 
 					// initialize weaving athrow
-					if (AsmHelper.before(last, end)) {
-						last = end;
+					AbstractInsnNode iter = last;
+
+					while (iter != null) {
+						iter = iter.getNext();
+
+						if (iter == end) {
+							last = end;
+							break;
+						}
 					}
 				}
 

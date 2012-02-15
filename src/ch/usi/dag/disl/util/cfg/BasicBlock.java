@@ -14,16 +14,11 @@ public class BasicBlock {
 
 	private Set<BasicBlock> predecessors;
 	private Set<BasicBlock> successors;
-	
-	// joins refer to the join point of a new cfg to an existing cfg in the 
+
+	// joins refer to the join point of a new cfg to an existing cfg in the
 	// same method. NOTE that an exception handler is regarded as a new cfg
 	// but not included in the normal execution cfg
 	private Set<BasicBlock> joins;
-
-	private Set<BasicBlock> dominators;
-
-	// whether this basic block starts a loop or not  
-	private boolean loop;
 
 	public BasicBlock(int index, AbstractInsnNode entrance,
 			AbstractInsnNode exit) {
@@ -34,10 +29,6 @@ public class BasicBlock {
 		successors = new HashSet<BasicBlock>();
 		predecessors = new HashSet<BasicBlock>();
 		joins = new HashSet<BasicBlock>();
-
-		dominators = new HashSet<BasicBlock>();
-
-		loop = false;
 	}
 
 	public int getIndex() {
@@ -66,18 +57,6 @@ public class BasicBlock {
 
 	public Set<BasicBlock> getJoins() {
 		return joins;
-	}
-
-	public Set<BasicBlock> getDominators() {
-		return dominators;
-	}
-
-	public void setLoop(boolean loop) {
-		this.loop = loop;
-	}
-
-	public boolean isLoop() {
-		return loop;
 	}
 
 }
