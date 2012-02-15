@@ -67,8 +67,10 @@ public class DiSL {
 			Boolean.getBoolean(PROP_SPLIT_LONG_METHODS);
 	
 	private final boolean useDynamicBypass;
-
+	
 	private final Transformer transformer;
+	
+	private final boolean transPropagateUninstr;
 	
 	private final Set<Scope> exclusionSet;
 	
@@ -84,6 +86,15 @@ public class DiSL {
 
 			// *** resolve transformer ***
 			transformer = resolveTransformer();
+			
+			// transfomer output propagation
+			if(transformer == null) {
+				transPropagateUninstr = false;
+			}
+			else {
+				transPropagateUninstr = 
+						transformer.propagateUninstrumentedClasses();
+			}
 
 			// *** prepare exclusion set ***
 			exclusionSet = ExclusionSet.prepare();
@@ -482,6 +493,13 @@ public class DiSL {
 		InstrumentedClass instrClass = instrument(classNode);
 		
 		if(instrClass == null) {
+			
+			// propagate uninstrumented classes
+			// useful, when transformer is doing some job on all classes
+			if(transPropagateUninstr) {
+				return classAsBytes;
+			}
+			
 			return null;
 		}
 		
