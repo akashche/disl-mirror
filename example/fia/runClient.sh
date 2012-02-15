@@ -14,5 +14,4 @@ java -Xmx2g -XX:MaxPermSize=128m -noverify -agentpath:${C_AGENT} \
      -javaagent:../../build/dislagent-unspec.jar \
      -Xbootclasspath/a:../../build/dislagent-unspec.jar:../../build/dislinstr.jar \
      -cp bin/ \
--jar /Users/aibeksarimbekov/Software/dacapo-9.12-bach.jar batik  
-#      $*
+      $*

@@ -13,7 +13,7 @@
 
 
 java $* \
--Ddisl.exclusionList="conf/exclusion.lst" \
+	-Ddisl.exclusionList="conf/exclusion.lst" \
     -Ddislserver.continuous=true \
      -jar ../../build/dislserver-unspec.jar \
      &
