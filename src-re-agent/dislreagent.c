@@ -487,3 +487,13 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 
 	return 0;
 }
+
+// ******************* REDispatch methods *******************
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analyse
+  (JNIEnv * jni_env, jclass this_class, jint objID, jint methodID, jobjectArray args) {
+
+	// TODO create send method for each basic type
+	printf("I'm here\n");
+}
+

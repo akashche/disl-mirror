@@ -15,6 +15,6 @@ fi
 java -agentpath:${C_AGENT} \
      -agentpath:${RE_AGENT} \
      -javaagent:build/dislagent-unspec.jar \
-     -Xbootclasspath/a:build/dislagent-unspec.jar:build/dislinstr.jar \
+     -Xbootclasspath/a:build/dislagent-unspec.jar:build/dislinstr.jar:build/dislre-dispatch-unspec.jar \
      -cp bin/ \
       $*

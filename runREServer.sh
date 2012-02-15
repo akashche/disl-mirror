@@ -4,9 +4,8 @@
 #    -Ddebug=true \
 #    -Ddislserver.port="portNum" \
 
-java -Ddebug=true \
-     $* \
-     -jar build/dislreserver-unspec.jar \
+java $* \
+     -jar build/dislre-server-unspec.jar \
      &
 
 echo $! > re_${SERVER_FILE}
