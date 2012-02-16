@@ -72,7 +72,7 @@ public abstract class DiSLServer {
 	
 		Throwable cause = e.getCause();
 		
-		while (cause != null) {
+		while (cause != null && cause.getMessage() != null) {
 			System.err.println("  Inner error: " + cause.getMessage());
 			cause = cause.getCause();
 		}
