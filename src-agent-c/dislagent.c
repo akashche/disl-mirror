@@ -15,7 +15,7 @@ static const int ERR_JVMTI = 10001;
 static const int ERR_COMM = 10002;
 static const int ERR_SERVER = 10003;
 
-static const char * ERR_PREFIX = "ERROR in DiSL agent: ";
+static const char * ERR_PREFIX = "DiSL agent error: ";
 
 static const int TRUE = 1;
 static const int FALSE = 0;
