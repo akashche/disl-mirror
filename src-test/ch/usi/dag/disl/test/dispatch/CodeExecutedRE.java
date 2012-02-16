@@ -11,39 +11,39 @@ public class CodeExecutedRE {
 
 	public static void bytecodesExecuted(int count) {
 		
-		REDispatch.analysisStart(1);
+		int sid = REDispatch.analysisStart(1);
 		
-		REDispatch.sendInt(count);
+		REDispatch.sendInt(sid, count);
 		
-		REDispatch.analysisEnd();
+		REDispatch.analysisEnd(sid);
 	}
 	
 	public static void testingBasic(boolean b, byte by, char c, short s, int i,
 			long l, float f, double d) {
 		
-		REDispatch.analysisStart(2);
+		int sid = REDispatch.analysisStart(2);
 		
-		REDispatch.sendBoolean(b);
-		REDispatch.sendByte(by);
-		REDispatch.sendChar(c);
-		REDispatch.sendShort(s);
-		REDispatch.sendInt(i);
-		REDispatch.sendLong(l);
-		REDispatch.sendFloat(f);
-		REDispatch.sendDouble(d);
+		REDispatch.sendBoolean(sid, b);
+		REDispatch.sendByte(sid, by);
+		REDispatch.sendChar(sid, c);
+		REDispatch.sendShort(sid, s);
+		REDispatch.sendInt(sid, i);
+		REDispatch.sendLong(sid, l);
+		REDispatch.sendFloat(sid, f);
+		REDispatch.sendDouble(sid, d);
 		
-		REDispatch.analysisEnd();
+		REDispatch.analysisEnd(sid);
 	}
 	
 	public static void testingAdvanced(String s, Object o, Class<?> c, int classID) {
 		
-		REDispatch.analysisStart(3);
+		int sid = REDispatch.analysisStart(3);
 		
-		REDispatch.sendString(s);
-		REDispatch.sendObject(o);
-		REDispatch.sendClass(c);
+		REDispatch.sendString(sid, s);
+		REDispatch.sendObject(sid, o);
+		REDispatch.sendClass(sid, c);
 		// class_id ignored
 		
-		REDispatch.analysisEnd();
+		REDispatch.analysisEnd(sid);
 	}
 }

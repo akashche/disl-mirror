@@ -10,117 +10,111 @@ extern "C" {
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved);
 
 #ifdef __cplusplus
-}
-#endif
-
-// ******************* REDispatch methods *******************
-
-#ifdef __cplusplus
 extern "C" {
 #endif
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
  * Method:    analysisStart
- * Signature: (I)V
+ * Signature: (I)I
  */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
+JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
   (JNIEnv *, jclass, jint);
 
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
  * Method:    analysisEnd
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
-  (JNIEnv *, jclass);
-
-/*
- * Class:     ch_usi_dag_dislre_REDispatch
- * Method:    sendBoolean
- * Signature: (Z)V
- */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean
-  (JNIEnv *, jclass, jboolean);
-
-/*
- * Class:     ch_usi_dag_dislre_REDispatch
- * Method:    sendByte
- * Signature: (B)V
- */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendByte
-  (JNIEnv *, jclass, jbyte);
-
-/*
- * Class:     ch_usi_dag_dislre_REDispatch
- * Method:    sendChar
- * Signature: (C)V
- */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendChar
-  (JNIEnv *, jclass, jchar);
-
-/*
- * Class:     ch_usi_dag_dislre_REDispatch
- * Method:    sendShort
- * Signature: (S)V
- */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendShort
-  (JNIEnv *, jclass, jshort);
-
-/*
- * Class:     ch_usi_dag_dislre_REDispatch
- * Method:    sendInt
  * Signature: (I)V
  */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendInt
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
   (JNIEnv *, jclass, jint);
 
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
+ * Method:    sendBoolean
+ * Signature: (IZ)V
+ */
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean
+  (JNIEnv *, jclass, jint, jboolean);
+
+/*
+ * Class:     ch_usi_dag_dislre_REDispatch
+ * Method:    sendByte
+ * Signature: (IB)V
+ */
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendByte
+  (JNIEnv *, jclass, jint, jbyte);
+
+/*
+ * Class:     ch_usi_dag_dislre_REDispatch
+ * Method:    sendChar
+ * Signature: (IC)V
+ */
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendChar
+  (JNIEnv *, jclass, jint, jchar);
+
+/*
+ * Class:     ch_usi_dag_dislre_REDispatch
+ * Method:    sendShort
+ * Signature: (IS)V
+ */
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendShort
+  (JNIEnv *, jclass, jint, jshort);
+
+/*
+ * Class:     ch_usi_dag_dislre_REDispatch
+ * Method:    sendInt
+ * Signature: (II)V
+ */
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendInt
+  (JNIEnv *, jclass, jint, jint);
+
+/*
+ * Class:     ch_usi_dag_dislre_REDispatch
  * Method:    sendLong
- * Signature: (J)V
+ * Signature: (IJ)V
  */
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendLong
-  (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jint, jlong);
 
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
- * Method:    sendFloat
- * Signature: (F)V
+ * Method:    sendFloatAsInt
+ * Signature: (II)V
  */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloat
-  (JNIEnv *, jclass, jfloat);
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloatAsInt
+  (JNIEnv *, jclass, jint, jint);
 
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
- * Method:    sendDouble
- * Signature: (D)V
+ * Method:    sendDoubleAsLong
+ * Signature: (IJ)V
  */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDouble
-  (JNIEnv *, jclass, jdouble);
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong
+  (JNIEnv *, jclass, jint, jlong);
 
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
  * Method:    sendString
- * Signature: (Ljava/lang/String;)V
+ * Signature: (ILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendString
-  (JNIEnv *, jclass, jstring);
+  (JNIEnv *, jclass, jint, jstring);
 
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
  * Method:    sendObject
- * Signature: (Ljava/lang/Object;)V
+ * Signature: (ILjava/lang/Object;)V
  */
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
-  (JNIEnv *, jclass, jobject);
+  (JNIEnv *, jclass, jint, jobject);
 
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
  * Method:    sendClass
- * Signature: (Ljava/lang/Class;)V
+ * Signature: (ILjava/lang/Class;)V
  */
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendClass
-  (JNIEnv *, jclass, jclass);
+  (JNIEnv *, jclass, jint, jclass);
 
 #ifdef __cplusplus
 }

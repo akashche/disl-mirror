@@ -32,10 +32,16 @@ static const int FALSE = 0;
 static const char * DEFAULT_HOST = "localhost";
 static const char * DEFAULT_PORT = "11218";
 
+// initial buffer size
+static const size_t INIT_BUFF_SIZE = 512;
+// max limit buffer size
+static const size_t MAX_BUFF_SIZE = 8192;
+
 typedef struct {
 	unsigned char * buff;
 	size_t occupied;
 	size_t capacity;
+	volatile int available;
 } buffer;
 
 // Messages - should be in sync with java server
@@ -55,17 +61,34 @@ static jrawMonitorID global_lock;
 // access must be protected by monitor
 static int connection = 0;
 
+// TODO remove
 static buffer redispatch_buff;
+
+// this number decides maximum number of threads writing
+// also it determines memory consumption because buffers are left allocated
+// DISP_BUFF_COUNT * MAX_BUFF_SIZE says max memory occupation
+// cannot be static const :(
+#define DISP_BUFF_COUNT 512
+
+static volatile buffer redispatch_buffs[DISP_BUFF_COUNT];
 
 // ******************* Buffer routines *******************
 
 void buffer_init(buffer * b) {
 
-	const size_t INIT_BUFF_SIZE = 1024;
-
 	b->buff = (unsigned char *) malloc(INIT_BUFF_SIZE);
 	b->capacity = INIT_BUFF_SIZE;
 	b->occupied = 0;
+	b->available = TRUE;
+}
+
+void buffer_free(buffer * b) {
+
+	free(b->buff);
+	b->buff = NULL;
+	b->capacity = 0;
+	b->occupied = 0;
+	b->available = TRUE;
 }
 
 void buffer_fill(buffer * b, const void * data, size_t data_length) {
@@ -92,14 +115,14 @@ void buffer_fill(buffer * b, const void * data, size_t data_length) {
 
 void buffer_clean(buffer * b) {
 
-	b->occupied = 0;
-}
+	// if capacity is higher then limit "reset" buffer
+	// should keep memory consumption in limits
+	if(b->capacity > MAX_BUFF_SIZE) {
 
-void buffer_free(buffer * b) {
+		buffer_free(b);
+		buffer_init(b);
+	}
 
-	free(b->buff);
-	b->buff = NULL;
-	b->capacity = 0;
 	b->occupied = 0;
 }
 
@@ -561,8 +584,6 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 
 // ******************* Sending helper methods *******************
 
-// TODO if you add buffer as param it can server for other functions also
-
 void pack_boolean(buffer * buff, jboolean to_send) {
 
 	buffer_fill(buff, &to_send, sizeof(jboolean));
@@ -595,18 +616,6 @@ void pack_long(buffer * buff, jlong to_send) {
 
 	jlong nts = htobe64(to_send);
 	buffer_fill(buff, &nts, sizeof(jlong));
-}
-
-void pack_float(buffer * buff, jfloat to_send) {
-
-	jfloat nts = htonl(to_send);
-	buffer_fill(buff, &nts, sizeof(jfloat));
-}
-
-void pack_double(buffer * buff, jdouble to_send) {
-
-	jdouble nts = htobe64(to_send);
-	buffer_fill(buff, &nts, sizeof(jdouble));
 }
 
 void pack_string_utf8(buffer * buff, const void * string_utf8,
@@ -662,88 +671,118 @@ void analysis_start(buffer * buff, jint analysis_method_id) {
 
 void analysis_end(buffer * buff) {
 
-	// TODO should send the buffer with critical section
-	// TODO you can easily buffer messages
-	//  - don't send buffer after flush but wait for other fushes
-	//  - send remaining in shutdown
+	// TODO you don't need to necessarily send the buffer
+	// it is possible to put it into the bigger shared buffer and send it
+	// when it is full
+
+	enter_critical_section(jvmti_env, global_lock);
+	{
+
+		send_data(connection, buff->buff, buff->occupied);
+
+	}
+	exit_critical_section(jvmti_env, global_lock);
+
+	buffer_clean(buff);
+}
+
+jint acquire_redispatch_buff() {
+
+	// TODO find buffer with available FALSE
+	return 0;
+}
+
+void release_redispatch_buff(jint buff_pos) {
+
+	// TODO set available to TRUE
 }
 
 // ******************* REDispatch methods *******************
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
+// TODO add session id buffers
+
+JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
   (JNIEnv * jni_env, jclass this_class, jint analysis_method_id) {
 
+	// get session id - free buffer pos
+	jint sid = acquire_redispatch_buff();
+
 	analysis_start(&redispatch_buff, analysis_method_id);
+
+	// find free buffer
+	return sid;
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
-  (JNIEnv * jni_env, jclass this_class) {
+  (JNIEnv * jni_env, jclass this_class, jint sid) {
 
 	analysis_end(&redispatch_buff);
+
+	release_redispatch_buff(sid);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean
-  (JNIEnv * jni_env, jclass this_class, jboolean to_send) {
+  (JNIEnv * jni_env, jclass this_class, jint sid, jboolean to_send) {
 
 	pack_boolean(&redispatch_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendByte
-  (JNIEnv * jni_env, jclass this_class, jbyte to_send) {
+  (JNIEnv * jni_env, jclass this_class, jint sid, jbyte to_send) {
 
 	pack_byte(&redispatch_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendChar
-  (JNIEnv * jni_env, jclass this_class, jchar to_send) {
+  (JNIEnv * jni_env, jclass this_class, jint sid, jchar to_send) {
 
 	pack_char(&redispatch_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendShort
-  (JNIEnv * jni_env, jclass this_class, jshort to_send) {
+  (JNIEnv * jni_env, jclass this_class, jint sid, jshort to_send) {
 
 	pack_short(&redispatch_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendInt
-  (JNIEnv * jni_env, jclass this_class, jint to_send) {
+  (JNIEnv * jni_env, jclass this_class, jint sid, jint to_send) {
 
 	pack_int(&redispatch_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendLong
-  (JNIEnv * jni_env, jclass this_class, jlong to_send) {
+  (JNIEnv * jni_env, jclass this_class, jint sid, jlong to_send) {
 
 	pack_long(&redispatch_buff, to_send);
 }
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloat
-  (JNIEnv * jni_env, jclass this_class, jfloat to_send) {
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloatAsInt
+  (JNIEnv * jni_env, jclass this_class, jint sid, jint to_send) {
 
-	pack_float(&redispatch_buff, to_send);
+	pack_int(&redispatch_buff, to_send);
 }
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDouble
-  (JNIEnv * jni_env, jclass this_class, jdouble to_send) {
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong
+  (JNIEnv * jni_env, jclass this_class, jint sid, jlong to_send) {
 
-	pack_double(&redispatch_buff, to_send);
+	pack_long(&redispatch_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendString
-  (JNIEnv * jni_env, jclass this_class, jstring to_send) {
+  (JNIEnv * jni_env, jclass this_class, jint sid, jstring to_send) {
 
 	pack_string_java(&redispatch_buff, to_send, jni_env);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
-  (JNIEnv * jni_env, jclass this_class, jobject to_send) {
+  (JNIEnv * jni_env, jclass this_class, jint sid, jobject to_send) {
 
 	pack_object(&redispatch_buff, to_send, jni_env);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendClass
-  (JNIEnv * jni_env, jclass this_class, jclass to_send) {
+  (JNIEnv * jni_env, jclass this_class, jint sid, jclass to_send) {
 
 	pack_class(&redispatch_buff, to_send, jni_env);
 }

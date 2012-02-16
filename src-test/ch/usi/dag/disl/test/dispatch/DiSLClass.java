@@ -12,7 +12,7 @@ public class DiSLClass {
 		CodeExecutedRE.bytecodesExecuted(clsc.codeSize());
 	}
 	
-	@After(marker = BodyMarker.class, scope = "TargetClass.main()")
+	@After(marker = BodyMarker.class, scope = "TargetClass.main")
 	public static void testing() {
 		
 		CodeExecutedRE.testingBasic(true, (byte) 125, 'š', (short) 50000,

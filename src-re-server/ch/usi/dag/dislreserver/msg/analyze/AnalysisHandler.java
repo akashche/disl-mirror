@@ -3,6 +3,7 @@ package ch.usi.dag.dislreserver.msg.analyze;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,13 +65,23 @@ public class AnalysisHandler implements RequestHandler {
 			// *** invoke method ***
 
 			try {
-				// TODO re - support static methods
+				// TODO re ! support static methods
 				analysisMethod.invoke(amh.getAnalysisInstance(), args.toArray());
 			}
-			catch(Exception e) {
+			catch(InvocationTargetException e) {
+				
+				// report analysis error
+				
+				Throwable cause = e.getCause();
+				
 				System.err.println("DiSL-RE analysis exception: "
-						+ e.getMessage());
-				e.printStackTrace();
+						+ cause.getMessage());
+				
+				cause.printStackTrace();
+			}
+			catch(Exception e) {
+				
+				throw new DiSLREServerException(e);
 			}
 			
 		}
