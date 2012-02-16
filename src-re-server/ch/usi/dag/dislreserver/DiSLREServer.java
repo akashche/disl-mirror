@@ -45,7 +45,11 @@ public abstract class DiSLREServer {
 				System.out.println("DiSL-RE server is shutting down");
 			}
 			
-		} catch (Exception e) {
+		}
+		catch (IOException e) {
+			reportError(new DiSLREServerException(e));
+		}
+		catch (Throwable e) {
 			reportError(e);
 		}
 	}
@@ -73,19 +77,33 @@ public abstract class DiSLREServer {
 		}
 	}
 
+	private static void reportInnerError(Throwable e) {
+		
+		Throwable cause = e.getCause();
+		
+		while (cause != null) {
+			System.err.println("  Inner error: " + cause.getMessage());
+			cause = cause.getCause();
+		}
+	}
+	
 	private static void reportError(Throwable e) {
 
 		if (e instanceof DiSLREServerException) {
 
 			System.err.println("DiSL-RE server error: " + e.getMessage());
 
+			reportInnerError(e);
+			
 			if (debug) {
 				e.printStackTrace();
 			}
+			
+			return;
 		}
 
 		// fatal exception (unexpected)
-		System.err.println("Fatal error: " + e.getMessage());
+		System.err.println("DiSL-RE fatal error: " + e.getMessage());
 
 		e.printStackTrace();
 	}

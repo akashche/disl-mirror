@@ -3,7 +3,6 @@ package ch.usi.dag.dislreserver.msg.analyze;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
@@ -63,15 +62,22 @@ public class AnalysisHandler implements RequestHandler {
 			}
 			
 			// *** invoke method ***
-			analysisMethod.invoke(amh.getAnalysisInstance(), args.toArray());
+
+			try {
+				// TODO re - support static methods
+				analysisMethod.invoke(amh.getAnalysisInstance(), args.toArray());
+			}
+			catch(Exception e) {
+				System.err.println("DiSL-RE analysis exception: "
+						+ e.getMessage());
+				e.printStackTrace();
+			}
 			
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new DiSLREServerException(e);
-		} catch (IllegalAccessException e) {
-			throw new DiSLREServerException(e);
-		} catch (IllegalArgumentException e) {
-			throw new DiSLREServerException(e);
-		} catch (InvocationTargetException e) {
+		}
+		catch (IllegalArgumentException e) {
 			throw new DiSLREServerException(e);
 		}
 	}
@@ -111,18 +117,8 @@ public class AnalysisHandler implements RequestHandler {
 			return is.readDouble();
 		}
 		
-		// read string
 		if(argClass.equals(String.class)) {
-			
-			// read the length of the string
-			int stringLength = is.readInt();
-
-			// read the string bytes
-			byte byteBuffer[] = new byte[stringLength];
-			is.readFully(byteBuffer);
-			
-			// return string
-			return new String(byteBuffer);
+			return is.readUTF();
 		}
 
 		// read id only

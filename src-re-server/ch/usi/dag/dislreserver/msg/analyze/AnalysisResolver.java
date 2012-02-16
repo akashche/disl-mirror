@@ -69,9 +69,19 @@ public class AnalysisResolver {
 		// TODO re - should not be hardcoded
 		
 		try {
-			Method m = CodeExecuted.class.getMethod("bytecodesExecuted", int.class);
 			Object i = CodeExecuted.class.newInstance();
-			registerMethod(1, new AnalysisMethodHolder((RemoteAnalysis)i, m));
+			
+			Method m1 = CodeExecuted.class.getMethod("bytecodesExecuted", int.class);
+			registerMethod(1, new AnalysisMethodHolder((RemoteAnalysis)i, m1));
+			
+			Method m2 = CodeExecuted.class.getMethod("testingBasic",
+					boolean.class, byte.class, char.class, short.class,
+					int.class, long.class, float.class, double.class);
+			registerMethod(2, new AnalysisMethodHolder((RemoteAnalysis)i, m2));
+			
+			Method m3 = CodeExecuted.class.getMethod("testingAdvanced",
+					String.class, Object.class, Class.class, int.class);
+			registerMethod(3, new AnalysisMethodHolder((RemoteAnalysis)i, m3));
 
 		} catch (Exception e) {
 			e.printStackTrace();
