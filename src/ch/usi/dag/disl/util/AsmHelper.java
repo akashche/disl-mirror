@@ -12,7 +12,6 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
@@ -24,24 +23,10 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
 
 public abstract class AsmHelper {
-
-	public static boolean before(AbstractInsnNode first, AbstractInsnNode second) {
-
-		while (first != null) {
-			first = first.getNext();
-
-			if (first == second) {
-				return true;
-			}
-		}
-
-		return false;
-	}
 
 	public static boolean offsetBefore(InsnList ilst, int from, int to) {
 
@@ -252,48 +237,6 @@ public abstract class AsmHelper {
 			return null;
 		}
 
-	}
-
-	public static int calcMaxLocal(InsnList ilst) {
-
-		int max = 0;
-
-		for (AbstractInsnNode instr : ilst.toArray()) {
-
-			if (instr instanceof VarInsnNode) {
-
-				VarInsnNode varInstr = (VarInsnNode) instr;
-
-				switch (varInstr.getOpcode()) {
-				case Opcodes.LLOAD:
-				case Opcodes.DLOAD:
-				case Opcodes.LSTORE:
-				case Opcodes.DSTORE:
-
-					if ((varInstr.var + 2) > max) {
-						max = varInstr.var + 2;
-					}
-
-					break;
-
-				default:
-					if ((varInstr.var + 1) > max) {
-						max = varInstr.var + 1;
-					}
-
-					break;
-				}
-			} else if (instr instanceof IincInsnNode) {
-
-				IincInsnNode iinc = (IincInsnNode) instr;
-
-				if ((iinc.var + 1) > max) {
-					max = iinc.var + 1;
-				}
-			}
-		}
-
-		return max;
 	}
 
 	public static void replaceRetWithGoto(InsnList ilst) {

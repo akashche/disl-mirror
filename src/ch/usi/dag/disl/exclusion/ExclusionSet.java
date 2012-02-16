@@ -63,7 +63,6 @@ public abstract class ExclusionSet {
 		exclSet.add(new ScopeImpl(
 				"sun.instrument" + EXCLUDE_CLASSES));
 		
-		// TODO jb - rally has to be excluded ?
 		// finalize method in java.lang.Object can cause problems 
 		exclSet.add(new ScopeImpl("java.lang.Object.finalize"));
 		

@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.zip.GZIPOutputStream;
 
-import ch.usi.dag.jborat.runtime.DynamicBypass;
+import ch.usi.dag.disl.dynamicbypass.*;
 
 public class ImmutabilityAnalysis {
 
@@ -38,7 +38,7 @@ public class ImmutabilityAnalysis {
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
-				DynamicBypass.set(true);
+				DynamicBypass.activate();
 				System.err.println("In shutdown hook!");
 				try {
 					synchronized (fieldStateMap) {

@@ -25,11 +25,11 @@ static const char * DEFAULT_HOST = "localhost";
 static const char * DEFAULT_PORT = "11217";
 
 typedef struct {
-	jint classname_size;
+	jint control_size;
 	jint classcode_size;
-	const char * classname;
+	const unsigned char * control;
 	const unsigned char * classcode;
-} class_as_bytes;
+} message;
 
 // linked list to hold socket file descriptor
 // access must be protected by monitor
@@ -123,26 +123,27 @@ static void exit_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
 	check_jvmti_error(jvmti, error, "Cannot exit with raw monitor");
 }
 
-static class_as_bytes create_class_as_bytes(const char * classname,
-		jint classname_size, const unsigned char * classcode,
+static message create_message(const unsigned char * control,
+		jint control_size, const unsigned char * classcode,
 		jint classcode_size) {
 
-	class_as_bytes result;
+	message result;
 
-	result.classname_size = classname_size;
+	// control + size
+	result.control_size = control_size;
 
-	// class name + size
-	// contract: (if classname_size <= 0) pointer may be copied (stolen)
-	if(classname != NULL && classname_size > 0) {
+	// contract: (if control_size <= 0) pointer may be copied (stolen)
+	if(control != NULL && control_size > 0) {
 
-		char * buffcn = (char *) malloc(classname_size + 1); // +1 - ending 0
-		memcpy(buffcn, classname, classname_size + 1);
-		result.classname = buffcn;
+		// without ending 0
+		unsigned char * buffcn = (unsigned char *) malloc(control_size);
+		memcpy(buffcn, control, control_size);
+		result.control = buffcn;
 	}
 	else {
 
-		result.classname = classname;
-		result.classname_size = abs(classname_size);
+		result.control = control;
+		result.control_size = abs(control_size);
 	}
 
 	// class code + size
@@ -164,22 +165,22 @@ static class_as_bytes create_class_as_bytes(const char * classname,
 	return result;
 }
 
-static void free_class_as_bytes(class_as_bytes * cab) {
+static void free_message(message * msg) {
 
-	if(cab->classname != NULL) {
+	if(msg->control != NULL) {
 
 		// cast because of const
-		free((void *) cab->classname);
-		cab->classname = NULL;
-		cab->classname_size = 0;
+		free((void *) msg->control);
+		msg->control = NULL;
+		msg->control_size = 0;
 	}
 
-	if(cab->classcode != NULL) {
+	if(msg->classcode != NULL) {
 
 		// cast because of const
-		free((void *) cab->classcode);
-		cab->classcode = NULL;
-		cab->classcode_size = 0;
+		free((void *) msg->classcode);
+		msg->classcode = NULL;
+		msg->classcode_size = 0;
 	}
 }
 
@@ -253,38 +254,50 @@ static void rcv_data(int sockfd, void * data, int data_len) {
 }
 
 // sends class over network
-static void send_class(connection_item * conn, class_as_bytes * class_to_send) {
+static void send_msg(connection_item * conn, message * msg) {
 
-	// send name and code size first and then data
+#ifdef DEBUG
+	printf("Sending - control: %d, code: %d ... ", msg->control_size, msg->classcode_size);
+#endif
+
+	// send control and code size first and then data
 
 	int sockfd = conn->sockfd;
 
 	// convert to java representation
-	jint ncns = htonl(class_to_send->classname_size);
-	send_data(sockfd, &ncns, sizeof(jint));
+	jint nctls = htonl(msg->control_size);
+	send_data(sockfd, &nctls, sizeof(jint));
 
 	// convert to java representation
-	jint nccs = htonl(class_to_send->classcode_size);
+	jint nccs = htonl(msg->classcode_size);
 	send_data(sockfd, &nccs, sizeof(jint));
 
-	send_data(sockfd, class_to_send->classname, class_to_send->classname_size);
+	send_data(sockfd, msg->control, msg->control_size);
 
-	send_data(sockfd, class_to_send->classcode, class_to_send->classcode_size);
+	send_data(sockfd, msg->classcode, msg->classcode_size);
+
+#ifdef DEBUG
+	printf("done\n");
+#endif
 }
 
 // receives class from network
-class_as_bytes rcv_class(connection_item * conn) {
+message rcv_msg(connection_item * conn) {
 
-	// receive name and code size first and then data
+#ifdef DEBUG
+	printf("Receiving ");
+#endif
+
+	// receive control and code size first and then data
 
 	int sockfd = conn->sockfd;
 
-	// *** receive class name size - jint
-	jint ncns;
-	rcv_data(sockfd, &ncns, sizeof(jint));
+	// *** receive control size - jint
+	jint nctls;
+	rcv_data(sockfd, &nctls, sizeof(jint));
 
 	// convert from java representation
-	jint classname_size = ntohl(ncns);
+	jint control_size = ntohl(nctls);
 
 	// *** receive class code size - jint
 	jint nccs;
@@ -293,37 +306,26 @@ class_as_bytes rcv_class(connection_item * conn) {
 	// convert from java representation
 	jint classcode_size = ntohl(nccs);
 
-	// *** no transformation done
-	if(classname_size == 0) {
-		return create_class_as_bytes(NULL, 0, NULL, 0);
-	}
+	// *** receive control string
+	// +1 - ending 0 - useful when printed - normally error msgs here
+	unsigned char * control = (unsigned char *) malloc(control_size + 1);
 
-	// *** receive class name
-	char * classname = (char *) malloc(classname_size + 1); // +1 - ending 0
-
-	rcv_data(sockfd, classname, classname_size);
+	rcv_data(sockfd, control, control_size);
 
 	// terminate string
-	classname[classname_size] = '\0';
+	control[control_size] = '\0';
 
-	// *** error on the server
-	if (classcode_size == 0) {
-
-		// classname contains the error message
-
-		fprintf(stderr, "%sError occurred in the remote instrumentation server\n",
-				ERR_PREFIX);
-		fprintf(stderr, "   Reason: %s\n", classname);
-		exit(ERR_SERVER);
-	}
-
+	// *** receive class code
 	unsigned char * classcode = (unsigned char *) malloc(classcode_size);
 
 	rcv_data(sockfd, classcode, classcode_size);
 
-	// 0 length - create_class_as_bytes adopts pointers
-	return create_class_as_bytes(classname, -classname_size,
-			classcode, -classcode_size);
+#ifdef DEBUG
+	printf("- control: %d, code: %d ... done\n", control_size, classcode_size);
+#endif
+
+	// negative length - create_message adopts pointers
+	return create_message(control, -control_size, classcode, -classcode_size);
 }
 
 static connection_item * open_connection() {
@@ -364,13 +366,13 @@ static void close_connection(connection_item * conn) {
 
 	// prepare close message - could be done more efficiently (this is nicer)
 	// close message has zeros as lengths
-	class_as_bytes close_msg = create_class_as_bytes(NULL, 0, NULL, 0);
+	message close_msg = create_message(NULL, 0, NULL, 0);
 
 	// send close message
-	send_class(conn, &close_msg);
+	send_msg(conn, &close_msg);
 
 	// nothing was allocated but for completeness
-	free_class_as_bytes(&close_msg);
+	free_message(&close_msg);
 
 	// close socket
 	close(conn->sockfd);
@@ -381,6 +383,10 @@ static void close_connection(connection_item * conn) {
 
 // get an available connection, create one if no one is available
 static connection_item * acquire_connection() {
+
+#ifdef DEBUG
+	printf("Acquiring connection ... ");
+#endif
 
 	connection_item * curr;
 
@@ -412,11 +418,19 @@ static connection_item * acquire_connection() {
 	}
 	exit_critical_section(jvmti_env, global_lock);
 
+#ifdef DEBUG
+	printf("done\n");
+#endif
+
 	return curr;
 }
 
 // make the socket available again
 static void release_connection(connection_item * conn) {
+
+#ifdef DEBUG
+	printf("Releasing connection ... ");
+#endif
 
 	// the connection list requires access using critical section
 	// BUT :), release can be done without it
@@ -426,22 +440,26 @@ static void release_connection(connection_item * conn) {
 		conn->available = TRUE;
 	}
 	//exit_critical_section(jvmti_env, global_lock);
+
+#ifdef DEBUG
+	printf("done\n");
+#endif
 }
 
 // instruments remotely
-static class_as_bytes instrument_class(const char * classname,
+static message instrument_class(const char * classname,
 		const unsigned char * classcode, jint classcode_size) {
 
 	// get available connection
 	connection_item * conn = acquire_connection();
 
 	// crate class data
-	class_as_bytes cas = create_class_as_bytes(classname, strlen(classname),
-			classcode, classcode_size);
+	message msg = create_message((const unsigned char *)classname,
+			strlen(classname), classcode, classcode_size);
 
-	send_class(conn, &cas);
+	send_msg(conn, &msg);
 
-	class_as_bytes result = rcv_class(conn);
+	message result = rcv_msg(conn);
 
 	release_connection(conn);
 
@@ -456,10 +474,30 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 		const unsigned char* class_data, jint* new_class_data_len,
 		unsigned char** new_class_data) {
 
-	// ask the server to instrument
-	class_as_bytes instrclass = instrument_class(name, class_data, class_data_len);
+#ifdef DEBUG
+	if(name != NULL) {
+		printf("Instrumenting class %s\n", name);
+	}
+	else {
+		printf("Instrumenting unknown class\n");
+	}
+#endif
 
-	// valid class recieved
+	// ask the server to instrument
+	message instrclass = instrument_class(name, class_data, class_data_len);
+
+	// error on the server
+	if (instrclass.control_size > 0) {
+
+		// classname contains the error message
+
+		fprintf(stderr, "%sError occurred in the remote instrumentation server\n",
+				ERR_PREFIX);
+		fprintf(stderr, "   Reason: %s\n", instrclass.control);
+		exit(ERR_SERVER);
+	}
+
+	// instrumented class recieved (0 - means no instrumentation done)
 	if(instrclass.classcode_size > 0) {
 
 		// give to JVM the instrumented class
@@ -476,8 +514,12 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 		*(new_class_data) = new_class_space;
 
 		// free memory
-		free_class_as_bytes(&instrclass);
+		free_message(&instrclass);
 	}
+
+#ifdef DEBUG
+	printf("Instrumentation done\n");
+#endif
 
 }
 
@@ -485,23 +527,28 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 
 static void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
 
-	connection_item * cnode = conn_list;
+	enter_critical_section(jvmti_env, global_lock);
+	{
 
-	// will be deallocated in the while cycle
-	conn_list = NULL;
+		connection_item * cnode = conn_list;
 
-	// close all connections
-	while(cnode != NULL) {
+		// will be deallocated in the while cycle
+		conn_list = NULL;
 
-		// prepare for closing
-		connection_item * connToClose = cnode;
+		// close all connections
+		while(cnode != NULL) {
 
-		// advance first - pointer will be invalid after close
-		cnode = cnode->next;
+			// prepare for closing
+			connection_item * connToClose = cnode;
 
-		// close connection
-		close_connection(connToClose);
+			// advance first - pointer will be invalid after close
+			cnode = cnode->next;
+
+			// close connection
+			close_connection(connToClose);
+		}
 	}
+	exit_critical_section(jvmti_env, global_lock);
 }
 
 // ******************* JVMTI entry method *******************

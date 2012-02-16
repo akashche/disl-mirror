@@ -15,10 +15,9 @@ public class ScopeImpl implements Scope {
 	private final String PARAM_END = ")";
 	private final String PARAM_DELIM = ",";
 	private final String METHOD_DELIM = ".";
-	private final String PACKAGE_DELIM = ".";
 	private final String PARAM_MATCH_REST = "..";
+	private final String DEFAULT_PKG = "[default]";
 	
-	private String packageWildCard;
 	private String classWildCard;
 	private String methodWildCard;
 	private String returnWildCard;
@@ -124,7 +123,7 @@ public class ScopeImpl implements Scope {
 					+ "\" should have defined method at least as \"*\"");
 		}
 		
-		// -- full class name + package --
+		// -- full class name --
 		if(restOfExpr != null) {
 
 			// remove whitespace
@@ -132,7 +131,6 @@ public class ScopeImpl implements Scope {
 			
 			if(! restOfExpr.isEmpty()) {
 
-				// extract class name
 				int classDelim = lastWhitespace(restOfExpr);
 				if(classDelim != -1) {
 					// + 1 - don't include whitespace
@@ -144,13 +142,11 @@ public class ScopeImpl implements Scope {
 					restOfExpr = null;
 				}
 				
-				// extract package name
-				int packageEnd = classWildCard.lastIndexOf(PACKAGE_DELIM);
-				if(packageEnd != -1) {
-					
-					packageWildCard =  classWildCard.substring(0, packageEnd);
-					// do not include PACKAGE_DELIM
-					classWildCard = classWildCard.substring(packageEnd + 1);
+				// if there is no package specified - allow any
+				if(classWildCard.indexOf(Constants.PACKAGE_STD_DELIM) == -1
+						&& ! classWildCard.startsWith(WildCard.WILDCARD_STR)) {
+					classWildCard = WildCard.WILDCARD_STR + 
+							Constants.PACKAGE_STD_DELIM + classWildCard;
 				}
 			}
 		}
@@ -175,28 +171,23 @@ public class ScopeImpl implements Scope {
 		}
 	}
 
-	@Override
-	public boolean matches(String className, String methodName, String methodDesc) {
+	public boolean matches(String className, String methodName,
+			String methodDesc) {
 		
-		// -- match class (package) --
-		
+		// -- match class (with package) --
+
 		// replace delimiters for matching
 		className = className.replace(
 				Constants.PACKAGE_INTERN_DELIM, Constants.PACKAGE_STD_DELIM);
-		String packageName = new String();
 		
-		// extract package name from class name if any
-		int packageEnd = className.lastIndexOf(PACKAGE_DELIM);
-		if(packageEnd != -1) {
-			
-			packageName =  className.substring(0, packageEnd);
-			// do not include PACKAGE_DELIM
-			className = className.substring(packageEnd + 1);
-		}
-		
-		if(packageWildCard != null
-				&& ! WildCard.match(packageName, packageWildCard)) {
-			return false;
+		// if className has default package (nothing), add our default package
+		// reasons:
+		// 1) we can restrict scope on default package by putting our default
+		//    package into scope
+		// 2) default package would not be matched if no package was specified
+		//    in the scope (because of substitution made)
+		if(className.indexOf(Constants.PACKAGE_STD_DELIM) == -1) {
+			className = DEFAULT_PKG + Constants.PACKAGE_STD_DELIM + className;
 		}
 		
 		if(classWildCard != null
