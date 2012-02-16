@@ -4,20 +4,27 @@ public class Reference {
 	private Object obj;
 	private boolean isValid;
 
+	public Reference() {
+		this.obj = null;
+		this.isValid = false;
+	}
+
 	public Reference(Object obj) {
 		this.obj = obj;
-		this.isValid = (obj != null);
+		this.isValid = true;
 	}
 
 	public Object getObj() {
-		return obj;
+
+		if (isValid) {
+			return obj;
+		} else {
+			return null;
+		}
 	}
 
-	public boolean isValid() {
-		return isValid;
-	}
-
-	public void setValid(boolean isValid) {
-		this.isValid = isValid;
+	public void setObj(Object obj) {
+		this.obj = obj;
+		this.isValid = true;
 	}
 }

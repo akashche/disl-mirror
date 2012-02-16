@@ -16,8 +16,6 @@ import org.objectweb.asm.tree.analysis.Interpreter;
 
 public class ConstInterpreter extends Interpreter<ConstValue> {
 
-	final static String PROP_RESOLVER = "disl.resolver";
-
 	protected ConstInterpreter() {
 		super(Opcodes.ASM4);
 	}
@@ -76,11 +74,8 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 		case Opcodes.GETSTATIC:
 			return new ConstValue(Type.getType(((FieldInsnNode) insn).desc)
 					.getSize());
-		// TODO Remove hack for StringBuilder
 		case Opcodes.NEW:
-			if (((TypeInsnNode) insn).desc.equals("java/lang/StringBuilder")) {
-				return new ConstValue(1, new Reference(new StringBuilder()));
-			}
+			return new ConstValue(1, new Reference());
 
 		default:
 			return new ConstValue(1);
@@ -564,13 +559,8 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 
 			int size = Type.getReturnType(((MethodInsnNode) insn).desc)
 					.getSize();
-			Object cst = null;
-
-			if (Boolean.getBoolean(PROP_RESOLVER)) {
-				cst = InvocationInterpreter.getInstance().execute(
-						(MethodInsnNode) insn, values);
-			}
-			
+			Object cst = InvocationInterpreter.getInstance().execute(
+					(MethodInsnNode) insn, values);
 			return new ConstValue(size, cst);
 		}
 
@@ -589,5 +579,15 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 		}
 
 		return new ConstValue(Math.min(d.size, w.size));
+	}
+
+	private static ConstInterpreter instance;
+
+	public static ConstInterpreter getInstance() {
+		if (instance == null) {
+			instance = new ConstInterpreter();
+		}
+
+		return instance;
 	}
 }

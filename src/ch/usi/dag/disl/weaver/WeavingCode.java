@@ -801,15 +801,16 @@ public class WeavingCode {
 		}
 
 		char option = prop_pe.charAt(1);
+		PartialEvaluator pe = new PartialEvaluator(iList,
+				code.getTryCatchBlocks(), method.desc, method.access);
 
 		if (option >= '1' && option <= '3') {
+
 			for (int i = 0; i < (option - '0'); i++) {
-				PartialEvaluator.evaluate(iList, code.getTryCatchBlocks(),
-						method.desc, method.access);
+				pe.evaluate();
 			}
 		} else if (option == 'x') {
-			while (PartialEvaluator.evaluate(iList, code.getTryCatchBlocks(),
-					method.desc, method.access))
+			while (pe.evaluate())
 				;
 		}
 	}
