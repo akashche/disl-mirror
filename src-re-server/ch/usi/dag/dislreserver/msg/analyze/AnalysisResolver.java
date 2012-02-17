@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import ch.usi.dag.disl.test.dispatch.CodeExecuted;
+import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
 
 public class AnalysisResolver {
@@ -43,8 +44,7 @@ public class AnalysisResolver {
 		AnalysisMethodHolder result = methodMap.get(methodId);
 		
 		if(result == null) {
-			// TODO re - different except
-			throw new RuntimeException("Unknow method id");
+			throw new DiSLREServerFatalException("Unknow method id");
 		}
 		
 		return result;

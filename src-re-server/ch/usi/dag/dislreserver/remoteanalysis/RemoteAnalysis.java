@@ -1,5 +1,7 @@
 package ch.usi.dag.dislreserver.remoteanalysis;
 
+import ch.usi.dag.dislreserver.objectid.ObjectId;
+
 /**
  * Each analysis evaluated remotely have to implement this interface.
  * 
@@ -21,4 +23,6 @@ package ch.usi.dag.dislreserver.remoteanalysis;
 public abstract class RemoteAnalysis {
 
 	public abstract void atExit();
+	
+	public abstract void objectFree(ObjectId objectId);
 }

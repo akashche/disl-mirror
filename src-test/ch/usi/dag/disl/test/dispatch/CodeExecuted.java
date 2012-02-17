@@ -77,4 +77,9 @@ public class CodeExecuted extends RemoteAnalysis {
 		System.out.println("Total number of executed bytecodes: "
 				+ totalExecutedBytecodes);
 	}
+
+	public void objectFree(ObjectId objectId) {
+		System.out.println("Object free for id " + objectId.getId());
+		
+	}
 }

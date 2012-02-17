@@ -1,4 +1,4 @@
-package ch.usi.dag.dislreserver;
+package ch.usi.dag.dislreserver.exception;
 
 public class DiSLREServerException extends Exception {
 

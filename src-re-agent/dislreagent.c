@@ -18,6 +18,7 @@
 #include <jni.h>
 
 #include "dislreagent.h"
+#include "messagetype.h"
 
 static const int ERR_JVMTI = 10001;
 static const int ERR_COMM = 10002;
@@ -32,41 +33,28 @@ static const int FALSE = 0;
 static const char * DEFAULT_HOST = "localhost";
 static const char * DEFAULT_PORT = "11218";
 
-// initial buffer size
-static const size_t INIT_BUFF_SIZE = 512;
-// max limit buffer size
-static const size_t MAX_BUFF_SIZE = 8192;
-
-typedef struct {
-	unsigned char * buff;
-	size_t occupied;
-	size_t capacity;
-	volatile int available;
-} buffer;
-
-// Messages - should be in sync with java server
-
-// closing connection
-static const jint MSG_CLOSE = 0;
-static const jint MSG_ANALYZE = 1;
-
 // port and name of the instrumentation server
 static char host_name[1024];
 static char port_number[6]; // including final 0
 
 static jvmtiEnv * jvmti_env;
 
+// TODO fix
+#include "buffer.h"
+
 // TODO remove
 static buffer redispatch_buff;
 
-// *** protected by connection lock ***
+// *** Protected by connection lock ***
+
 static jrawMonitorID connection_lock;
 
 // communication connection socket descriptor
 // access must be protected by monitor
 static int connection = 0;
 
-// *** protected by redisp lock ***
+// *** Protected by redisp lock ***
+
 static jrawMonitorID redisp_lock;
 
 // this number decides maximum number of threads writing
@@ -81,65 +69,14 @@ static volatile int redispatch_buff_last_used = 0;
 // array of disptach buffers
 static volatile buffer redispatch_buffs[DISP_BUFF_COUNT];
 
-// *** protected by objectid lock ***
+// *** Protected by objectid lock ***
+
 static jrawMonitorID objectid_lock;
 
 // first available id for object taging
 static jlong avail_object_tag = 1;
 
-// ******************* Buffer routines *******************
-
-void buffer_init(buffer * b) {
-
-	b->buff = (unsigned char *) malloc(INIT_BUFF_SIZE);
-	b->capacity = INIT_BUFF_SIZE;
-	b->occupied = 0;
-	b->available = TRUE;
-}
-
-void buffer_free(buffer * b) {
-
-	free(b->buff);
-	b->buff = NULL;
-	b->capacity = 0;
-	b->occupied = 0;
-	b->available = TRUE;
-}
-
-void buffer_fill(buffer * b, const void * data, size_t data_length) {
-
-	// not enough free space - extend buffer
-	if(b->capacity - b->occupied < data_length) {
-
-		unsigned char * old_buff = b->buff;
-
-		// alloc as much as needed to be able to insert data
-		size_t new_capacity = 2 * b->capacity;
-		while(new_capacity - b->occupied < data_length) {
-			new_capacity *= 2;
-		}
-
-		b->buff = (unsigned char *) malloc(new_capacity);
-
-		memcpy(b->buff, old_buff, b->occupied);
-	}
-
-	memcpy(b->buff + b->occupied, data, data_length);
-	b->occupied += data_length;
-}
-
-void buffer_clean(buffer * b) {
-
-	// if capacity is higher then limit "reset" buffer
-	// should keep memory consumption in limits
-	if(b->capacity > MAX_BUFF_SIZE) {
-
-		buffer_free(b);
-		buffer_init(b);
-	}
-
-	b->occupied = 0;
-}
+// TODO test headers by including them first
 
 // TODO unify in header - helper
 // ******************* Helper routines *******************
@@ -248,7 +185,7 @@ static void parse_agent_options(char *options) {
 }
 
 // TODO unify in header - communication
-// ******************* Communication routines *******************
+// ******************* Data sending routines *******************
 
 // sends data over network
 static void send_data(int sockfd, const void * data, int data_len) {
@@ -279,12 +216,51 @@ static void rcv_data(int sockfd, void * data, int data_len) {
 	}
 }
 
-// sends data over network
-static void send_msg_type(int sockfd, jint msg_type) {
+// ******************* Advanced buffer routines *******************
 
-	jint network_msg_type = htonl(msg_type);
-	send_data(sockfd, &network_msg_type, sizeof(jint));
+jint acquire_buff() {
+
+	// TODO protect with redisp_lock
+	// TODO find buffer with available FALSE
+	return 0;
 }
+
+void release_buff(jint buff_pos) {
+
+	// TODO cleans buffer
+
+	// TODO set available to TRUE
+}
+
+void send_buffer(buffer * b) {
+
+	// protect send
+	enter_critical_section(jvmti_env, connection_lock);
+	{
+		// send data
+		send_data(connection, b->buff, b->occupied);
+	}
+	exit_critical_section(jvmti_env, connection_lock);
+}
+
+// TODO use this for all non-interaction sends
+void send_buffer_schedule(buffer * buff) {
+
+	// TODO
+	send_buffer(buff);
+}
+
+// sends all buffered messages and this buffer
+void send_buffer_force(buffer * buff) {
+
+	// TODO
+	send_buffer(buff);
+}
+
+// TODO fix
+#include "buffpack.h"
+
+// ******************* Connection routines *******************
 
 static int open_connection() {
 
@@ -301,13 +277,6 @@ static int open_connection() {
 	int conn_res = connect(sockfd, addr->ai_addr, addr->ai_addrlen);
 	check_std_error(conn_res, -1, "Cannot connect to server");
 
-	// disable Nagle algorithm
-	// http://www.techrepublic.com/article/tcpip-options-for-high-performance-data-transmission/1050878
-	int flag = 1;
-	int set_res = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag,
-			sizeof(int));
-	check_std_error(set_res, -1, "Cannot set TCP_NODELAY");
-
 	// free host address info
 	freeaddrinfo(addr);
 
@@ -316,7 +285,17 @@ static int open_connection() {
 
 static void close_connection(int conn) {
 
-	send_msg_type(conn, MSG_CLOSE);
+	// TODO use acquire_buff, release_buff
+
+	buffer close_buff;
+
+	buffer_init(&close_buff);
+
+	pack_int(&close_buff, MSG_CLOSE);
+
+	send_buffer_force(&close_buff);
+
+	buffer_free(&close_buff);
 
 	// close socket
 	close(conn);
@@ -519,17 +498,30 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 	}
 }
 
+// ******************* OBJECT FREE callback *******************
+
+void JNICALL jvmti_callback_class_object_free_hook(jvmtiEnv *jvmti_env, jlong tag) {
+
+	// TODO use acquire_buff, release_buff
+	buffer obj_free_buff;
+
+	buffer_init(&obj_free_buff);
+
+	pack_int(&obj_free_buff, MSG_OBJFREE);
+	pack_long(&obj_free_buff, tag);
+
+	send_buffer_schedule(&obj_free_buff);
+
+	buffer_free(&obj_free_buff);
+}
+
 // ******************* SHUTDOWN callback *******************
 
 static void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
 
-	enter_critical_section(jvmti_env, connection_lock);
-	{
+	close_connection(connection);
 
-		close_connection(connection);
-
-	}
-	exit_critical_section(jvmti_env, connection_lock);
+	// TODO free all global buffers
 }
 
 // ******************* JVMTI entry method *******************
@@ -561,11 +553,11 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	// class hook
 	cap.can_generate_all_class_hook_events = TRUE;
 
-	// timer
-	cap.can_get_current_thread_cpu_time = TRUE;
-
 	// tagging objects
 	cap.can_tag_objects = TRUE;
+
+	// tagged objects free
+	cap.can_generate_object_free_events = TRUE;
 
 	error = (*jvmti_env)->AddCapabilities(jvmti_env, &cap);
 	check_jvmti_error(jvmti_env, error,
@@ -577,6 +569,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 
 	callbacks.ClassFileLoadHook = &jvmti_callback_class_file_load_hook;
 	callbacks.VMDeath = &jvmti_callback_class_vm_death_hook;
+	callbacks.ObjectFree = &jvmti_callback_class_object_free_hook;
 
 	(*jvmti_env)->SetEventCallbacks(jvmti_env, &callbacks,
 			(jint) sizeof(callbacks));
@@ -585,7 +578,10 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	check_jvmti_error(jvmti_env, error, "Cannot set class load hook");
 
 	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE, JVMTI_EVENT_VM_DEATH, NULL);
-	check_jvmti_error(jvmti_env, error, "Cannot create jvm death hook");
+	check_jvmti_error(jvmti_env, error, "Cannot set jvm death hook");
+
+	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE, JVMTI_EVENT_OBJECT_FREE, NULL);
+	check_jvmti_error(jvmti_env, error, "Cannot set object free hook");
 
 	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "connection socket", &connection_lock);
 	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");
@@ -606,114 +602,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	return 0;
 }
 
-// ******************* Sending helper methods *******************
-
-void pack_boolean(buffer * buff, jboolean to_send) {
-
-	buffer_fill(buff, &to_send, sizeof(jboolean));
-}
-
-void pack_byte(buffer * buff, jbyte to_send) {
-
-	buffer_fill(buff, &to_send, sizeof(jbyte));
-}
-
-void pack_char(buffer * buff, jchar to_send) {
-
-	jchar nts = htons(to_send);
-	buffer_fill(buff, &nts, sizeof(jchar));
-}
-
-void pack_short(buffer * buff, jshort to_send) {
-
-	jshort nts = htons(to_send);
-	buffer_fill(buff, &nts, sizeof(jshort));
-}
-
-void pack_int(buffer * buff, jint to_send) {
-
-	jint nts = htonl(to_send);
-	buffer_fill(buff, &nts, sizeof(jint));
-}
-
-void pack_long(buffer * buff, jlong to_send) {
-
-	jlong nts = htobe64(to_send);
-	buffer_fill(buff, &nts, sizeof(jlong));
-}
-
-void pack_string_utf8(buffer * buff, const void * string_utf8,
-		uint16_t size_in_bytes) {
-
-	// send length first
-	uint16_t nsize = htons(size_in_bytes);
-	buffer_fill(buff, &nsize, sizeof(uint16_t));
-
-	buffer_fill(buff, string_utf8, size_in_bytes);
-}
-
-void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
-
-	// get string length
-	jsize str_len = (*jni_env)->GetStringUTFLength(jni_env, to_send);
-
-	// get string data as utf-8
-	const char * str = (*jni_env)->GetStringUTFChars(jni_env, to_send, NULL);
-	check_std_error(str == NULL, TRUE, "Cannot get string from java");
-
-	// check if the size is sendable
-	int size_fits = str_len < UINT16_MAX;
-	check_std_error(size_fits, FALSE, "Java string is too big for sending");
-
-	// send string
-	pack_string_utf8(buff, str, str_len);
-
-	// release string
-	(*jni_env)->ReleaseStringUTFChars(jni_env, to_send, str);
-}
-
-void pack_object(buffer * buff, jobject to_send, JNIEnv * jni_env) {
-
-	jlong obj_tag;
-
-	enter_critical_section(jvmti_env, objectid_lock);
-	{
-
-		jvmtiError error;
-
-		// get object tag
-		error = (*jvmti_env)->GetTag(jvmti_env, to_send, &obj_tag);
-		check_jvmti_error(jvmti_env, error, "Cannot get object tag");
-
-		// set object tag
-		if(obj_tag == 0) {
-
-			obj_tag = avail_object_tag;
-			++avail_object_tag;
-
-			// TODO add class id - note that class can miss the class id
-
-			error = (*jvmti_env)->SetTag(jvmti_env, to_send, obj_tag);
-			check_jvmti_error(jvmti_env, error, "Cannot set object tag");
-		}
-
-	}
-	exit_critical_section(jvmti_env, objectid_lock);
-
-	pack_long(buff, obj_tag);
-}
-
-void pack_class(buffer * buff, jclass to_send, JNIEnv * jni_env) {
-
-	// TODO
-	// class id is set for jclass on the same spot as for object
-	// class id can have object id also
-
-	// TODO
-	// if class does not have id, you have to find it by name and class loader
-
-	pack_int(buff, 1);
-}
+// ******************* analysis helper methods *******************
 
 void analysis_start(buffer * buff, jint analysis_method_id) {
 
@@ -730,27 +619,10 @@ void analysis_end(buffer * buff) {
 	// it is possible to put it into the bigger shared buffer and send it
 	// when it is full
 
-	enter_critical_section(jvmti_env, connection_lock);
-	{
+	send_buffer_schedule(buff);
 
-		send_data(connection, buff->buff, buff->occupied);
-
-	}
-	exit_critical_section(jvmti_env, connection_lock);
-
+	// TODO not necessary with release_buff working
 	buffer_clean(buff);
-}
-
-jint acquire_redispatch_buff() {
-
-	// TODO protect with redisp_lock
-	// TODO find buffer with available FALSE
-	return 0;
-}
-
-void release_redispatch_buff(jint buff_pos) {
-
-	// TODO set available to TRUE
 }
 
 // ******************* REDispatch methods *******************
@@ -761,7 +633,7 @@ JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
   (JNIEnv * jni_env, jclass this_class, jint analysis_method_id) {
 
 	// get session id - free buffer pos
-	jint sid = acquire_redispatch_buff();
+	jint sid = acquire_buff();
 
 	analysis_start(&redispatch_buff, analysis_method_id);
 
@@ -774,7 +646,7 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
 
 	analysis_end(&redispatch_buff);
 
-	release_redispatch_buff(sid);
+	release_buff(sid);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean

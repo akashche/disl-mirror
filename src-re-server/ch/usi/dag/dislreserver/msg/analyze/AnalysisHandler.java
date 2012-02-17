@@ -8,7 +8,7 @@ import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 
-import ch.usi.dag.dislreserver.DiSLREServerException;
+import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver.AnalysisMethodHolder;
 import ch.usi.dag.dislreserver.objectid.InvalidClass;
 import ch.usi.dag.dislreserver.objectid.ObjectId;
