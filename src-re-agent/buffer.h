@@ -1,6 +1,9 @@
 #ifndef _BUFFER_H
 #define	_BUFFER_H
 
+#include <stdlib.h>
+#include <string.h>
+
 // initial buffer size
 static const size_t INIT_BUFF_SIZE = 512;
 // max limit buffer size

@@ -6,28 +6,26 @@
 #include <unistd.h>
 #include <netinet/tcp.h>
 
-#if defined(__linux__)
-#	include <endian.h>
-#elif defined(__FreeBSD__) || defined(__NetBSD__)
-#	include <sys/endian.h>
-#elif defined(__APPLE__) && defined(__MACH__)
-#	include <machine/endian.h>
-#endif
-
 #include <jvmti.h>
 #include <jni.h>
 
-#include "dislreagent.h"
-#include "messagetype.h"
+// has to be defined for jvmtihelper.h
+#define ERR_PREFIX "DiSL-RE agent error: "
 
-static const int ERR_JVMTI = 10001;
-static const int ERR_COMM = 10002;
-static const int ERR_SERVER = 10003;
+#include "../src-agent-c/jvmtihelper.h"
+#include "../src-agent-c/comm.h"
 
-static const char * ERR_PREFIX = "DiSL-RE agent error: ";
-
+// TODO remove when trunk merged
 static const int TRUE = 1;
 static const int FALSE = 0;
+
+#include "messagetype.h"
+#include "buffer.h"
+#include "buffpack.h"
+
+#include "dislreagent.h"
+
+static const int ERR_SERVER = 10003;
 
 // defaults - be sure that space in host_name is long enough
 static const char * DEFAULT_HOST = "localhost";
@@ -38,9 +36,6 @@ static char host_name[1024];
 static char port_number[6]; // including final 0
 
 static jvmtiEnv * jvmti_env;
-
-// TODO fix
-#include "buffer.h"
 
 // TODO remove
 static buffer redispatch_buff;
@@ -55,19 +50,19 @@ static int connection = 0;
 
 // *** Protected by redisp lock ***
 
-static jrawMonitorID redisp_lock;
+static jrawMonitorID buff_lock;
 
 // this number decides maximum number of threads writing
 // also it determines memory consumption because buffers are left allocated
-// DISP_BUFF_COUNT * MAX_BUFF_SIZE says max memory occupation
+// BUFF_COUNT * MAX_BUFF_SIZE (defined in buffer.h) says max memory occupation
 // cannot be static const :(
-#define DISP_BUFF_COUNT 512
+#define BUFF_COUNT 512
 
 // last used dispatch buffer - searching for free one starts from here
-static volatile int redispatch_buff_last_used = 0;
+static volatile int buff_last_used = 0;
 
 // array of disptach buffers
-static volatile buffer redispatch_buffs[DISP_BUFF_COUNT];
+static volatile buffer buffs[BUFF_COUNT];
 
 // *** Protected by objectid lock ***
 
@@ -76,77 +71,9 @@ static jrawMonitorID objectid_lock;
 // first available id for object taging
 static jlong avail_object_tag = 1;
 
-// TODO test headers by including them first
-
-// TODO unify in header - helper
 // ******************* Helper routines *******************
 
-/*
- * Check error routine - reporting on one place
- */
-static void check_std_error(int retval, int errorval,
-		const char *str) {
-
-	if (retval == errorval) {
-
-		static const int BUFFSIZE = 1024;
-
-		char msgbuf[BUFFSIZE];
-
-		snprintf(msgbuf, BUFFSIZE, "%s%s", ERR_PREFIX, str);
-
-		perror(msgbuf);
-
-		exit(ERR_COMM);
-	}
-}
-
-/*
- * Every JVMTI interface returns an error code, which should be checked
- *   to avoid any cascading errors down the line.
- *   The interface GetErrorName() returns the actual enumeration constant
- *   name, making the error messages much easier to understand.
- */
-static void check_jvmti_error(jvmtiEnv *jvmti, jvmtiError errnum,
-		const char *str) {
-
-	if (errnum != JVMTI_ERROR_NONE) {
-		char *errnum_str;
-
-		errnum_str = NULL;
-		(void) (*jvmti)->GetErrorName(jvmti, errnum, &errnum_str);
-
-		fprintf(stderr, "%sJVMTI: %d(%s): %s\n", ERR_PREFIX, errnum,
-				(errnum_str == NULL ? "Unknown" : errnum_str),
-				(str == NULL ? "" : str));
-
-		exit(ERR_JVMTI);
-	}
-}
-
-/*
- * Enter a critical section by doing a JVMTI Raw Monitor Enter
- */
-static void enter_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
-
-	jvmtiError error;
-
-	error = (*jvmti)->RawMonitorEnter(jvmti, lock_id);
-	check_jvmti_error(jvmti, error, "Cannot enter with raw monitor");
-}
-
-/*
- * Exit a critical section by doing a JVMTI Raw Monitor Exit
- */
-static void exit_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
-
-	jvmtiError error;
-
-	error = (*jvmti)->RawMonitorExit(jvmti, lock_id);
-	check_jvmti_error(jvmti, error, "Cannot exit with raw monitor");
-}
-
-static void parse_agent_options(char *options) {
+void parse_agent_options(char *options) {
 
 	static const char PORT_DELIM = ':';
 
@@ -182,38 +109,6 @@ static void parse_agent_options(char *options) {
 	check_std_error(fitsH, FALSE, "Host name is too long");
 
 	strcpy(host_name, options);
-}
-
-// TODO unify in header - communication
-// ******************* Data sending routines *******************
-
-// sends data over network
-static void send_data(int sockfd, const void * data, int data_len) {
-
-	int sent = 0;
-
-	while (sent != data_len) {
-
-		int res = send(sockfd, ((unsigned char *)data) + sent,
-				(data_len - sent), 0);
-		check_std_error(res, -1, "Error while sending data to server");
-		sent += res;
-	}
-}
-
-// receives data from network
-static void rcv_data(int sockfd, void * data, int data_len) {
-
-	int received = 0;
-
-	while (received != data_len) {
-
-		int res = recv(sockfd, ((unsigned char *)data) + received,
-				(data_len - received), 0);
-		check_std_error(res, -1, "Error while receiving data from server");
-
-		received += res;
-	}
 }
 
 // ******************* Advanced buffer routines *******************
@@ -257,12 +152,74 @@ void send_buffer_force(buffer * buff) {
 	send_buffer(buff);
 }
 
-// TODO fix
-#include "buffpack.h"
+// ******************* Advanced packing routines *******************
+
+void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
+
+	// get string length
+	jsize str_len = (*jni_env)->GetStringUTFLength(jni_env, to_send);
+
+	// get string data as utf-8
+	const char * str = (*jni_env)->GetStringUTFChars(jni_env, to_send, NULL);
+	check_std_error(str == NULL, TRUE, "Cannot get string from java");
+
+	// check if the size is sendable
+	int size_fits = str_len < UINT16_MAX;
+	check_std_error(size_fits, FALSE, "Java string is too big for sending");
+
+	// send string
+	pack_string_utf8(buff, str, str_len);
+
+	// release string
+	(*jni_env)->ReleaseStringUTFChars(jni_env, to_send, str);
+}
+
+void pack_object(buffer * buff, jobject to_send) {
+
+	jlong obj_tag;
+
+	enter_critical_section(jvmti_env, objectid_lock);
+	{
+
+		jvmtiError error;
+
+		// get object tag
+		error = (*jvmti_env)->GetTag(jvmti_env, to_send, &obj_tag);
+		check_jvmti_error(jvmti_env, error, "Cannot get object tag");
+
+		// set object tag
+		if(obj_tag == 0) {
+
+			obj_tag = avail_object_tag;
+			++avail_object_tag;
+
+			// TODO add class id - note that class can miss the class id
+
+			error = (*jvmti_env)->SetTag(jvmti_env, to_send, obj_tag);
+			check_jvmti_error(jvmti_env, error, "Cannot set object tag");
+		}
+
+	}
+	exit_critical_section(jvmti_env, objectid_lock);
+
+	pack_long(buff, obj_tag);
+}
+
+void pack_class(buffer * buff, jclass to_send) {
+
+	// TODO
+	// class id is set for jclass on the same spot as for object
+	// class id can have object id also
+
+	// TODO
+	// if class does not have id, you have to find it by name and class loader
+
+	pack_int(buff, 1);
+}
 
 // ******************* Connection routines *******************
 
-static int open_connection() {
+int open_connection() {
 
 	// get host address
 	struct addrinfo * addr;
@@ -283,7 +240,7 @@ static int open_connection() {
 	return sockfd;
 }
 
-static void close_connection(int conn) {
+void close_connection(int conn) {
 
 	// TODO use acquire_buff, release_buff
 
@@ -313,7 +270,7 @@ typedef struct {
 	const unsigned char * classcode;
 } class_as_bytes;
 
-static class_as_bytes create_class_as_bytes(const unsigned char * control,
+class_as_bytes create_class_as_bytes(const unsigned char * control,
 		jint control_size, const unsigned char * classcode,
 		jint classcode_size) {
 
@@ -355,7 +312,7 @@ static class_as_bytes create_class_as_bytes(const unsigned char * control,
 	return result;
 }
 
-static void free_class_as_bytes(class_as_bytes * cab) {
+void free_class_as_bytes(class_as_bytes * cab) {
 
 	if(cab->control != NULL) {
 
@@ -375,7 +332,7 @@ static void free_class_as_bytes(class_as_bytes * cab) {
 }
 
 // sends class over network
-static void send_instr(int sockfd, class_as_bytes * class_to_send) {
+void send_instr(int sockfd, class_as_bytes * class_to_send) {
 
 	// send control and code size first and then data
 
@@ -430,7 +387,7 @@ class_as_bytes rcv_instr(int sockfd) {
 }
 
 // instruments remotely
-static class_as_bytes instrument(const char * classname,
+class_as_bytes instrument(const char * classname,
 		const unsigned char * classcode, jint classcode_size) {
 
 	// crate class data
@@ -448,7 +405,7 @@ static class_as_bytes instrument(const char * classname,
 
 // ******************* CLASS LOAD callback *******************
 
-static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
+void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 		JNIEnv* jni_env, jclass class_being_redefined, jobject loader,
 		const char* name, jobject protection_domain, jint class_data_len,
 		const unsigned char* class_data, jint* new_class_data_len,
@@ -517,7 +474,7 @@ void JNICALL jvmti_callback_class_object_free_hook(jvmtiEnv *jvmti_env, jlong ta
 
 // ******************* SHUTDOWN callback *******************
 
-static void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
+void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
 
 	close_connection(connection);
 
@@ -586,7 +543,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "connection socket", &connection_lock);
 	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");
 
-	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "dispatch buffers", &redisp_lock);
+	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "buffers", &buff_lock);
 	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");
 
 	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "object tags", &objectid_lock);
@@ -706,11 +663,11 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendString
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
   (JNIEnv * jni_env, jclass this_class, jint sid, jobject to_send) {
 
-	pack_object(&redispatch_buff, to_send, jni_env);
+	pack_object(&redispatch_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendClass
   (JNIEnv * jni_env, jclass this_class, jint sid, jclass to_send) {
 
-	pack_class(&redispatch_buff, to_send, jni_env);
+	pack_class(&redispatch_buff, to_send);
 }
