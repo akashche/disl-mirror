@@ -9,14 +9,18 @@
 
 #include <stdlib.h>
 
-static const int ERR_JVMTI = 10001;
-static const int ERR_COMM = 10002;
+// true/false consts
+static const int TRUE = 1;
+static const int FALSE = 0;
+
+// error nums
+#define ERR_JVMTI 10001
+#define ERR_COMM 10002
 
 /*
  * Check error routine - reporting on one place
  */
-static void check_std_error(int retval, int errorval,
-		const char *str) {
+void check_std_error(int retval, int errorval, const char *str) {
 
 	if (retval == errorval) {
 
@@ -38,8 +42,7 @@ static void check_std_error(int retval, int errorval,
  *   The interface GetErrorName() returns the actual enumeration constant
  *   name, making the error messages much easier to understand.
  */
-static void check_jvmti_error(jvmtiEnv *jvmti, jvmtiError errnum,
-		const char *str) {
+void check_jvmti_error(jvmtiEnv *jvmti, jvmtiError errnum, const char *str) {
 
 	if (errnum != JVMTI_ERROR_NONE) {
 		char *errnum_str;
@@ -58,7 +61,7 @@ static void check_jvmti_error(jvmtiEnv *jvmti, jvmtiError errnum,
 /*
  * Enter a critical section by doing a JVMTI Raw Monitor Enter
  */
-static void enter_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
+void enter_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
 
 	jvmtiError error;
 
@@ -69,7 +72,7 @@ static void enter_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
 /*
  * Exit a critical section by doing a JVMTI Raw Monitor Exit
  */
-static void exit_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
+void exit_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
 
 	jvmtiError error;
 

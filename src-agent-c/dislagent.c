@@ -18,9 +18,6 @@
 
 static const int ERR_SERVER = 10003;
 
-static const int TRUE = 1;
-static const int FALSE = 0;
-
 // defaults - be sure that space in host_name is long enough
 static const char * DEFAULT_HOST = "localhost";
 static const char * DEFAULT_PORT = "11217";
@@ -59,7 +56,7 @@ static connection_item * conn_list = NULL;
 
 // ******************* Helper routines *******************
 
-static message create_message(const unsigned char * control,
+message create_message(const unsigned char * control,
 		jint control_size, const unsigned char * classcode,
 		jint classcode_size) {
 
@@ -101,7 +98,7 @@ static message create_message(const unsigned char * control,
 	return result;
 }
 
-static void free_message(message * msg) {
+void free_message(message * msg) {
 
 	if(msg->control != NULL) {
 
@@ -120,7 +117,7 @@ static void free_message(message * msg) {
 	}
 }
 
-static void parse_agent_options(char *options) {
+void parse_agent_options(char *options) {
 
 	static const char PORT_DELIM = ':';
 
@@ -161,7 +158,7 @@ static void parse_agent_options(char *options) {
 // ******************* Communication routines *******************
 
 // sends class over network
-static void send_msg(connection_item * conn, message * msg) {
+void send_msg(connection_item * conn, message * msg) {
 
 #ifdef DEBUG
 	printf("Sending - control: %d, code: %d ... ", msg->control_size, msg->classcode_size);
@@ -235,7 +232,7 @@ message rcv_msg(connection_item * conn) {
 	return create_message(control, -control_size, classcode, -classcode_size);
 }
 
-static connection_item * open_connection() {
+connection_item * open_connection() {
 
 	// get host address
 	struct addrinfo * addr;
@@ -269,7 +266,7 @@ static connection_item * open_connection() {
 	return conn;
 }
 
-static void close_connection(connection_item * conn) {
+void close_connection(connection_item * conn) {
 
 	// prepare close message - could be done more efficiently (this is nicer)
 	// close message has zeros as lengths
@@ -289,7 +286,7 @@ static void close_connection(connection_item * conn) {
 }
 
 // get an available connection, create one if no one is available
-static connection_item * acquire_connection() {
+connection_item * acquire_connection() {
 
 #ifdef DEBUG
 	printf("Acquiring connection ... ");
@@ -333,7 +330,7 @@ static connection_item * acquire_connection() {
 }
 
 // make the socket available again
-static void release_connection(connection_item * conn) {
+void release_connection(connection_item * conn) {
 
 #ifdef DEBUG
 	printf("Releasing connection ... ");
@@ -354,7 +351,7 @@ static void release_connection(connection_item * conn) {
 }
 
 // instruments remotely
-static message instrument_class(const char * classname,
+message instrument_class(const char * classname,
 		const unsigned char * classcode, jint classcode_size) {
 
 	// get available connection
@@ -375,7 +372,7 @@ static message instrument_class(const char * classname,
 
 // ******************* CLASS LOAD callback *******************
 
-static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
+void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 		JNIEnv* jni_env, jclass class_being_redefined, jobject loader,
 		const char* name, jobject protection_domain, jint class_data_len,
 		const unsigned char* class_data, jint* new_class_data_len,
@@ -432,7 +429,7 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 
 // ******************* SHUTDOWN callback *******************
 
-static void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
+void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
 
 	enter_critical_section(jvmti_env, global_lock);
 	{
