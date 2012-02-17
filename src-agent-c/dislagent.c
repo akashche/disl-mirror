@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <netdb.h>
@@ -9,13 +8,15 @@
 #include <jvmti.h>
 #include <jni.h>
 
+// has to be defined for jvmtihelper.h
+#define ERR_PREFIX "DiSL agent error: "
+
+#include "jvmtihelper.h"
+#include "comm.h"
+
 #include "dislagent.h"
 
-static const int ERR_JVMTI = 10001;
-static const int ERR_COMM = 10002;
 static const int ERR_SERVER = 10003;
-
-static const char * ERR_PREFIX = "ERROR in DiSL agent: ";
 
 static const int TRUE = 1;
 static const int FALSE = 0;
@@ -57,71 +58,6 @@ static jrawMonitorID global_lock;
 static connection_item * conn_list = NULL;
 
 // ******************* Helper routines *******************
-
-/*
- * Check error routine - reporting on one place
- */
-static void check_std_error(int retval, int errorval,
-		const char *str) {
-
-	if (retval == errorval) {
-
-		static const int BUFFSIZE = 1024;
-
-		char msgbuf[BUFFSIZE];
-
-		snprintf(msgbuf, BUFFSIZE, "%s%s", ERR_PREFIX, str);
-
-		perror(msgbuf);
-
-		exit(ERR_COMM);
-	}
-}
-
-/*
- * Every JVMTI interface returns an error code, which should be checked
- *   to avoid any cascading errors down the line.
- *   The interface GetErrorName() returns the actual enumeration constant
- *   name, making the error messages much easier to understand.
- */
-static void check_jvmti_error(jvmtiEnv *jvmti, jvmtiError errnum,
-		const char *str) {
-
-	if (errnum != JVMTI_ERROR_NONE) {
-		char *errnum_str;
-
-		errnum_str = NULL;
-		(void) (*jvmti)->GetErrorName(jvmti, errnum, &errnum_str);
-
-		fprintf(stderr, "%sJVMTI: %d(%s): %s\n", ERR_PREFIX, errnum,
-				(errnum_str == NULL ? "Unknown" : errnum_str),
-				(str == NULL ? "" : str));
-
-		exit(ERR_JVMTI);
-	}
-}
-
-/*
- * Enter a critical section by doing a JVMTI Raw Monitor Enter
- */
-static void enter_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
-
-	jvmtiError error;
-
-	error = (*jvmti)->RawMonitorEnter(jvmti, lock_id);
-	check_jvmti_error(jvmti, error, "Cannot enter with raw monitor");
-}
-
-/*
- * Exit a critical section by doing a JVMTI Raw Monitor Exit
- */
-static void exit_critical_section(jvmtiEnv *jvmti, jrawMonitorID lock_id) {
-
-	jvmtiError error;
-
-	error = (*jvmti)->RawMonitorExit(jvmti, lock_id);
-	check_jvmti_error(jvmti, error, "Cannot exit with raw monitor");
-}
 
 static message create_message(const unsigned char * control,
 		jint control_size, const unsigned char * classcode,
@@ -223,35 +159,6 @@ static void parse_agent_options(char *options) {
 }
 
 // ******************* Communication routines *******************
-
-// sends data over network
-static void send_data(int sockfd, const void * data, int data_len) {
-
-	int sent = 0;
-
-	while (sent != data_len) {
-
-		int res = send(sockfd, ((unsigned char *)data) + sent,
-				(data_len - sent), 0);
-		check_std_error(res, -1, "Error while sending data to server");
-		sent += res;
-	}
-}
-
-// receives data from network
-static void rcv_data(int sockfd, void * data, int data_len) {
-
-	int received = 0;
-
-	while (received != data_len) {
-
-		int res = recv(sockfd, ((unsigned char *)data) + received,
-				(data_len - received), 0);
-		check_std_error(res, -1, "Error while receiving data from server");
-
-		received += res;
-	}
-}
 
 // sends class over network
 static void send_msg(connection_item * conn, message * msg) {
@@ -580,9 +487,6 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	// class hook
 	cap.can_generate_all_class_hook_events = 1;
 
-	// timer
-	cap.can_get_current_thread_cpu_time = 1;
-
 	error = (*jvmti_env)->AddCapabilities(jvmti_env, &cap);
 	check_jvmti_error(jvmti_env, error,
 			"Unable to get necessary JVMTI capabilities.");
@@ -601,7 +505,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	check_jvmti_error(jvmti_env, error, "Cannot set class load hook");
 
 	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE, JVMTI_EVENT_VM_DEATH, NULL);
-	check_jvmti_error(jvmti_env, error, "Cannot create jvm death hook");
+	check_jvmti_error(jvmti_env, error, "Cannot set jvm death hook");
 
 	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "agent data", &global_lock);
 	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");

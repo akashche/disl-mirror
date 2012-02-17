@@ -77,82 +77,70 @@ public class DiSL {
 	private final List<Snippet> snippets;
 
 	// this method should be called only once
-	public DiSL(boolean useDynamicBypass) throws Exception {
+	public DiSL(boolean useDynamicBypass) throws DiSLException {
 
 		this.useDynamicBypass = useDynamicBypass;
 		
-		// report DiSL exception within our code
-		try {
+		// *** resolve transformer ***
+		transformer = resolveTransformer();
 
-			// *** resolve transformer ***
-			transformer = resolveTransformer();
-			
-			// transfomer output propagation
-			if(transformer == null) {
-				transPropagateUninstr = false;
-			}
-			else {
-				transPropagateUninstr = 
-						transformer.propagateUninstrumentedClasses();
-			}
-
-			// *** prepare exclusion set ***
-			exclusionSet = ExclusionSet.prepare();
-			
-			// *** load disl classes ***
-			List<InputStream> dislClasses = ClassByteLoader.loadDiSLClasses();
-			
-			if(dislClasses == null) {
-				throw new InitException("Cannot load DiSL classes. Please set" +
-						" the property " + ClassByteLoader.PROP_DISL_CLASSES
-						+ " or supply jar with DiSL classes"
-						+ " and proper manifest");
-			}
-
-			// *** parse disl classes ***
-			// - create snippets
-			// - create static context methods
-
-			ClassParser parser = new ClassParser();
-
-			for (InputStream classIS : dislClasses) {
-				parser.parse(classIS);
-			}
-
-			// initialize processors
-			Map<Type, Proc> processors = parser.getProcessors();
-			for (Proc processor : processors.values()) {
-				processor.init(parser.getAllLocalVars());
-			}
-
-			List<Snippet> parsedSnippets = parser.getSnippets();
-
-			// initialize snippets
-			for (Snippet snippet : parsedSnippets) {
-				snippet.init(parser.getAllLocalVars(), processors,
-						exceptHandler, useDynamicBypass);
-			}
-			
-			// initialize snippets variable
-			//  - this is set when everything is ok
-			//  - it serves as initialization flag
-			snippets = parsedSnippets;
-
-			// TODO put checker here
-			// like After should catch normal and abnormal execution
-			// but if you are using After (AfterThrowing) with BasicBlockMarker
-			// or InstructionMarker that doesn't throw exception, then it is
-			// probably something, you don't want - so just warn the user
-			// also it can warn about unknown opcodes if you let user to
-			// specify this for InstructionMarker
+		// transfomer output propagation
+		if (transformer == null) {
+			transPropagateUninstr = false;
+		} else {
+			transPropagateUninstr = 
+					transformer.propagateUninstrumentedClasses();
 		}
-		catch (DiSLException e) {
-			
-			reportError(e);
 
-			// signal error
-			throw e;
+		// *** prepare exclusion set ***
+		exclusionSet = ExclusionSet.prepare();
+
+		// *** load disl classes ***
+		List<InputStream> dislClasses = ClassByteLoader.loadDiSLClasses();
+
+		if (dislClasses == null) {
+			throw new InitException("Cannot load DiSL classes. Please set"
+					+ " the property " + ClassByteLoader.PROP_DISL_CLASSES
+					+ " or supply jar with DiSL classes"
+					+ " and proper manifest");
 		}
+
+		// *** parse disl classes ***
+		// - create snippets
+		// - create static context methods
+
+		ClassParser parser = new ClassParser();
+
+		for (InputStream classIS : dislClasses) {
+			parser.parse(classIS);
+		}
+
+		// initialize processors
+		Map<Type, Proc> processors = parser.getProcessors();
+		for (Proc processor : processors.values()) {
+			processor.init(parser.getAllLocalVars());
+		}
+
+		List<Snippet> parsedSnippets = parser.getSnippets();
+
+		// initialize snippets
+		for (Snippet snippet : parsedSnippets) {
+			snippet.init(parser.getAllLocalVars(), processors, exceptHandler,
+					useDynamicBypass);
+		}
+
+		// initialize snippets variable
+		// - this is set when everything is ok
+		// - it serves as initialization flag
+		snippets = parsedSnippets;
+
+		// TODO put checker here
+		// like After should catch normal and abnormal execution
+		// but if you are using After (AfterThrowing) with BasicBlockMarker
+		// or InstructionMarker that doesn't throw exception, then it is
+		// probably something, you don't want - so just warn the user
+		// also it can warn about unknown opcodes if you let user to
+		// specify this for InstructionMarker
 	}
 	
 	private Transformer resolveTransformer() throws ManifestInfoException,
@@ -193,21 +181,6 @@ public class DiSL {
 		}
 	}
 
-	private void reportError(DiSLException e) {
-
-		// error report for user (input) errors
-		System.err.println("DiSL error: " + e.getMessage());
-		Throwable cause = e.getCause();
-		while (cause != null) {
-			System.err.println("  Inner error: " + cause.getMessage());
-			cause = cause.getCause();
-		}
-		
-		if(debug) {
-			e.printStackTrace();
-		}
-	}
-	
 	/**
 	 * Instruments a method in a class.
 	 * 
@@ -380,77 +353,66 @@ public class DiSL {
 	}
 	
 	// this method is thread safe after initialization
-	private InstrumentedClass instrument(ClassNode classNode)
+	private InstrumentedClass instrumentClass(ClassNode classNode)
 			throws DiSLException {
 
-		// report DiSL exception within our code
-		try {
+		// NOTE that class can be changed without changing any method
+		// - adding thread local fields
+		boolean classChanged = false;
 
-			// NOTE that class can be changed without changing any method
-			//  - adding thread local fields
-			boolean classChanged = false;
+		// track changed methods for code merging
+		Set<String> changedMethods = new HashSet<String>();
 
-			// track changed methods for code merging
-			Set<String> changedMethods = new HashSet<String>();
+		// instrument all methods in a class
+		for (MethodNode methodNode : classNode.methods) {
 
-			// instrument all methods in a class
-			for (MethodNode methodNode : classNode.methods) {
+			boolean methodChanged = instrumentMethod(classNode, methodNode);
 
-				boolean methodChanged = instrumentMethod(classNode, methodNode);
-				
-				// add method to the set of changed methods
-				if(methodChanged) {
-					changedMethods.add(methodNode.name + methodNode.desc);
-					classChanged = true;
-				}
+			// add method to the set of changed methods
+			if (methodChanged) {
+				changedMethods.add(methodNode.name + methodNode.desc);
+				classChanged = true;
 			}
-			
-			// instrument thread local fields
-			if (Type.getInternalName(Thread.class).equals(classNode.name)) {
-				
-				Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
-				
-				// dynamic bypass
-				if(useDynamicBypass) {
-					
-					// prepare dynamic bypass thread local variable
-					ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass",
-							Type.getType(boolean.class), false);
-					tlv.setDefaultValue(0);
-					insertTLVs.add(tlv);
-				}
-				
-				// get all thread locals in snippets
-				for(Snippet snippet : snippets) {
-					insertTLVs.addAll(snippet.getCode().getReferencedTLVs());
-				}
-
-				if(! insertTLVs.isEmpty()) {
-				
-					// instrument fields
-					ClassNode cnWithFields = new ClassNode(Opcodes.ASM4);
-					classNode.accept(new TLVInserter(cnWithFields, insertTLVs));
-	
-					// replace original code with instrumented one
-					classNode = cnWithFields;
-					classChanged = true;
-				}
-			}
-			
-			// we have changed some methods
-			if(classChanged) {
-				return new InstrumentedClass(classNode, changedMethods);
-			}
-			
-			return null;
 		}
-		catch (DiSLException e) {
-			
-			reportError(e);
 
-			// signal error
-			throw e;
+		// instrument thread local fields
+		if (Type.getInternalName(Thread.class).equals(classNode.name)) {
+
+			Set<ThreadLocalVar> insertTLVs = new HashSet<ThreadLocalVar>();
+
+			// dynamic bypass
+			if (useDynamicBypass) {
+
+				// prepare dynamic bypass thread local variable
+				ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass",
+						Type.getType(boolean.class), false);
+				tlv.setDefaultValue(0);
+				insertTLVs.add(tlv);
+			}
+
+			// get all thread locals in snippets
+			for (Snippet snippet : snippets) {
+				insertTLVs.addAll(snippet.getCode().getReferencedTLVs());
+			}
+
+			if (!insertTLVs.isEmpty()) {
+
+				// instrument fields
+				ClassNode cnWithFields = new ClassNode(Opcodes.ASM4);
+				classNode.accept(new TLVInserter(cnWithFields, insertTLVs));
+
+				// replace original code with instrumented one
+				classNode = cnWithFields;
+				classChanged = true;
+			}
 		}
+
+		// we have changed some methods
+		if (classChanged) {
+			return new InstrumentedClass(classNode, changedMethods);
+		}
+
+		return null;
 	}
 
 	public byte[] instrument(byte[] classAsBytes) throws DiSLException {
@@ -490,7 +452,7 @@ public class DiSL {
 		classReader.accept(classNode, ClassReader.SKIP_DEBUG
 				| ClassReader.EXPAND_FRAMES);
 		
-		InstrumentedClass instrClass = instrument(classNode);
+		InstrumentedClass instrClass = instrumentClass(classNode);
 		
 		if(instrClass == null) {
 			

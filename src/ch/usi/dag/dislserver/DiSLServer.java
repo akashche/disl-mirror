@@ -1,5 +1,6 @@
 package ch.usi.dag.dislserver;
 
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,16 +59,37 @@ public abstract class DiSLServer {
 				}
 			}
 			
-		} catch (Exception e) {
+		}
+		catch (IOException e) {
+			reportError(new DiSLServerException(e));
+		}
+		catch (Throwable e) {
 			reportError(e);
 		}
 	}
 
+	private static void reportInnerError(Throwable e) {
+	
+		Throwable cause = e.getCause();
+		
+		while (cause != null && cause.getMessage() != null) {
+			System.err.println("  Inner error: " + cause.getMessage());
+			cause = cause.getCause();
+		}
+	}
+	
 	public static void reportError(Throwable e) {
 
 		if (e instanceof DiSLException) {
 
-			// Error reported in DiSL - just exit
+			System.err.println("DiSL error: " + e.getMessage());
+			
+			reportInnerError(e);
+			
+			if(debug) {
+				e.printStackTrace();
+			}
+
 			return;
 		}
 
@@ -75,13 +97,17 @@ public abstract class DiSLServer {
 
 			System.err.println("DiSL server error: " + e.getMessage());
 
+			reportInnerError(e);
+			
 			if (debug) {
 				e.printStackTrace();
 			}
+			
+			return;
 		}
 
 		// fatal exception (unexpected)
-		System.err.println("Fatal error: " + e.getMessage());
+		System.err.println("DiSL fatal error: " + e.getMessage());
 
 		e.printStackTrace();
 	}
