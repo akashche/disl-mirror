@@ -55,14 +55,19 @@ static char host_name[1024];
 static char port_number[6]; // including final 0
 
 static jvmtiEnv * jvmti_env;
-static jrawMonitorID global_lock;
+
+// TODO remove
+static buffer redispatch_buff;
+
+// *** protected by connection lock ***
+static jrawMonitorID connection_lock;
 
 // communication connection socket descriptor
 // access must be protected by monitor
 static int connection = 0;
 
-// TODO remove
-static buffer redispatch_buff;
+// *** protected by redisp lock ***
+static jrawMonitorID redisp_lock;
 
 // this number decides maximum number of threads writing
 // also it determines memory consumption because buffers are left allocated
@@ -70,7 +75,17 @@ static buffer redispatch_buff;
 // cannot be static const :(
 #define DISP_BUFF_COUNT 512
 
+// last used dispatch buffer - searching for free one starts from here
+static volatile int redispatch_buff_last_used = 0;
+
+// array of disptach buffers
 static volatile buffer redispatch_buffs[DISP_BUFF_COUNT];
+
+// *** protected by objectid lock ***
+static jrawMonitorID objectid_lock;
+
+// first available id for object taging
+static jlong avail_object_tag = 1;
 
 // ******************* Buffer routines *******************
 
@@ -508,13 +523,13 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 
 static void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
 
-	enter_critical_section(jvmti_env, global_lock);
+	enter_critical_section(jvmti_env, connection_lock);
 	{
 
 		close_connection(connection);
 
 	}
-	exit_critical_section(jvmti_env, global_lock);
+	exit_critical_section(jvmti_env, connection_lock);
 }
 
 // ******************* JVMTI entry method *******************
@@ -544,10 +559,13 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	memset(&cap, 0, sizeof(cap));
 
 	// class hook
-	cap.can_generate_all_class_hook_events = 1;
+	cap.can_generate_all_class_hook_events = TRUE;
 
 	// timer
-	cap.can_get_current_thread_cpu_time = 1;
+	cap.can_get_current_thread_cpu_time = TRUE;
+
+	// tagging objects
+	cap.can_tag_objects = TRUE;
 
 	error = (*jvmti_env)->AddCapabilities(jvmti_env, &cap);
 	check_jvmti_error(jvmti_env, error,
@@ -569,7 +587,13 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE, JVMTI_EVENT_VM_DEATH, NULL);
 	check_jvmti_error(jvmti_env, error, "Cannot create jvm death hook");
 
-	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "agent data", &global_lock);
+	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "connection socket", &connection_lock);
+	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");
+
+	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "dispatch buffers", &redisp_lock);
+	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");
+
+	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "object tags", &objectid_lock);
 	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");
 
 	// read options (port/hostname)
@@ -650,14 +674,45 @@ void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
 
 void pack_object(buffer * buff, jobject to_send, JNIEnv * jni_env) {
 
-	// TODO
-	pack_int(buff, 0);
+	jlong obj_tag;
+
+	enter_critical_section(jvmti_env, objectid_lock);
+	{
+
+		jvmtiError error;
+
+		// get object tag
+		error = (*jvmti_env)->GetTag(jvmti_env, to_send, &obj_tag);
+		check_jvmti_error(jvmti_env, error, "Cannot get object tag");
+
+		// set object tag
+		if(obj_tag == 0) {
+
+			obj_tag = avail_object_tag;
+			++avail_object_tag;
+
+			// TODO add class id - note that class can miss the class id
+
+			error = (*jvmti_env)->SetTag(jvmti_env, to_send, obj_tag);
+			check_jvmti_error(jvmti_env, error, "Cannot set object tag");
+		}
+
+	}
+	exit_critical_section(jvmti_env, objectid_lock);
+
+	pack_long(buff, obj_tag);
 }
 
 void pack_class(buffer * buff, jclass to_send, JNIEnv * jni_env) {
 
 	// TODO
-	pack_int(buff, 0);
+	// class id is set for jclass on the same spot as for object
+	// class id can have object id also
+
+	// TODO
+	// if class does not have id, you have to find it by name and class loader
+
+	pack_int(buff, 1);
 }
 
 void analysis_start(buffer * buff, jint analysis_method_id) {
@@ -675,19 +730,20 @@ void analysis_end(buffer * buff) {
 	// it is possible to put it into the bigger shared buffer and send it
 	// when it is full
 
-	enter_critical_section(jvmti_env, global_lock);
+	enter_critical_section(jvmti_env, connection_lock);
 	{
 
 		send_data(connection, buff->buff, buff->occupied);
 
 	}
-	exit_critical_section(jvmti_env, global_lock);
+	exit_critical_section(jvmti_env, connection_lock);
 
 	buffer_clean(buff);
 }
 
 jint acquire_redispatch_buff() {
 
+	// TODO protect with redisp_lock
 	// TODO find buffer with available FALSE
 	return 0;
 }

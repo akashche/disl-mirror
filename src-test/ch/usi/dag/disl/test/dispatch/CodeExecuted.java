@@ -56,15 +56,21 @@ public class CodeExecuted extends RemoteAnalysis {
 			throw new RuntimeException("Incorect transfer of String");
 		}
 
-		// note that id will be 0 if this is first transfer of Object
-		if(! (o instanceof ObjectId) || ((ObjectId)o).getId() != 0) {
+		long objID = ((ObjectId)o).getId();
+		
+		// object id should be non 0
+		if(! (o instanceof ObjectId) || objID == 0) {
 			throw new RuntimeException("Incorect transfer of Object");
 		}
 		
-		// note that id will be 0 if this is first transfer of Class
-		if(! c.equals(InvalidClass.class) || classID != 0) {
+		System.out.println("Received object id: " + objID);
+		
+		// class id should be non 0
+		if(! c.equals(InvalidClass.class) || classID == 0) {
 			throw new RuntimeException("Incorect transfer of Class");
 		}
+		
+		System.out.println("Received class id: " + classID);
 	}
 	
 	public void atExit() {

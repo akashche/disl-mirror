@@ -134,7 +134,7 @@ public class AnalysisHandler implements RequestHandler {
 
 		// read id only
 		if(argClass.equals(Object.class)) {
-			return new ObjectId(is.readInt());
+			return new ObjectId(is.readLong());
 		}
 		
 		// return "invalid" class object

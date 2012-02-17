@@ -2,24 +2,26 @@ package ch.usi.dag.dislreserver.objectid;
 
 public class ObjectId {
 
-	int id;
+	long id;
 
-	public ObjectId(int id) {
+	public ObjectId(long id) {
 		super();
 		this.id = id;
 	}
 
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
+	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + id;
+		result = prime * result + (int) (id ^ (id >>> 32));
 		return result;
 	}
 
+	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
