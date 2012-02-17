@@ -37,9 +37,6 @@ static char port_number[6]; // including final 0
 
 static jvmtiEnv * jvmti_env;
 
-// TODO remove
-static buffer redispatch_buff;
-
 // *** Protected by connection lock ***
 
 static jrawMonitorID connection_lock;
@@ -48,7 +45,7 @@ static jrawMonitorID connection_lock;
 // access must be protected by monitor
 static int connection = 0;
 
-// *** Protected by redisp lock ***
+// *** Protected by buff lock ***
 
 static jrawMonitorID buff_lock;
 
@@ -56,13 +53,15 @@ static jrawMonitorID buff_lock;
 // also it determines memory consumption because buffers are left allocated
 // BUFF_COUNT * MAX_BUFF_SIZE (defined in buffer.h) says max memory occupation
 // cannot be static const :(
+// note that if this number will not be sufficient, threads will start cycling
+// in acquire_buff
 #define BUFF_COUNT 512
 
 // last used dispatch buffer - searching for free one starts from here
 static volatile int buff_last_used = 0;
 
 // array of disptach buffers
-static volatile buffer buffs[BUFF_COUNT];
+static buffer buffs[BUFF_COUNT];
 
 // *** Protected by objectid lock ***
 
@@ -115,16 +114,54 @@ void parse_agent_options(char *options) {
 
 jint acquire_buff() {
 
-	// TODO protect with redisp_lock
-	// TODO find buffer with available FALSE
-	return 0;
+	const jint INVALID_ID = -1;
+
+	jint buff_id = INVALID_ID;
+
+	// bigger while could help with starvation
+	//  - thread will be rescheduled faster
+	//  - depends on lock implementation of course
+	while(buff_id == INVALID_ID) {
+
+		enter_critical_section(jvmti_env, buff_lock);
+		{
+
+			// find an available buffer
+
+			jint try_id = buff_last_used; // we should find a buffer easier
+
+			// end if we have valid id or we are on the starting position
+			do {
+
+				// get buffer
+				if(buffs[try_id].available == TRUE) {
+
+					buff_id = try_id;
+					buffs[try_id].available = FALSE;
+					buff_last_used = buff_id;
+				}
+
+				// shift to another buffer
+				try_id = (try_id + 1) % BUFF_COUNT;
+			}
+			while(buff_id == INVALID_ID && try_id != buff_last_used);
+
+		}
+		exit_critical_section(jvmti_env, buff_lock);
+	}
+
+	return buff_id;
 }
 
 void release_buff(jint buff_pos) {
 
-	// TODO cleans buffer
+	// no need for locking
 
-	// TODO set available to TRUE
+	// clean buffer
+	buffer_clean(&buffs[buff_pos]);
+
+	// and made it available
+	buffs[buff_pos].available = TRUE;
 }
 
 void send_buffer(buffer * b) {
@@ -138,7 +175,6 @@ void send_buffer(buffer * b) {
 	exit_critical_section(jvmti_env, connection_lock);
 }
 
-// TODO use this for all non-interaction sends
 void send_buffer_schedule(buffer * buff) {
 
 	// TODO
@@ -242,17 +278,18 @@ int open_connection() {
 
 void close_connection(int conn) {
 
-	// TODO use acquire_buff, release_buff
+	// send close message
+	jint buff_id = acquire_buff();
 
-	buffer close_buff;
+	buffer * buff = &buffs[buff_id];
 
-	buffer_init(&close_buff);
+	// msg id
+	pack_int(buff, MSG_CLOSE);
 
-	pack_int(&close_buff, MSG_CLOSE);
+	// force sending of messages in buffer
+	send_buffer_force(buff);
 
-	send_buffer_force(&close_buff);
-
-	buffer_free(&close_buff);
+	release_buff(buff_id);
 
 	// close socket
 	close(conn);
@@ -260,7 +297,7 @@ void close_connection(int conn) {
 
 // ******************* MSG types *******************
 
-// TODO unify in header - instrumentation
+// TODO unify in header - instrumentation + locking or change to buffer send
 // ******************* instrumentation routines
 
 typedef struct {
@@ -459,17 +496,19 @@ void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 
 void JNICALL jvmti_callback_class_object_free_hook(jvmtiEnv *jvmti_env, jlong tag) {
 
-	// TODO use acquire_buff, release_buff
-	buffer obj_free_buff;
+	// send obj free message
+	jint buff_id = acquire_buff();
 
-	buffer_init(&obj_free_buff);
+	buffer * buff = &buffs[buff_id];
 
-	pack_int(&obj_free_buff, MSG_OBJFREE);
-	pack_long(&obj_free_buff, tag);
+	// msg id
+	pack_int(buff, MSG_OBJFREE);
+	// obj tag
+	pack_long(buff, tag);
 
-	send_buffer_schedule(&obj_free_buff);
+	send_buffer_schedule(buff);
 
-	buffer_free(&obj_free_buff);
+	release_buff(buff_id);
 }
 
 // ******************* SHUTDOWN callback *******************
@@ -478,7 +517,10 @@ void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni
 
 	close_connection(connection);
 
-	// TODO free all global buffers
+	int i; // C99 needed :)
+	for(i = 0; i < BUFF_COUNT; ++i) {
+		buffer_free(&buffs[i]);
+	}
 }
 
 // ******************* JVMTI entry method *******************
@@ -554,7 +596,10 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 
 	connection = open_connection();
 
-	buffer_init(&redispatch_buff);
+	int i; // C99 needed :)
+	for(i = 0; i < BUFF_COUNT; ++i) {
+		buffer_alloc(&buffs[i]);
+	}
 
 	return 0;
 }
@@ -572,19 +617,10 @@ void analysis_start(buffer * buff, jint analysis_method_id) {
 
 void analysis_end(buffer * buff) {
 
-	// TODO you don't need to necessarily send the buffer
-	// it is possible to put it into the bigger shared buffer and send it
-	// when it is full
-
 	send_buffer_schedule(buff);
-
-	// TODO not necessary with release_buff working
-	buffer_clean(buff);
 }
 
 // ******************* REDispatch methods *******************
-
-// TODO add session id buffers
 
 JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
   (JNIEnv * jni_env, jclass this_class, jint analysis_method_id) {
@@ -592,7 +628,7 @@ JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
 	// get session id - free buffer pos
 	jint sid = acquire_buff();
 
-	analysis_start(&redispatch_buff, analysis_method_id);
+	analysis_start(&buffs[sid], analysis_method_id);
 
 	// find free buffer
 	return sid;
@@ -601,7 +637,7 @@ JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
   (JNIEnv * jni_env, jclass this_class, jint sid) {
 
-	analysis_end(&redispatch_buff);
+	analysis_end(&buffs[sid]);
 
 	release_buff(sid);
 }
@@ -609,65 +645,65 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean
   (JNIEnv * jni_env, jclass this_class, jint sid, jboolean to_send) {
 
-	pack_boolean(&redispatch_buff, to_send);
+	pack_boolean(&buffs[sid], to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendByte
   (JNIEnv * jni_env, jclass this_class, jint sid, jbyte to_send) {
 
-	pack_byte(&redispatch_buff, to_send);
+	pack_byte(&buffs[sid], to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendChar
   (JNIEnv * jni_env, jclass this_class, jint sid, jchar to_send) {
 
-	pack_char(&redispatch_buff, to_send);
+	pack_char(&buffs[sid], to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendShort
   (JNIEnv * jni_env, jclass this_class, jint sid, jshort to_send) {
 
-	pack_short(&redispatch_buff, to_send);
+	pack_short(&buffs[sid], to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendInt
   (JNIEnv * jni_env, jclass this_class, jint sid, jint to_send) {
 
-	pack_int(&redispatch_buff, to_send);
+	pack_int(&buffs[sid], to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendLong
   (JNIEnv * jni_env, jclass this_class, jint sid, jlong to_send) {
 
-	pack_long(&redispatch_buff, to_send);
+	pack_long(&buffs[sid], to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloatAsInt
   (JNIEnv * jni_env, jclass this_class, jint sid, jint to_send) {
 
-	pack_int(&redispatch_buff, to_send);
+	pack_int(&buffs[sid], to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong
   (JNIEnv * jni_env, jclass this_class, jint sid, jlong to_send) {
 
-	pack_long(&redispatch_buff, to_send);
+	pack_long(&buffs[sid], to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendString
   (JNIEnv * jni_env, jclass this_class, jint sid, jstring to_send) {
 
-	pack_string_java(&redispatch_buff, to_send, jni_env);
+	pack_string_java(&buffs[sid], to_send, jni_env);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
   (JNIEnv * jni_env, jclass this_class, jint sid, jobject to_send) {
 
-	pack_object(&redispatch_buff, to_send);
+	pack_object(&buffs[sid], to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendClass
   (JNIEnv * jni_env, jclass this_class, jint sid, jclass to_send) {
 
-	pack_class(&redispatch_buff, to_send);
+	pack_class(&buffs[sid], to_send);
 }

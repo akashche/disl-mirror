@@ -18,7 +18,7 @@ typedef struct {
 
 // ******************* Buffer routines *******************
 
-void buffer_init(buffer * b) {
+void buffer_alloc(buffer * b) {
 
 	b->buff = (unsigned char *) malloc(INIT_BUFF_SIZE);
 	b->capacity = INIT_BUFF_SIZE;
@@ -64,7 +64,7 @@ void buffer_clean(buffer * b) {
 	if(b->capacity > MAX_BUFF_SIZE) {
 
 		buffer_free(b);
-		buffer_init(b);
+		buffer_alloc(b);
 	}
 
 	b->occupied = 0;
