@@ -13,6 +13,7 @@
 
 #include "jvmtihelper.h"
 #include "comm.h"
+#include "classparser.h"
 
 #include "dislagent.h"
 
@@ -373,6 +374,49 @@ static message instrument_class(const char * classname,
 	return result;
 }
 
+// load super class
+static void load_super_class(JNIEnv* jni_env, const char* name,
+		const unsigned char* class_data) {
+
+	// allocate space for constant pool table
+	unsigned short cpcount = read_short(class_data, CPCOUNT_OFFSET);
+	unsigned int * cp = (unsigned int *) malloc(sizeof(int) * cpcount);
+
+	// construct constant pool and calculate offset of super class identifier
+	unsigned int class_off = get_constant_pool(class_data, cp, cpcount) + 4;
+	unsigned int class_idx = read_short(class_data, class_off);
+
+	if (class_idx == 0) {
+		// loading or redefining java.lang.Object, which has no super class
+		// free constant pool table
+		free((void *) cp);
+		cp = NULL;
+		return;
+	}
+
+	// super class name in constant pool, which is a "UTF-8"-type entry
+	unsigned int name_idx = read_short(class_data, cp[class_idx] + 1);
+	unsigned int name_off = cp[name_idx];
+	unsigned int name_len = read_short(class_data, name_off + 1);
+	char * name_src = ((char *) class_data) + name_off + 3;
+
+	// free constant pool table
+	free((void *) cp);
+	cp = NULL;
+
+	// copy super class name from constant pool
+	char * buf = (char *) malloc(name_len + 1);
+	strncpy(buf, name_src, name_len);
+	buf[name_len] = '\0';
+
+	// load super class
+	(*jni_env)->FindClass(jni_env, buf);
+
+	// free super class name
+	free((void *) buf);
+	buf = NULL;
+}
+
 // ******************* CLASS LOAD callback *******************
 
 static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
@@ -389,6 +433,10 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 		printf("Instrumenting unknown class\n");
 	}
 #endif
+
+	if (jni_env != NULL) {
+		load_super_class(jni_env, name, class_data);
+	}
 
 	// ask the server to instrument
 	message instrclass = instrument_class(name, class_data, class_data_len);
