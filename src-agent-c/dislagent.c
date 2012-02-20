@@ -56,7 +56,7 @@ static connection_item * conn_list = NULL;
 
 // ******************* Helper routines *******************
 
-message create_message(const unsigned char * control,
+static message create_message(const unsigned char * control,
 		jint control_size, const unsigned char * classcode,
 		jint classcode_size) {
 
@@ -98,7 +98,7 @@ message create_message(const unsigned char * control,
 	return result;
 }
 
-void free_message(message * msg) {
+static void free_message(message * msg) {
 
 	if(msg->control != NULL) {
 
@@ -117,7 +117,7 @@ void free_message(message * msg) {
 	}
 }
 
-void parse_agent_options(char *options) {
+static void parse_agent_options(char *options) {
 
 	static const char PORT_DELIM = ':';
 
@@ -158,7 +158,7 @@ void parse_agent_options(char *options) {
 // ******************* Communication routines *******************
 
 // sends class over network
-void send_msg(connection_item * conn, message * msg) {
+static void send_msg(connection_item * conn, message * msg) {
 
 #ifdef DEBUG
 	printf("Sending - control: %d, code: %d ... ", msg->control_size, msg->classcode_size);
@@ -186,7 +186,7 @@ void send_msg(connection_item * conn, message * msg) {
 }
 
 // receives class from network
-message rcv_msg(connection_item * conn) {
+static message rcv_msg(connection_item * conn) {
 
 #ifdef DEBUG
 	printf("Receiving ");
@@ -232,7 +232,7 @@ message rcv_msg(connection_item * conn) {
 	return create_message(control, -control_size, classcode, -classcode_size);
 }
 
-connection_item * open_connection() {
+static connection_item * open_connection() {
 
 	// get host address
 	struct addrinfo * addr;
@@ -266,7 +266,7 @@ connection_item * open_connection() {
 	return conn;
 }
 
-void close_connection(connection_item * conn) {
+static void close_connection(connection_item * conn) {
 
 	// prepare close message - could be done more efficiently (this is nicer)
 	// close message has zeros as lengths
@@ -286,7 +286,7 @@ void close_connection(connection_item * conn) {
 }
 
 // get an available connection, create one if no one is available
-connection_item * acquire_connection() {
+static connection_item * acquire_connection() {
 
 #ifdef DEBUG
 	printf("Acquiring connection ... ");
@@ -330,7 +330,7 @@ connection_item * acquire_connection() {
 }
 
 // make the socket available again
-void release_connection(connection_item * conn) {
+static void release_connection(connection_item * conn) {
 
 #ifdef DEBUG
 	printf("Releasing connection ... ");
@@ -351,7 +351,7 @@ void release_connection(connection_item * conn) {
 }
 
 // instruments remotely
-message instrument_class(const char * classname,
+static message instrument_class(const char * classname,
 		const unsigned char * classcode, jint classcode_size) {
 
 	// get available connection
