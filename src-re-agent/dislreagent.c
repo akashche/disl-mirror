@@ -72,7 +72,7 @@ static jlong avail_object_tag = 1;
 
 // ******************* Helper routines *******************
 
-void parse_agent_options(char *options) {
+static void parse_agent_options(char *options) {
 
 	static const char PORT_DELIM = ':';
 
@@ -112,7 +112,7 @@ void parse_agent_options(char *options) {
 
 // ******************* Advanced buffer routines *******************
 
-jint acquire_buff() {
+static jint acquire_buff() {
 
 	const jint INVALID_ID = -1;
 
@@ -153,7 +153,7 @@ jint acquire_buff() {
 	return buff_id;
 }
 
-void release_buff(jint buff_pos) {
+static void release_buff(jint buff_pos) {
 
 	// no need for locking
 
@@ -164,7 +164,7 @@ void release_buff(jint buff_pos) {
 	buffs[buff_pos].available = TRUE;
 }
 
-void send_buffer(buffer * b) {
+static void send_buffer(buffer * b) {
 
 	// protect send
 	enter_critical_section(jvmti_env, connection_lock);
@@ -175,87 +175,22 @@ void send_buffer(buffer * b) {
 	exit_critical_section(jvmti_env, connection_lock);
 }
 
-void send_buffer_schedule(buffer * buff) {
+static void send_buffer_schedule(buffer * buff) {
 
 	// TODO
 	send_buffer(buff);
 }
 
 // sends all buffered messages and this buffer
-void send_buffer_force(buffer * buff) {
+static void send_buffer_force(buffer * buff) {
 
 	// TODO
 	send_buffer(buff);
 }
 
-// ******************* Advanced packing routines *******************
-
-void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
-
-	// get string length
-	jsize str_len = (*jni_env)->GetStringUTFLength(jni_env, to_send);
-
-	// get string data as utf-8
-	const char * str = (*jni_env)->GetStringUTFChars(jni_env, to_send, NULL);
-	check_std_error(str == NULL, TRUE, "Cannot get string from java");
-
-	// check if the size is sendable
-	int size_fits = str_len < UINT16_MAX;
-	check_std_error(size_fits, FALSE, "Java string is too big for sending");
-
-	// send string
-	pack_string_utf8(buff, str, str_len);
-
-	// release string
-	(*jni_env)->ReleaseStringUTFChars(jni_env, to_send, str);
-}
-
-void pack_object(buffer * buff, jobject to_send) {
-
-	jlong obj_tag;
-
-	enter_critical_section(jvmti_env, objectid_lock);
-	{
-
-		jvmtiError error;
-
-		// get object tag
-		error = (*jvmti_env)->GetTag(jvmti_env, to_send, &obj_tag);
-		check_jvmti_error(jvmti_env, error, "Cannot get object tag");
-
-		// set object tag
-		if(obj_tag == 0) {
-
-			obj_tag = avail_object_tag;
-			++avail_object_tag;
-
-			// TODO add class id - note that class can miss the class id
-
-			error = (*jvmti_env)->SetTag(jvmti_env, to_send, obj_tag);
-			check_jvmti_error(jvmti_env, error, "Cannot set object tag");
-		}
-
-	}
-	exit_critical_section(jvmti_env, objectid_lock);
-
-	pack_long(buff, obj_tag);
-}
-
-void pack_class(buffer * buff, jclass to_send) {
-
-	// TODO
-	// class id is set for jclass on the same spot as for object
-	// class id can have object id also
-
-	// TODO
-	// if class does not have id, you have to find it by name and class loader
-
-	pack_int(buff, 1);
-}
-
 // ******************* Connection routines *******************
 
-int open_connection() {
+static int open_connection() {
 
 	// get host address
 	struct addrinfo * addr;
@@ -276,7 +211,7 @@ int open_connection() {
 	return sockfd;
 }
 
-void close_connection(int conn) {
+static void close_connection(int conn) {
 
 	// send close message
 	jint buff_id = acquire_buff();
@@ -295,147 +230,90 @@ void close_connection(int conn) {
 	close(conn);
 }
 
-// ******************* MSG types *******************
+// ******************* Advanced packing routines *******************
 
-// TODO unify in header - instrumentation + locking or change to buffer send
-// ******************* instrumentation routines
+static void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
 
-typedef struct {
-	jint control_size;
-	jint classcode_size;
-	const unsigned char * control;
-	const unsigned char * classcode;
-} class_as_bytes;
+	// get string length
+	jsize str_len = (*jni_env)->GetStringUTFLength(jni_env, to_send);
 
-class_as_bytes create_class_as_bytes(const unsigned char * control,
-		jint control_size, const unsigned char * classcode,
-		jint classcode_size) {
+	// get string data as utf-8
+	const char * str = (*jni_env)->GetStringUTFChars(jni_env, to_send, NULL);
+	check_std_error(str == NULL, TRUE, "Cannot get string from java");
 
-	class_as_bytes result;
+	// check if the size is sendable
+	int size_fits = str_len < UINT16_MAX;
+	check_std_error(size_fits, FALSE, "Java string is too big for sending");
 
-	// control + size
-	result.control_size = control_size;
+	// send string
+	pack_string_utf8(buff, str, str_len);
 
-	// contract: (if control_size <= 0) pointer may be copied (stolen)
-	if(control != NULL && control_size > 0) {
-
-		// without ending 0
-		unsigned char * buffcn = (unsigned char *) malloc(control_size);
-		memcpy(buffcn, control, control_size);
-		result.control = buffcn;
-	}
-	else {
-
-		result.control = control;
-		result.control_size = abs(control_size);
-	}
-
-	// class code + size
-	result.classcode_size = classcode_size;
-
-	// contract: (if classcode_size <= 0) pointer may be copied (stolen)
-	if(classcode != NULL && classcode_size > 0) {
-
-		unsigned char * buffcc = (unsigned char *) malloc(classcode_size);
-		memcpy(buffcc, classcode, classcode_size);
-		result.classcode = buffcc;
-	}
-	else {
-
-		result.classcode = classcode;
-		result.classcode_size = abs(classcode_size);
-	}
-
-	return result;
+	// release string
+	(*jni_env)->ReleaseStringUTFChars(jni_env, to_send, str);
 }
 
-void free_class_as_bytes(class_as_bytes * cab) {
+static jlong get_objectid(jobject obj) {
 
-	if(cab->control != NULL) {
+	jlong obj_id;
 
-		// cast because of const
-		free((void *) cab->control);
-		cab->control = NULL;
-		cab->control_size = 0;
+	enter_critical_section(jvmti_env, objectid_lock);
+	{
+
+		jvmtiError error;
+
+		// get object tag
+		error = (*jvmti_env)->GetTag(jvmti_env, obj, &obj_id);
+		check_jvmti_error(jvmti_env, error, "Cannot get object tag");
+
+		// set object tag
+		if(obj_id == 0) {
+
+			obj_id = avail_object_tag;
+			++avail_object_tag;
+
+			// TODO add class id - note that class can miss the class id
+
+			error = (*jvmti_env)->SetTag(jvmti_env, obj, obj_id);
+			check_jvmti_error(jvmti_env, error, "Cannot set object tag");
+		}
+
 	}
+	exit_critical_section(jvmti_env, objectid_lock);
 
-	if(cab->classcode != NULL) {
-
-		// cast because of const
-		free((void *) cab->classcode);
-		cab->classcode = NULL;
-		cab->classcode_size = 0;
-	}
+	return obj_id;
 }
 
-// sends class over network
-void send_instr(int sockfd, class_as_bytes * class_to_send) {
+static void pack_object(buffer * buff, jobject to_send) {
 
-	// send control and code size first and then data
-
-	// convert to java representation
-	jint nctls = htonl(class_to_send->control_size);
-	send_data(sockfd, &nctls, sizeof(jint));
-
-	// convert to java representation
-	jint nccs = htonl(class_to_send->classcode_size);
-	send_data(sockfd, &nccs, sizeof(jint));
-
-	send_data(sockfd, class_to_send->control, class_to_send->control_size);
-
-	send_data(sockfd, class_to_send->classcode, class_to_send->classcode_size);
+	pack_long(buff, get_objectid(to_send));
 }
 
-// receives class from network
-class_as_bytes rcv_instr(int sockfd) {
+static void pack_class(buffer * buff, jclass to_send) {
 
-	// receive control and code size first and then data
+	// TODO
+	// class id is set for jclass on the same spot as for object
+	// class id can have object id also
 
-	// *** receive control size - jint
-	jint nctls;
-	rcv_data(sockfd, &nctls, sizeof(jint));
+	// TODO
+	// if class does not have id, you have to find it by name and class loader
 
-	// convert from java representation
-	jint control_size = ntohl(nctls);
-
-	// *** receive class code size - jint
-	jint nccs;
-	rcv_data(sockfd, &nccs, sizeof(jint));
-
-	// convert from java representation
-	jint classcode_size = ntohl(nccs);
-
-	// *** receive control string
-	// +1 - ending 0 - useful when printed - normally error msgs here
-	unsigned char * control = (unsigned char *) malloc(control_size + 1);
-
-	rcv_data(sockfd, control, control_size);
-
-	// terminate string
-	control[control_size] = '\0';
-
-	// *** receive class code
-	unsigned char * classcode = (unsigned char *) malloc(classcode_size);
-
-	rcv_data(sockfd, classcode, classcode_size);
-
-	// negative length - create_message adopts pointers
-	return create_class_as_bytes(control, -control_size, classcode, -classcode_size);
+	pack_int(buff, 1);
 }
 
-// instruments remotely
-class_as_bytes instrument(const char * classname,
-		const unsigned char * classcode, jint classcode_size) {
+// ******************* analysis helper methods *******************
 
-	// crate class data
-	class_as_bytes cas = create_class_as_bytes((const unsigned char *)classname,
-			strlen(classname), classcode, classcode_size);
+static void analysis_start(buffer * buff, jint analysis_method_id) {
 
-	send_instr(connection, &cas);
+	// send analysis msg
+	pack_int(buff, MSG_ANALYZE);
 
-	class_as_bytes result = rcv_instr(connection);
+	// send method id
+	pack_int(buff, analysis_method_id);
+}
 
-	return result;
+static void analysis_end(buffer * buff) {
+
+	send_buffer_schedule(buff);
 }
 
 // TODO lock each callback using global lock
@@ -448,48 +326,33 @@ void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 		const unsigned char* class_data, jint* new_class_data_len,
 		unsigned char** new_class_data) {
 
-	// TODO remove
-	return;
+	// TODO instrument analysis classes
 
-	// TODO
-	// if java.lang.object || analysis
-	// send proper msg type
+	// *** send class info ***
 
-	// TODO send class to instr + manage result
+	// send new class message
+	jint buff_id = acquire_buff();
 
-	// ask the server to instrument
-	class_as_bytes instrclass = instrument(name, class_data, class_data_len);
+	buffer * buff = &buffs[buff_id];
 
-	// error on the server
-	if (instrclass.control_size > 0) {
+	// retrieve class loader id
+	// TODO - we need mechanism to identify loader
+	jlong loader_id = 0;
 
-		// classname contains the error message
+	// msg id
+	pack_int(buff, MSG_NEW_CLASS);
+	// class name
+	pack_string_utf8(buff, name, strlen(name));
+	// class loader id
+	pack_long(buff, loader_id);
+	// class code length
+	pack_int(buff, class_data_len);
+	// class code
+	pack_bytes(buff, class_data, class_data_len);
 
-		fprintf(stderr, "%sError occurred in the remote instrumentation server\n",
-				ERR_PREFIX);
-		fprintf(stderr, "   Reason: %s\n", instrclass.control);
-		exit(ERR_SERVER);
-	}
+	send_buffer_schedule(buff);
 
-	// instrumented class recieved (0 - means no instrumentation done)
-	if(instrclass.classcode_size > 0) {
-
-		// give to JVM the instrumented class
-		unsigned char *new_class_space;
-
-		// let JVMTI to allocate the mem for the new class
-		jvmtiError err = (*jvmti_env)->Allocate(jvmti_env, (jlong)instrclass.classcode_size, &new_class_space);
-		check_jvmti_error(jvmti_env, err, "Cannot allocate memory for the instrumented class");
-
-		memcpy(new_class_space, instrclass.classcode, instrclass.classcode_size);
-
-		// set the newly instrumented class + len
-		*(new_class_data_len) = instrclass.classcode_size;
-		*(new_class_data) = new_class_space;
-
-		// free memory
-		free_class_as_bytes(&instrclass);
-	}
+	release_buff(buff_id);
 }
 
 // ******************* OBJECT FREE callback *******************
@@ -502,8 +365,8 @@ void JNICALL jvmti_callback_class_object_free_hook(jvmtiEnv *jvmti_env, jlong ta
 	buffer * buff = &buffs[buff_id];
 
 	// msg id
-	pack_int(buff, MSG_OBJFREE);
-	// obj tag
+	pack_int(buff, MSG_OBJ_FREE);
+	// obj id
 	pack_long(buff, tag);
 
 	send_buffer_schedule(buff);
@@ -517,7 +380,7 @@ void JNICALL jvmti_callback_class_vm_death_hook(jvmtiEnv *jvmti_env, JNIEnv* jni
 
 	close_connection(connection);
 
-	int i; // C99 needed :)
+	int i; // C99 needed for initialization in cycle
 	for(i = 0; i < BUFF_COUNT; ++i) {
 		buffer_free(&buffs[i]);
 	}
@@ -602,22 +465,6 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	}
 
 	return 0;
-}
-
-// ******************* analysis helper methods *******************
-
-void analysis_start(buffer * buff, jint analysis_method_id) {
-
-	// send analysis msg
-	pack_int(buff, MSG_ANALYZE);
-
-	// send method id
-	pack_int(buff, analysis_method_id);
-}
-
-void analysis_end(buffer * buff) {
-
-	send_buffer_schedule(buff);
 }
 
 // ******************* REDispatch methods *******************

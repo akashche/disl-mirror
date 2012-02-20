@@ -65,7 +65,6 @@ public class AnalysisHandler implements RequestHandler {
 			// *** invoke method ***
 
 			try {
-				// TODO re ! support static methods
 				analysisMethod.invoke(amh.getAnalysisInstance(), args.toArray());
 			}
 			catch(InvocationTargetException e) {
