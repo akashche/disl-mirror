@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../src-agent-c/jvmtihelper.h"
+
 // initial buffer size
 static const size_t INIT_BUFF_SIZE = 512;
 // max limit buffer size

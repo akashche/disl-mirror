@@ -16,8 +16,8 @@
 #include "../src-agent-c/comm.h"
 
 // TODO remove when trunk merged
-static const int TRUE = 1;
-static const int FALSE = 0;
+#define TRUE 1
+#define FALSE 0
 
 #include "messagetype.h"
 #include "buffer.h"
@@ -36,6 +36,7 @@ static char host_name[1024];
 static char port_number[6]; // including final 0
 
 static jvmtiEnv * jvmti_env;
+static int jvm_started = FALSE;
 
 // *** Protected by connection lock ***
 
@@ -252,7 +253,7 @@ static void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
 	(*jni_env)->ReleaseStringUTFChars(jni_env, to_send, str);
 }
 
-static jlong get_objectid(jobject obj) {
+static jlong get_object_id(jobject obj) {
 
 	jlong obj_id;
 
@@ -285,7 +286,7 @@ static jlong get_objectid(jobject obj) {
 
 static void pack_object(buffer * buff, jobject to_send) {
 
-	pack_long(buff, get_objectid(to_send));
+	pack_long(buff, get_object_id(to_send));
 }
 
 static void pack_class(buffer * buff, jclass to_send) {
@@ -302,18 +303,47 @@ static void pack_class(buffer * buff, jclass to_send) {
 
 // ******************* analysis helper methods *******************
 
-static void analysis_start(buffer * buff, jint analysis_method_id) {
+static jint analysis_start(jint analysis_method_id) {
 
-	// send analysis msg
+	// TODO
+	/*
+	static __thread jint thread_id = 0;
+	static __thread jint preferred_buffer;
+
+	if(thread_id == 0) {
+		thread_id = get_new_thread_id();
+		acquire_buff()
+	}
+	else {
+		acquire_buff(preferred_buffer)
+	}
+	*/
+
+	// preferred_buffer = sid;
+
+	// get session id - free buffer pos
+	jint sid = acquire_buff();
+
+	buffer * buff = &buffs[sid];
+
+	// analysis msg
 	pack_int(buff, MSG_ANALYZE);
 
-	// send method id
+	// method id
 	pack_int(buff, analysis_method_id);
+
+	// TODO
+	// thread id
+	//pack_int(buff, thread_id);
+
+	return sid;
 }
 
-static void analysis_end(buffer * buff) {
+static void analysis_end(jint sid) {
 
-	send_buffer_schedule(buff);
+	send_buffer_schedule(&buffs[sid]);
+
+	release_buff(sid);
 }
 
 // TODO lock each callback using global lock
@@ -336,8 +366,17 @@ void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 	buffer * buff = &buffs[buff_id];
 
 	// retrieve class loader id
-	// TODO - we need mechanism to identify loader
+
 	jlong loader_id = 0;
+	if(loader != NULL) { // bootstrap class loader has id 0 - invalid object id
+		if(jvm_started) {
+			loader_id = get_object_id(loader);
+			// TODO test highest bit + update class loader number from reference
+		}
+		else {
+			// TODO generate id
+		}
+	}
 
 	// msg id
 	pack_int(buff, MSG_NEW_CLASS);
@@ -372,6 +411,13 @@ void JNICALL jvmti_callback_class_object_free_hook(jvmtiEnv *jvmti_env, jlong ta
 	send_buffer_schedule(buff);
 
 	release_buff(buff_id);
+}
+
+// ******************* START callback *******************
+
+void JNICALL jvmti_callback_class_vm_start_hook(jvmtiEnv *jvmti_env, JNIEnv* jni_env) {
+
+	jvm_started = TRUE;
 }
 
 // ******************* SHUTDOWN callback *******************
@@ -430,6 +476,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	(void) memset(&callbacks, 0, sizeof(callbacks));
 
 	callbacks.ClassFileLoadHook = &jvmti_callback_class_file_load_hook;
+	callbacks.VMStart = &jvmti_callback_class_vm_start_hook;
 	callbacks.VMDeath = &jvmti_callback_class_vm_death_hook;
 	callbacks.ObjectFree = &jvmti_callback_class_object_free_hook;
 
@@ -438,6 +485,9 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 
 	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
 	check_jvmti_error(jvmti_env, error, "Cannot set class load hook");
+
+	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE, JVMTI_EVENT_VM_START, NULL);
+	check_jvmti_error(jvmti_env, error, "Cannot set jvm start hook");
 
 	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE, JVMTI_EVENT_VM_DEATH, NULL);
 	check_jvmti_error(jvmti_env, error, "Cannot set jvm death hook");
@@ -472,21 +522,13 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
   (JNIEnv * jni_env, jclass this_class, jint analysis_method_id) {
 
-	// get session id - free buffer pos
-	jint sid = acquire_buff();
-
-	analysis_start(&buffs[sid], analysis_method_id);
-
-	// find free buffer
-	return sid;
+	return analysis_start(analysis_method_id);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
   (JNIEnv * jni_env, jclass this_class, jint sid) {
 
-	analysis_end(&buffs[sid]);
-
-	release_buff(sid);
+	analysis_end(sid);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean

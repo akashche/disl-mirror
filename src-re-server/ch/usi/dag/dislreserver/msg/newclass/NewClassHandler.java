@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import ch.usi.dag.dislreserver.classid.ClassIdResolver;
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 
@@ -19,8 +20,8 @@ public class NewClassHandler implements RequestHandler {
 			int classCodeLength = is.readInt();
 			byte[] classCode = new byte[classCodeLength];
 			is.readFully(classCode);
-		
-			// TODO re ! new class
+			
+			ClassIdResolver.addNewClass(className, classLoderId, classCode);
 		}
 		catch (IOException e) {
 			throw new DiSLREServerException(e);
