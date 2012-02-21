@@ -67,6 +67,12 @@ public class AnalysisResolver {
 	static {
 		
 		// TODO re - should not be hardcoded
+		// TODO re - after is not hardcoded change build
+		// in compile-dislre-server
+		//  - no dependency
+		// in compile-test
+		//  - ,compile-dislre-server,compile-dislre-dispatch should be added to dependences
+		//  - no first javac
 		
 		try {
 			Object i = CodeExecuted.class.newInstance();
