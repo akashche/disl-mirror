@@ -10,8 +10,8 @@
 #include <stdlib.h>
 
 // true/false consts
-static const int TRUE = 1;
-static const int FALSE = 0;
+#define TRUE 1
+#define FALSE 0
 
 // error nums
 #define ERR_JVMTI 10001
