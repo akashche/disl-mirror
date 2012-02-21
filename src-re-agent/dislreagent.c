@@ -50,16 +50,18 @@ static int connection = 0;
 
 static jrawMonitorID buff_lock;
 
-// this number decides maximum number of threads writing
+#define BUFF_INVALID_ID -1
+
+// last used dispatch buffer - searching for free one starts from here
+static volatile int buff_last_used = 0;
+
+// this number decides maximum number of threads sending data
 // also it determines memory consumption because buffers are left allocated
 // BUFF_COUNT * MAX_BUFF_SIZE (defined in buffer.h) says max memory occupation
 // cannot be static const :(
 // note that if this number will not be sufficient, threads will start cycling
 // in acquire_buff
 #define BUFF_COUNT 512
-
-// last used dispatch buffer - searching for free one starts from here
-static volatile int buff_last_used = 0;
 
 // array of disptach buffers
 static buffer buffs[BUFF_COUNT];
@@ -70,6 +72,11 @@ static jrawMonitorID objectid_lock;
 
 // first available id for object taging
 static jlong avail_object_tag = 1;
+
+// *** thread locals ***
+
+static __thread jint thread_id = 0;
+static __thread jint preferred_buffer = BUFF_INVALID_ID;
 
 // ******************* Helper routines *******************
 
@@ -113,45 +120,59 @@ static void parse_agent_options(char *options) {
 
 // ******************* Advanced buffer routines *******************
 
-static jint acquire_buff() {
+// NOTE: this method should not be called without lock
+static inline int __acquire_avail_buff(jint try_id) {
 
-	const jint INVALID_ID = -1;
+	// get buffer if it is available
+	if(buffs[try_id].available == TRUE) {
 
-	jint buff_id = INVALID_ID;
-
-	// bigger while could help with starvation
-	//  - thread will be rescheduled faster
-	//  - depends on lock implementation of course
-	while(buff_id == INVALID_ID) {
-
-		enter_critical_section(jvmti_env, buff_lock);
-		{
-
-			// find an available buffer
-
-			jint try_id = buff_last_used; // we should find a buffer easier
-
-			// end if we have valid id or we are on the starting position
-			do {
-
-				// get buffer
-				if(buffs[try_id].available == TRUE) {
-
-					buff_id = try_id;
-					buffs[try_id].available = FALSE;
-					buff_last_used = buff_id;
-				}
-
-				// shift to another buffer
-				try_id = (try_id + 1) % BUFF_COUNT;
-			}
-			while(buff_id == INVALID_ID && try_id != buff_last_used);
-
-		}
-		exit_critical_section(jvmti_env, buff_lock);
+		buffs[try_id].available = FALSE;
+		return try_id;
 	}
 
+	return BUFF_INVALID_ID;
+}
+
+static jint _acquire_buff(jint preferred_buff) {
+
+	jint buff_id = BUFF_INVALID_ID;
+
+	enter_critical_section(jvmti_env, buff_lock);
+	{
+
+		// try preferred buffer
+
+		if(preferred_buff != BUFF_INVALID_ID) {
+			buff_id = __acquire_avail_buff(preferred_buff);
+		}
+
+		// find an available buffer
+
+		// this can cycle "really long" if all buffers are taken
+		// BUFF_COUNT should be set to "high number"
+		//  - help: consider how many threads should have locked buffer
+		//          and over-dimension it
+		while(buff_id == BUFF_INVALID_ID) {
+
+			// buff_last_used is volatile, so frequent updates can do some
+			// performance troubles, but
+			// 1) with preferred buffer, this while should not be called so
+			//    often
+			// 2) because BUFF_COUNT should be much higher then
+			buff_last_used = (buff_last_used + 1) % BUFF_COUNT;
+
+			buff_id = __acquire_avail_buff(buff_last_used);
+		}
+
+	}
+	exit_critical_section(jvmti_env, buff_lock);
+
 	return buff_id;
+}
+
+// TODO remove - all acquire_buff should be with preferred buffer
+static jint acquire_buff() {
+	return _acquire_buff(BUFF_INVALID_ID);
 }
 
 static void release_buff(jint buff_pos) {
@@ -307,9 +328,6 @@ static jint analysis_start(jint analysis_method_id) {
 
 	// TODO
 	/*
-	static __thread jint thread_id = 0;
-	static __thread jint preferred_buffer;
-
 	if(thread_id == 0) {
 		thread_id = get_new_thread_id();
 		acquire_buff()
