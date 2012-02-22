@@ -495,8 +495,8 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	callbacks.ClassFileLoadHook = &jvmti_callback_class_file_load_hook;
 	callbacks.VMDeath = &jvmti_callback_class_vm_death_hook;
 
-	(*jvmti_env)->SetEventCallbacks(jvmti_env, &callbacks,
-			(jint) sizeof(callbacks));
+	error = (*jvmti_env)->SetEventCallbacks(jvmti_env, &callbacks, (jint) sizeof(callbacks));
+	check_jvmti_error(jvmti_env, error, "Cannot set callbacks");
 
 	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
 	check_jvmti_error(jvmti_env, error, "Cannot set class load hook");
