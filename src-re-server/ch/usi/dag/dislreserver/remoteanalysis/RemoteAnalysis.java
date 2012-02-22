@@ -1,6 +1,6 @@
 package ch.usi.dag.dislreserver.remoteanalysis;
 
-import ch.usi.dag.dislreserver.objectid.ObjectId;
+import ch.usi.dag.dislreserver.netreference.NetReference;
 
 /**
  * Each analysis evaluated remotely have to implement this interface.
@@ -18,11 +18,11 @@ import ch.usi.dag.dislreserver.objectid.ObjectId;
  * On the client, the int argument should not be transmitted (should be ignored).
  * Valid only in the case, that transmission is done manually.
  * 
- * Object argument on the client will contain ObjectId instnace.
+ * Object argument on the client will contain NetReference instnace.
  */
 public abstract class RemoteAnalysis {
 
 	public abstract void atExit();
 	
-	public abstract void objectFree(ObjectId objectId);
+	public abstract void objectFree(NetReference netRef);
 }

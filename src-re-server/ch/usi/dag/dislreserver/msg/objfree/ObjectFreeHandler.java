@@ -7,7 +7,7 @@ import java.util.Set;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver;
-import ch.usi.dag.dislreserver.objectid.ObjectId;
+import ch.usi.dag.dislreserver.netreference.NetReference;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 
@@ -17,12 +17,12 @@ public class ObjectFreeHandler implements RequestHandler {
 			throws DiSLREServerException {
 		
 		try {
-			ObjectId objectId = new ObjectId(is.readLong());
+			NetReference netRef = new NetReference(is.readLong());
 				
 			Set<RemoteAnalysis> raSet = AnalysisResolver.getAllAnalyses();
 			
 			for(RemoteAnalysis ra : raSet) {
-				ra.objectFree(objectId);
+				ra.objectFree(netRef);
 			}
 		
 		} catch (IOException e) {

@@ -1,18 +1,22 @@
-package ch.usi.dag.dislreserver.objectid;
+package ch.usi.dag.dislreserver.netreference;
 
-public class ObjectId {
+// should be in sync with net_reference on the client
+public class NetReference {
 
+	// TODO re ! rename
 	long id;
 
-	public ObjectId(long id) {
+	public NetReference(long id) {
 		super();
 		this.id = id;
 	}
 
-	public long getId() {
+	public long getObjectId() {
+		// TODO re ! should contain only object id
 		return id;
 	}
 
+	// TODO re ! should hash only object id
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -21,6 +25,7 @@ public class ObjectId {
 		return result;
 	}
 
+	// TODO re ! should equal only object id
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -29,7 +34,7 @@ public class ObjectId {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		ObjectId other = (ObjectId) obj;
+		NetReference other = (NetReference) obj;
 		if (id != other.id)
 			return false;
 		return true;

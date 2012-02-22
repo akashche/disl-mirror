@@ -31,6 +31,22 @@ static const int ERR_SERVER = 10003;
 static const char * DEFAULT_HOST = "localhost";
 static const char * DEFAULT_PORT = "11218";
 
+// should be in sync with NetReference on the server
+typedef struct {
+	u_int64_t object_id : 40;
+	u_int32_t class_id : 23;
+	unsigned char spec : 1;
+} net_reference;
+
+// compile time check
+// thx: http://www.jaggersoft.com/pubs/CVu11_3.html
+#define COMPILE_TIME_ASSERT(expr)   \
+    char constraint[(expr) - 1]
+
+// net_reference and jlong are not compatible
+// compilation error - you have to fix the size of net_reference struct
+COMPILE_TIME_ASSERT(sizeof(net_reference) == sizeof(jlong));
+
 // port and name of the instrumentation server
 static char host_name[1024];
 static char port_number[6]; // including final 0
@@ -39,6 +55,7 @@ static jvmtiEnv * jvmti_env;
 static int jvm_started = FALSE;
 
 // *** Protected by connection lock ***
+// cannot require other locks while holding this
 
 static jrawMonitorID connection_lock;
 
@@ -47,10 +64,9 @@ static jrawMonitorID connection_lock;
 static int connection = 0;
 
 // *** Protected by buff lock ***
+// cannot require other locks while holding this
 
 static jrawMonitorID buff_lock;
-
-#define BUFF_INVALID_ID -1
 
 // last used dispatch buffer - searching for free one starts from here
 static volatile int buff_last_used = 0;
@@ -66,17 +82,18 @@ static volatile int buff_last_used = 0;
 // array of disptach buffers
 static buffer buffs[BUFF_COUNT];
 
-// *** Protected by objectid lock ***
+// *** Protected by tagging lock ***
+// can require other locks while holding this
 
-static jrawMonitorID objectid_lock;
+static jrawMonitorID tagging_lock;
 
 // first available id for object taging
 static jlong avail_object_tag = 1;
+static jint avail_class_tag = 1;
 
-// *** thread locals ***
+// *** Thread locals ***
 
-static __thread jint thread_id = 0;
-static __thread jint preferred_buffer = BUFF_INVALID_ID;
+static __thread jlong thread_id = 0;
 
 // ******************* Helper routines *******************
 
@@ -120,33 +137,16 @@ static void parse_agent_options(char *options) {
 
 // ******************* Advanced buffer routines *******************
 
-// NOTE: this method should not be called without lock
-static inline int __acquire_avail_buff(jint try_id) {
+static jint acquire_buff() {
 
-	// get buffer if it is available
-	if(buffs[try_id].available == TRUE) {
-
-		buffs[try_id].available = FALSE;
-		return try_id;
-	}
-
-	return BUFF_INVALID_ID;
-}
-
-static jint _acquire_buff(jint preferred_buff) {
+	const int BUFF_INVALID_ID = -1;
 
 	jint buff_id = BUFF_INVALID_ID;
 
 	enter_critical_section(jvmti_env, buff_lock);
 	{
-
-		// try preferred buffer
-
-		if(preferred_buff != BUFF_INVALID_ID) {
-			buff_id = __acquire_avail_buff(preferred_buff);
-		}
-
 		// find an available buffer
+		jint try_id = buff_last_used;
 
 		// this can cycle "really long" if all buffers are taken
 		// BUFF_COUNT should be set to "high number"
@@ -154,25 +154,20 @@ static jint _acquire_buff(jint preferred_buff) {
 		//          and over-dimension it
 		while(buff_id == BUFF_INVALID_ID) {
 
-			// buff_last_used is volatile, so frequent updates can do some
-			// performance troubles, but
-			// 1) with preferred buffer, this while should not be called so
-			//    often
-			// 2) because BUFF_COUNT should be much higher then
-			buff_last_used = (buff_last_used + 1) % BUFF_COUNT;
+			try_id = (try_id + 1) % BUFF_COUNT;
 
-			buff_id = __acquire_avail_buff(buff_last_used);
+			if(buffs[try_id].available == TRUE) {
+
+				buffs[try_id].available = FALSE;
+				buff_id = try_id;
+				buff_last_used = try_id;
+			}
 		}
 
 	}
 	exit_critical_section(jvmti_env, buff_lock);
 
 	return buff_id;
-}
-
-// TODO remove - all acquire_buff should be with preferred buffer
-static jint acquire_buff() {
-	return _acquire_buff(BUFF_INVALID_ID);
 }
 
 static void release_buff(jint buff_pos) {
@@ -252,6 +247,105 @@ static void close_connection(int conn) {
 	close(conn);
 }
 
+// ******************* Object id routines *******************
+
+// convert net reference to jlong
+// because we know they have same size
+//  - check is after the net_reference struct definition
+static inline jlong net_reference_to_jlong(net_reference net_ref) {
+
+	net_reference * net_ref_ptr = &net_ref;
+	jlong * jlong_ptr = (jlong *)net_ref_ptr;
+	return *(jlong_ptr);
+}
+
+// convert jlong to reference id
+// because we know they have same size
+//  - check is after the net_reference struct definition
+static inline net_reference jlong_to_net_reference(jlong jl) {
+
+	jlong * jlong_ptr = &jl;
+	net_reference * net_ref_ptr = (net_reference *)jlong_ptr;
+	return *(net_ref_ptr);
+}
+
+// do not call me unless you know what you do
+// should be called only with tagging_lock
+// does not perform tagging
+static inline jlong _get_net_reference(jobject obj) {
+
+	jlong net_ref_jl;
+
+	jvmtiError error = (*jvmti_env)->GetTag(jvmti_env, obj, &net_ref_jl);
+	check_jvmti_error(jvmti_env, error, "Cannot get object tag");
+
+	return net_ref_jl;
+}
+
+// do not call me unless you know what you do
+// should be called only with tagging_lock
+static inline jint _get_class_id_for_class(jclass klass) {
+
+	// TODO
+	//avail_class_tag;
+
+	return 1;
+}
+
+// do not call me unless you know what you do
+// should be called only with tagging_lock
+static inline jint _get_class_id_for_object(jobject obj, JNIEnv * jni_env) {
+
+	jclass klass = (*jni_env)->GetObjectClass(jni_env, obj);
+
+	return _get_class_id_for_class(klass);
+}
+
+// do not call me unless you know what you do
+// should be called only with tagging_lock
+static inline jlong _set_net_reference(jobject obj, JNIEnv * jni_env) {
+
+	net_reference net_ref;
+
+	// assign new object id
+	net_ref.object_id = avail_object_tag;
+	++avail_object_tag;
+
+	// resolve class id
+	net_ref.class_id = _get_class_id_for_object(obj, jni_env);
+
+	// add 0 spec flag
+	net_ref.spec = 0;
+
+	jlong net_ref_jl = net_reference_to_jlong(net_ref);
+
+	jvmtiError error = (*jvmti_env)->SetTag(jvmti_env, obj, net_ref_jl);
+	check_jvmti_error(jvmti_env, error, "Cannot set object tag");
+
+	return net_ref_jl;
+}
+
+static jlong get_net_reference_as_jlong(jobject obj, JNIEnv * jni_env) {
+
+	jlong net_ref_jl;
+
+	enter_critical_section(jvmti_env, tagging_lock);
+	{
+
+		// get object tag
+		net_ref_jl = _get_net_reference(obj);
+
+		// set object tag
+		if(net_ref_jl == 0) {
+			net_ref_jl = _set_net_reference(obj, jni_env);
+		}
+
+	}
+	exit_critical_section(jvmti_env, tagging_lock);
+
+	return net_ref_jl;
+}
+
 // ******************* Advanced packing routines *******************
 
 static void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
@@ -274,43 +368,14 @@ static void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
 	(*jni_env)->ReleaseStringUTFChars(jni_env, to_send, str);
 }
 
-static jlong get_object_id(jobject obj) {
+static void pack_object(buffer * buff, jobject to_send, JNIEnv * jni_env) {
 
-	jlong obj_id;
-
-	enter_critical_section(jvmti_env, objectid_lock);
-	{
-
-		jvmtiError error;
-
-		// get object tag
-		error = (*jvmti_env)->GetTag(jvmti_env, obj, &obj_id);
-		check_jvmti_error(jvmti_env, error, "Cannot get object tag");
-
-		// set object tag
-		if(obj_id == 0) {
-
-			obj_id = avail_object_tag;
-			++avail_object_tag;
-
-			// TODO add class id - note that class can miss the class id
-
-			error = (*jvmti_env)->SetTag(jvmti_env, obj, obj_id);
-			check_jvmti_error(jvmti_env, error, "Cannot set object tag");
-		}
-
-	}
-	exit_critical_section(jvmti_env, objectid_lock);
-
-	return obj_id;
+	pack_long(buff, get_net_reference_as_jlong(to_send, jni_env));
 }
 
-static void pack_object(buffer * buff, jobject to_send) {
+static void pack_class(buffer * buff, jclass to_send, JNIEnv * jni_env) {
 
-	pack_long(buff, get_object_id(to_send));
-}
-
-static void pack_class(buffer * buff, jclass to_send) {
+	// TODO tag class - set highest bit
 
 	// TODO
 	// class id is set for jclass on the same spot as for object
@@ -324,20 +389,12 @@ static void pack_class(buffer * buff, jclass to_send) {
 
 // ******************* analysis helper methods *******************
 
-static jint analysis_start(jint analysis_method_id) {
+static jint analysis_start(jint analysis_method_id, JNIEnv * jni_env) {
 
-	// TODO
-	/*
 	if(thread_id == 0) {
-		thread_id = get_new_thread_id();
-		acquire_buff()
-	}
-	else {
-		acquire_buff(preferred_buffer)
-	}
-	*/
 
-	// preferred_buffer = sid;
+		// TODO tag thread - set highest bit
+	}
 
 	// get session id - free buffer pos
 	jint sid = acquire_buff();
@@ -352,7 +409,7 @@ static jint analysis_start(jint analysis_method_id) {
 
 	// TODO
 	// thread id
-	//pack_int(buff, thread_id);
+	//pack_long(buff, thread_id);
 
 	return sid;
 }
@@ -368,7 +425,7 @@ static void analysis_end(jint sid) {
 
 // ******************* CLASS LOAD callback *******************
 
-void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
+void JNICALL jvmti_callback_class_file_load_hook(jvmtiEnv *jvmti_env,
 		JNIEnv* jni_env, jclass class_being_redefined, jobject loader,
 		const char* name, jobject protection_domain, jint class_data_len,
 		const unsigned char* class_data, jint* new_class_data_len,
@@ -388,7 +445,7 @@ void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 	jlong loader_id = 0;
 	if(loader != NULL) { // bootstrap class loader has id 0 - invalid object id
 		if(jvm_started) {
-			loader_id = get_object_id(loader);
+			loader_id = get_net_reference_as_jlong(loader, jni_env);
 			// TODO test highest bit + update class loader number from reference
 		}
 		else {
@@ -498,8 +555,8 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	callbacks.VMDeath = &jvmti_callback_class_vm_death_hook;
 	callbacks.ObjectFree = &jvmti_callback_class_object_free_hook;
 
-	(*jvmti_env)->SetEventCallbacks(jvmti_env, &callbacks,
-			(jint) sizeof(callbacks));
+	error = (*jvmti_env)->SetEventCallbacks(jvmti_env, &callbacks, (jint) sizeof(callbacks));
+	check_jvmti_error(jvmti_env, error, "Cannot set callbacks");
 
 	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
 	check_jvmti_error(jvmti_env, error, "Cannot set class load hook");
@@ -519,7 +576,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "buffers", &buff_lock);
 	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");
 
-	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "object tags", &objectid_lock);
+	error = (*jvmti_env)->CreateRawMonitor(jvmti_env, "object tags", &tagging_lock);
 	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");
 
 	// read options (port/hostname)
@@ -540,7 +597,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
   (JNIEnv * jni_env, jclass this_class, jint analysis_method_id) {
 
-	return analysis_start(analysis_method_id);
+	return analysis_start(analysis_method_id, jni_env);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
@@ -606,11 +663,11 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendString
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
   (JNIEnv * jni_env, jclass this_class, jint sid, jobject to_send) {
 
-	pack_object(&buffs[sid], to_send);
+	pack_object(&buffs[sid], to_send, jni_env);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendClass
   (JNIEnv * jni_env, jclass this_class, jint sid, jclass to_send) {
 
-	pack_class(&buffs[sid], to_send);
+	pack_class(&buffs[sid], to_send, jni_env);
 }

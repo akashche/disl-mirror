@@ -11,7 +11,7 @@ import java.util.List;
 import ch.usi.dag.dislreserver.classid.InvalidClass;
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver.AnalysisMethodHolder;
-import ch.usi.dag.dislreserver.objectid.ObjectId;
+import ch.usi.dag.dislreserver.netreference.NetReference;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 
 public class AnalysisHandler implements RequestHandler {
@@ -36,7 +36,7 @@ public class AnalysisHandler implements RequestHandler {
 						+ amh.getAnalysisMethod().getName()
 						+ "()");
 			}
-			
+						
 			// *** retrieve method argument values ***
 			
 			Method analysisMethod = amh.getAnalysisMethod();
@@ -133,7 +133,7 @@ public class AnalysisHandler implements RequestHandler {
 
 		// read id only
 		if(argClass.equals(Object.class)) {
-			return new ObjectId(is.readLong());
+			return new NetReference(is.readLong());
 		}
 		
 		// return "invalid" class object

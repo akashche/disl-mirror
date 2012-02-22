@@ -46,4 +46,7 @@ public class REDispatch {
 		
 		sendDoubleAsLong(sid, Double.doubleToLongBits(doubleToSend));
 	}
+	
+	// TODO re - basic type array support
+	//  - send length + all values in for cycle
 }

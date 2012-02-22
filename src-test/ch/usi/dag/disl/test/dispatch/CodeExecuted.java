@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.test.dispatch;
 
 import ch.usi.dag.dislreserver.classid.InvalidClass;
-import ch.usi.dag.dislreserver.objectid.ObjectId;
+import ch.usi.dag.dislreserver.netreference.NetReference;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
 
 // NOTE that this class is not static anymore
@@ -50,27 +50,27 @@ public class CodeExecuted extends RemoteAnalysis {
 	}
 	
 	public static void testingAdvanced(String s, Object o, Class<?> c,
-			int classID) {
+			int classId) {
 
 		if(! s.equals("ěščřžýáíé")) {
 			throw new RuntimeException("Incorect transfer of String");
 		}
 
-		long objID = ((ObjectId)o).getId();
+		long objId = ((NetReference)o).getObjectId();
 		
 		// object id should be non 0
-		if(! (o instanceof ObjectId) || objID == 0) {
+		if(! (o instanceof NetReference) || objId == 0) {
 			throw new RuntimeException("Incorect transfer of Object");
 		}
 		
-		System.out.println("Received object id: " + objID);
+		System.out.println("Received object id: " + objId);
 		
 		// class id should be non 0
-		if(! c.equals(InvalidClass.class) || classID == 0) {
+		if(! c.equals(InvalidClass.class) || classId == 0) {
 			throw new RuntimeException("Incorect transfer of Class");
 		}
 		
-		System.out.println("Received class id: " + classID);
+		System.out.println("Received class id: " + classId);
 	}
 	
 	public void atExit() {
@@ -78,8 +78,8 @@ public class CodeExecuted extends RemoteAnalysis {
 				+ totalExecutedBytecodes);
 	}
 
-	public void objectFree(ObjectId objectId) {
-		System.out.println("Object free for id " + objectId.getId());
+	public void objectFree(NetReference netRef) {
+		System.out.println("Object free for id " + netRef.getObjectId());
 		
 	}
 }
