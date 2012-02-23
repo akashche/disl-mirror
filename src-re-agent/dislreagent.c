@@ -31,22 +31,6 @@ static const int ERR_SERVER = 10003;
 static const char * DEFAULT_HOST = "localhost";
 static const char * DEFAULT_PORT = "11218";
 
-// should be in sync with NetReference on the server
-typedef struct {
-	u_int64_t object_id : 40;
-	u_int32_t class_id : 23;
-	unsigned char spec : 1;
-} net_reference;
-
-// compile time check
-// thx: http://www.jaggersoft.com/pubs/CVu11_3.html
-#define COMPILE_TIME_ASSERT(expr)   \
-    char constraint[(expr) - 1]
-
-// net_reference and jlong are not compatible
-// compilation error - you have to fix the size of net_reference struct
-COMPILE_TIME_ASSERT(sizeof(net_reference) == sizeof(jlong));
-
 // port and name of the instrumentation server
 static char host_name[1024];
 static char port_number[6]; // including final 0
@@ -88,8 +72,8 @@ static buffer buffs[BUFF_COUNT];
 static jrawMonitorID tagging_lock;
 
 // first available id for object taging
-static jlong avail_object_tag = 1;
-static jint avail_class_tag = 1;
+static jlong avail_object_id = 1;
+static jint avail_class_id = 1;
 
 // *** Thread locals ***
 
@@ -247,103 +231,225 @@ static void close_connection(int conn) {
 	close(conn);
 }
 
-// ******************* Object id routines *******************
+// ******************* Net reference get/set routines *******************
 
-// convert net reference to jlong
-// because we know they have same size
-//  - check is after the net_reference struct definition
-static inline jlong net_reference_to_jlong(net_reference net_ref) {
+// should be in sync with NetReference on the server
 
-	net_reference * net_ref_ptr = &net_ref;
-	jlong * jlong_ptr = (jlong *)net_ref_ptr;
-	return *(jlong_ptr);
+// format of net reference looks like this
+// HIGHEST (1 bit spec, 23 bits class id, 40 bits object id)
+// bit field not used because there is no guarantee of alignment
+
+// NOTE you have to update masks in functions also
+static const u_int8_t OBJECT_ID_POS = 0;
+static const u_int8_t CLASS_ID_POS = 40;
+static const u_int8_t SPEC_POS = 63;
+
+// get bits from "from" with size "pos_mask" lowest bit starting on position
+// "low_start" (from 0)
+static inline u_int64_t get_bits(u_int64_t from, u_int64_t pos_mask,
+		u_int8_t low_start) {
+
+	// mask it
+	u_int64_t bits_only = from & pos_mask;
+	// move it to proper position
+	return bits_only >> low_start;
 }
 
-// convert jlong to reference id
-// because we know they have same size
-//  - check is after the net_reference struct definition
-static inline net_reference jlong_to_net_reference(jlong jl) {
+// set bits "bits" to "to" with max length "len_mask" lowest bit starting on
+// position "low_start" (from 0)
+static inline void set_bits(u_int64_t * to, u_int64_t bits,
+		u_int64_t len_mask, u_int8_t low_start) {
 
-	jlong * jlong_ptr = &jl;
-	net_reference * net_ref_ptr = (net_reference *)jlong_ptr;
-	return *(net_ref_ptr);
+	// enforce length
+	u_int64_t bits_len = bits & len_mask;
+	// move it to position
+	u_int64_t bits_pos = bits_len << low_start;
+	// set
+	*to |= bits_pos;
 }
 
-// do not call me unless you know what you do
+static inline jlong net_ref_get_object_id(jlong net_ref) {
+
+	static const u_int64_t OBJECT_ID_POS_MASK = 0xFFFFFFFFFF;
+	return get_bits(net_ref, OBJECT_ID_POS_MASK, OBJECT_ID_POS);
+}
+
+static inline jint net_ref_get_class_id(jlong net_ref) {
+
+	static const u_int64_t CLASS_ID_POS_MASK = 0x7FFFFF0000000000;
+	return get_bits(net_ref, CLASS_ID_POS_MASK, CLASS_ID_POS);
+}
+
+static inline unsigned char net_ref_get_spec(jlong net_ref) {
+
+	static const u_int64_t SPEC_POS_MASK = 0x8000000000000000;
+	return get_bits(net_ref, SPEC_POS_MASK, SPEC_POS);
+}
+
+static inline void net_ref_set_object_id(jlong * net_ref, jlong object_id) {
+
+	static const u_int64_t OBJECT_ID_LEN_MASK = 0xFFFFFFFFFF;
+	set_bits((u_int64_t *)net_ref, object_id, OBJECT_ID_LEN_MASK, OBJECT_ID_POS);
+}
+
+static inline void net_ref_set_class_id(jlong * net_ref, jint class_id) {
+
+	static const u_int64_t CLASS_ID_LEN_MASK = 0x7FFFFF;
+	set_bits((u_int64_t *)net_ref, class_id, CLASS_ID_LEN_MASK, CLASS_ID_POS);
+}
+
+static inline void net_ref_set_spec(jlong * net_ref, unsigned char spec) {
+
+	static const u_int64_t SPEC_LEN_MASK = 0x1;
+	set_bits((u_int64_t *)net_ref, spec, SPEC_LEN_MASK, SPEC_POS);
+}
+
+// ******************* Net reference routines *******************
+
+// TODO comment idea
+
+static jclass get_class_for_object(jobject obj, JNIEnv * jni_env) {
+
+	return (*jni_env)->GetObjectClass(jni_env, obj);
+}
+
+static int object_is_class(jobject obj, JNIEnv * jni_env) {
+
+	// TODO isn't there better way?
+
+	jvmtiError error = (*jvmti_env)->GetClassSignature(jvmti_env, obj, NULL, NULL);
+
+	if(error != JVMTI_ERROR_NONE) {
+		// object is not class
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+// do not call me unless you know what you are doing
 // should be called only with tagging_lock
 // does not perform tagging
-static inline jlong _get_net_reference(jobject obj) {
+static jlong _get_net_reference(jobject obj) {
 
-	jlong net_ref_jl;
+	jlong net_ref;
 
-	jvmtiError error = (*jvmti_env)->GetTag(jvmti_env, obj, &net_ref_jl);
+	jvmtiError error = (*jvmti_env)->GetTag(jvmti_env, obj, &net_ref);
 	check_jvmti_error(jvmti_env, error, "Cannot get object tag");
 
-	return net_ref_jl;
+	return net_ref;
 }
 
-// do not call me unless you know what you do
+// do not call me unless you know what you are doing
 // should be called only with tagging_lock
-static inline jint _get_class_id_for_class(jclass klass) {
+// does not increment any counter - just sets the values
+static jlong _set_net_reference(jobject obj, JNIEnv * jni_env,
+		jlong object_id, jint class_id, unsigned char spec) {
 
-	// TODO
-	//avail_class_tag;
+	jlong net_ref = 0;
 
-	return 1;
-}
+	net_ref_set_object_id(&net_ref, object_id);
+	net_ref_set_class_id(&net_ref, class_id);
+	net_ref_set_spec(&net_ref, spec);
 
-// do not call me unless you know what you do
-// should be called only with tagging_lock
-static inline jint _get_class_id_for_object(jobject obj, JNIEnv * jni_env) {
-
-	jclass klass = (*jni_env)->GetObjectClass(jni_env, obj);
-
-	return _get_class_id_for_class(klass);
-}
-
-// do not call me unless you know what you do
-// should be called only with tagging_lock
-static inline jlong _set_net_reference(jobject obj, JNIEnv * jni_env) {
-
-	net_reference net_ref;
-
-	// assign new object id
-	net_ref.object_id = avail_object_tag;
-	++avail_object_tag;
-
-	// resolve class id
-	net_ref.class_id = _get_class_id_for_object(obj, jni_env);
-
-	// add 0 spec flag
-	net_ref.spec = 0;
-
-	jlong net_ref_jl = net_reference_to_jlong(net_ref);
-
-	jvmtiError error = (*jvmti_env)->SetTag(jvmti_env, obj, net_ref_jl);
+	jvmtiError error = (*jvmti_env)->SetTag(jvmti_env, obj, net_ref);
 	check_jvmti_error(jvmti_env, error, "Cannot set object tag");
 
-	return net_ref_jl;
+	return net_ref;
 }
 
-static jlong get_net_reference_as_jlong(jobject obj, JNIEnv * jni_env) {
+static jlong _set_net_reference_for_class(jclass klass, JNIEnv * jni_env) {
 
-	jlong net_ref_jl;
+	// TODO if you do one more getObjectClass then you (maybe) get another class
+	// they should share same id
+
+	// assign new net reference - set spec to 1 (binding send over network)
+	jlong net_ref = _set_net_reference(klass, jni_env, avail_object_id,
+			avail_class_id, 1);
+
+	// increment object id counter
+	++avail_object_id;
+
+	// increment class id counter
+	++avail_class_id;
+
+	// TODO resolve net ref, class descriptor, class generic, class loader, super class and send it over network
+	// TODO class loader may not be tagged (spec bit marked)
+	// TODO if spec was not set - update class loader number from weak reference
+
+	return net_ref;
+}
+
+// do not call me unless you know what you are doing
+// should be called only with tagging_lock
+static jint _get_class_id_for_class(jclass klass, JNIEnv * jni_env) {
+
+	jlong class_net_ref = _get_net_reference(klass);
+
+	if(class_net_ref == 0) {
+		class_net_ref = _set_net_reference_for_class(klass, jni_env);
+	}
+
+	return net_ref_get_class_id(class_net_ref);
+}
+
+// do not call me unless you know what you are doing
+// should be called only with tagging_lock
+static jint _get_class_id_for_object(jobject obj, JNIEnv * jni_env) {
+
+	// get class of this object
+	jclass klass = get_class_for_object(obj, jni_env);
+
+	// get class id of this class
+	return _get_class_id_for_class(klass, jni_env);
+}
+
+// do not call me unless you know what you are doing
+// should be called only with tagging_lock
+static jlong _set_net_reference_for_object(jobject obj, JNIEnv * jni_env) {
+
+	// resolve class id
+	jint class_id = _get_class_id_for_object(obj, jni_env);
+
+	// assign new net reference
+	jlong net_ref =
+			_set_net_reference(obj, jni_env, avail_object_id, class_id, 0);
+
+	// increment object id counter
+	++avail_object_id;
+
+	return net_ref;
+}
+
+// can be used for any object - even classes
+static jlong get_net_reference(jobject obj, JNIEnv * jni_env) {
+
+	jlong net_ref;
 
 	enter_critical_section(jvmti_env, tagging_lock);
 	{
 
-		// get object tag
-		net_ref_jl = _get_net_reference(obj);
+		// get net reference
+		net_ref = _get_net_reference(obj);
 
-		// set object tag
-		if(net_ref_jl == 0) {
-			net_ref_jl = _set_net_reference(obj, jni_env);
+		// set net reference if necessary
+		if(net_ref == 0) {
+
+			// decide setting method
+			if(object_is_class(obj, jni_env)) {
+				// we have class object
+				net_ref = _set_net_reference_for_class(obj, jni_env);
+			}
+			else {
+				// we have non-class object
+				net_ref = _set_net_reference_for_object(obj, jni_env);
+			}
 		}
 
 	}
 	exit_critical_section(jvmti_env, tagging_lock);
 
-	return net_ref_jl;
+	return net_ref;
 }
 
 // ******************* Advanced packing routines *******************
@@ -370,21 +476,14 @@ static void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
 
 static void pack_object(buffer * buff, jobject to_send, JNIEnv * jni_env) {
 
-	pack_long(buff, get_net_reference_as_jlong(to_send, jni_env));
+	pack_long(buff, get_net_reference(to_send, jni_env));
 }
 
 static void pack_class(buffer * buff, jclass to_send, JNIEnv * jni_env) {
 
-	// TODO tag class - set highest bit
+	jlong net_ref = get_net_reference(to_send, jni_env);
 
-	// TODO
-	// class id is set for jclass on the same spot as for object
-	// class id can have object id also
-
-	// TODO
-	// if class does not have id, you have to find it by name and class loader
-
-	pack_int(buff, 1);
+	pack_int(buff, net_ref_get_class_id(net_ref));
 }
 
 // ******************* analysis helper methods *******************
@@ -443,13 +542,15 @@ void JNICALL jvmti_callback_class_file_load_hook(jvmtiEnv *jvmti_env,
 	// retrieve class loader id
 
 	jlong loader_id = 0;
-	if(loader != NULL) { // bootstrap class loader has id 0 - invalid object id
+	if(loader != NULL) { // bootstrap class loader has id 0 - invalid net ref
 		if(jvm_started) {
-			loader_id = get_net_reference_as_jlong(loader, jni_env);
-			// TODO test highest bit + update class loader number from reference
+			// TODO all in spec function (get_class_loader_id) - needed for net ref also
+			loader_id = get_net_reference(loader, jni_env);
+			// TODO test + set spec flag - classloader
+			// TODO if spec was not set - update class loader number from weak reference
 		}
 		else {
-			// TODO generate id
+			// TODO create weak reference + generate id
 		}
 	}
 
