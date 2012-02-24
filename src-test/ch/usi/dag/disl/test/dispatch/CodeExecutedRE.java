@@ -35,7 +35,8 @@ public class CodeExecutedRE {
 		REDispatch.analysisEnd(sid);
 	}
 	
-	public static void testingAdvanced(String s, Object o, Class<?> c, int classID) {
+	public static void testingAdvanced(String s, Object o, Class<?> c,
+			int classID) {
 		
 		int sid = REDispatch.analysisStart(3);
 		
@@ -45,5 +46,27 @@ public class CodeExecutedRE {
 		// class_id ignored
 		
 		REDispatch.analysisEnd(sid);
+	}
+
+	public static void testingAdvanced2(Object o1, Object o2, Object o3,
+			Object o4, Class<?> class1, int cid1, Class<?> class2, int cid2,
+			Class<?> class3, int cid3, Class<?> class4, int cid4) {
+
+		int sid = REDispatch.analysisStart(4);
+		
+		REDispatch.sendObject(sid, o1);
+		REDispatch.sendObject(sid, o2);
+		REDispatch.sendObject(sid, o3);
+		REDispatch.sendObject(sid, o4);
+		REDispatch.sendClass(sid, class1);
+		// class_id ignored
+		REDispatch.sendClass(sid, class2);
+		// class_id ignored
+		REDispatch.sendClass(sid, class3);
+		// class_id ignored
+		REDispatch.sendClass(sid, class4);
+		// class_id ignored
+		
+		REDispatch.analysisEnd(sid);		
 	}
 }

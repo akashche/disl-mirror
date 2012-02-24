@@ -346,6 +346,16 @@ static jlong get_class_loader_net_ref(jobject loader, JNIEnv * jni_env) {
 
 	// normal class loader id handling
 
+	// TODO tagging_lock has to be used around this
+	// we cannot use different lock because we can be called with or without
+	// tagging lock but we require tagging lock in get_net_reference
+	// assume we use class_loader_lock here
+	// t1 calls get_class_loader_net_ref and gets class_loader_lock
+	// t2 calls directly get_net_reference and gets tagging_lock
+	// t1 waits in get_net_reference for tagging_lock
+	// t2 waits in get_class_loader_net_ref
+	//    (called from _set_net_reference_for_class) for class_loader_lock
+
 	jlong loader_id = get_net_reference(loader, jni_env);
 
 	// if spec is not set, check generated ids
@@ -355,6 +365,8 @@ static jlong get_class_loader_net_ref(jobject loader, JNIEnv * jni_env) {
 
 		// set spec flag
 		net_ref_set_spec(&loader_id, 1);
+
+		// TODO set tag
 	}
 
 	return loader_id;
@@ -438,6 +450,8 @@ static jlong _set_net_reference_for_class(jclass klass, JNIEnv * jni_env) {
 
 	// TODO if you do one more getObjectClass then you (maybe) get another class
 	// they should share same id
+	//  - maybe solve this on server
+	//  - you have to because Class<?> can be send first
 
 	// assign new net reference - set spec to 1 (binding send over network)
 	jlong net_ref = _set_net_reference(klass, jni_env, avail_object_id,

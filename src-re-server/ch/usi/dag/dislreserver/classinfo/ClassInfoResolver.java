@@ -34,6 +34,16 @@ public class ClassInfoResolver {
 			String classGenericStr, NetReference classLoaderNR, int classId,
 			int superClassId) {
 
+		// create asm type to get class name
+		Type classASMType = Type.getType(classSignature);
+		
+		if (classASMType.getSort() != Type.OBJECT
+				&& classASMType.getSort() != Type.ARRAY) {
+			// TODO re ! basic types
+			System.out.println("Basic type not handled: " + classSignature);
+			return;
+		}
+		
 		Map<String, ExtractedClassInfo> classNameMap = 
 				classLoaderMap.get(classLoaderNR.getObjectId());
 
@@ -41,9 +51,6 @@ public class ClassInfoResolver {
 			throw new DiSLREServerFatalException("Class loader not known");
 		}
 
-		// create asm type to get class name
-		Type classASMType = Type.getType(classSignature);
-		
 		ExtractedClassInfo eci = 
 				classNameMap.get(classASMType.getInternalName());
 		
@@ -53,7 +60,8 @@ public class ClassInfoResolver {
 			classNameMap = classLoaderMap.get(new Long(0)); // something will be there
 			eci = classNameMap.get(classASMType.getInternalName());
 			if(eci == null) {
-				throw new DiSLREServerFatalException("Class not known");
+				System.err.println("Class not known: " + classASMType.getInternalName());
+				return;
 			}
 			
 			// TODO re ! replace with this

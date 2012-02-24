@@ -88,6 +88,12 @@ public class AnalysisResolver {
 			Method m3 = CodeExecuted.class.getMethod("testingAdvanced",
 					String.class, Object.class, Class.class, int.class);
 			registerMethod(3, new AnalysisMethodHolder((RemoteAnalysis)i, m3));
+			
+			Method m4 = CodeExecuted.class.getMethod("testingAdvanced2",
+					Object.class, Object.class, Object.class, Object.class,
+					Class.class, int.class, Class.class, int.class,
+					Class.class, int.class, Class.class, int.class);
+			registerMethod(4, new AnalysisMethodHolder((RemoteAnalysis)i, m4));
 
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.test.dispatch;
 
+import ch.usi.dag.dislreserver.classinfo.ClassInfo;
+import ch.usi.dag.dislreserver.classinfo.ClassInfoResolver;
 import ch.usi.dag.dislreserver.classinfo.InvalidClass;
 import ch.usi.dag.dislreserver.netreference.NetReference;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
@@ -71,6 +73,46 @@ public class CodeExecuted extends RemoteAnalysis {
 		}
 		
 		System.out.println("Received class id: " + classId);
+	}
+	
+	public static void printClassInfo(ClassInfo ci) {
+		
+		if(ci == null) {
+			System.out.println("null");
+			return;
+		}
+		
+		System.out.println("sig: " + ci.getClassSignature());
+		System.out.println("gen: " + ci.getClassGenericStr());
+	}
+	
+	public static void testingAdvanced2(Object o1, Object o2, Object o3,
+			Object o4, Class<?> class1, int cid1, Class<?> class2, int cid2,
+			Class<?> class3, int cid3, Class<?> class4, int cid4) {
+		
+		System.out.println("* o1 class *");
+		printClassInfo(((NetReference)o1).getClassInfo());
+		
+		System.out.println("* o2 class *");
+		printClassInfo(((NetReference)o2).getClassInfo());
+		
+		System.out.println("* o3 class *");
+		printClassInfo(((NetReference)o3).getClassInfo());
+		
+		System.out.println("* o4 class *");
+		printClassInfo(((NetReference)o3).getClassInfo());
+		
+		System.out.println("* class 1 *");
+		printClassInfo(ClassInfoResolver.getClass(cid1));
+		
+		System.out.println("* class 2 *");
+		printClassInfo(ClassInfoResolver.getClass(cid2));
+		
+		System.out.println("* class 3 *");
+		printClassInfo(ClassInfoResolver.getClass(cid3));
+		
+		System.out.println("* class 4 *");
+		printClassInfo(ClassInfoResolver.getClass(cid4));
 	}
 	
 	public void atExit() {
