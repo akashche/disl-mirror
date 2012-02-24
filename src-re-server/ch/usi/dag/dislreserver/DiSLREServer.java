@@ -38,7 +38,7 @@ public abstract class DiSLREServer {
 						+ socket.getInetAddress().toString());
 			}
 			
-			analysisLoop(socket);
+			requestLoop(socket);
 			
 			socket.close();
 			
@@ -55,7 +55,7 @@ public abstract class DiSLREServer {
 		}
 	}
 
-	private static void analysisLoop(Socket sock) throws DiSLREServerException {
+	private static void requestLoop(Socket sock) throws DiSLREServerException {
 		
 		try {
 

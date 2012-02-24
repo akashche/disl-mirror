@@ -24,6 +24,8 @@ public class ObjectFreeHandler implements RequestHandler {
 			for(RemoteAnalysis ra : raSet) {
 				ra.objectFree(netRef);
 			}
+			
+			// TODO re ! free for special objects
 		
 		} catch (IOException e) {
 			throw new DiSLREServerException(e);

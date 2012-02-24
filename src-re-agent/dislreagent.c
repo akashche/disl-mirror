@@ -239,29 +239,33 @@ static void close_connection(int conn) {
 // HIGHEST (1 bit spec, 23 bits class id, 40 bits object id)
 // bit field not used because there is no guarantee of alignment
 
-// NOTE you have to update masks in functions also
 static const u_int8_t OBJECT_ID_POS = 0;
 static const u_int8_t CLASS_ID_POS = 40;
 static const u_int8_t SPEC_POS = 63;
 
-// get bits from "from" with size "pos_mask" lowest bit starting on position
+static const u_int64_t OBJECT_ID_MASK = 0xFFFFFFFFFF;
+static const u_int64_t CLASS_ID_MASK = 0x7FFFFF;
+static const u_int64_t SPEC_MASK = 0x1;
+
+// get bits from "from" with pattern "bit_mask" lowest bit starting on position
 // "low_start" (from 0)
-static inline u_int64_t get_bits(u_int64_t from, u_int64_t pos_mask,
+static inline u_int64_t get_bits(u_int64_t from, u_int64_t bit_mask,
 		u_int8_t low_start) {
 
+	// shift it
+	u_int64_t bits_shifted = from >> low_start;
+
 	// mask it
-	u_int64_t bits_only = from & pos_mask;
-	// move it to proper position
-	return bits_only >> low_start;
+	return bits_shifted & bit_mask;
 }
 
-// set bits "bits" to "to" with max length "len_mask" lowest bit starting on
+// set bits "bits" to "to" with pattern "bit_mask" lowest bit starting on
 // position "low_start" (from 0)
 static inline void set_bits(u_int64_t * to, u_int64_t bits,
-		u_int64_t len_mask, u_int8_t low_start) {
+		u_int64_t bit_mask, u_int8_t low_start) {
 
-	// enforce length
-	u_int64_t bits_len = bits & len_mask;
+	// mask it
+	u_int64_t bits_len = bits & bit_mask;
 	// move it to position
 	u_int64_t bits_pos = bits_len << low_start;
 	// set
@@ -270,38 +274,32 @@ static inline void set_bits(u_int64_t * to, u_int64_t bits,
 
 static inline jlong net_ref_get_object_id(jlong net_ref) {
 
-	static const u_int64_t OBJECT_ID_POS_MASK = 0xFFFFFFFFFF;
-	return get_bits(net_ref, OBJECT_ID_POS_MASK, OBJECT_ID_POS);
+	return get_bits(net_ref, OBJECT_ID_MASK, OBJECT_ID_POS);
 }
 
 static inline jint net_ref_get_class_id(jlong net_ref) {
 
-	static const u_int64_t CLASS_ID_POS_MASK = 0x7FFFFF0000000000;
-	return get_bits(net_ref, CLASS_ID_POS_MASK, CLASS_ID_POS);
+	return get_bits(net_ref, CLASS_ID_MASK, CLASS_ID_POS);
 }
 
 static inline unsigned char net_ref_get_spec(jlong net_ref) {
 
-	static const u_int64_t SPEC_POS_MASK = 0x8000000000000000;
-	return get_bits(net_ref, SPEC_POS_MASK, SPEC_POS);
+	return get_bits(net_ref, SPEC_MASK, SPEC_POS);
 }
 
 static inline void net_ref_set_object_id(jlong * net_ref, jlong object_id) {
 
-	static const u_int64_t OBJECT_ID_LEN_MASK = 0xFFFFFFFFFF;
-	set_bits((u_int64_t *)net_ref, object_id, OBJECT_ID_LEN_MASK, OBJECT_ID_POS);
+	set_bits((u_int64_t *)net_ref, object_id, OBJECT_ID_MASK, OBJECT_ID_POS);
 }
 
 static inline void net_ref_set_class_id(jlong * net_ref, jint class_id) {
 
-	static const u_int64_t CLASS_ID_LEN_MASK = 0x7FFFFF;
-	set_bits((u_int64_t *)net_ref, class_id, CLASS_ID_LEN_MASK, CLASS_ID_POS);
+	set_bits((u_int64_t *)net_ref, class_id, CLASS_ID_MASK, CLASS_ID_POS);
 }
 
 static inline void net_ref_set_spec(jlong * net_ref, unsigned char spec) {
 
-	static const u_int64_t SPEC_LEN_MASK = 0x1;
-	set_bits((u_int64_t *)net_ref, spec, SPEC_LEN_MASK, SPEC_POS);
+	set_bits((u_int64_t *)net_ref, spec, SPEC_MASK, SPEC_POS);
 }
 
 // ******************* Net reference routines *******************

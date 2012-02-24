@@ -3,55 +3,71 @@ package ch.usi.dag.dislreserver.classinfo;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.objectweb.asm.Type;
+
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+import ch.usi.dag.dislreserver.netreference.NetReference;
 
 public class ClassInfoResolver {
 
-	// TODO re ! change object
-	static Map<Long, Map<String, Object>> classLoaderMap = 
-			new HashMap<Long, Map<String, Object>>();
+	static Map<Long, Map<String, ExtractedClassInfo>> classLoaderMap = 
+			new HashMap<Long, Map<String, ExtractedClassInfo>>();
 	
-	// TODO re ! change object
-	static Map<Integer, Object> classIdMap =
-			new HashMap<Integer, Object>();
+	static Map<Integer, ClassInfo> classIdMap =
+			new HashMap<Integer, ClassInfo>();
 
-	// TODO re ! complete holder
-	
-	public static void addNewClass(String className, long classLoderId, byte[] classCode) {
+	public static void addNewClass(String className, NetReference classLoaderNR,
+			byte[] classCode) {
 		
-		// TODO re ! change object
-		Map<String, Object> classNameMap = classLoaderMap.get(classLoderId);
+		Map<String, ExtractedClassInfo> classNameMap = 
+				classLoaderMap.get(classLoaderNR.getObjectId());
 		
 		if(classNameMap == null) {
-			// TODO re ! change object
-			classNameMap = new HashMap<String, Object>();
+			classNameMap = new HashMap<String, ExtractedClassInfo>();
+			classLoaderMap.put(classLoaderNR.getObjectId(), classNameMap);
 		}
 		
-		// TODO re ! change object
-		classNameMap.put(className, new Object());
+		classNameMap.put(className, new ExtractedClassInfo(classCode));
 	}
 	
-	public static void createHierarchy(String className, long classLoderId, int classId, int superId) {
-		
-		// TODO re ! change object
-		Map<String, Object> classNameMap = classLoaderMap.get(classLoderId);
+	public static void createHierarchy(String classSignature,
+			String classGenericStr, NetReference classLoaderNR, int classId,
+			int superClassId) {
+
+		Map<String, ExtractedClassInfo> classNameMap = 
+				classLoaderMap.get(classLoaderNR.getObjectId());
 
 		if(classNameMap == null) {
 			throw new DiSLREServerFatalException("Class loader not known");
 		}
 
-		// TODO re ! change object
-		Object obj = classNameMap.get(className);
+		// create asm type to get class name
+		Type classASMType = Type.getType(classSignature);
 		
-		if(obj == null) {
-			throw new DiSLREServerFatalException("Class not known");
+		ExtractedClassInfo eci = 
+				classNameMap.get(classASMType.getInternalName());
+		
+		if(eci == null) {
+			
+			// TODO re ! should not be needed when class loader tagging is fixed
+			classNameMap = classLoaderMap.get(new Long(0)); // something will be there
+			eci = classNameMap.get(classASMType.getInternalName());
+			if(eci == null) {
+				throw new DiSLREServerFatalException("Class not known");
+			}
+			
+			// TODO re ! replace with this
+			//throw new DiSLREServerFatalException("Class not known");
 		}
 		
-		// TODO re ! register hierarchy
+		// resolve super class
+		ClassInfo superClassInfo = classIdMap.get(superClassId);
+		
+		classIdMap.put(classId, new ClassInfo(classId, classSignature,
+				classGenericStr, classLoaderNR, superClassInfo, eci));
 	}
 	
-	// TODO re ! change object
-	public static Object getClass(int classId) {
+	public static ClassInfo getClass(int classId) {
 		return classIdMap.get(classId);
 	}
 }
