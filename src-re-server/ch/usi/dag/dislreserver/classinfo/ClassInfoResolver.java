@@ -1,11 +1,11 @@
-package ch.usi.dag.dislreserver.classid;
+package ch.usi.dag.dislreserver.classinfo;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 
-public class ClassIdResolver {
+public class ClassInfoResolver {
 
 	// TODO re ! change object
 	static Map<Long, Map<String, Object>> classLoaderMap = 

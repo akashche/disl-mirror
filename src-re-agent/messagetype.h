@@ -12,5 +12,7 @@ static const jint MSG_ANALYZE = 1;
 static const jint MSG_OBJ_FREE = 2;
 // sending new class
 static const jint MSG_NEW_CLASS = 3;
+// sending new class
+static const jint MSG_CLASS_INFO = 4;
 
 #endif	/* _MESSAGETYPE_H */

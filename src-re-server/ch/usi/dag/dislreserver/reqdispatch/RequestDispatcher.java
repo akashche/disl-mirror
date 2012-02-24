@@ -8,6 +8,7 @@ import java.util.Map;
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisHandler;
+import ch.usi.dag.dislreserver.msg.classinfo.ClassInfoHandler;
 import ch.usi.dag.dislreserver.msg.close.CloseHandler;
 import ch.usi.dag.dislreserver.msg.newclass.NewClassHandler;
 import ch.usi.dag.dislreserver.msg.objfree.ObjectFreeHandler;
@@ -29,6 +30,8 @@ public class RequestDispatcher {
 		requestMap.put(2, new ObjectFreeHandler());
 		// new class
 		requestMap.put(3, new NewClassHandler());
+		// class info
+		requestMap.put(4, new ClassInfoHandler());
 	}
 	
 	public static boolean dispatch(int requestNo, DataInputStream is,

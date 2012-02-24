@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.test.dispatch;
 
-import ch.usi.dag.dislreserver.classid.InvalidClass;
+import ch.usi.dag.dislreserver.classinfo.InvalidClass;
 import ch.usi.dag.dislreserver.netreference.NetReference;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
 

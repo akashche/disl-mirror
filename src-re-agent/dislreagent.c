@@ -327,8 +327,42 @@ static int object_is_class(jobject obj, JNIEnv * jni_env) {
 	return TRUE;
 }
 
+// forward declaration
+static jlong get_net_reference(jobject obj, JNIEnv * jni_env);
+
+// this method can be called even if object tagging is not supported jet
+static jlong get_class_loader_net_ref(jobject loader, JNIEnv * jni_env) {
+
+	if(loader == NULL) { // net reference for NULL is 0
+		return 0;
+	}
+
+	if(! jvm_started) {
+
+		// jvm didn't started jet
+		// we cannot use tagging - use backup solution
+
+		// TODO create weak reference + generate id
+		return 0;
+	}
+
+	// normal class loader id handling
+
+	jlong loader_id = get_net_reference(loader, jni_env);
+
+	// if spec is not set, check generated ids
+	if(net_ref_get_spec(loader_id) == 0) {
+
+		// TODO check generated ids
+
+		// set spec flag
+		net_ref_set_spec(&loader_id, 1);
+	}
+
+	return loader_id;
+}
+
 // do not call me unless you know what you are doing
-// should be called only with tagging_lock
 // does not perform tagging
 static jlong _get_net_reference(jobject obj) {
 
@@ -358,7 +392,51 @@ static jlong _set_net_reference(jobject obj, JNIEnv * jni_env,
 	return net_ref;
 }
 
+// do not call me unless you know what you are doing
+static void _send_class_info(jlong class_net_ref, char * class_sig,
+		char * class_gen, jlong class_loader_net_ref,
+		jlong super_class_net_ref) {
+
+	// class gen can be NULL, we have to handle it
+	if(class_gen == NULL) {
+		class_gen = ""; // send empty string
+	}
+
+	// send class info message
+	jint buff_id = acquire_buff();
+
+	buffer * buff = &buffs[buff_id];
+
+	// msg id
+	pack_int(buff, MSG_CLASS_INFO);
+	// class id
+	pack_int(buff, net_ref_get_class_id(class_net_ref));
+	// class signature
+	pack_string_utf8(buff, class_sig, strlen(class_sig));
+	// class generic string
+	pack_string_utf8(buff, class_gen, strlen(class_gen));
+	// class loader id
+	pack_long(buff, class_loader_net_ref);
+	// super class id
+	pack_int(buff, net_ref_get_class_id(super_class_net_ref));
+
+	// send message
+	send_buffer_schedule(buff);
+
+	release_buff(buff_id);
+}
+
+// do not call me unless you know what you are doing
+// should be called only with tagging_lock
 static jlong _set_net_reference_for_class(jclass klass, JNIEnv * jni_env) {
+
+	// manage references
+	// http://docs.oracle.com/javase/6/docs/platform/jvmti/jvmti.html#refs
+	static const jint ADD_REFS = 16;
+	jint res = (*jni_env)->PushLocalFrame(jni_env, ADD_REFS);
+	check_std_error(res == 0, FALSE, "Cannot allocate more references");
+
+	// *** set net reference for class ***
 
 	// TODO if you do one more getObjectClass then you (maybe) get another class
 	// they should share same id
@@ -373,9 +451,41 @@ static jlong _set_net_reference_for_class(jclass klass, JNIEnv * jni_env) {
 	// increment class id counter
 	++avail_class_id;
 
-	// TODO resolve net ref, class descriptor, class generic, class loader, super class and send it over network
-	// TODO class loader may not be tagged (spec bit marked)
-	// TODO if spec was not set - update class loader number from weak reference
+	// *** send class info over network ***
+
+	jvmtiError error;
+
+	// resolve descriptor + generic
+	char * class_sig;
+	char * class_gen;
+	error = (*jvmti_env)->GetClassSignature(jvmti_env, klass, &class_sig,
+			&class_gen);
+	check_jvmti_error(jvmti_env, error, "Cannot get class signature");
+
+	// resolve class loader...
+	jobject class_loader;
+	error = (*jvmti_env)->GetClassLoader(jvmti_env, klass, &class_loader);
+	check_jvmti_error(jvmti_env, error, "Cannot get class loader");
+	// ... + class loader id
+	jlong class_loader_net_ref = get_class_loader_net_ref(class_loader, jni_env);
+
+	// resolve super class...
+	jclass super_class = (*jni_env)->GetSuperclass(jni_env, klass);
+	// ... + super class id
+	jlong super_class_net_ref = get_net_reference(super_class, jni_env);
+
+	// send class info over network
+	_send_class_info(net_ref, class_sig, class_gen, class_loader_net_ref,
+			super_class_net_ref);
+
+	// deallocate memory
+	error = (*jvmti_env)->Deallocate(jvmti_env, (unsigned char *)class_sig);
+	check_jvmti_error(jvmti_env, error, "Cannot deallocate memory");
+	error = (*jvmti_env)->Deallocate(jvmti_env, (unsigned char *)class_gen);
+	check_jvmti_error(jvmti_env, error, "Cannot deallocate memory");
+
+	// manage references - see function top
+	(*jni_env)->PopLocalFrame(jni_env, NULL);
 
 	return net_ref;
 }
@@ -422,7 +532,17 @@ static jlong _set_net_reference_for_object(jobject obj, JNIEnv * jni_env) {
 }
 
 // can be used for any object - even classes
+// NOTE
+// This is not entirely true for class loaders.
+// If the class loader net reference is used for class information resolving
+// get_class_loader_net_ref should be used.
+// However, this should not be necessary for objects received from java space
+// using REDispatch.
 static jlong get_net_reference(jobject obj, JNIEnv * jni_env) {
+
+	if(obj == NULL) { // net reference for NULL is 0
+		return 0;
+	}
 
 	jlong net_ref;
 
@@ -492,7 +612,7 @@ static jint analysis_start(jint analysis_method_id, JNIEnv * jni_env) {
 
 	if(thread_id == 0) {
 
-		// TODO tag thread - set highest bit
+		// TODO tag thread + set highest bit
 	}
 
 	// get session id - free buffer pos
@@ -520,8 +640,6 @@ static void analysis_end(jint sid) {
 	release_buff(sid);
 }
 
-// TODO lock each callback using global lock
-
 // ******************* CLASS LOAD callback *******************
 
 void JNICALL jvmti_callback_class_file_load_hook(jvmtiEnv *jvmti_env,
@@ -539,20 +657,8 @@ void JNICALL jvmti_callback_class_file_load_hook(jvmtiEnv *jvmti_env,
 
 	buffer * buff = &buffs[buff_id];
 
-	// retrieve class loader id
-
-	jlong loader_id = 0;
-	if(loader != NULL) { // bootstrap class loader has id 0 - invalid net ref
-		if(jvm_started) {
-			// TODO all in spec function (get_class_loader_id) - needed for net ref also
-			loader_id = get_net_reference(loader, jni_env);
-			// TODO test + set spec flag - classloader
-			// TODO if spec was not set - update class loader number from weak reference
-		}
-		else {
-			// TODO create weak reference + generate id
-		}
-	}
+	// retrieve class loader net ref
+	jlong loader_id = get_class_loader_net_ref(loader, jni_env);
 
 	// msg id
 	pack_int(buff, MSG_NEW_CLASS);
@@ -565,6 +671,7 @@ void JNICALL jvmti_callback_class_file_load_hook(jvmtiEnv *jvmti_env,
 	// class code
 	pack_bytes(buff, class_data, class_data_len);
 
+	// send message
 	send_buffer_schedule(buff);
 
 	release_buff(buff_id);
