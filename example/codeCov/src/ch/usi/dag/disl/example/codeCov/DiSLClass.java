@@ -10,13 +10,13 @@ import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 public class DiSLClass {
     @Before(marker = BodyMarker.class, guard = OnlyInit.class, scope = "TargetClass.*")
     public static void beforeConstructor(ClassContext cc, MethodStaticContext msc) {
-        System.out.println("[CLIENT] Before constructor");
-        CodeCoverageRE.onConstructor(cc.asClass(msc.thisClassName()));
+//        System.out.println("[CLIENT] Before constructor");
+        CodeCoverageRE.onConstructor(cc.asClass(msc.thisClassName()), 0);
     }
 
     @Before(marker = BasicBlockMarker.class, scope = "TargetClass.*")
     public static void beforeBB(MethodStaticContext msc, BasicBlockStaticContext bbsc) {
-        System.out.println("[CLIENT] Before bb");
+//        System.out.println("[CLIENT] Before bb");
         CodeCoverageRE.onBB(msc.thisMethodFullName(), bbsc.getBBindex());
     }
 }
