@@ -13,6 +13,7 @@ import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver.AnalysisMethodHolder;
 import ch.usi.dag.dislreserver.netreference.NetReference;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
+import ch.usi.dag.dislreserver.stringcache.StringCache;
 
 public class AnalysisHandler implements RequestHandler {
 
@@ -128,7 +129,11 @@ public class AnalysisHandler implements RequestHandler {
 		}
 		
 		if(argClass.equals(String.class)) {
-			return is.readUTF();
+
+			// read string net reference
+			NetReference stringNR = new NetReference(is.readLong());
+			// resolve string from cache 
+			return StringCache.resolve(stringNR.getObjectId());
 		}
 
 		// read id only

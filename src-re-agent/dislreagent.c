@@ -584,9 +584,20 @@ static jlong get_net_reference(jobject obj, JNIEnv * jni_env) {
 	return net_ref;
 }
 
-// ******************* Advanced packing routines *******************
+static void update_net_reference(jobject obj, jlong net_ref) {
 
-static void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
+	enter_critical_section(jvmti_env, tagging_lock);
+	{
+		jvmtiError error = (*jvmti_env)->SetTag(jvmti_env, obj, net_ref);
+		check_jvmti_error(jvmti_env, error, "Cannot set object tag");
+	}
+	exit_critical_section(jvmti_env, tagging_lock);
+}
+
+// ******************* String cache routines *******************
+
+static void _send_string_java(jstring to_send, jlong str_net_ref,
+		JNIEnv * jni_env) {
 
 	// get string length
 	jsize str_len = (*jni_env)->GetStringUTFLength(jni_env, to_send);
@@ -599,11 +610,54 @@ static void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
 	int size_fits = str_len < UINT16_MAX;
 	check_std_error(size_fits, FALSE, "Java string is too big for sending");
 
+	// send message
+
+	jint buff_id = acquire_buff();
+
+	buffer * buff = &buffs[buff_id];
+
+	// msg id
+	pack_int(buff, MSG_NEW_STRING);
+	// send string net reference
+	pack_long(buff, str_net_ref);
 	// send string
 	pack_string_utf8(buff, str, str_len);
 
+	// send message
+	send_buffer_schedule(buff);
+
+	release_buff(buff_id);
+
 	// release string
 	(*jni_env)->ReleaseStringUTFChars(jni_env, to_send, str);
+}
+
+// ******************* Advanced packing routines *******************
+
+// NOTE: this packing uses cache
+static void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
+
+	jlong net_ref = 0;
+
+	// TODO it could use different lock type
+	enter_critical_section(jvmti_env, tagging_lock);
+	{
+		net_ref = get_net_reference(to_send, jni_env);
+
+		// test if the string was already sent to the server
+		if(net_ref_get_spec(net_ref) == FALSE) {
+
+			// update the send status
+			net_ref_set_spec(&net_ref, TRUE);
+			update_net_reference(to_send, net_ref);
+
+			// send string
+			_send_string_java(to_send, net_ref, jni_env);
+		}
+	}
+	exit_critical_section(jvmti_env, tagging_lock);
+
+	pack_long(buff, net_ref);
 }
 
 static void pack_object(buffer * buff, jobject to_send, JNIEnv * jni_env) {

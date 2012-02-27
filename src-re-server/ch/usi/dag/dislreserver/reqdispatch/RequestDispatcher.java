@@ -11,6 +11,7 @@ import ch.usi.dag.dislreserver.msg.analyze.AnalysisHandler;
 import ch.usi.dag.dislreserver.msg.classinfo.ClassInfoHandler;
 import ch.usi.dag.dislreserver.msg.close.CloseHandler;
 import ch.usi.dag.dislreserver.msg.newclass.NewClassHandler;
+import ch.usi.dag.dislreserver.msg.newstring.NewStringHandler;
 import ch.usi.dag.dislreserver.msg.objfree.ObjectFreeHandler;
 
 public class RequestDispatcher {
@@ -32,6 +33,8 @@ public class RequestDispatcher {
 		requestMap.put(3, new NewClassHandler());
 		// class info
 		requestMap.put(4, new ClassInfoHandler());
+		// new string
+		requestMap.put(5, new NewStringHandler());
 	}
 	
 	public static boolean dispatch(int requestNo, DataInputStream is,
