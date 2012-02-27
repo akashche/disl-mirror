@@ -37,12 +37,27 @@ public class ClassInfoResolver {
 		// create asm type to get class name
 		Type classASMType = Type.getType(classSignature);
 		
-		if (classASMType.getSort() != Type.OBJECT
-				&& classASMType.getSort() != Type.ARRAY) {
-			// TODO re ! basic types
-			System.out.println("Basic type not handled: " + classSignature);
+		boolean classIsArray = false;
+		int arrayDimensions = 0;
+		
+		if(classASMType.getSort() == Type.ARRAY) {
+			
+			arrayDimensions = classASMType.getDimensions();
+			classASMType = classASMType.getElementType();
+			classIsArray = true;
+		}
+		
+		// basic type handling
+		if (classASMType.getSort() != Type.OBJECT) {
+			
+			// TODO re ! ExtractedClassInfo for basic types
+			classIdMap.put(classId, new ClassInfo(classId, classSignature,
+					classGenericStr, classIsArray, arrayDimensions,
+					classLoaderNR, null, new ExtractedClassInfo(new byte[0])));
 			return;
 		}
+		
+		// object handling
 		
 		Map<String, ExtractedClassInfo> classNameMap = 
 				classLoaderMap.get(classLoaderNR.getObjectId());
@@ -72,7 +87,8 @@ public class ClassInfoResolver {
 		ClassInfo superClassInfo = classIdMap.get(superClassId);
 		
 		classIdMap.put(classId, new ClassInfo(classId, classSignature,
-				classGenericStr, classLoaderNR, superClassInfo, eci));
+				classGenericStr, classIsArray, arrayDimensions, classLoaderNR,
+				superClassInfo, eci));
 	}
 	
 	public static ClassInfo getClass(int classId) {

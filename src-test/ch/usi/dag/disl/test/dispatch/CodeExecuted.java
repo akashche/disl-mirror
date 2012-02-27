@@ -82,8 +82,8 @@ public class CodeExecuted extends RemoteAnalysis {
 			return;
 		}
 		
-		System.out.println("sig: " + ci.getClassSignature());
-		System.out.println("gen: " + ci.getClassGenericStr());
+		System.out.println("sig: " + ci.getSignature());
+		System.out.println("gen: " + ci.getGenericStr());
 	}
 	
 	public static void testingAdvanced2(Object o1, Object o2, Object o3,
@@ -100,7 +100,7 @@ public class CodeExecuted extends RemoteAnalysis {
 		printClassInfo(((NetReference)o3).getClassInfo());
 		
 		System.out.println("* o4 class *");
-		printClassInfo(((NetReference)o3).getClassInfo());
+		printClassInfo(((NetReference)o4).getClassInfo());
 		
 		System.out.println("* class 1 *");
 		printClassInfo(ClassInfoResolver.getClass(cid1));

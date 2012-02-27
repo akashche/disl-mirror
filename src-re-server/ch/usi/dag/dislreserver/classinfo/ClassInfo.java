@@ -7,30 +7,43 @@ public class ClassInfo extends ExtractedClassInfo {
 	private int classId;
 	private String classSignature;
 	private String classGenericStr;
+	private boolean classIsArray;
+	private int arrayDimensions;
 	private NetReference classLoaderNR;
 	private ClassInfo superClassInfo;
 	
 	public ClassInfo(int classId, String classSignature,
-			String classGenericStr, NetReference classLoaderNR,
-			ClassInfo superClassInfo, ExtractedClassInfo eci) {
+			String classGenericStr, boolean classIsArray, int arrayDimensions,
+			NetReference classLoaderNR, ClassInfo superClassInfo,
+			ExtractedClassInfo eci) {
 		super(eci);
 		this.classId = classId;
 		this.classSignature = classSignature;
 		this.classGenericStr = classGenericStr;
+		this.classIsArray = classIsArray;
+		this.arrayDimensions = arrayDimensions;
 		this.classLoaderNR = classLoaderNR;
 		this.superClassInfo = superClassInfo;
 	}
 
-	public int getClassId() {
+	public int getId() {
 		return classId;
 	}
 	
-	public String getClassSignature() {
+	public String getSignature() {
 		return classSignature;
 	}
 
-	public String getClassGenericStr() {
+	public String getGenericStr() {
 		return classGenericStr;
+	}
+
+	public boolean isArray() {
+		return classIsArray;
+	}
+
+	public int getArrayDimensions() {
+		return arrayDimensions;
 	}
 
 	public NetReference getClassLoaderNR() {
