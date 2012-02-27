@@ -15,10 +15,10 @@ extern "C" {
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
  * Method:    analysisStart
- * Signature: (I)I
+ * Signature: (Ljava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
-  (JNIEnv *, jclass, jint);
+  (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     ch_usi_dag_dislre_REDispatch

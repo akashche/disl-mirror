@@ -6,14 +6,20 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
+import ch.usi.dag.dislreserver.stringcache.StringCache;
 
 public class AnalysisResolver {
 
-	private static final Map<Integer, AnalysisMethodHolder> methodMap = 
-			new HashMap<Integer, AnalysisMethodHolder>();
+	private static final Map<Long, AnalysisMethodHolder> methodMap = 
+			new HashMap<Long, AnalysisMethodHolder>();
 	
+	private static final Map<String, RemoteAnalysis> analysisMap = 
+			new HashMap<String, RemoteAnalysis>();
+	
+	// for fast set access - contains all values from analysisMap
 	private static final Set<RemoteAnalysis> analysisSet = 
 			new HashSet<RemoteAnalysis>();
 	
@@ -37,10 +43,77 @@ public class AnalysisResolver {
 			return analysisMethod;
 		}
 	}
-	
-	public static AnalysisMethodHolder getMethod(int methodId) {
+
+	private static AnalysisMethodHolder resolveMethod(long methodId)
+			throws DiSLREServerException {
+		
+		try {
+		
+			final String METHOD_DELIM = ".";
+			
+			String methodStr = StringCache.resolve(methodId);
+			
+			int classNameEnd = methodStr.lastIndexOf(METHOD_DELIM);
+			
+			// without METHOD_DELIM
+			String className = methodStr.substring(0, classNameEnd);
+			String methodName = methodStr.substring(classNameEnd + 1);
+			
+			// resolve analysis instance
+			
+			RemoteAnalysis raInst = analysisMap.get(className);
+			
+			if(raInst == null) {
+			
+				// resolve class
+				Class<?> raClass = Class.forName(className);
+				
+				// create instance
+				raInst = (RemoteAnalysis) raClass.newInstance();
+				
+				analysisMap.put(className, raInst);
+				analysisSet.add(raInst);
+			}
+			
+			// resolve analysis method
+			
+			Class<?> raClass = raInst.getClass();
+			
+			Method raMethod = null;
+			
+			for(Method m : raClass.getMethods()) {
+				
+				if(m.getName().equals(methodName)) {
+					
+					// TODO re - check for other methods with same name
+					// TODO re - write to docs - RemoteAnalysis.class
+					
+					raMethod = m;
+				}
+			}
+			
+			// TODO re - check that method has after each Class<?> arg, int arg
+			
+			return new AnalysisMethodHolder(raInst, raMethod);
+		}
+		catch (ClassNotFoundException e) {
+			throw new DiSLREServerException(e);
+		} catch (InstantiationException e) {
+			throw new DiSLREServerException(e);
+		} catch (IllegalAccessException e) {
+			throw new DiSLREServerException(e);
+		}
+	}
+
+	public static AnalysisMethodHolder getMethod(long methodId)
+			throws DiSLREServerException {
 		
 		AnalysisMethodHolder result = methodMap.get(methodId);
+		
+		if(result == null) {
+			result = resolveMethod(methodId);
+			methodMap.put(methodId, result);
+		}
 		
 		if(result == null) {
 			throw new DiSLREServerFatalException("Unknow method id");
@@ -51,71 +124,5 @@ public class AnalysisResolver {
 	
 	public static Set<RemoteAnalysis> getAllAnalyses() {
 		return analysisSet;
-	}
-	
-	public static void registerMethod(int methodId, 
-			AnalysisMethodHolder analysisMethod) {
-
-		// register method
-		methodMap.put(methodId, analysisMethod);
-		
-		// register analysis instance
-		analysisSet.add(analysisMethod.getAnalysisInstance());
-	}
-	
-	static {
-		
-		// TODO re - should not be hardcoded
-		// TODO re - after is not hardcoded change build
-		// in compile-dislre-server
-		//  - no dependency
-		// in compile-test
-		//  - ,compile-dislre-server,compile-dislre-dispatch should be added to dependences
-		//  - no first javac
-
-		try {
-            Class<? extends RemoteAnalysis> clazz = getClass("ch.usi.dag.disl.test.dispatch.CodeExecuted");
-		    RemoteAnalysis instance = clazz.newInstance();
-
-			Method m1 = clazz.getMethod("bytecodesExecuted", int.class);
-			registerMethod(1, new AnalysisMethodHolder(instance, m1));
-
-			Method m2 = clazz.getMethod("testingBasic",
-					boolean.class, byte.class, char.class, short.class,
-					int.class, long.class, float.class, double.class);
-			registerMethod(2, new AnalysisMethodHolder(instance, m2));
-
-			Method m3 = clazz.getMethod("testingAdvanced",
-					String.class, Object.class, Class.class, int.class);
-			registerMethod(3, new AnalysisMethodHolder(instance, m3));
-
-			Method m4 = clazz.getMethod("testingAdvanced2",
-					Object.class, Object.class, Object.class, Object.class,
-					Class.class, int.class, Class.class, int.class,
-					Class.class, int.class, Class.class, int.class);
-			registerMethod(4, new AnalysisMethodHolder(instance, m4));
-        } catch (Exception e) {
-            System.err.println("[AnalysisResolver.<clinit>] " + e);
-            System.err.flush();
-        }
-
-		try {
-            Class<? extends RemoteAnalysis> clazz = getClass("ch.usi.dag.disl.example.codeCov.CodeCoverage");
-			RemoteAnalysis instance2 = clazz.newInstance();
-
-			Method m5 = clazz.getMethod("onConstructor", Class.class);
-			registerMethod(5, new AnalysisMethodHolder(instance2, m5));
-
-			Method m6 = clazz.getMethod("onBB", String.class, int.class);
-			registerMethod(6, new AnalysisMethodHolder(instance2, m6));
-		} catch (Exception e) {
-		    System.err.println("[AnalysisResolver.<clinit>] " + e);
-		    System.err.flush();
-		}
-	}
-
-	private static Class<? extends RemoteAnalysis> getClass(String className) throws ClassNotFoundException, ClassCastException {
-	    Class<?> clazz = Class.forName(className);
-	    return clazz.asSubclass(RemoteAnalysis.class);
 	}
 }

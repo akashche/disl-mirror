@@ -10,8 +10,7 @@ public class REDispatch {
 	 * 
 	 * @return session id for consequent send
 	 */
-	// TODO re - allow strings with remote string cache support?
-	public static native int analysisStart(int analysisMethodID);
+	public static native int analysisStart(String analysisMethodDesc);
 
 	/**
 	 * Announce end of an analysis transmission

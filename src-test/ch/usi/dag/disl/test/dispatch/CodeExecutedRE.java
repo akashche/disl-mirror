@@ -11,7 +11,8 @@ public class CodeExecutedRE {
 
 	public static void bytecodesExecuted(int count) {
 		
-		int sid = REDispatch.analysisStart(1);
+		int sid = REDispatch.analysisStart(
+				"ch.usi.dag.disl.test.dispatch.CodeExecuted.bytecodesExecuted");
 		
 		REDispatch.sendInt(sid, count);
 		
@@ -21,7 +22,8 @@ public class CodeExecutedRE {
 	public static void testingBasic(boolean b, byte by, char c, short s, int i,
 			long l, float f, double d) {
 		
-		int sid = REDispatch.analysisStart(2);
+		int sid = REDispatch.analysisStart(
+				"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingBasic");
 		
 		REDispatch.sendBoolean(sid, b);
 		REDispatch.sendByte(sid, by);
@@ -38,7 +40,8 @@ public class CodeExecutedRE {
 	public static void testingAdvanced(String s, Object o, Class<?> c,
 			int classID) {
 		
-		int sid = REDispatch.analysisStart(3);
+		int sid = REDispatch.analysisStart(
+				"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingAdvanced");
 		
 		REDispatch.sendString(sid, s);
 		REDispatch.sendObject(sid, o);
@@ -52,7 +55,8 @@ public class CodeExecutedRE {
 			Object o4, Class<?> class1, int cid1, Class<?> class2, int cid2,
 			Class<?> class3, int cid3, Class<?> class4, int cid4) {
 
-		int sid = REDispatch.analysisStart(4);
+		int sid = REDispatch.analysisStart(
+				"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingAdvanced2");
 		
 		REDispatch.sendObject(sid, o1);
 		REDispatch.sendObject(sid, o2);

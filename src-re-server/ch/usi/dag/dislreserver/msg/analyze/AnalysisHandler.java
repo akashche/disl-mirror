@@ -24,11 +24,12 @@ public class AnalysisHandler implements RequestHandler {
 
 			// *** retrieve method ***
 			
-			// read method id from network
-			int analysisMethodId = is.readInt();
+			// read method string id from network
+			NetReference analysisMethodStrNR = new NetReference(is.readLong());
 			
 			// retrieve method
-			AnalysisMethodHolder amh = AnalysisResolver.getMethod(analysisMethodId);
+			AnalysisMethodHolder amh = AnalysisResolver.getMethod(
+					analysisMethodStrNR.getObjectId());
 			
 			if(debug) {
 				System.out.println("Processing analysis "

@@ -59,10 +59,7 @@
 		</javac>
 	</target>
 
-	<target name="compile-test" depends="compile-disl,compile-dislre-dispatch">
-		<javac srcdir="${src.dislre.server}" includes="ch/usi/dag/dislreserver/remoteanalysis/** ch/usi/dag/dislreserver/netreference/** ch/usi/dag/dislreserver/classid/**" destdir="bin" debug="true" includeAntRuntime="false">
-			<classpath refid="buildpath" />
-		</javac>
+	<target name="compile-test" depends="compile-disl,compile-dislre-server,compile-dislre-dispatch">
 		<javac srcdir="${src.test}" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath" />
 		</javac>

@@ -674,7 +674,7 @@ static void pack_class(buffer * buff, jclass to_send, JNIEnv * jni_env) {
 
 // ******************* analysis helper methods *******************
 
-static jint analysis_start(jint analysis_method_id, JNIEnv * jni_env) {
+static jint analysis_start(jstring analysis_method_desc, JNIEnv * jni_env) {
 
 	if(thread_id == 0) {
 
@@ -689,8 +689,8 @@ static jint analysis_start(jint analysis_method_id, JNIEnv * jni_env) {
 	// analysis msg
 	pack_int(buff, MSG_ANALYZE);
 
-	// method id
-	pack_int(buff, analysis_method_id);
+	// analysis method desc
+	pack_string_java(buff, analysis_method_desc, jni_env);
 
 	// TODO
 	// thread id
@@ -869,9 +869,9 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 // ******************* REDispatch methods *******************
 
 JNIEXPORT jint JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
-  (JNIEnv * jni_env, jclass this_class, jint analysis_method_id) {
+  (JNIEnv * jni_env, jclass this_class, jstring analysis_method_desc) {
 
-	return analysis_start(analysis_method_id, jni_env);
+	return analysis_start(analysis_method_desc, jni_env);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
