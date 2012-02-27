@@ -47,7 +47,7 @@
 		</javac>
 	</target>
 
-	<target name="compile-dislre-server" depends="compile-test">
+	<target name="compile-dislre-server">
 		<javac srcdir="${src.dislre.server}" destdir="${bin}" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath" />
 		</javac>
@@ -184,6 +184,49 @@
 		     excludes="${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF"
 		     manifest="${src.test}/${test.path}/MANIFEST.MF">
 		</jar>
+	</target>
+
+	<!-- *** example instrumentaion package *** -->
+
+	<target name="check-example-name-property">
+		<condition property="example.name.set">
+			<isset property="example.name"/>
+		</condition>
+	</target>
+
+	<target name="check-example-manifest-property">
+		<condition property="example.manifest.set">
+			<isset property="example.manifest"/>
+		</condition>
+	</target>
+
+	<target name="report-missing-property-example-name" depends="check-example-name-property" unless="example.name.set">
+		<fail message="Property example.name is not set. Set it using -Dexample.name=value" />
+	</target>
+
+	<target name="report-missing-property-example-version" depends="check-example-manifest-property" unless="example.manifest.set">
+		<property name="example.manifest" value="MANIFEST.MF"/>
+	</target>
+
+	<property name="example.path" value="ch/usi/dag/disl/example/${example.name}"/>
+
+	<target name="package-example" depends="report-missing-property-example-name,report-missing-property-example-version,compile-example,prepare-all" description="create instrumentation package for specified example">
+		<mkdir dir="${build}"/>
+		<jar jarfile="${build}/${instr.jar.name}"
+		     basedir="${bin}"
+		     includes="${example.path}/**"
+		     excludes="${example.path}/TargetClass*.class"
+		     manifest="${src.example}/${example.name}/src/${example.path}/${example.manifest}">
+		</jar>
+	</target>
+
+	<target name="compile-example" depends="compile-disl,compile-dislre-dispatch">
+		<javac srcdir="${src.dislre.server}" includes="ch/usi/dag/dislreserver/remoteanalysis/** ch/usi/dag/dislreserver/netreference/** ch/usi/dag/dislreserver/classid/**" destdir="bin" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
+		<javac srcdir="${src.example}/${example.name}/src" destdir="bin" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
 	</target>
 
 </project>
