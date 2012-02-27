@@ -375,7 +375,7 @@ static message instrument_class(const char * classname,
 }
 
 // load super class
-static void load_super_class(JNIEnv* jni_env, const char* name,
+static void load_super_class(JNIEnv* jni_env, jobject loader, const char* name,
 		const unsigned char* class_data) {
 
 	// allocate space for constant pool table
@@ -410,7 +410,23 @@ static void load_super_class(JNIEnv* jni_env, const char* name,
 	buf[name_len] = '\0';
 
 	// load super class
-	(*jni_env)->FindClass(jni_env, buf);
+	if (loader == NULL) {
+	    (*jni_env)->FindClass(jni_env, buf);
+	}
+	else {
+	    char * binaryName = (char *) malloc(name_len + 1);
+	    strncpy(binaryName, buf, name_len + 1);
+	    unsigned int i;
+	    for (i = 0; i < name_len; i++) {
+	        if (binaryName[i] == '/') {
+	            binaryName[i] = '.';
+	        }
+	    }
+	    jclass cls = (*jni_env)->GetObjectClass(jni_env, loader);
+	    jmethodID mid = (*jni_env)->GetMethodID(jni_env, cls, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+	    jstring jclassName = (*jni_env)->NewStringUTF(jni_env, binaryName);
+	    (*jni_env)->CallObjectMethod(jni_env, loader, mid, jclassName);
+	}
 
 	// free super class name
 	free((void *) buf);
@@ -435,7 +451,7 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 #endif
 
 	if (jni_env != NULL) {
-		load_super_class(jni_env, name, class_data);
+		load_super_class(jni_env, loader, name, class_data);
 	}
 
 	// ask the server to instrument
