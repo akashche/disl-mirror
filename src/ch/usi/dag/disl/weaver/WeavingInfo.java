@@ -113,8 +113,7 @@ public class WeavingInfo {
 
 				if (snippet.getMarker() instanceof BodyMarker) {
 
-					last = AsmHelper.skipVirualInsns(instructions.getLast(),
-							false);
+					last = instructions.getLast();
 				} else {
 
 					if (AsmHelper.isBranch(last)
