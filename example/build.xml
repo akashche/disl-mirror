@@ -1,0 +1,66 @@
+<project name="disl_example" default="package-example" basedir=".">
+
+	<property file="../build.properties" />
+
+	<path id="buildpath">
+		<pathelement location="../${asm.path}" />
+		<pathelement location="../${bin}" />
+	</path>
+
+	<!-- *** compile DiSL *** -->
+
+	<target name="prepare-all">
+		<echo message="${toString:buildpath}" />
+		<ant antfile="../build.xml" target="prepare-all" useNativeBasedir="true" inheritAll="false" />
+	</target>
+
+	<target name="clean">
+		<ant antfile="../build.xml" target="clean" useNativeBasedir="true" inheritAll="false" />
+	</target>
+
+	<!-- *** compile the example *** -->
+
+	<target name="check-example-name-property">
+		<condition property="example.name.set">
+			<isset property="example.name"/>
+		</condition>
+	</target>
+
+	<target name="check-example-manifest-property">
+		<condition property="example.manifest.set">
+			<isset property="example.manifest"/>
+		</condition>
+	</target>
+
+	<target name="report-missing-property-example-name" depends="check-example-name-property" unless="example.name.set">
+		<fail message="Property example.name is not set. Set it using -Dexample.name=name" />
+	</target>
+
+	<target name="report-missing-property-example-manifest" depends="check-example-manifest-property" unless="example.manifest.set">
+		<fail message="Property example.manifest is not set. Set it using -Dexample.manifest=manifest_file_name" />
+	</target>
+
+	<target name="package-example" depends="report-missing-property-example-name,report-missing-property-example-manifest,compile-example" description="create instrumentation package for specified example">
+		<mkdir dir="../${build}" />
+		<jar jarfile="../${build}/${instr.jar.name}"
+		     basedir="../${bin}/example"
+		     excludes="TargetClass*.class"
+		     manifest="${example.name}/${example.manifest}">
+		</jar>
+	</target>
+
+	<target name="compile-example" depends="prepare-all">
+		<delete dir="../${bin}/example" />
+                <mkdir dir="../${bin}/example" />
+		<javac srcdir="../${src.dislre.server}" includes="ch/usi/dag/dislreserver/remoteanalysis/** ch/usi/dag/dislreserver/netreference/** ch/usi/dag/dislreserver/classid/**" destdir="../${bin}" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
+		<javac srcdir="${example.name}/src" destdir="../${bin}/example" excludes="TargetClass.java" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
+		<javac srcdir="${example.name}/src" destdir="../${bin}" includes="TargetClass.java" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
+	</target>
+
+</project>
