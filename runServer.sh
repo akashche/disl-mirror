@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+BASE_DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # available options
 #    -Ddebug=true \
@@ -13,7 +15,7 @@
 
 
 java $* \
-     -jar build/dislserver-unspec.jar \
+     -jar ${BASE_DIR}/build/dislserver-unspec.jar \
      &
 
 echo $! > ${SERVER_FILE}

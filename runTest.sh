@@ -11,13 +11,21 @@ fi
 SERVER_FILE=server.pid
 export SERVER_FILE
 
+RE_SERVER_FILE=re_server.pid
+export RE_SERVER_FILE
+
 # kill running server
 if [ -e ${SERVER_FILE} ]
 then
     kill -KILL `cat ${SERVER_FILE}`
-    kill -KILL `cat re_${SERVER_FILE}` 2> /dev/null
     rm ${SERVER_FILE}
-    rm re_${SERVER_FILE}
+fi
+
+# kill running RE server
+if [ -e ${RE_SERVER_FILE} ]
+then
+    kill -KILL `cat ${RE_SERVER_FILE}`
+    rm ${RE_SERVER_FILE}
 fi
 
 DISL_CLASS="./bin/ch/usi/dag/disl/test/$1/DiSLClass.class"
@@ -40,6 +48,6 @@ sleep 1
 
 # kill servers
 kill -KILL `cat ${SERVER_FILE}` 2> /dev/null
-kill -KILL `cat re_${SERVER_FILE}` 2> /dev/null
 rm ${SERVER_FILE}
-rm re_${SERVER_FILE}
+kill -KILL `cat ${RE_SERVER_FILE}` 2> /dev/null
+rm ${RE_SERVER_FILE}
