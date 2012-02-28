@@ -450,9 +450,10 @@ static void JNICALL jvmti_callback_class_file_load_hook( jvmtiEnv *jvmti_env,
 	}
 #endif
 
-	if (jni_env != NULL) {
-		load_super_class(jni_env, loader, name, class_data);
-	}
+	//TODO: force loading of super classes
+//	if (jni_env != NULL) {
+//		load_super_class(jni_env, loader, name, class_data);
+//	}
 
 	// ask the server to instrument
 	message instrclass = instrument_class(name, class_data, class_data_len);
