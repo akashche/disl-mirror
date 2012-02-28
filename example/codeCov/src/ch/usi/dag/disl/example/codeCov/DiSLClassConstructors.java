@@ -6,7 +6,7 @@ import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 
 public class DiSLClassConstructors {
-    @Before(marker = BodyMarker.class, guard = OnlyInit.class, scope = "TargetClass.*")
+    @Before(marker = BodyMarker.class, guard = OnlyInit.class) //, scope = "TargetClass.*")
     public static void beforeConstructor(ClassContext cc, MethodStaticContext msc) {
 //        System.out.println("[CLIENT] Before constructor");
         CodeCoverageRE.onConstructor(cc.asClass(msc.thisClassName()), 0);

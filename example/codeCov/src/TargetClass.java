@@ -1,4 +1,3 @@
-package ch.usi.dag.disl.example.codeCov;
 
 public class TargetClass {
     private TargetClass() {
