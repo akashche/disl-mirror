@@ -341,6 +341,9 @@ static jlong get_class_loader_net_ref(jobject loader, JNIEnv * jni_env) {
 		// we cannot use tagging - use backup solution
 
 		// TODO create weak reference + generate id
+		//  - this id has to be somehow compatible with object id
+		//  - class loader is resolved by this on the server
+		//  - class loader can have to object ids and then merged to one
 		return 0;
 	}
 

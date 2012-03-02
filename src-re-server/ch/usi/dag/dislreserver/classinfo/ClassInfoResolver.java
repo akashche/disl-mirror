@@ -10,8 +10,8 @@ import ch.usi.dag.dislreserver.netreference.NetReference;
 
 public class ClassInfoResolver {
 
-	static Map<Long, Map<String, ExtractedClassInfo>> classLoaderMap = 
-			new HashMap<Long, Map<String, ExtractedClassInfo>>();
+	static Map<Long, Map<String, byte[]>> classLoaderMap = 
+			new HashMap<Long, Map<String, byte[]>>();
 	
 	static Map<Integer, ClassInfo> classIdMap =
 			new HashMap<Integer, ClassInfo>();
@@ -19,76 +19,85 @@ public class ClassInfoResolver {
 	public static void addNewClass(String className, NetReference classLoaderNR,
 			byte[] classCode) {
 		
-		Map<String, ExtractedClassInfo> classNameMap = 
+		Map<String, byte[]> classNameMap = 
 				classLoaderMap.get(classLoaderNR.getObjectId());
 		
 		if(classNameMap == null) {
-			classNameMap = new HashMap<String, ExtractedClassInfo>();
+			classNameMap = new HashMap<String, byte[]>();
 			classLoaderMap.put(classLoaderNR.getObjectId(), classNameMap);
 		}
 		
-		classNameMap.put(className, new ExtractedClassInfo(classCode));
+		classNameMap.put(className, classCode);
 	}
 	
-	public static void createHierarchy(String classSignature,
+	public static ClassInfo createHierarchy(String classSignature,
 			String classGenericStr, NetReference classLoaderNR, int classId,
 			int superClassId) {
 
 		// create asm type to get class name
 		Type classASMType = Type.getType(classSignature);
+
+		// resolve super class
+		ClassInfo superClassInfo = classIdMap.get(superClassId);
 		
-		boolean classIsArray = false;
-		int arrayDimensions = 0;
-		
+		// array handling
 		if(classASMType.getSort() == Type.ARRAY) {
 			
-			arrayDimensions = classASMType.getDimensions();
-			classASMType = classASMType.getElementType();
-			classIsArray = true;
+			// TODO re ! create specific ClassInfo for array
+			//  - we need info about the inner type
+			
+			ClassInfo classInfo = new ClassInfo(classId, classSignature,
+					classGenericStr, true, classASMType.getDimensions(), null,
+					classLoaderNR, superClassInfo, new byte[0]);
+			
+			classIdMap.put(classId, classInfo);
+			return classInfo;
 		}
 		
 		// basic type handling
 		if (classASMType.getSort() != Type.OBJECT) {
 			
 			// TODO re ! ExtractedClassInfo for basic types
-			classIdMap.put(classId, new ClassInfo(classId, classSignature,
-					classGenericStr, classIsArray, arrayDimensions,
-					classLoaderNR, null, new ExtractedClassInfo(new byte[0])));
-			return;
+			ClassInfo classInfo = new ClassInfo(classId, classSignature,
+					classGenericStr, false, 0, null, null, null, new byte[0]);
+			
+			classIdMap.put(classId, classInfo);
+			return classInfo;
 		}
 		
 		// object handling
 		
-		Map<String, ExtractedClassInfo> classNameMap = 
+		Map<String, byte[]> classNameMap = 
 				classLoaderMap.get(classLoaderNR.getObjectId());
 
+		// TODO re ! this can be null because of bad class loader tagging
 		if(classNameMap == null) {
 			throw new DiSLREServerFatalException("Class loader not known");
 		}
 
-		ExtractedClassInfo eci = 
+		byte[] classCode = 
 				classNameMap.get(classASMType.getInternalName());
 		
-		if(eci == null) {
+		if(classCode == null) {
 			
 			// TODO re ! should not be needed when class loader tagging is fixed
 			classNameMap = classLoaderMap.get(new Long(0)); // something will be there
-			eci = classNameMap.get(classASMType.getInternalName());
-			if(eci == null) {
+			classCode = classNameMap.get(classASMType.getInternalName());
+			if(classCode == null) {
 				System.err.println("Class not known: " + classASMType.getInternalName());
-				return;
+				return null;
 			}
 			
 			// TODO re ! replace with this
 			//throw new DiSLREServerFatalException("Class not known");
 		}
 		
-		// resolve super class
-		ClassInfo superClassInfo = classIdMap.get(superClassId);
+		ClassInfo classInfo = new ClassInfo(classId, classSignature,
+				classGenericStr, false, 0, null, classLoaderNR, superClassInfo,
+				classCode);
 		
-		classIdMap.put(classId, new ClassInfo(classId, classSignature,
-				classGenericStr, classIsArray, arrayDimensions, classLoaderNR,
-				superClassInfo, eci));
+		classIdMap.put(classId, classInfo);
+		return classInfo;
 	}
 	
 	public static ClassInfo getClass(int classId) {
