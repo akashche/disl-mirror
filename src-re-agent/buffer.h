@@ -53,6 +53,8 @@ void buffer_fill(buffer * b, const void * data, size_t data_length) {
 		b->buff = (unsigned char *) malloc(new_capacity);
 
 		memcpy(b->buff, old_buff, b->occupied);
+
+		free(old_buff);
 	}
 
 	memcpy(b->buff + b->occupied, data, data_length);

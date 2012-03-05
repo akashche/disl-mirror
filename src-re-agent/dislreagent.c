@@ -176,17 +176,31 @@ static void send_buffer(buffer * b) {
 	exit_critical_section(jvmti_env, connection_lock);
 }
 
+static void _send_buffer_schedule(buffer * buff, int force_send) {
+
+	static const int SEND_BUFF_SIZE = 16384;
+
+	// TODO dedicate spec. buffer
+	static buffer * sch_buff = &buffs[acquire_buff()];
+
+	buffer_fill(sch_buff, buff->buff, buff->occupied);
+
+	if(force_send || sch_buff->occupied >= SEND_BUFF_SIZE) {
+
+		send_buffer(sch_buff);
+		sch_buff->occupied = 0;
+	}
+}
+
 static void send_buffer_schedule(buffer * buff) {
 
-	// TODO
-	send_buffer(buff);
+	_send_buffer_schedule(buff, FALSE);
 }
 
 // sends all buffered messages and this buffer
 static void send_buffer_force(buffer * buff) {
 
-	// TODO
-	send_buffer(buff);
+	_send_buffer_schedule(buff, TRUE);
 }
 
 // ******************* Connection routines *******************
@@ -343,7 +357,7 @@ static jlong get_class_loader_net_ref(jobject loader, JNIEnv * jni_env) {
 		// TODO create weak reference + generate id
 		//  - this id has to be somehow compatible with object id
 		//  - class loader is resolved by this on the server
-		//  - class loader can have to object ids and then merged to one
+		//  - class loader can have two object ids and then merged to one
 		return 0;
 	}
 
