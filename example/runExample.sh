@@ -41,7 +41,7 @@ TARGET_CLASS="TargetClass"
 
 # start server and take pid
 # suppress output
-ant package-example -Dexample.name=$1 -Dexample.manifest=${exampleMF} #> /dev/null
+ant package-example -Dexample.name=$1 -Dexample.manifest=${exampleMF} || exit #> /dev/null
 ../runServer.sh
 ../runREServer.sh
 
