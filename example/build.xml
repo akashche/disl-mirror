@@ -1,10 +1,18 @@
 <project name="disl_example" default="package-example" basedir=".">
 
+	<taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="../lib/jarjar-1.2.jar"/>
+
+	
 	<property file="../build.properties" />
+
+	<fileset id="shaded.libs" dir="${example.name}/lib">
+		<include name="**/*.jar"/>
+	</fileset>
 
 	<path id="buildpath">
 		<pathelement location="../${asm.path}" />
 		<pathelement location="../${bin}" />
+		<fileset refid="shaded.libs"/>
 	</path>
 
 	<!-- *** compile DiSL *** -->
@@ -42,11 +50,20 @@
 
 	<target name="package-example" depends="report-missing-property-example-name,report-missing-property-example-manifest,compile-example" description="create instrumentation package for specified example">
 		<mkdir dir="../${build}" />
-		<jar jarfile="../${build}/${instr.jar.name}"
+		<jarjar jarfile="../${build}/${instr.jar.name}"
 		     basedir="../${bin}/example"
 		     excludes="TargetClass*.class"
 		     manifest="${example.name}/${example.manifest}">
-		</jar>
+			<restrict>
+				<name name="**/*.class"/>
+				<archives>
+					<zips>
+						<fileset refid="shaded.libs"/>
+					</zips>
+				</archives>
+			</restrict> 
+			<rule pattern="com.google.**" result="ch.usi.dag.disl.example.google.@1"/>
+		</jarjar>
 	</target>
 
 	<target name="compile-example" depends="prepare-all">
