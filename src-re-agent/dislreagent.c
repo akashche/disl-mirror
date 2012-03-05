@@ -182,7 +182,7 @@ static void _send_buffer_schedule(buffer * buff, int force_send) {
 
 	static buffer sch_buff;
 
-	// TODO use different lock
+	// TODO remove lock from send function
 	enter_critical_section(jvmti_env, connection_lock);
 	{
 
@@ -375,6 +375,7 @@ static jlong get_class_loader_net_ref(jobject loader, JNIEnv * jni_env) {
 
 	// normal class loader id handling
 
+	// TODO do we really need a lock? - see pack_string_java
 	// TODO tagging_lock has to be used around this
 	// we cannot use different lock because we can be called with or without
 	// tagging lock but we require tagging lock in get_net_reference
@@ -585,12 +586,20 @@ static jlong get_net_reference(jobject obj, JNIEnv * jni_env) {
 		return 0;
 	}
 
-	jlong net_ref;
+	// we don't perform tagging - no lock
 
+	// get net reference
+	jlong net_ref = _get_net_reference(obj);
+
+	if(net_ref != 0) {
+		return net_ref;
+	}
+
+	// no tag set - tag the object - with lock
 	enter_critical_section(jvmti_env, tagging_lock);
 	{
 
-		// get net reference
+		// get net reference - again under lock - to be sure
 		net_ref = _get_net_reference(obj);
 
 		// set net reference if necessary
@@ -666,25 +675,22 @@ static void _send_string_java(jstring to_send, jlong str_net_ref,
 // NOTE: this packing uses cache
 static void pack_string_java(buffer * buff, jstring to_send, JNIEnv * jni_env) {
 
-	jlong net_ref = 0;
+	jlong net_ref = get_net_reference(to_send, jni_env);
 
-	// TODO it could use different lock type
-	enter_critical_section(jvmti_env, tagging_lock);
-	{
-		net_ref = get_net_reference(to_send, jni_env);
+	net_ref = get_net_reference(to_send, jni_env);
 
-		// test if the string was already sent to the server
-		if(net_ref_get_spec(net_ref) == FALSE) {
+	// test if the string was already sent to the server
+	// NOTE: we don't use lock here, so it is possible that multiple threads
+	//       will send it, but this will not hurt (performance only)
+	if(net_ref_get_spec(net_ref) == FALSE) {
 
-			// update the send status
-			net_ref_set_spec(&net_ref, TRUE);
-			update_net_reference(to_send, net_ref);
+		// update the send status
+		net_ref_set_spec(&net_ref, TRUE);
+		update_net_reference(to_send, net_ref);
 
-			// send string
-			_send_string_java(to_send, net_ref, jni_env);
-		}
+		// send string
+		_send_string_java(to_send, net_ref, jni_env);
 	}
-	exit_critical_section(jvmti_env, tagging_lock);
 
 	pack_long(buff, net_ref);
 }
@@ -707,6 +713,8 @@ static jint analysis_start(jstring analysis_method_desc, JNIEnv * jni_env) {
 
 	if(thread_id == 0) {
 
+		// TODO thread is tagged during here and everything is allocated
+		//    - cleanup is done in thread end and the thread structure is located by net_ref and buffer deallocated
 		// TODO tag thread + set highest bit
 	}
 
@@ -729,6 +737,9 @@ static jint analysis_start(jstring analysis_method_desc, JNIEnv * jni_env) {
 }
 
 static void analysis_end(jint sid) {
+
+	// TODO send only big buffers
+	// TODO do not use send_buffer_schedule ?
 
 	send_buffer_schedule(&buffs[sid]);
 
