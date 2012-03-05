@@ -182,19 +182,26 @@ static void _send_buffer_schedule(buffer * buff, int force_send) {
 
 	static buffer sch_buff;
 
-	// TODO free
-	if(sch_buff.buff == NULL) {
+	// TODO use different lock
+	enter_critical_section(jvmti_env, connection_lock);
+	{
 
-		buffer_alloc(&sch_buff);
+		// TODO free
+		if(sch_buff.buff == NULL) {
+
+			buffer_alloc(&sch_buff);
+		}
+
+		buffer_fill(&sch_buff, buff->buff, buff->occupied);
+
+		if(force_send || sch_buff.occupied >= SEND_BUFF_SIZE) {
+
+			send_buffer(&sch_buff);
+			sch_buff.occupied = 0;
+		}
+
 	}
-
-	buffer_fill(&sch_buff, buff->buff, buff->occupied);
-
-	if(force_send || sch_buff.occupied >= SEND_BUFF_SIZE) {
-
-		send_buffer(&sch_buff);
-		sch_buff.occupied = 0;
-	}
+	exit_critical_section(jvmti_env, connection_lock);
 }
 
 static void send_buffer_schedule(buffer * buff) {
@@ -262,7 +269,7 @@ static const u_int8_t OBJECT_ID_POS = 0;
 static const u_int8_t CLASS_ID_POS = 40;
 static const u_int8_t SPEC_POS = 63;
 
-static const u_int64_t OBJECT_ID_MASK = 0xFFFFFFFFFF;
+static const u_int64_t OBJECT_ID_MASK = 0xFFFFFFFFFFL;
 static const u_int64_t CLASS_ID_MASK = 0x7FFFFF;
 static const u_int64_t SPEC_MASK = 0x1;
 
