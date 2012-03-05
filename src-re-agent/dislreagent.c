@@ -178,17 +178,22 @@ static void send_buffer(buffer * b) {
 
 static void _send_buffer_schedule(buffer * buff, int force_send) {
 
-	static const int SEND_BUFF_SIZE = 16384;
+	static const unsigned int SEND_BUFF_SIZE = 16384;
 
-	// TODO dedicate spec. buffer
-	static buffer * sch_buff = &buffs[acquire_buff()];
+	static buffer sch_buff;
 
-	buffer_fill(sch_buff, buff->buff, buff->occupied);
+	// TODO free
+	if(sch_buff.buff == NULL) {
 
-	if(force_send || sch_buff->occupied >= SEND_BUFF_SIZE) {
+		buffer_alloc(&sch_buff);
+	}
 
-		send_buffer(sch_buff);
-		sch_buff->occupied = 0;
+	buffer_fill(&sch_buff, buff->buff, buff->occupied);
+
+	if(force_send || sch_buff.occupied >= SEND_BUFF_SIZE) {
+
+		send_buffer(&sch_buff);
+		sch_buff.occupied = 0;
 	}
 }
 
