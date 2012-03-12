@@ -1,7 +1,7 @@
 package ch.usi.dag.dislreserver.netreference;
 
-import ch.usi.dag.dislreserver.classinfo.ClassInfo;
-import ch.usi.dag.dislreserver.classinfo.ClassInfoResolver;
+import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfo;
+import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfoResolver;
 
 public class NetReference {
 

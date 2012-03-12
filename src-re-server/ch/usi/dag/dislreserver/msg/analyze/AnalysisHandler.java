@@ -8,10 +8,10 @@ import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 
-import ch.usi.dag.dislreserver.classinfo.InvalidClass;
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver.AnalysisMethodHolder;
 import ch.usi.dag.dislreserver.netreference.NetReference;
+import ch.usi.dag.dislreserver.reflectiveinfo.InvalidClass;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 import ch.usi.dag.dislreserver.stringcache.StringCache;
 

@@ -1,4 +1,4 @@
-package ch.usi.dag.dislreserver.classinfo;
+package ch.usi.dag.dislreserver.reflectiveinfo;
 
 import java.util.HashMap;
 import java.util.Map;
