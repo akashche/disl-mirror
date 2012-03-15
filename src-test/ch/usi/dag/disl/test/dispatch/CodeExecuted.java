@@ -1,9 +1,9 @@
 package ch.usi.dag.disl.test.dispatch;
 
-import ch.usi.dag.dislreserver.classinfo.ClassInfo;
-import ch.usi.dag.dislreserver.classinfo.ClassInfoResolver;
-import ch.usi.dag.dislreserver.classinfo.InvalidClass;
 import ch.usi.dag.dislreserver.netreference.NetReference;
+import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfo;
+import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfoResolver;
+import ch.usi.dag.dislreserver.reflectiveinfo.InvalidClass;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
 
 // NOTE that this class is not static anymore
