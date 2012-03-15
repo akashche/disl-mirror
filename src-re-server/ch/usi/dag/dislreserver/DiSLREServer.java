@@ -64,12 +64,15 @@ public abstract class DiSLREServer {
 			final DataOutputStream os = new DataOutputStream(
 					new BufferedOutputStream(sock.getOutputStream()));
 
+			//WARNING: DiSLRE server is not processing incoming messages
+			byte[] buffer = new byte[10000];
 			boolean exit = false;
 			do {
-				
-				int requestNo = is.readInt();
-				
-				exit = RequestDispatcher.dispatch(requestNo, is, os, debug);
+
+			    is.read(buffer);
+//				int requestNo = is.readInt();
+//				
+//				exit = RequestDispatcher.dispatch(requestNo, is, os, debug);
 				
 			} while(! exit);
 
