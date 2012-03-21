@@ -3,14 +3,11 @@
     <property file="../../disl.version"/>
     <property file="../../build.properties"/>
 	<property file="build.properties"/>
-    <property name="disl.jar.path" value="../../build/disl-${disl.version}.jar"/>
+    <property name="disl.jar.path" value="../../build/dislserver-${disl.version}.jar"/>
     
     <path id="buildpath">
         <pathelement location="${disl.jar.path}"/>
         <pathelement location="../../${asm.path}"/>
-        <pathelement location="../../${jborat.path}"/>
-        <pathelement location="../../${jborat-runtime.path}"/>
-		<pathelement location="lib/stp.jar"/>
 	</path>
 
 	<target name="check-disl-jar">
@@ -25,17 +22,7 @@
 		<mkdir dir="bin"/>
 		<javac  srcdir="src" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath"/>
-			<compilerarg value="-Xbootclasspath/p:lib/Thread_test.jar"/>
 		</javac>
-	</target>
-
-	<target name="agent" description="create simple agent jar file" >
-		<mkdir dir="build"/>
-		<jar jarfile="build/agent-light.jar">
-			<manifest>
-				<attribute name="Premain-Class" value="ch.usi.dag.disl.test.agent.Agent"/>
-			</manifest>
-		</jar>
 	</target>
 
 	<target name="check-test-property">
@@ -52,14 +39,10 @@
 
 	<target name="package" depends="report-missing-property,compile" description="create instrumentation package for specified test">
 		<mkdir dir="build"/>
-		<jar jarfile="./build/${user.runtime.jar.name}"
-		     basedir="./bin"
-		     includes="${test.path}/runtime/**">
-		</jar>
         <jar jarfile="../../build/${instr.jar.name}"
 		     basedir="./bin"
-		     includes="${test.path}/*"
-		     excludes="${test.path}/runtime ${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF"
+		     includes="${test.path}/**"
+		     excludes="${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF"
 		     manifest="./src/${test.path}/MANIFEST.MF">
 		</jar>
 	</target>

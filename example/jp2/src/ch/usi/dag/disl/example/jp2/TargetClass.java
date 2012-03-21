@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.example.jp2;
 
 
-public class TargetClass extends AbstractTargetClass {
+public class TargetClass {
 	
 	public static int staticValue;
 	
@@ -12,8 +12,7 @@ public class TargetClass extends AbstractTargetClass {
 			hoo(--i);
 	}
 	
-	public void foo(boolean t) {
-		
+	public void foo(boolean t) {	
 		int i = 0;
 		if(t) {
 			i++;
@@ -22,12 +21,13 @@ public class TargetClass extends AbstractTargetClass {
 		}
 		staticValue =0;
 		for(i=0; i<5; i++)
-			hoo(5);	
+			hoo(i);	
 	}
 	
 	public static void main(String[] args) {
 		
 		TargetClass t = new TargetClass();
 		t.foo(true);
+		System.err.println("TargetClass!");
 	}
 }

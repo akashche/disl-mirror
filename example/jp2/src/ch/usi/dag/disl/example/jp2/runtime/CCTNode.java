@@ -12,6 +12,7 @@ package ch.usi.dag.disl.example.jp2.runtime;
  * with no claim as to its suitability for any purpose.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,9 +20,8 @@ import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import ch.usi.dag.jborat.runtime.DynamicBypass;
+import ch.usi.dag.disl.dynamicbypass.*;;
 
-//import ch.usi.dag.jborat.runtime.DynamicBypass;
 /**
  * A node in the calling context tree (CCT).
  * 
@@ -67,7 +67,6 @@ public final class CCTNode  {
     private final int[] myBBSizes;
     
     static {
-     	boolean old = DynamicBypass.get();
      	DynamicBypass.activate();
     	try{
             leftUpdater =
@@ -78,34 +77,36 @@ public final class CCTNode  {
                 AtomicReferenceFieldUpdater.newUpdater(CCTNode.class, CCTNode.class, "callees");
             callsUpdater = 
                 AtomicLongFieldUpdater.newUpdater(CCTNode.class,"executionCount");
-            ROOT  = new CCTNode(null, null, 0,-1,0);
+            ROOT  = new CCTNode(null, "ROOT", 0, -1, 0);
             
             bbSizes = new ConcurrentHashMap<String, int[]>();
             	
           
             // SHUTDOWNHOOK
-    		Thread shutdownHook = new Thread() {
-				@SuppressWarnings("static-access")
-				public void run () {
-					  
-						System.out.println("SHUTDOWN..." + ROOT + " THREAD " + Thread.currentThread());
-						Dumper dump = new Dumper();
-						dump.out = System.out;
-						dump.dump(getRoot());
-						
-				}	
-			};
-			Runtime.getRuntime().addShutdownHook(shutdownHook);
-            
-        }
-        finally{
-        	if(old)
-        		DynamicBypass.activate();
-        	else
-        		DynamicBypass.deactivate();
-        }
+            Thread shutdownHook = new Thread() {
+            	public void run () {
+            		DynamicBypass.activate();
+            		System.out.println("SHUTDOWN..." + ROOT + " THREAD " + Thread.currentThread());
+            		Dumper dump;
+            		try {
+            			dump = new TextDumper("dump");
+            			dump.dump(getRoot());	
+            		} catch (IOException e) {
+            			// TODO Auto-generated catch block
+            			e.printStackTrace();
+            		}
+            		finally{
+            			DynamicBypass.deactivate();
+            		}
+            	}	
+            };
+            Runtime.getRuntime().addShutdownHook(shutdownHook);     
+    	}
+    	finally{
+    		DynamicBypass.deactivate();
+    	}
     }
-    
+
 
     public void incrementBytecodeCounter(int count) {
     	bytecodesExecuted += count; 
@@ -168,27 +169,9 @@ public final class CCTNode  {
         return executionCount;
     }
     
-    public long getExecutedInstructions() {
-        final int[] bbSize = CCTNode.bbSizes.get(mid);
-        long result = 0;
-        
-        for(int i = 0; i < basicBlockExecutionCounts.length(); i++)
-            result += basicBlockExecutionCounts.get(i) * bbSize[i];
-        
-        return result;
-    }
+ 
     
-    public List<Integer> getBasicBlockSizes() {
-    
-        final int[] basicBlockSizes = CCTNode.bbSizes.get(mid);
-        final List<Integer> result = new ArrayList<Integer>(basicBlockSizes.length);
-        
-        for (int i = 0; i < basicBlockSizes.length; i++)
-            result.add(i, basicBlockSizes[i]);
-        
-        return result;
-     
-    }
+
     
     public List<Long> getBasicBlockExecutionCounts() {
         final List<Long> result = new ArrayList<Long>(basicBlockExecutionCounts.length());
@@ -199,13 +182,7 @@ public final class CCTNode  {
         return result;
     }
     
-    /**
-     * 
-     * @return the the array that contains counters for executed basic blocks as String
-     */
-    public String getBBCountsAsString(){
-        return basicBlockExecutionCounts.toString();
-    }
+   
     
     // DEBUG
     public void setBBSize(int idx, int size) {
@@ -213,12 +190,8 @@ public final class CCTNode  {
     		myBBSizes[idx] = size;
     }
     
-    public String getSizesAsString() {
-    	StringBuffer buf = new StringBuffer();
-    	for(int i = 0; i<myBBSizes.length; i++) {
-    	  buf.append(myBBSizes[i] + " ");
-    	}
-    	return buf.toString();
+    public int getBBSize(int i) {
+    	return myBBSizes[i];
     }
     
     /**
@@ -227,26 +200,16 @@ public final class CCTNode  {
      * @param bbIndex - index of the basic block in the method
      */
     public void profileBB(int bbIndex) {
-//        boolean old = DynamicBypass.getAndSet();
-//        try {
-      //      if (Thread.currentThread().activateBytecodeCounting)
+
     	if(true) 
-                basicBlockExecutionCounts.incrementAndGet(bbIndex);
-//        } finally {
-//            DynamicBypass.set(old);
-//        }
+    		basicBlockExecutionCounts.incrementAndGet(bbIndex);
     }
     
-    public CCTNode profileCall(String mid, int bytecodeIndex, int numberOfBB) { 
+    public CCTNode profileCall(String mid, int bytecodeIndex, int numberOfBB) {
         CCTNode n, allocated;
-        int initCalls=0;
-        
-        if (this == ROOT)
-            bytecodeIndex=-1;
-        
+        int initCalls=0;      
         if ((n = calleesUpdater.get(this)) == null) {
         	if(true)
-    //        if (Thread.currentThread().activateBytecodeCounting)
                 initCalls=1;
             if (calleesUpdater.compareAndSet(this, null, (allocated = new CCTNode(this, mid,initCalls,bytecodeIndex, numberOfBB)))) {
                 return allocated;
@@ -261,14 +224,12 @@ public final class CCTNode  {
             String n_MID;
             if ((n_MID = n.mid) == mid && n.bytecodeIndex==bytecodeIndex) {
             	if(true)
-            	//if (Thread.currentThread().activateBytecodeCounting)
                     callsUpdater.incrementAndGet(n);
                 return n;
             } else if (hash_MID <= System.identityHashCode(n_MID)) { 
                 CCTNode nLeft;
                 if ((nLeft = leftUpdater.get(n)) == null) {
                 	if(true)
-                  //  if (Thread.currentThread().activateBytecodeCounting)
                         initCalls=1;
                     if (leftUpdater.compareAndSet(n, null, (allocated = new CCTNode(this, mid, initCalls, bytecodeIndex, numberOfBB)))) {
                         return allocated;
@@ -281,9 +242,7 @@ public final class CCTNode  {
             } else {
                 CCTNode nRight;
                 if ((nRight = rightUpdater.get(n)) == null) {
-                	//
-              
-                  //  if (Thread.currentThread().activateBytecodeCounting)
+
                 	if(true)
                         initCalls=1;
                     if (rightUpdater.compareAndSet(n, null, (allocated = new CCTNode(this, mid, initCalls, bytecodeIndex, numberOfBB)))) {
@@ -297,29 +256,5 @@ public final class CCTNode  {
             } 
         }
     }
-    
-   
-   /* 
-    public List<? extends CallingContextTreeNode> collectCallees() {
-        List<CCTNode> callees = new ArrayList<CCTNode>();
-        accumulateSiblings(this.getCallees(), callees);
-        Collections.sort(callees, new Comparator<CCTNode>() {
-            
-            public int compare(CCTNode lhs, CCTNode rhs) {
-                
-                return lhs.getBytecodeIndex() - rhs.getBytecodeIndex();
-            }
-        });
-        return callees;
-    }
-    */
-    
-    @SuppressWarnings("unused")
-	private static void accumulateSiblings(CCTNode n, List<CCTNode> accumulator) {
-        if (n == null) return;
-        
-        accumulator.add(n);
-        accumulateSiblings(n.getLeft(), accumulator);
-        accumulateSiblings(n.getRight(), accumulator);
-    }
+ 
 }
