@@ -227,13 +227,17 @@ class SnippetParser extends AbstractParser {
 	private Marker getMarker(Type markerType, String markerParam)
 			throws ReflectionException, MarkerException {
 		
-		// get marker class
-		Class<?> markerClass = ReflectionHelper.resolveClass(markerType);
+		// get marker class - as generic class
+		Class<?> genMarkerClass = ReflectionHelper.resolveClass(markerType);
+		
+		// get marker class - as subclass
+		Class<? extends Marker> markerClass = 
+				genMarkerClass.asSubclass(Marker.class);
 
 		// instantiate marker WITHOUT Parameter as an argument
 		if(markerParam == null) {
 			try {
-				return (Marker) ReflectionHelper.createInstance(markerClass);
+				return ReflectionHelper.createInstance(markerClass);
 			}
 			catch(ReflectionException e) {
 				
@@ -250,8 +254,8 @@ class SnippetParser extends AbstractParser {
 
 		// try to instantiate marker WITH Parameter as an argument
 		try {
-			return (Marker) ReflectionHelper.createInstance(markerClass,
-					new Parameter(markerParam));
+			return ReflectionHelper.createInstance(markerClass, new Parameter(
+					markerParam));
 		}
 		catch(ReflectionException e) {
 			

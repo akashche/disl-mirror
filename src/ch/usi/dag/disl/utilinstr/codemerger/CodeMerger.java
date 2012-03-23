@@ -119,9 +119,9 @@ public abstract class CodeMerger {
 				instrMN.tryCatchBlocks = origMN.tryCatchBlocks;
 				
 				// print error msg
-				System.err.println("WARNING: code of the method"
+				System.err.println("WARNING: code of the method "
 						+ instrumentedCN.name + "." + instrMN.name
-						+ "is larger ("
+						+ " is larger ("
 						+ cse.getMaxSize()
 						+ ") then allowed size (" +
 						+ ALLOWED_SIZE
