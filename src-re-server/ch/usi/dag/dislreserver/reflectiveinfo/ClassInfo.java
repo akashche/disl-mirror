@@ -77,65 +77,78 @@ public class ClassInfo {
 	private void initializeClassInfo(byte[] classCode) {
 		// *) parse classCode using ASM
 		// *) initialize all fields required for the following methods
-		ClassReader classReader = new ClassReader(classCode);
-		ClassNode classNode = new ClassNode(Opcodes.ASM4);
-		classReader.accept(classNode, ClassReader.SKIP_DEBUG
-				| ClassReader.EXPAND_FRAMES);
-		initializeClassInfo(classNode);
-	}
+		if (classCode.length == 0) {
 
-	private void initializeClassInfo(ClassNode classNode) {
+			access = Opcodes.ACC_PUBLIC;
+			name = classSignature;
+			classIsPrimitive = !classIsArray;
 
-		access = classNode.access;
-		name = classNode.name.replace('/', '.');
+			methods = new ArrayList<MethodInfo>();
+			public_methods = new LinkedList<MethodInfo>();
+			fields = new ArrayList<FieldInfo>();
+			public_fields = new LinkedList<FieldInfo>();
+			interfaces = new ArrayList<String>();
+			innerclasses = new ArrayList<String>();
+		} else {
 
-		methods = new ArrayList<MethodInfo>(classNode.methods.size());
-		public_methods = new LinkedList<MethodInfo>();
+			ClassReader classReader = new ClassReader(classCode);
+			ClassNode classNode = new ClassNode(Opcodes.ASM4);
+			classReader.accept(classNode, ClassReader.SKIP_DEBUG
+					| ClassReader.EXPAND_FRAMES);
 
-		for (MethodNode methodNode : classNode.methods) {
+			access = classNode.access;
+			name = classNode.name.replace('/', '.');
+			classIsPrimitive = false;
 
-			MethodInfo methodInfo = new MethodInfo(methodNode);
-			methods.add(methodInfo);
+			methods = new ArrayList<MethodInfo>(classNode.methods.size());
+			public_methods = new LinkedList<MethodInfo>();
 
-			if (methodInfo.isPublic()) {
-				public_methods.add(methodInfo);
-			}
-		}
+			for (MethodNode methodNode : classNode.methods) {
 
-		fields = new ArrayList<FieldInfo>(classNode.fields.size());
-		public_fields = new LinkedList<FieldInfo>();
+				MethodInfo methodInfo = new MethodInfo(methodNode);
+				methods.add(methodInfo);
 
-		for (FieldNode fieldNode : classNode.fields) {
-
-			FieldInfo fieldInfo = new FieldInfo(fieldNode);
-			fields.add(fieldInfo);
-
-			if (fieldInfo.isPublic()) {
-				public_fields.add(fieldInfo);
-			}
-		}
-
-		if (superClassInfo != null) {
-
-			for (MethodInfo methodInfo : superClassInfo.getMethods()) {
-				public_methods.add(methodInfo);
+				if (methodInfo.isPublic()) {
+					public_methods.add(methodInfo);
+				}
 			}
 
-			for (FieldInfo fieldInfo : superClassInfo.getFields()) {
-				public_fields.add(fieldInfo);
+			fields = new ArrayList<FieldInfo>(classNode.fields.size());
+			public_fields = new LinkedList<FieldInfo>();
+
+			for (FieldNode fieldNode : classNode.fields) {
+
+				FieldInfo fieldInfo = new FieldInfo(fieldNode);
+				fields.add(fieldInfo);
+
+				if (fieldInfo.isPublic()) {
+					public_fields.add(fieldInfo);
+				}
 			}
-		}
 
-		interfaces = new ArrayList<String>(classNode.interfaces);
-		innerclasses = new ArrayList<String>(classNode.innerClasses.size());
+			if (superClassInfo != null) {
 
-		for (InnerClassNode innerClassNode : classNode.innerClasses) {
-			innerclasses.add(innerClassNode.name);
+				for (MethodInfo methodInfo : superClassInfo.getMethods()) {
+					public_methods.add(methodInfo);
+				}
+
+				for (FieldInfo fieldInfo : superClassInfo.getFields()) {
+					public_fields.add(fieldInfo);
+				}
+			}
+
+			interfaces = new ArrayList<String>(classNode.interfaces);
+			innerclasses = new ArrayList<String>(classNode.innerClasses.size());
+
+			for (InnerClassNode innerClassNode : classNode.innerClasses) {
+				innerclasses.add(innerClassNode.name);
+			}
 		}
 	}
 
 	private int access;
 	private String name;
+	private boolean classIsPrimitive;
 
 	private List<MethodInfo> methods;
 	private List<MethodInfo> public_methods;
@@ -174,9 +187,8 @@ public class ClassInfo {
 		return (access & Opcodes.ACC_INTERFACE) != 0;
 	}
 
-	// TODO isPrimitive
 	public boolean isPrimitive() {
-		return false;
+		return classIsPrimitive;
 	}
 
 	public boolean isAnnotation() {
