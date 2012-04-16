@@ -14,19 +14,16 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.tree.analysis.Analyzer;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
-import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.marker.BodyMarker;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
-import ch.usi.dag.disl.util.stack.StackUtil;
 
 public class WeavingInfo {
 
@@ -156,28 +153,8 @@ public class WeavingInfo {
 			}
 		}
 
-		Analyzer<BasicValue> basicAnalyzer = StackUtil.getBasicAnalyzer();
-
-		try {
-			basicAnalyzer.analyze(classNode.name, methodNode);
-		} catch (AnalyzerException e) {
-			throw new DiSLFatalException("Cause by AnalyzerException : \n"
-					+ e.getMessage());
-		}
-
-		basicFrames = basicAnalyzer.getFrames();
-
-		Analyzer<SourceValue> sourceAnalyzer = StackUtil.getSourceAnalyzer();
-
-		try {
-			sourceAnalyzer.analyze(classNode.name, methodNode);
-		} catch (AnalyzerException e) {
-			throw new DiSLFatalException("Cause by AnalyzerException : \n"
-					+ e.getMessage());
-		}
-
-		sourceFrames = sourceAnalyzer.getFrames();
-
+		basicFrames = FrameHelper.getBasicFrames(classNode.name, methodNode);
+		sourceFrames = FrameHelper.getSourceFrames(classNode.name, methodNode);
 		sourceFrameMap = new HashMap<AbstractInsnNode, Frame<SourceValue>>();
 		
 		for (int i = 0; i < sourceFrames.length; i++) {
@@ -242,14 +219,14 @@ public class WeavingInfo {
 	}
 
 	public InsnList backupStack(int index, int startFrom) {
-		return StackUtil.enter(basicFrames[index], startFrom);
+		return FrameHelper.enter(basicFrames[index], startFrom);
 	}
 
 	public InsnList restoreStack(int index, int startFrom) {
-		return StackUtil.exit(basicFrames[index], startFrom);
+		return FrameHelper.exit(basicFrames[index], startFrom);
 	}
 
 	public int getStackHeight(int index) {
-		return StackUtil.getOffset(basicFrames[index]);
+		return FrameHelper.getOffset(basicFrames[index]);
 	}
 }

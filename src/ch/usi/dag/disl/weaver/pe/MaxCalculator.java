@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -147,16 +148,11 @@ public class MaxCalculator {
 		}
 
 		int maxStack = currentStackSize;
-		AbstractInsnNode prev = null;
-		AbstractInsnNode iter = bb.getEntrance();
 
-		while (prev != bb.getExit()) {
+		for (AbstractInsnNode iter : bb) {
 
 			currentStackSize = execute(currentStackSize, iter);
 			maxStack = Math.max(currentStackSize, maxStack);
-
-			prev = iter;
-			iter = iter.getNext();
 		}
 
 		for (BasicBlock next : bb.getSuccessors()) {
@@ -183,4 +179,13 @@ public class MaxCalculator {
 
 		return maxStack;
 	}
+
+	public static int getMaxLocal(MethodNode method) {
+		return getMaxLocal(method.instructions, method.desc, method.access);
+	}
+
+	public static int getMaxStack(MethodNode method) {
+		return getMaxStack(method.instructions, method.tryCatchBlocks);
+	}
+
 }

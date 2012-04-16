@@ -35,7 +35,7 @@ import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.AsmHelper;
-import ch.usi.dag.disl.util.stack.StackUtil;
+import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.weaver.pe.MaxCalculator;
 import ch.usi.dag.disl.weaver.pe.PartialEvaluator;
 
@@ -281,7 +281,7 @@ public class WeavingCode {
 					}
 
 					// Type checking
-					Type targetType = StackUtil.getStackByIndex(basicframe,
+					Type targetType = FrameHelper.getStackByIndex(basicframe,
 							operand).getType();
 
 					if (t.getSort() != targetType.getSort()) {
@@ -291,7 +291,7 @@ public class WeavingCode {
 					}
 
 					// store the stack value without changing the semantic
-					int size = StackUtil.dupStack(sourceframe, method, operand,
+					int size = FrameHelper.dupStack(sourceframe, method, operand,
 							sopcode, method.maxLocals);
 					// load the stack value
 
@@ -546,7 +546,7 @@ public class WeavingCode {
 
 			fixArgumentContext(instructions, position, totalCount, type);
 
-			SourceValue source = StackUtil.getStackByIndex(frame, totalCount
+			SourceValue source = FrameHelper.getStackByIndex(frame, totalCount
 					- 1 - position);
 			int sopcode = type.getOpcode(Opcodes.ISTORE);
 
@@ -692,7 +692,7 @@ public class WeavingCode {
 					
 					for (int i = 0; i < argTypes.length; i++) {
 
-						SourceValue source = StackUtil.getStackByIndex(frame,
+						SourceValue source = FrameHelper.getStackByIndex(frame,
 								argTypes.length - 1 - i);
 						Type type = argTypes[i];
 						int sopcode = type.getOpcode(Opcodes.ISTORE);
@@ -745,7 +745,7 @@ public class WeavingCode {
 						iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 					} else {
 						String desc = ((MethodInsnNode) callee).desc;
-						SourceValue source = StackUtil.getStackByIndex(frame,
+						SourceValue source = FrameHelper.getStackByIndex(frame,
 								Type.getArgumentTypes(desc).length);
 						
 						for (AbstractInsnNode itr : source.insns) {

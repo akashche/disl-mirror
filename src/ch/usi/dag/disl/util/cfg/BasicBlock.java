@@ -1,11 +1,14 @@
 package ch.usi.dag.disl.util.cfg;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 
-public class BasicBlock {
+import ch.usi.dag.disl.exception.DiSLFatalException;
+
+public class BasicBlock implements Iterable<AbstractInsnNode>{
 	// index of the basic block, count according to the order in a method
 	private int index;
 
@@ -59,4 +62,35 @@ public class BasicBlock {
 		return joins;
 	}
 
+	class BasicBlockIterator implements Iterator<AbstractInsnNode> {
+
+		private AbstractInsnNode current;
+
+		public BasicBlockIterator() {
+			current = entrance;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return current != exit.getNext();
+		}
+
+		@Override
+		public AbstractInsnNode next() {
+			AbstractInsnNode temp = current;
+			current = current.getNext();
+			return temp;
+		}
+
+		@Override
+		public void remove() {
+			throw new DiSLFatalException("Readonly iterator.");
+		}
+
+	}
+
+	@Override
+	public Iterator<AbstractInsnNode> iterator() {
+		return new BasicBlockIterator();
+	}
 }
