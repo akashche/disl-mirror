@@ -316,7 +316,7 @@ public class ConstInterpreter extends Interpreter<ConstValue> {
 	public ConstValue binaryOperation(final AbstractInsnNode insn,
 			final ConstValue value1, final ConstValue value2) {
 
-		if (value1 == null || value2 == null) {
+		if (value1.cst == null || value2.cst == null) {
 			switch (insn.getOpcode()) {
 			case Opcodes.LALOAD:
 			case Opcodes.DALOAD:
