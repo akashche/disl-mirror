@@ -3,16 +3,15 @@ package ch.usi.dag.disl.staticcontext;
 import java.util.List;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
-import ch.usi.dag.disl.util.cfg.LoopAnalyzer;
 
-public class BasicBlockStaticContext extends AbstractStaticContext {
+public class BasicBlockStaticContext extends
+		MethodAnalysisContext<CtrlFlowGraph> {
 
 	public int getTotBBs() {
-		CtrlFlowGraph cfg = new CtrlFlowGraph(
-				staticContextData.getMethodNode());
-		return cfg.getNodes().size();
+		return thisAnalysis.getNodes().size();
 	}
 
 	public int getBBSize() {
@@ -37,15 +36,11 @@ public class BasicBlockStaticContext extends AbstractStaticContext {
 	}
 
 	public int getBBindex() {
-
-		CtrlFlowGraph cfg = new CtrlFlowGraph(
-				staticContextData.getMethodNode());
-		return cfg.getIndex(staticContextData.getRegionStart());
+		return thisAnalysis.getIndex(staticContextData.getRegionStart());
 	}
 
-	public boolean isFirstOfLoop() {
-
-		return LoopAnalyzer.isEntryOfLoop(staticContextData.getMethodNode(),
-				staticContextData.getRegionStart());
+	@Override
+	public CtrlFlowGraph analysis(MethodNode method) {
+		return new CtrlFlowGraph(method);
 	}
 }
