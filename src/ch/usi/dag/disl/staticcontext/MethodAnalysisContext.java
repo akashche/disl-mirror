@@ -26,6 +26,6 @@ public abstract class MethodAnalysisContext<V> extends AbstractStaticContext {
 		}
 	}
 
-	public abstract V analysis(MethodNode method);
+	protected abstract V analysis(MethodNode method);
 
 }

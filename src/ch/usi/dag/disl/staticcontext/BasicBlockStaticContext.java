@@ -40,7 +40,7 @@ public class BasicBlockStaticContext extends
 	}
 
 	@Override
-	public CtrlFlowGraph analysis(MethodNode method) {
+	protected CtrlFlowGraph analysis(MethodNode method) {
 		return new CtrlFlowGraph(method);
 	}
 }

@@ -16,7 +16,7 @@ public class LoopStaticContext extends BasicBlockStaticContext {
 	private Map<BasicBlock, Set<BasicBlock>> dominatormapping;
 
 	@Override
-	public CtrlFlowGraph analysis(MethodNode method) {
+	protected CtrlFlowGraph analysis(MethodNode method) {
 
 		CtrlFlowGraph cfg = CtrlFlowGraph.build(method);
 
