@@ -3,7 +3,6 @@ package ch.usi.dag.disl.staticcontext;
 import java.util.List;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
@@ -40,7 +39,7 @@ public class BasicBlockStaticContext extends
 	}
 
 	@Override
-	protected CtrlFlowGraph analysis(MethodNode method) {
-		return new CtrlFlowGraph(method);
+	protected CtrlFlowGraph analysis() {
+		return new CtrlFlowGraph(staticContextData.getMethodNode());
 	}
 }

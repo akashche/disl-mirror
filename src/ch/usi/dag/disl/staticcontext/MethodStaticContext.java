@@ -50,6 +50,11 @@ public class MethodStaticContext extends AbstractStaticContext {
 		return staticContextData.getClassNode().name;
 	}
 	
+	public String thisClassCanonicalName() {
+
+		return staticContextData.getClassNode().name.replace('/', '.');
+	}
+	
 	public String thisClassOuterClass() {
 
 		return staticContextData.getClassNode().outerClass;
