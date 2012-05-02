@@ -1,7 +1,6 @@
-package ch.usi.dag.disl.staticcontext;
+package ch.usi.dag.disl.staticcontext.customdatacache;
 
-public abstract class MethodAnalysisContext<V> extends
-		AnalysisContext<String, V> {
+public abstract class MethodCDCache<V> extends CustomDataCache<String, V> {
 
 	@Override
 	protected final String key() {

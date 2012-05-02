@@ -4,13 +4,14 @@ import java.util.List;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 
+import ch.usi.dag.disl.staticcontext.customdatacache.MethodCDCache;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
 public class BasicBlockStaticContext extends
-		MethodAnalysisContext<CtrlFlowGraph> {
+		MethodCDCache<CtrlFlowGraph> {
 
 	public int getTotBBs() {
-		return thisAnalysis.getNodes().size();
+		return customData.getNodes().size();
 	}
 
 	public int getBBSize() {
@@ -35,11 +36,11 @@ public class BasicBlockStaticContext extends
 	}
 
 	public int getBBindex() {
-		return thisAnalysis.getIndex(staticContextData.getRegionStart());
+		return customData.getIndex(staticContextData.getRegionStart());
 	}
 
 	@Override
-	protected CtrlFlowGraph analysis() {
+	protected CtrlFlowGraph produceCustomData() {
 		return new CtrlFlowGraph(staticContextData.getMethodNode());
 	}
 }
