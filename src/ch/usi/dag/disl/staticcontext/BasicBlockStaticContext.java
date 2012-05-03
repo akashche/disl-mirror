@@ -5,6 +5,7 @@ import java.util.List;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 import ch.usi.dag.disl.staticcontext.customdatacache.MethodCDCache;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
 public class BasicBlockStaticContext extends
@@ -25,7 +26,7 @@ public class BasicBlockStaticContext extends
 
 		while (!ends.contains(start)) {
 
-			if (start.getOpcode() != 1) {
+			if (! AsmHelper.isVirtualInstr(start)) {
 				count++;
 			}
 

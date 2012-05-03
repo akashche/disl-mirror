@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.snippet.Shadow;
+import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.snippet.Snippet;
 
 public abstract class AbstractMarker implements Marker {
@@ -21,37 +22,32 @@ public abstract class AbstractMarker implements Marker {
 		private AbstractInsnNode start;
 		private List<AbstractInsnNode> ends;
 		
-		private AbstractInsnNode afterThrowStart;
-		private AbstractInsnNode afterThrowEnd;
+		private WeavingRegion weavingRegion;
 
 		public AbstractInsnNode getStart() {
 			return start;
-		}
-
-		public List<AbstractInsnNode> getEnds() {
-			return ends;
-		}
-		
-		public AbstractInsnNode getAfterThrowStart() {
-			return afterThrowStart;
-		}
-
-		public AbstractInsnNode getAfterThrowEnd() {
-			return afterThrowEnd;
 		}
 
 		public void setStart(AbstractInsnNode start) {
 			this.start = start;
 		}
 		
-		public void setAfterThrowStart(AbstractInsnNode afterThrowStart) {
-			this.afterThrowStart = afterThrowStart;
+		public List<AbstractInsnNode> getEnds() {
+			return ends;
+		}
+		
+		public void addExitPoint(AbstractInsnNode exitpoint) {
+			this.ends.add(exitpoint);
+		}
+		
+		public WeavingRegion getWeavingRegion() {
+			return weavingRegion;
 		}
 
-		public void setAfterThrowEnd(AbstractInsnNode afterThrowEnd) {
-			this.afterThrowEnd = afterThrowEnd;
+		public void setWeavingRegion(WeavingRegion weavingRegion) {
+			this.weavingRegion = weavingRegion;
 		}
-
+		
 		public MarkedRegion(AbstractInsnNode start) {
 			this.start = start;
 			this.ends = new LinkedList<AbstractInsnNode>();
@@ -67,20 +63,29 @@ public abstract class AbstractMarker implements Marker {
 			this.start = start;
 			this.ends = ends;
 		}
+		
+		public MarkedRegion(AbstractInsnNode start,
+				List<AbstractInsnNode> ends, WeavingRegion weavingRegion) {
+			super();
+			this.start = start;
+			this.ends = ends;
+			this.weavingRegion = weavingRegion;
+		}
 
-		public void addExitPoint(AbstractInsnNode exitpoint) {
-			this.ends.add(exitpoint);
-		}
-		
 		public boolean valid() {
-			return start != null && ends != null
-					&& afterThrowStart != null && afterThrowEnd != null;
+			return start != null && ends != null && weavingRegion != null;
 		}
 		
-		public void computeAfterThrow(MethodNode methodNode) {
+		public WeavingRegion computeDefaultWeavingRegion(MethodNode methodNode) {
+			
+			// TODO ! skip branch instruction at the end
+			AbstractInsnNode wstart = null;
+			// can be null - see WeavingRegion for details
+			List<AbstractInsnNode> wends = null;
 			
 			// set start
-			afterThrowStart = start;
+			AbstractInsnNode afterThrowStart = start;
+			AbstractInsnNode afterThrowEnd = null;
 			
 			// get end that is the latest in the method instructions 
 			Set<AbstractInsnNode> endsSet = new HashSet<AbstractInsnNode>(ends);
@@ -96,11 +101,9 @@ public abstract class AbstractMarker implements Marker {
 				
 				instr.getPrevious();
 			}
-		}
-		
-		public void skipBranchesAtTheEnds() {
 			
-			// TODO ! markers
+			return new WeavingRegion(wstart, wends, afterThrowStart,
+					afterThrowEnd);
 		}
 	}
 
@@ -123,8 +126,7 @@ public abstract class AbstractMarker implements Marker {
 			}
 			
 			result.add(new Shadow(classNode, methodNode, snippet,
-					mr.getStart(), mr.getEnds(), mr.getAfterThrowStart(),
-					mr.getAfterThrowEnd()));
+					mr.getStart(), mr.getEnds(), mr.getWeavingRegion()));
 		}
 		
 		return result;

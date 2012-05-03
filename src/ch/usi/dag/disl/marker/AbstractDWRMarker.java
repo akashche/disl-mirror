@@ -6,16 +6,15 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.marker.AbstractMarker.MarkedRegion;
 
-public abstract class AbstractBranchSkipMarker {
+public abstract class AbstractDWRMarker {
 
 	public List<MarkedRegion> mark(MethodNode methodNode) {
 		
-		List<MarkedRegion> mrs = markWithABSWithAAT(methodNode);
+		List<MarkedRegion> mrs = markWithDefaultWeavingReg(methodNode);
 		
-		// automatic branch skipping and after throw region computation
+		// automatically compute default weaving region
 		for(MarkedRegion mr : mrs) {
-			mr.computeAfterThrow(methodNode);
-			mr.skipBranchesAtTheEnds();
+			mr.setWeavingRegion(mr.computeDefaultWeavingRegion(methodNode));
 		}
 		
 		return mrs;
@@ -27,5 +26,6 @@ public abstract class AbstractBranchSkipMarker {
 	 * The regions will get automatic after throw computation
 	 * The regions will get automatic branch skipping at the end
 	 */
-	public abstract List<MarkedRegion> markWithABSWithAAT(MethodNode methodNode);
+	public abstract List<MarkedRegion> markWithDefaultWeavingReg(
+			MethodNode methodNode);
 }

@@ -16,23 +16,65 @@ public class Shadow {
 	private AbstractInsnNode regionStart;
 	private List<AbstractInsnNode> regionEnds;
 	
-	private AbstractInsnNode afterThrowStart;
-	private AbstractInsnNode afterThrowEnd;
+	private WeavingRegion weavingRegion;
+	
+	public static class WeavingRegion {
+
+		// NOTE: "ends" can be null. This means, that we have the special case
+		// where we need to generate before and after snippets on the same
+		// position.
+		// This is for example case of putting snippets before and after
+		// region that includes only return instruction.
+		// In this case, after has to be generated also before the return
+		//  instruction otherwise is newer invoked.
+		// "ends" containing null notifies the weaver about this situation.
+		
+		private AbstractInsnNode start;
+		private List<AbstractInsnNode> ends;
+		
+		private AbstractInsnNode afterThrowStart;
+		private AbstractInsnNode afterThrowEnd;
+		
+		public WeavingRegion(AbstractInsnNode start,
+				List<AbstractInsnNode> ends, AbstractInsnNode afterThrowStart,
+				AbstractInsnNode afterThrowEnd) {
+			super();
+			this.start = start;
+			this.ends = ends;
+			this.afterThrowStart = afterThrowStart;
+			this.afterThrowEnd = afterThrowEnd;
+		}
+
+		public AbstractInsnNode getStart() {
+			return start;
+		}
+		
+		public List<AbstractInsnNode> getEnds() {
+			return ends;
+		}
+		
+		public AbstractInsnNode getAfterThrowStart() {
+			return afterThrowStart;
+		}
+		
+		public AbstractInsnNode getAfterThrowEnd() {
+			return afterThrowEnd;
+		}
+	}
 	
 	public Shadow(ClassNode classNode, MethodNode methodNode, Snippet snippet,
 			AbstractInsnNode regionStart, List<AbstractInsnNode> regionEnds,
-			AbstractInsnNode afterThrowStart, AbstractInsnNode afterThrowEnd) {
+			WeavingRegion weavingRegion) {
 		super();
 		this.classNode = classNode;
 		this.methodNode = methodNode;
 		this.snippet = snippet;
 		this.regionStart = regionStart;
 		this.regionEnds = regionEnds;
-		this.afterThrowStart = afterThrowStart;
-		this.afterThrowEnd = afterThrowEnd;
+		this.weavingRegion = weavingRegion;
 	}
-
-	// special constructor for caching support
+	
+	// special copy constructor for caching support
 	public Shadow(Shadow sa) {
 		
 		this.classNode = sa.classNode;
@@ -40,6 +82,7 @@ public class Shadow {
 		this.snippet = sa.snippet;
 		this.regionStart = sa.regionStart;
 		this.regionEnds = sa.regionEnds;
+		this.weavingRegion = sa.weavingRegion;
 	}
 
 	public ClassNode getClassNode() {
@@ -62,11 +105,7 @@ public class Shadow {
 		return regionEnds;
 	}
 
-	public AbstractInsnNode getAfterThrowStart() {
-		return afterThrowStart;
-	}
-
-	public AbstractInsnNode getAfterThrowEnd() {
-		return afterThrowEnd;
+	public WeavingRegion getWeavingRegion() {
+		return weavingRegion;
 	}
 }
