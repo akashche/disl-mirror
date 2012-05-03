@@ -78,10 +78,15 @@ public abstract class AbstractMarker implements Marker {
 		
 		public WeavingRegion computeDefaultWeavingRegion(MethodNode methodNode) {
 			
-			// TODO ! skip branch instruction at the end
+			// skip branch instruction at the end
+			
 			AbstractInsnNode wstart = null;
 			// can be null - see WeavingRegion for details
 			List<AbstractInsnNode> wends = null;
+			
+			// TODO ! skip branch
+			
+			// compute after throwing region
 			
 			// set start
 			AbstractInsnNode afterThrowStart = start;
