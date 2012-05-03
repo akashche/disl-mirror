@@ -12,19 +12,26 @@ public class Shadow {
 	protected ClassNode classNode;
 	protected MethodNode methodNode;
 	protected Snippet snippet;
+	
 	private AbstractInsnNode regionStart;
 	private List<AbstractInsnNode> regionEnds;
 	
-	public Shadow(ClassNode classNode, MethodNode methodNode,
-			Snippet snippet, AbstractInsnNode regionStart, List<AbstractInsnNode> regionEnds) {
+	private AbstractInsnNode afterThrowStart;
+	private AbstractInsnNode afterThrowEnd;
+	
+	public Shadow(ClassNode classNode, MethodNode methodNode, Snippet snippet,
+			AbstractInsnNode regionStart, List<AbstractInsnNode> regionEnds,
+			AbstractInsnNode afterThrowStart, AbstractInsnNode afterThrowEnd) {
 		super();
 		this.classNode = classNode;
 		this.methodNode = methodNode;
 		this.snippet = snippet;
 		this.regionStart = regionStart;
 		this.regionEnds = regionEnds;
+		this.afterThrowStart = afterThrowStart;
+		this.afterThrowEnd = afterThrowEnd;
 	}
-	
+
 	// special constructor for caching support
 	public Shadow(Shadow sa) {
 		
@@ -53,5 +60,13 @@ public class Shadow {
 
 	public List<AbstractInsnNode> getRegionEnds() {
 		return regionEnds;
+	}
+
+	public AbstractInsnNode getAfterThrowStart() {
+		return afterThrowStart;
+	}
+
+	public AbstractInsnNode getAfterThrowEnd() {
+		return afterThrowEnd;
 	}
 }
