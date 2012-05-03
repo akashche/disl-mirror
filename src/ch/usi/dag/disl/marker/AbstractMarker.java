@@ -95,7 +95,7 @@ public abstract class AbstractMarker implements Marker {
 				}
 				
 				instr.getPrevious();
-			} 
+			}
 		}
 		
 		public void skipBranchesAtTheEnds() {
