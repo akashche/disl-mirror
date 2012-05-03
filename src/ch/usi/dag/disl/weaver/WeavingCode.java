@@ -440,41 +440,6 @@ public class WeavingCode {
 		}
 	}
 
-	// An index of local slot will be returned, and the weaver is supposed to
-	// store the exception in this slot. getException pseudo call will be fixed.
-	public int getExceptionSlot() {
-
-		int slot = method.maxLocals;
-
-		for (AbstractInsnNode instr : iList.toArray()) {
-			// pseudo function call
-			if (instr.getOpcode() != Opcodes.INVOKEINTERFACE) {
-				continue;
-			}
-
-			MethodInsnNode invoke = (MethodInsnNode) instr;
-
-			if (!invoke.owner
-					.equals(Type.getInternalName(DynamicContext.class))) {
-				continue;
-			}
-
-			AbstractInsnNode prev = instr.getPrevious();
-
-			if (!invoke.name.equals("getException")) {
-				throw new DiSLFatalException(
-						"Unhandled DynamicContext pseudo call: " + invoke.name);
-			}
-
-			iList.insert(instr, new VarInsnNode(Opcodes.ALOAD, slot));
-			iList.remove(invoke);
-			iList.remove(prev);
-		}
-
-		method.maxLocals++;
-		return slot;
-	}
-
 	// Fix the stack operand index of each stack-based instruction
 	// according to the maximum number of locals in the target method node.
 	// NOTE that the field maxLocals of the method node will be automatically
