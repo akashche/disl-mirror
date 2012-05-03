@@ -17,9 +17,7 @@ public class DiSLClass {
 	@AfterReturning(marker = BytecodeMarker.class, args = "newarray, anewarray, multianewarray")
 	public static void eee(DynamicContext dc, MyMethodStaticContext sc, UniqueMethodId id) {
 		Object allocatedObj = dc.getStackValue(0, Object.class);
-//		int offset = sc.getOffset();
-//		int methodID = id.get(); 
-//        int clID = System.identityHashCode(allocatedObj.getClass().getClassLoader());
+
         HPROFAnalysis.instanceOf().onObjectInitialization(
 				allocatedObj, //the allocated object
 				sc.getExtendedID(), 
@@ -36,13 +34,9 @@ public class DiSLClass {
 	/** ALLOCATION SITE **/
 	@AfterReturning(marker = NewObjMarker.class,  order = 10)
 	public static void afterReturningNew(MyMethodStaticContext sc, DynamicContext dc, UniqueMethodId id) {
-		//	System.err.println("allocation snippet in " + sc.thisMethodFullName());
-//		if(objStack != null) {
+
 			if(!objStack.empty()) {
 				Object allocatedObj = objStack.pop();
-//				int offset = sc.getOffset();
-//				int methodID = id.get(); 
-//		        int clID = System.identityHashCode(allocatedObj.getClass().getClassLoader());
 				HPROFAnalysis.instanceOf().onObjectInitialization(
 						allocatedObj, //the allocated object
 						sc.getExtendedID(), 
@@ -51,7 +45,6 @@ public class DiSLClass {
 			} else {
 				System.out.println("EMPTY STACK\t" + Thread.currentThread().getName() +"\t" + sc.thisMethodFullName());
 			}
-//		}
 	}
 
 }

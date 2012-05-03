@@ -5,11 +5,11 @@ package ch.usi.dag.disl.example.hprof.runtime;
 import java.lang.instrument.Instrumentation;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import ch.usi.dag.disl.dynamicbypass.DynamicBypass;
 import ch.usi.dag.dislagent.DiSLAgent;
@@ -24,7 +24,7 @@ public class HPROFAnalysis {
 		public void run() {
 			DynamicBypass.activate();
 			//TODO: maybe this should be an int --> call gc multiple times in a row if not refs are available
-			boolean blocking = false;
+//			boolean blocking = false;
 
 			while(true) {
 				try {
@@ -95,23 +95,23 @@ public class HPROFAnalysis {
 				System.err.println("In shutdown hook!");
 //				
 				try {
-//					
+						ArrayList<Counter> list = new ArrayList<Counter>();
 						Iterator<Entry<String, Counter>> iterator = counterMap.entrySet().iterator();
 						int idx = 0;
 						while (iterator.hasNext()) {  
-							idx++;
+						
 							Entry<String, Counter> entry = iterator.next();
 							String key = entry.getKey(); 
 							Counter myCounter = entry.getValue();
-
-							//TODO: myCounter.toString();
-							int totalNumber = myCounter.getTotalNumberOfObjects(); 
-							long totalSize = myCounter.getTotalSize();
-							long currentSize = myCounter.getCurrentSize();
-							int currentNumber = myCounter.getCurrentNumberOfObjects();
-							String typeOfObject = myCounter.getObjectType();
-							System.err.println(idx + " TOTAL SIZE " + totalSize + " TOTAL # " + totalNumber + " CURRENT SIZE " + currentSize + " CURRENT # "+ currentNumber + " TYPE OF THE OBJECT " + typeOfObject + " ALLOCATION SITE: " + key  );
+							myCounter.setAllocationSite(key);
+							list.add(myCounter);
 					}
+						Object[] counters = list.toArray();
+						Arrays.sort(counters, new CounterComparator());
+						for (Object counter:counters) {
+							idx++;
+							System.err.println(idx + "\t" + ((Counter)counter).toString());
+						}
 				} catch (Throwable e) {
 					e.printStackTrace();
 				}

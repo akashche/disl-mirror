@@ -8,7 +8,8 @@ public class Counter {
 	private final String objectType;
 	private long totalSize;
 	private long currentSize;
-
+	//maybe not the best solution
+	private String allocationSite;
 
 	public Counter(String objType) {
 		this.objectType = objType;
@@ -30,6 +31,13 @@ public class Counter {
 		return currentNumberOfObjects;
 	}
 	
+	public synchronized void setAllocationSite(String allocationSite) {
+		this.allocationSite = allocationSite;
+	}
+	
+	public String getAllocationSite() {
+		return allocationSite;
+	}
 
 	
 	public synchronized void incrementCounter(long size) {
@@ -49,6 +57,6 @@ public class Counter {
 	}
 
 	public String toString() {
-		return getObjectType() + "\t" + "..."; 
+		return getCurrentSize() + "\t" + getCurrentNumberOfObjects() + "\t" + getTotalSize() + "\t" + getTotalNumberOfObjects() + "\t" + getObjectType() + "\t" + getAllocationSite(); 
 	}
 }
