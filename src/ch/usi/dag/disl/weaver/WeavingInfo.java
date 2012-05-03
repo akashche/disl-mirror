@@ -62,6 +62,8 @@ public class WeavingInfo {
 		for (TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
 			tcb_ends.add(tcb.end);
 		}
+		
+		AbstractInsnNode lastIntruction = instructions.getLast();
 
 		// initialize weaving start
 		for (Snippet snippet : sortedSnippets) {
@@ -110,7 +112,7 @@ public class WeavingInfo {
 
 				if (snippet.getMarker() instanceof BodyMarker) {
 
-					last = instructions.getLast();
+					last = lastIntruction;
 				} else {
 
 					if (AsmHelper.isBranch(last)

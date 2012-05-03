@@ -261,7 +261,7 @@ public class Weaver {
 
 					WeavingCode wCode = new WeavingCode(info, methodNode, code,
 							snippet, shadow, index);
-					wCode.transform(staticInfoHolder, piResolver);
+					wCode.transform(staticInfoHolder, piResolver, false);
 
 					methodNode.instructions.insertBefore(loc, wCode.getiList());
 					methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
@@ -301,7 +301,7 @@ public class Weaver {
 
 						WeavingCode wCode = new WeavingCode(info, methodNode,
 								code, snippet, region, index);
-						wCode.transform(staticInfoHolder, piResolver);
+						wCode.transform(staticInfoHolder, piResolver, false);
 
 						methodNode.instructions.insert(loc, wCode.getiList());
 						methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
@@ -337,24 +337,15 @@ public class Weaver {
 
 					WeavingCode wCode = new WeavingCode(info, methodNode, code,
 							snippet, region, last_index);
-					wCode.transform(staticInfoHolder, piResolver);
+					wCode.transform(staticInfoHolder, piResolver, true);
 
 					// Create a try-catch clause
 					TryCatchBlockNode tcb = getTryCatchBlock(methodNode, info
 							.getWeavingStart().get(region.getRegionStart()),
 							last);
 
-					methodNode.instructions.insert(tcb.handler, new InsnNode(
-							Opcodes.ATHROW));
-					methodNode.instructions
-							.insert(tcb.handler, new VarInsnNode(Opcodes.ALOAD,
-									methodNode.maxLocals));
 					methodNode.instructions.insert(tcb.handler,
 							wCode.getiList());
-					methodNode.instructions.insert(tcb.handler,
-							new VarInsnNode(Opcodes.ASTORE,
-									methodNode.maxLocals));
-					methodNode.maxLocals++;
 
 					methodNode.tryCatchBlocks.add(tcb);
 					methodNode.tryCatchBlocks.addAll(wCode.getTCBs());

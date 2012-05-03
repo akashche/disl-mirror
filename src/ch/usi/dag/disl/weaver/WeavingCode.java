@@ -154,7 +154,8 @@ public class WeavingCode {
 				continue;
 			}
 
-			if (invoke.name.equals("getThis")) {
+			if (invoke.name.equals("getThis")
+					|| invoke.name.equals("getException")) {
 				continue;
 			}
 
@@ -194,6 +195,7 @@ public class WeavingCode {
 		}
 	}
 
+	private static final int INVALID_SLOT = -1;
 	private static List<String> primitiveTypes;
 
 	static {
@@ -212,12 +214,18 @@ public class WeavingCode {
 	// NOTE that if the user requests for the stack value, some store
 	// instructions will be inserted to the target method, and new local slot
 	// will be used for storing this.
-	public void fixDynamicInfo() throws DynamicInfoException {
+	public void fixDynamicInfo(boolean throwing) throws DynamicInfoException {
 
 		preFixDynamicInfoCheck();
 
 		Frame<BasicValue> basicframe = info.getBasicFrame(index);
 		Frame<SourceValue> sourceframe = info.getSourceFrame(index);
+		int exceptionslot = INVALID_SLOT;
+
+		if (throwing) {
+			exceptionslot = method.maxLocals;
+			method.maxLocals++;
+		}
 
 		for (AbstractInsnNode instr : iList.toArray()) {
 			// pseudo function call
@@ -240,6 +248,18 @@ public class WeavingCode {
 					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 				} else {
 					iList.insert(instr, new VarInsnNode(Opcodes.ALOAD, 0));
+				}
+
+				iList.remove(invoke);
+				iList.remove(prev);
+				continue;
+			} else if (invoke.name.equals("getException")) {
+
+				if (throwing) {
+					iList.insert(instr, new VarInsnNode(Opcodes.ALOAD,
+							exceptionslot));
+				} else {
+					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 				}
 
 				iList.remove(invoke);
@@ -410,6 +430,49 @@ public class WeavingCode {
 			iList.remove(prev);
 			iList.remove(instr);
 		}
+
+		if (throwing) {
+
+			iList.insertBefore(iList.getFirst(), new VarInsnNode(
+					Opcodes.ASTORE, exceptionslot));
+			iList.add(new VarInsnNode(Opcodes.ALOAD, exceptionslot));
+			iList.add(new InsnNode(Opcodes.ATHROW));
+		}
+	}
+
+	// An index of local slot will be returned, and the weaver is supposed to
+	// store the exception in this slot. getException pseudo call will be fixed.
+	public int getExceptionSlot() {
+
+		int slot = method.maxLocals;
+
+		for (AbstractInsnNode instr : iList.toArray()) {
+			// pseudo function call
+			if (instr.getOpcode() != Opcodes.INVOKEINTERFACE) {
+				continue;
+			}
+
+			MethodInsnNode invoke = (MethodInsnNode) instr;
+
+			if (!invoke.owner
+					.equals(Type.getInternalName(DynamicContext.class))) {
+				continue;
+			}
+
+			AbstractInsnNode prev = instr.getPrevious();
+
+			if (!invoke.name.equals("getException")) {
+				throw new DiSLFatalException(
+						"Unhandled DynamicContext pseudo call: " + invoke.name);
+			}
+
+			iList.insert(instr, new VarInsnNode(Opcodes.ALOAD, slot));
+			iList.remove(invoke);
+			iList.remove(prev);
+		}
+
+		method.maxLocals++;
+		return slot;
 	}
 
 	// Fix the stack operand index of each stack-based instruction
@@ -779,7 +842,7 @@ public class WeavingCode {
 		return code.getTryCatchBlocks();
 	}
 
-	public void transform(SCGenerator staticInfoHolder, PIResolver piResolver)
+	public void transform(SCGenerator staticInfoHolder, PIResolver piResolver, boolean throwing)
 			throws DynamicInfoException {
 		fixProcessor(piResolver);
 		fixProcessorInfo();
@@ -788,7 +851,7 @@ public class WeavingCode {
 		fixLocalIndex();
 		optimize();
 
-		fixDynamicInfo();
+		fixDynamicInfo(throwing);
 	}
 
 	public void optimize() {
