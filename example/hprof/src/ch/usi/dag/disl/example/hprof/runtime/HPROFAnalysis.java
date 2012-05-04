@@ -2,13 +2,15 @@ package ch.usi.dag.disl.example.hprof.runtime;
 
 
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
 import java.lang.instrument.Instrumentation;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.usi.dag.disl.dynamicbypass.DynamicBypass;
@@ -16,146 +18,117 @@ import ch.usi.dag.dislagent.DiSLAgent;
 
 public class HPROFAnalysis {
 
-	private class ReaperThread extends Thread {
-		public ReaperThread() {
-			setDaemon(true);
-		}
+    //HashMap that contains object IDs as a key and an object of type MyWeakReference as the value
+    private final ConcurrentHashMap<Reference<? extends Object>, MyWeakReference> weakReferenceMap;
 
-		public void run() {
-			DynamicBypass.activate();
-			//TODO: maybe this should be an int --> call gc multiple times in a row if not refs are available
-//			boolean blocking = false;
+    //HashMap that contains object IDs as a key and a wrapper object of type Counter as the value
+    protected static final ConcurrentHashMap<String, Counter> counterMap;
 
-			while(true) {
-				try {
-					Object obj;
-//					if(!blocking) {
-//						obj = refqueue.poll();
-//					} else {
-						obj = refqueue.remove();
-//					}
+    private static final ReferenceQueue<Object> refqueue;
 
-//					if(obj != null) {
-//						blocking = false;
-						MyWeakReference mwr = weakReferenceMap.remove(obj);
-						if(mwr != null) {
-							String fullAllocSiteID = mwr.getFullAllocSiteID();
-							counterMap.get(fullAllocSiteID).decrementCounters(mwr.getSize());
-						} else {
-							//TODO: write something more meaningful
-							System.err.println("WEIRD! THE WEAKREFERENCE WAS NOT IN THE MAP!");
-						}
-//					} else {
-//						blocking = true;
-//						callGC(0);
-//					}
-				} catch(Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-	//HashMap that contains object IDs as a key and an object of type MyWeakReference as the value
-	private final ConcurrentHashMap<Reference<? extends Object>, MyWeakReference> weakReferenceMap;
-	
-	//HashMap that contains object IDs as a key and a wrapper object of type Counter as the value
-	protected static final ConcurrentHashMap<String, Counter> counterMap;
-	
-	private static final ReferenceQueue<Object> refqueue;
-	private final Thread reaper;
+    private static final HPROFAnalysis instanceOfHPROF;
 
+    private static final Instrumentation instr;
 
-	private static final HPROFAnalysis instanceOfHPROF;
+    static {
+        instanceOfHPROF = new HPROFAnalysis();
+        refqueue = new ReferenceQueue<Object>();
+        counterMap = new ConcurrentHashMap<String, Counter>();
+        instr = DiSLAgent.getInstrumentation();		
+    }
 
-	private static final Instrumentation instr;
+    private HPROFAnalysis() {
+        weakReferenceMap = new ConcurrentHashMap<Reference<? extends Object>, MyWeakReference>();
 
-	static {
-		instanceOfHPROF = new HPROFAnalysis();
-		refqueue = new ReferenceQueue<Object>();
-		counterMap = new ConcurrentHashMap<String, Counter>();
-		instr = DiSLAgent.getInstrumentation();		
-	}
+        new ReaperThread().start();
 
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                DynamicBypass.activate();
 
+                System.err.println("In shutdown hook!");
 
-	
+                try {
+                    PrintWriter pw = new PrintWriter(new BufferedOutputStream(new FileOutputStream("dump.log")));
+                    TreeSet<Counter> set = new TreeSet<Counter>(new CounterComparator());
 
-	private HPROFAnalysis() {
-	
-		weakReferenceMap = new ConcurrentHashMap<Reference<? extends Object>, MyWeakReference>();
+                    for (Iterator<Entry<String, Counter>> iter = counterMap.entrySet().iterator(); iter.hasNext();) {
+                        Entry<String, Counter> entry = iter.next();
+                        String key = entry.getKey();
+                        Counter myCounter = entry.getValue();
+                        myCounter.setAllocationSite(key);
+                        set.add(myCounter);
+                    }
 
-		reaper = new ReaperThread();
-		reaper.start();
+                    int idx = 0;
+                    for(Counter counter : set.descendingSet()) {
+                        pw.println(idx++ + "\t" + counter.toString());
+                    }
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				DynamicBypass.activate();
+                    pw.flush();
+                    pw.close();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
 
-//				
-				System.err.println("In shutdown hook!");
-//				
-				try {
-						ArrayList<Counter> list = new ArrayList<Counter>();
-						Iterator<Entry<String, Counter>> iterator = counterMap.entrySet().iterator();
-						int idx = 0;
-						while (iterator.hasNext()) {  
-						
-							Entry<String, Counter> entry = iterator.next();
-							String key = entry.getKey(); 
-							Counter myCounter = entry.getValue();
-							myCounter.setAllocationSite(key);
-							list.add(myCounter);
-					}
-						Object[] counters = list.toArray();
-						Arrays.sort(counters, new CounterComparator());
-						for (Object counter:counters) {
-							idx++;
-							System.err.println(idx + "\t" + ((Counter)counter).toString());
-						}
-				} catch (Throwable e) {
-					e.printStackTrace();
-				}
-				
-			}
-		});
-	}
+            }
+        });
+    }
 
-	public static HPROFAnalysis instanceOf() {
-		return instanceOfHPROF;
-	}
+    public static HPROFAnalysis instanceOf() {
+        return instanceOfHPROF;
+    }
 
-	public void onObjectInitialization(Object allocatedObj, String allocSiteID, int clID) {
-		try {
-			long size = instr.getObjectSize(allocatedObj);
-			String fullAllocSiteID = allocSiteID + clID;
-			MyWeakReference myReference;
-			Counter myCounter;
-			//TODO: do this at instrumentation time? (may require a @SyntheticLocal stack...)
-			String objType = allocatedObj.getClass().getName();
+    public void onObjectInitialization(Object allocatedObj, String allocSiteID, int clID) {
+        try {
+            long size = instr.getObjectSize(allocatedObj);
+            String fullAllocSiteID = allocSiteID + clID;
+            MyWeakReference myReference;
+            Counter myCounter;
+            //TODO: do this at instrumentation time? (may require a @SyntheticLocal stack...)
+            String objType = allocatedObj.getClass().getName();
 
-			myReference = new MyWeakReference(allocatedObj, fullAllocSiteID, size, refqueue);
+            myReference = new MyWeakReference(allocatedObj, fullAllocSiteID, size, refqueue);
 
-			weakReferenceMap.put(myReference, myReference);
+            weakReferenceMap.put(myReference, myReference);
 
-			if ((myCounter = counterMap.get(fullAllocSiteID)) == null) {
-				myCounter = new Counter(objType);
-				Counter tmpCounter;
-				if((tmpCounter = counterMap.putIfAbsent(fullAllocSiteID, myCounter)) != null) {
-					myCounter = tmpCounter;
-				}
-			}
-				
-			myCounter.incrementCounter(size);
-		} catch (Throwable t) {
-			t.printStackTrace();
-		}
-	}
+            if ((myCounter = counterMap.get(fullAllocSiteID)) == null) {
+                myCounter = new Counter(objType);
+                Counter tmpCounter;
+                if((tmpCounter = counterMap.putIfAbsent(fullAllocSiteID, myCounter)) != null) {
+                    myCounter = tmpCounter;
+                }
+            }
 
-	private static void callGC(long sleepTime) {
-		System.runFinalization();
-		System.gc();
-		if(sleepTime > 0) {
-			try { Thread.sleep(sleepTime); } catch(InterruptedException e) { e.printStackTrace(); }
-		}
-	}
+            myCounter.incrementCounter(size);
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+
+    private class ReaperThread extends Thread {
+        public ReaperThread() {
+            setDaemon(true);
+        }
+
+        public void run() {
+            DynamicBypass.activate();
+
+            while(true) {
+                try {
+                    Object obj = refqueue.remove();
+
+                    MyWeakReference mwr = weakReferenceMap.remove(obj);
+                    if(mwr != null) {
+                        String fullAllocSiteID = mwr.getFullAllocSiteID();
+                        counterMap.get(fullAllocSiteID).decrementCounters(mwr.getSize());
+                    } else {
+                        System.err.println("[HPROFAnalysis.ReaperThread] Error: the weak reference map does not have an entry for: " + obj.toString());
+                    }
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }

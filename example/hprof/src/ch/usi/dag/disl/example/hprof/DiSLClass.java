@@ -32,7 +32,7 @@ public class DiSLClass {
 	}
 
 	/** ALLOCATION SITE **/
-	@AfterReturning(marker = NewObjMarker.class,  order = 10)
+	@AfterReturning(marker = NewObjMarker.class, order = 10)
 	public static void afterReturningNew(MyMethodStaticContext sc, DynamicContext dc, UniqueMethodId id) {
 
 			if(!objStack.empty()) {
