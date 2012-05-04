@@ -66,7 +66,7 @@ public class ImmutabilityAnalysis {
 		}
 	}
 
-	public void onFieldWrite(Object accessedObj, String fieldId, Deque<Object> stack, String accessSite) {
+	public void onFieldWrite(Object accessedObj, String fieldId, Deque<Object> stack) {
 		try {
 			FieldState fs = getOrCreateFieldState(accessedObj, fieldId);
 			

@@ -50,8 +50,7 @@ public class DiSLClass {
 		ImmutabilityAnalysis.instanceOf().onFieldWrite(
 				dc.getStackValue(1, Object.class), //the accessed object
 				sc.getFieldId(), //the field identifier
-				objectsUnderConstruction, //the stack of constructors
-				sc.getAllocationSite()
+				objectsUnderConstruction //the stack of constructors
 				);
 	}
 
