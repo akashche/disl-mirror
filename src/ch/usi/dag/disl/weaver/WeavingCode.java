@@ -20,6 +20,7 @@ import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
+import ch.usi.dag.disl.classcontext.ClassContext;
 import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
@@ -121,9 +122,12 @@ public class WeavingCode {
 			}
 
 			LdcInsnNode ldc = (LdcInsnNode) previous;
-			MethodInsnNode invocation = (MethodInsnNode) instr;
+			MethodInsnNode invoke = (MethodInsnNode) instr;
 
-			if (!(ldc.cst instanceof String)) {
+			if (!((ldc.cst instanceof String)
+					&& invoke.owner.equals(Type
+							.getInternalName(ClassContext.class)) && invoke.name
+						.equals("asClass"))) {
 				continue;
 			}
 
@@ -133,7 +137,7 @@ public class WeavingCode {
 			iList.insert(instr, new LdcInsnNode(clazz));
 			iList.remove(ldc.getPrevious());
 			iList.remove(ldc);
-			iList.remove(invocation);
+			iList.remove(invoke);
 		}
 	}
 
