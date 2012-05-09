@@ -1,0 +1,17 @@
+# THESE ARE THE BASIC SETTINGS
+#sun.instrument.*
+# THESE ARE THE RUNTIME CLASSES THAT MUST NOT BE WOVEN
+# BEGIN JDK WEAVING
+# COMMENT THE FOLLOWING FOR FULL COVERAGE
+#org.jcp.*
+#org.omg.*
+#org.xml.*
+#org.ietf.*
+java.*.*
+java.lang.Object.*.*
+javax.*.*
+com.sun.*.*
+com.apple.*.*
+sun.*.*
+sunx.*.*
+# END JDK
