@@ -7,6 +7,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
+
 public class BodyMarker extends AbstractMarker {
 
 	@Override
@@ -25,6 +27,9 @@ public class BodyMarker extends AbstractMarker {
 			}
 		}
 
+		WeavingRegion wregion = region.computeDefaultWeavingRegion(method);
+		wregion.setAfterThrowEnd(method.instructions.getLast());
+		region.setWeavingRegion(wregion);
 		regions.add(region);
 		return regions;
 	}

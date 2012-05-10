@@ -30,6 +30,7 @@ public class Shadow {
 		// "ends" containing null notifies the weaver about this situation.
 		
 		private AbstractInsnNode start;
+
 		private List<AbstractInsnNode> ends;
 		
 		private AbstractInsnNode afterThrowStart;
@@ -60,6 +61,23 @@ public class Shadow {
 		public AbstractInsnNode getAfterThrowEnd() {
 			return afterThrowEnd;
 		}
+		
+		public void setStart(AbstractInsnNode start) {
+			this.start = start;
+		}
+		
+		public void setEnds(List<AbstractInsnNode> ends) {
+			this.ends = ends;
+		}
+
+		public void setAfterThrowStart(AbstractInsnNode afterThrowStart) {
+			this.afterThrowStart = afterThrowStart;
+		}
+
+		public void setAfterThrowEnd(AbstractInsnNode afterThrowEnd) {
+			this.afterThrowEnd = afterThrowEnd;
+		}
+		
 	}
 	
 	public Shadow(ClassNode classNode, MethodNode methodNode, Snippet snippet,

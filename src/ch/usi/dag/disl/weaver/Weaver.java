@@ -28,6 +28,7 @@ import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
+import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.AsmHelper;
 
@@ -210,6 +211,35 @@ public class Weaver {
 		return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
 	}
 
+	private static void insert(MethodNode methodNode,
+			SCGenerator staticInfoHolder, PIResolver piResolver,
+			WeavingInfo info, Snippet snippet, SnippetCode code, Shadow shadow,
+			AbstractInsnNode loc) throws DynamicInfoException {
+		
+		// exception handler will discard the stack and push the
+		// exception object. Thus, before entering this snippet,
+		// weaver must backup the stack and restore when exiting
+		if (code.containsHandledException()
+				&& info.stackNotEmpty(loc)) {
+
+			InsnList backup = info.backupStack(loc,
+					methodNode.maxLocals);
+			InsnList restore = info.restoreStack(loc,
+					methodNode.maxLocals);
+			methodNode.maxLocals += info.getStackHeight(loc);
+
+			methodNode.instructions.insertBefore(loc, backup);
+			methodNode.instructions.insert(loc, restore);
+		}
+
+		WeavingCode wCode = new WeavingCode(info, methodNode,
+				code, snippet, shadow, loc);
+		wCode.transform(staticInfoHolder, piResolver, false);
+
+		methodNode.instructions.insert(loc, wCode.getiList());
+		methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
+	}
+
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<Shadow>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
@@ -234,38 +264,9 @@ public class Weaver {
 			if (snippet.getAnnotationClass().equals(Before.class)) {
 				for (Shadow shadow : shadows) {
 
-					AbstractInsnNode loc = info.getWeavingStart().get(
-							shadow.getRegionStart());
-					int index = info.getStackStart().get(
-							shadow.getRegionStart());
-
-					// exception handler will discard the stack and push the
-					// exception object. Thus, before entering this snippet,
-					// weaver must backup the stack and restore when exiting
-					if (code.containsHandledException()
-							&& info.stackNotEmpty(index)) {
-
-						InsnList backup = info.backupStack(index,
-								methodNode.maxLocals);
-						InsnList restore = info.restoreStack(index,
-								methodNode.maxLocals);
-						methodNode.maxLocals += info.getStackHeight(index);
-
-						AbstractInsnNode temp = restore.getFirst();
-
-						methodNode.instructions.insertBefore(loc, backup);
-						methodNode.instructions.insertBefore(loc, restore);
-
-						loc = temp;
-					}
-
-					WeavingCode wCode = new WeavingCode(info, methodNode, code,
-							snippet, shadow, index);
-					wCode.transform(staticInfoHolder, piResolver, false);
-
-					methodNode.instructions.insertBefore(loc, wCode.getiList());
-					methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
-
+					AbstractInsnNode loc = shadow.getWeavingRegion().getStart();
+					insert(methodNode, staticInfoHolder, piResolver, info,
+							snippet, code, shadow, loc);
 				}
 			}
 
@@ -273,38 +274,12 @@ public class Weaver {
 			// after each adjusted exit of a region.
 			if (snippet.getAnnotationClass().equals(AfterReturning.class)
 					|| snippet.getAnnotationClass().equals(After.class)) {
-				for (Shadow region : shadows) {
+				for (Shadow shadow : shadows) {
 
-					for (AbstractInsnNode exit : region.getRegionEnds()) {
+					for (AbstractInsnNode loc : shadow.getWeavingRegion().getEnds()) {
 
-						AbstractInsnNode loc = info.getWeavingEnd().get(exit);
-
-						int index = info.getStackEnd().get(exit);
-
-						// backup and restore the stack
-						if (code.containsHandledException()
-								&& info.stackNotEmpty(index)) {
-
-							InsnList backup = info.backupStack(index,
-									methodNode.maxLocals);
-							InsnList restore = info.restoreStack(index,
-									methodNode.maxLocals);
-							methodNode.maxLocals += info.getStackHeight(index);
-
-							AbstractInsnNode temp = backup.getLast();
-
-							methodNode.instructions.insert(loc, restore);
-							methodNode.instructions.insert(loc, backup);
-
-							loc = temp;
-						}
-
-						WeavingCode wCode = new WeavingCode(info, methodNode,
-								code, snippet, region, index);
-						wCode.transform(staticInfoHolder, piResolver, false);
-
-						methodNode.instructions.insert(loc, wCode.getiList());
-						methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
+						insert(methodNode, staticInfoHolder, piResolver, info,
+								snippet, code, shadow, loc);
 					}
 				}
 			}
@@ -315,34 +290,20 @@ public class Weaver {
 			if (snippet.getAnnotationClass().equals(AfterThrowing.class)
 					|| snippet.getAnnotationClass().equals(After.class)) {
 
-				for (Shadow region : shadows) {
+				for (Shadow shadow : shadows) {
+					
+					WeavingRegion region = shadow.getWeavingRegion();
 					// after-throwing inserts the snippet once, and marks
 					// the start and the very end as the scope
-					AbstractInsnNode last = info.getWeavingThrow().get(region);
-
-					int last_index = -1;
-
-					for (AbstractInsnNode exit : region.getRegionEnds()) {
-
-						int index = info.getStackEnd().get(exit);
-
-						if (last_index < index) {
-							last_index = index;
-						}
-					}
-
-					if (last_index == -1) {
-						last_index = info.getStackEnd().get(last);
-					}
+					AbstractInsnNode loc = region.getAfterThrowEnd();
 
 					WeavingCode wCode = new WeavingCode(info, methodNode, code,
-							snippet, region, last_index);
+							snippet, shadow, loc);
 					wCode.transform(staticInfoHolder, piResolver, true);
 
 					// Create a try-catch clause
-					TryCatchBlockNode tcb = getTryCatchBlock(methodNode, info
-							.getWeavingStart().get(region.getRegionStart()),
-							last);
+					TryCatchBlockNode tcb = getTryCatchBlock(methodNode,
+							region.getAfterThrowStart(), loc);
 
 					methodNode.instructions.insert(tcb.handler,
 							wCode.getiList());

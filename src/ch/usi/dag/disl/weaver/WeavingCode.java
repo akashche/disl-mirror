@@ -51,18 +51,19 @@ public class WeavingCode {
 	private AbstractInsnNode[] iArray;
 	private Snippet snippet;
 	private Shadow shadow;
-	private int index;
+	private AbstractInsnNode weavingLoc;
 	private int maxLocals;
 
 	public WeavingCode(WeavingInfo weavingInfo, MethodNode method,
-			SnippetCode src, Snippet snippet, Shadow shadow, int index) {
+			SnippetCode src, Snippet snippet, Shadow shadow,
+			AbstractInsnNode loc) {
 
 		this.info = weavingInfo;
 		this.method = method;
 		this.code = src.clone();
 		this.snippet = snippet;
 		this.shadow = shadow;
-		this.index = index;
+		this.weavingLoc = loc;
 
 		this.iList = code.getInstructions();
 		this.iArray = iList.toArray();
@@ -222,8 +223,8 @@ public class WeavingCode {
 
 		preFixDynamicInfoCheck();
 
-		Frame<BasicValue> basicframe = info.getBasicFrame(index);
-		Frame<SourceValue> sourceframe = info.getSourceFrame(index);
+		Frame<BasicValue> basicframe = info.getBasicFrame(weavingLoc);
+		Frame<SourceValue> sourceframe = info.getSourceFrame(weavingLoc);
 		int exceptionslot = INVALID_SLOT;
 
 		if (throwing) {
@@ -562,9 +563,9 @@ public class WeavingCode {
 
 	// combine processors into an instruction list
 	// NOTE that these processors are for the callee
-	private InsnList procBeforeInvoke(ProcInstance processor, int index) {
+	private InsnList procBeforeInvoke(ProcInstance processor) {
 
-		Frame<SourceValue> frame = info.getSourceFrame(index);
+		Frame<SourceValue> frame = info.getSourceFrame(weavingLoc);
 		InsnList ilist = new InsnList();
 
 		for (ProcMethodInstance processorMethod : processor.getMethods()) {
@@ -612,7 +613,7 @@ public class WeavingCode {
 				if (processor.getProcApplyType() == ArgumentProcessorMode.METHOD_ARGS) {
 					iList.insert(instr, procInMethod(processor));
 				} else {
-					iList.insert(instr, procBeforeInvoke(processor, index));
+					iList.insert(instr, procBeforeInvoke(processor));
 				}
 			}
 

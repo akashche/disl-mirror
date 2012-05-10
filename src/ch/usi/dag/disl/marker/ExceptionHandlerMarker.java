@@ -10,10 +10,10 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
-public class ExceptionHandlerMarker extends AbstractMarker {
+public class ExceptionHandlerMarker extends AbstractDWRMarker {
 
 	@Override
-	public List<MarkedRegion> mark(MethodNode method) {
+	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 
@@ -22,10 +22,10 @@ public class ExceptionHandlerMarker extends AbstractMarker {
 		cfg.visit(method.instructions.getFirst());
 
 		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
-			
+
 			List<AbstractInsnNode> exits = cfg.visit(tcb.handler);
-			regions.add(new MarkedRegion(AsmHelper.skipVirualInsns(
-					tcb.handler, true), exits));
+			regions.add(new MarkedRegion(AsmHelper.skipVirualInsns(tcb.handler,
+					true), exits));
 		}
 
 		return regions;

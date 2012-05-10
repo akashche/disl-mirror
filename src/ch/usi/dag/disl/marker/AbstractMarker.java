@@ -7,12 +7,15 @@ import java.util.Set;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.snippet.Snippet;
+import ch.usi.dag.disl.util.AsmHelper;
 
 public abstract class AbstractMarker implements Marker {
 
@@ -75,16 +78,28 @@ public abstract class AbstractMarker implements Marker {
 		public boolean valid() {
 			return start != null && ends != null && weavingRegion != null;
 		}
-		
+
 		public WeavingRegion computeDefaultWeavingRegion(MethodNode methodNode) {
-			
+
 			// skip branch instruction at the end
-			
-			AbstractInsnNode wstart = null;
+
+			AbstractInsnNode wstart = start;
 			// can be null - see WeavingRegion for details
 			List<AbstractInsnNode> wends = null;
-			
-			// TODO ! skip branch
+
+			if (!ends.contains(wstart)) {
+
+				wends = new LinkedList<AbstractInsnNode>();
+
+				for (AbstractInsnNode instr : ends) {
+
+					if (AsmHelper.isBranch(instr)) {
+						wends.add(instr.getPrevious());
+					} else {
+						wends.add(instr);
+					}
+				}
+			}
 			
 			// compute after throwing region
 			
@@ -95,6 +110,7 @@ public abstract class AbstractMarker implements Marker {
 			// get end that is the latest in the method instructions 
 			Set<AbstractInsnNode> endsSet = new HashSet<AbstractInsnNode>(ends);
 
+			// get end that is the latest in the method instructions
 			AbstractInsnNode instr = methodNode.instructions.getLast();
 			
 			while(instr != null) {
@@ -104,7 +120,21 @@ public abstract class AbstractMarker implements Marker {
 					break;
 				}
 				
-				instr.getPrevious();
+				instr = instr.getPrevious();
+			}
+
+			// skip the label nodes which are the end of try-catch blocks
+			if (afterThrowEnd instanceof LabelNode) {
+
+				Set<AbstractInsnNode> tcb_ends = new HashSet<AbstractInsnNode>();
+
+				for (TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
+					tcb_ends.add(tcb.end);
+				}
+
+				while (tcb_ends.contains(afterThrowEnd)) {
+					afterThrowEnd = afterThrowEnd.getPrevious();
+				}
 			}
 			
 			return new WeavingRegion(wstart, wends, afterThrowStart,
