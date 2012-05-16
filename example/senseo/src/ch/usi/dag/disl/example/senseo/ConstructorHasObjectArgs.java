@@ -10,7 +10,9 @@ public class ConstructorHasObjectArgs {
     public static boolean isApplicable(MethodStaticContext msc) {
         String desc = msc.thisMethodDescriptor();
         return
-            OnlyInit.isApplicable(msc)
+            msc.thisMethodName().equals("<init>")
+            && !msc.thisClassName().equals("java/lang/Object")
+            && !msc.thisClassName().equals("java/lang/Thread")
             && desc.substring(0, desc.indexOf(')')).contains("L");
     }
 }

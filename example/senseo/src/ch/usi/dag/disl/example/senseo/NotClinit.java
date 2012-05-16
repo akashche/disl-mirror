@@ -6,6 +6,16 @@ import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 public class NotClinit {
     @GuardMethod
     public static boolean isApplicable(MethodStaticContext msc) {
-        return (msc.thisMethodName().equals("<clinit>")) ? false : true;
+        if(
+            msc.thisMethodName().equals("<clinit>")
+            || msc.thisMethodName().equals("<init>")
+            && (
+                msc.thisClassName().equals("java/lang/Object")
+                || msc.thisClassName().equals("java/lang/Thread")
+            )
+        ) {
+            return false;
+        }
+        return true;
     }
 }

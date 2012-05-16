@@ -8,11 +8,12 @@ public final class CCTNodeTL {
     CCTNodeTL left, right; // siblings in the CCT
     CCTNodeTL callees; // children in the CCT
 
-    // Dynamic info
-    final ArgumentNodeTL argsRoot;// = ArgumentNodeTL.createRoot();
+    final ArgumentNodeTL argsRoot;
     ArgumentNodeTL currentArg;
 
-    final int[] bbs;
+    final ArgumentNodeTL retValsRoot;
+
+    int allocCount;
 
     private CCTNodeTL() {
         this.parent = null;
@@ -21,49 +22,51 @@ public final class CCTNodeTL {
         this.calls = 0;
 
         currentArg = (argsRoot = null);
+        retValsRoot = null;
 
-        bbs = null;
+        allocCount = 0;
     }
 
-    private CCTNodeTL(CCTNodeTL parent, int methodUID, int calls, boolean hasOnlyPrimitiveArgs, int totBBs) {
+    private CCTNodeTL(CCTNodeTL parent, int methodUID, boolean hasOnlyPrimitiveArgs) {
         this.parent = parent;
         this.methodUID = methodUID;
 
-        this.calls = calls;
+        calls = 1;
 
         currentArg = (argsRoot = (hasOnlyPrimitiveArgs ? null : ArgumentNodeTL.createRoot()));
+        retValsRoot = new ArgumentNodeTL();
 
-        bbs = new int[totBBs];
+        allocCount = 0;
     }
 
     public static CCTNodeTL createRoot() {
         return new CCTNodeTL();
     }
 
-    CCTNodeTL getOrCreateCallee(int methodUID, int calls, boolean hasOnlyPrimitiveArgs, int totBBs) {
+    CCTNodeTL getOrCreateCallee(int methodUID, boolean hasOnlyPrimitiveArgs) {
         CCTNodeTL n;
         if ((n = callees) == null) {
-            return (callees = new CCTNodeTL(this, methodUID, calls, hasOnlyPrimitiveArgs, totBBs));
+            return (callees = new CCTNodeTL(this, methodUID, hasOnlyPrimitiveArgs));
         }
 
         while (true) {
             int n_methodUID;
             if ((n_methodUID = n.methodUID) == methodUID) {
-                n.calls += calls;
+                n.calls++;
                 n.resetCurrentArg();
                 return n;
             }
-            else if (methodUID <= n_methodUID) {
+            else if (methodUID < n_methodUID) {
                 CCTNodeTL lft;
                 if ((lft = n.left) == null) {
-                    return (n.left = new CCTNodeTL(this, methodUID, calls, hasOnlyPrimitiveArgs, totBBs));
+                    return (n.left = new CCTNodeTL(this, methodUID, hasOnlyPrimitiveArgs));
                 }
                 n = lft;
             }
             else {
                 CCTNodeTL rgt;
                 if ((rgt = n.right) == null) {
-                    return (n.right = new CCTNodeTL(this, methodUID, calls, hasOnlyPrimitiveArgs, totBBs));
+                    return (n.right = new CCTNodeTL(this, methodUID, hasOnlyPrimitiveArgs));
                 }
                 n = rgt;
             }
@@ -75,26 +78,32 @@ public final class CCTNodeTL {
         currentArg.occurrences++;
     }
 
+    void profileReturn(Class<?> retClass) {
+        retValsRoot.getOrCreateNextArgument(retClass).occurrences++;
+    }
+
     private void resetCurrentArg() {
         currentArg = argsRoot;
     }
 
-    void profileBB(int index) {
-        bbs[index]++;
+    void profileAlloc() {
+        allocCount++;
     }
 
-    void prune() {
+    void prune(CCTNodeTL callee) {
         left = null;
         right = null;
-        callees = null;
+        callees = callee;
 
         if(argsRoot != null) {
             argsRoot.nextArgs = null;
         }
 
-        for(int i = 0; i < bbs.length; i++) {
-            bbs[i] = 0;
+        if(retValsRoot != null) {
+            retValsRoot.nextArgs = null;
         }
+
+        allocCount = 0;
 
         calls = 0;
     }

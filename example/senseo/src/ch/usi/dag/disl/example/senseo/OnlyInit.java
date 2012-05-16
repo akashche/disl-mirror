@@ -6,6 +6,6 @@ import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 public class OnlyInit {
     @GuardMethod
     public static boolean isApplicable(MethodStaticContext msc) {
-        return (msc.thisMethodName().equals("<init>") && !msc.thisClassName().equals("java/lang/Object")) ? true : false;
+        return msc.thisMethodName().equals("<init>") && !msc.thisClassName().equals("java/lang/Object") && !msc.thisClassName().equals("java/lang/Thread");
     }
 }

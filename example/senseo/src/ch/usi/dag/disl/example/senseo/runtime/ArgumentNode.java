@@ -4,8 +4,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import ch.usi.dag.disl.example.senseo.runtime.arguments.PrimitiveWrapper;
-import ch.usi.dag.jborat.runtime.DynamicBypass;
-
 
 public final class ArgumentNode {
     private static final String SEPARATOR = " ";
@@ -16,15 +14,12 @@ public final class ArgumentNode {
     private static final AtomicReferenceFieldUpdater<ArgumentNode, ArgumentNode> nextArgsUpdater;
 
     static {
-        boolean oldState = DynamicBypass.getAndSet();
-        try {
-            occurrencesUpdater = AtomicIntegerFieldUpdater.newUpdater(ArgumentNode.class, "occurrences");
-            leftUpdater = AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "left");
-            rightUpdater = AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "right");
-            nextArgsUpdater = AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "nextArgs");
-        } finally {
-            DynamicBypass.set(oldState);
-        }
+//        DynamicBypass.activate();
+        occurrencesUpdater = AtomicIntegerFieldUpdater.newUpdater(ArgumentNode.class, "occurrences");
+        leftUpdater = AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "left");
+        rightUpdater = AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "right");
+        nextArgsUpdater = AtomicReferenceFieldUpdater.newUpdater(ArgumentNode.class, ArgumentNode.class, "nextArgs");
+//        DynamicBypass.deactivate();
     }
 
     private volatile ArgumentNode left, right;
@@ -109,6 +104,14 @@ public final class ArgumentNode {
                 integrateNextArguments(otherArgsRight);
             }
         } while ((otherArgs = otherArgs.left) != null);
+    }
+
+    public void prune() {
+        left = null;
+        right = null;
+        nextArgs = null;
+
+        occurrences = 0;
     }
 
     public void dump(StringBuffer buf) { // must be called with activated DIB

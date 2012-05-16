@@ -30,7 +30,6 @@ public final class ArgumentNodeTL {
     ArgumentNodeTL getOrCreateNextArgument(Class<?> arg) {
         ArgumentNodeTL n;
         if ((n = nextArgs) == null) {
-            //System.out.println("[ArgumentNodeTL] 1");
             return (nextArgs = new ArgumentNodeTL(this, arg));
         }
 
@@ -58,34 +57,34 @@ public final class ArgumentNodeTL {
         }
     }
 
-//    public void dump(StringBuffer buf) { // must be called with activated DIB
-//        buf.append('{');
-//        dumpArgs(buf, nextArgs, "");
-//        buf.append('}');
-//    }
-//
-//    private static void dumpArgs(StringBuffer buf, ArgumentNodeTL n, String path) {
-//        if (n != null) {
-//            String localPath = path + n.argument.getName();
-//
-//            if((n.dumpArgs(buf, localPath)) && ((n.left != null) || (n.right != null))) {
-//                buf.append(" - ");
-//                localPath = "";
-//            }
-//            dumpArgs(buf, n.left, localPath);
-//            dumpArgs(buf, n.right, localPath);
-//        }
-//    }
-//
-//    private boolean dumpArgs(StringBuffer buf, String path) {
-//        if (nextArgs != null) {
-//            String localPath = path + ", ";
-//            dumpArgs(buf, nextArgs, localPath);
-//            return false;
-//        }
-//        else {
-//            buf.append(path + " = " + occurrences);
-//            return true;
-//        }
-//    }
+    public void dump(StringBuffer buf) {
+        buf.append('{');
+        dumpArgs(buf, nextArgs, "");
+        buf.append('}');
+    }
+
+    private static void dumpArgs(StringBuffer buf, ArgumentNodeTL n, String path) {
+        if (n != null) {
+            String localPath = path + n.argument.getName();
+
+            if((n.dumpArgs(buf, localPath)) && ((n.left != null) || (n.right != null))) {
+                buf.append(" - ");
+                localPath = "";
+            }
+            dumpArgs(buf, n.left, localPath);
+            dumpArgs(buf, n.right, localPath);
+        }
+    }
+
+    private boolean dumpArgs(StringBuffer buf, String path) {
+        if (nextArgs != null) {
+            String localPath = path + ", ";
+            dumpArgs(buf, nextArgs, localPath);
+            return false;
+        }
+        else {
+            buf.append(path + " = " + occurrences);
+            return true;
+        }
+    }
 }

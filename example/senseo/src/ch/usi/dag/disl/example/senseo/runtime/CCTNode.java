@@ -1,52 +1,40 @@
 package ch.usi.dag.disl.example.senseo.runtime;
 
-
-import java.io.*;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.io.PrintStream;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
-import ch.usi.dag.jborat.runtime.DynamicBypass;
-
 
 public final class CCTNode {
 
-    private static final AtomicIntegerFieldUpdater<CCTNode> callsUpdater;
     private static final AtomicReferenceFieldUpdater<CCTNode, CCTNode> leftUpdater;
     private static final AtomicReferenceFieldUpdater<CCTNode, CCTNode> rightUpdater;
     private static final AtomicReferenceFieldUpdater<CCTNode, CCTNode> calleesUpdater;
 
-    private final AtomicIntegerArray bbs;
-
     static {
-        boolean oldState = DynamicBypass.getAndSet();
-        try {
-            callsUpdater = AtomicIntegerFieldUpdater.newUpdater(CCTNode.class, "calls");
-            leftUpdater = AtomicReferenceFieldUpdater.newUpdater(CCTNode.class, CCTNode.class, "left");
-            rightUpdater = AtomicReferenceFieldUpdater.newUpdater(CCTNode.class, CCTNode.class, "right");
-            calleesUpdater = AtomicReferenceFieldUpdater.newUpdater(CCTNode.class, CCTNode.class, "callees");
-        } finally {
-            DynamicBypass.set(oldState);
-        }
+//        DynamicBypass.activate();
+        leftUpdater = AtomicReferenceFieldUpdater.newUpdater(CCTNode.class, CCTNode.class, "left");
+        rightUpdater = AtomicReferenceFieldUpdater.newUpdater(CCTNode.class, CCTNode.class, "right");
+        calleesUpdater = AtomicReferenceFieldUpdater.newUpdater(CCTNode.class, CCTNode.class, "callees");
+//        DynamicBypass.deactivate();
     }
 
-    @SuppressWarnings("unused")
-	private final CCTNode parent;
+    private final CCTNode parent;
     private final int methodUID;
 
-    public int index = -1;
-    private volatile int calls;
     private volatile CCTNode left, right; // siblings in the CCT
     private volatile CCTNode callees; // children in the CCT
 
-    // Dynamic info
+    private final AtomicInteger calls;
+    private final AtomicInteger allocCount;
+
     private final ArgumentNode argsRoot;
+    private final ArgumentNode retValsRoot;
 
     public static CCTNode createRoot() {
-        return new CCTNode(null, -1, null, 0, new int[] {});
+        return new CCTNode(null, -1, null, 0, null, 0);
     }
 
-    private CCTNode(CCTNode parent, int methodUID, ArgumentNodeTL argmnts, int cls, int[] bbs) {
+    private CCTNode(CCTNode parent, int methodUID, ArgumentNodeTL argmnts, int allocCount, ArgumentNodeTL retVals, int cls) {
         this.parent = parent;
         this.methodUID = methodUID;
 
@@ -57,15 +45,22 @@ public final class CCTNode {
             argsRoot = null;
         }
 
-        calls = cls;
+        calls = new AtomicInteger(cls);
 
-        this.bbs = new AtomicIntegerArray(bbs);
+        this.allocCount = new AtomicInteger(allocCount);
+
+        if(retVals != null) {
+            retValsRoot = ArgumentNode.createRoot();
+            retValsRoot.integrateArguments(retVals);
+        } else {
+            retValsRoot = null;
+        }
     }
 
-    private CCTNode getOrCreateCalleeNoProf(int methodUID, ArgumentNodeTL argmnts, int cls, int[] bbs) {
+    private CCTNode getOrCreateCalleeNoProf(int methodUID, ArgumentNodeTL argmnts, int allocCount, ArgumentNodeTL retVals, int cls) {
         CCTNode n, allocated;
         if ((n = callees) == null) {
-            if (calleesUpdater.compareAndSet(this, null, (allocated = new CCTNode(this, methodUID, argmnts, cls, bbs)))) {
+            if (calleesUpdater.compareAndSet(this, null, (allocated = new CCTNode(this, methodUID, argmnts, allocCount, retVals, cls)))) {
                 return allocated;
             }
             else {
@@ -73,23 +68,27 @@ public final class CCTNode {
             }
         }
 
-        while (true) {
+        while(true) {
             int n_methodUID;
-            if ((n_methodUID = n.methodUID) == methodUID) {
-                callsUpdater.addAndGet(n, cls); //static updaters
+            if((n_methodUID = n.methodUID) == methodUID) {
+                n.calls.addAndGet(cls);
 
                 if(argmnts != null) {
                     n.argsRoot.integrateArguments(argmnts);
                 }
 
-                n.integrateBBs(bbs);
+                n.allocCount.addAndGet(allocCount);
+
+                if(retVals.nextArgs != null) {
+                    n.retValsRoot.integrateArguments(retVals);
+                }
 
                 return n;
             } 
-            else if (methodUID <= n_methodUID) { 
+            else if(methodUID < n_methodUID) { 
                 CCTNode nLeft;
                 if ((nLeft = n.left) == null) {
-                    if (leftUpdater.compareAndSet(n, null, (allocated = new CCTNode(this, methodUID, argmnts, cls, bbs)))) return allocated;
+                    if (leftUpdater.compareAndSet(n, null, (allocated = new CCTNode(this, methodUID, argmnts, allocCount, retVals, cls)))) return allocated;
                     else n = n.left;
                 }
                 else {
@@ -99,7 +98,7 @@ public final class CCTNode {
             else {
                 CCTNode nRight;
                 if ((nRight = n.right) == null) {
-                    if (rightUpdater.compareAndSet(n, null, (allocated = new CCTNode(this, methodUID, argmnts, cls, bbs)))) return allocated;
+                    if (rightUpdater.compareAndSet(n, null, (allocated = new CCTNode(this, methodUID, argmnts, allocCount, retVals, cls)))) return allocated;
                     else n = n.right;
                 }
                 else {
@@ -120,7 +119,7 @@ public final class CCTNode {
 
     private void integrateCallees(CCTNodeTL otherCallees) {
         do {
-            CCTNode n = getOrCreateCalleeNoProf(otherCallees.methodUID, otherCallees.argsRoot, otherCallees.calls, otherCallees.bbs);
+            CCTNode n = getOrCreateCalleeNoProf(otherCallees.methodUID, otherCallees.argsRoot, otherCallees.allocCount, otherCallees.retValsRoot, otherCallees.calls);
 
             CCTNodeTL otherCalleesCallees;
             if ((otherCalleesCallees = otherCallees.callees) != null) {
@@ -134,10 +133,16 @@ public final class CCTNode {
         } while ((otherCallees = otherCallees.left) != null);
     }
 
-    private void integrateBBs(int[] otherBBs) {
-        for(int i = 0; i < otherBBs.length; i++) {
-            bbs.addAndGet(i, otherBBs[i]);
-        }
+    public void prune() {
+        left = null;
+        right = null;
+        callees = null;
+
+        calls.set(0);
+        allocCount.set(0);
+
+        if(argsRoot != null) argsRoot.prune();
+        if(retValsRoot != null) retValsRoot.prune();
     }
 
     /**
@@ -153,16 +158,19 @@ public final class CCTNode {
             StringBuffer buf = new StringBuffer();
             String sig = String.valueOf(n.methodUID);
 
-            buf.append(sig + " " + n.calls + " ");
-
-            buf.append("[ ");
-            for(int i = 0; i < n.bbs.length(); i++) {
-                buf.append(n.bbs.get(i) + " ");
-            }
-            buf.append("] ");
+            buf.append(sig + " " + n.calls.get() + " ");
 
             if(n.argsRoot != null) {
                 n.argsRoot.dump(buf);
+            }
+
+            buf.append(" { " + n.allocCount.get() + " } ");
+
+            if(n.retValsRoot != null) {
+                if(n.retValsRoot.getNextArgs() != null) {
+                    buf.append(" ~ ");
+                    n.retValsRoot.dump(buf);
+                }
             }
 
             n.dumpMethod(out, level, buf.toString());
