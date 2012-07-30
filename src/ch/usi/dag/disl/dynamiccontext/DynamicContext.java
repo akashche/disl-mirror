@@ -1,5 +1,8 @@
 package ch.usi.dag.disl.dynamiccontext;
 
+/**
+ * Dynamic context provides access to dynamic information of the snippet. 
+ */
 public interface DynamicContext {
 
 	/**

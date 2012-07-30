@@ -23,7 +23,7 @@ public class BodyMarker extends AbstractMarker {
 			int opcode = instr.getOpcode();
 
 			if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
-				region.addExitPoint(instr);
+				region.addEnd(instr);
 			}
 		}
 

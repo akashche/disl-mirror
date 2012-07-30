@@ -1,5 +1,8 @@
 package ch.usi.dag.disl.processorcontext;
 
+/**
+ * Allows to access method arguments and apply argument processors.
+ */
 public interface ArgumentProcessorContext {
 	
 	/**

@@ -28,6 +28,7 @@ public abstract class DiSLServer {
 	private static final AtomicLong instrumentationTime = new AtomicLong();
 	
 	private static DiSL disl;
+	private static ServerSocket listenSocket;
 
 	public static void main(String args[]) {
 
@@ -41,7 +42,7 @@ public abstract class DiSLServer {
 						+ port);
 			}
 
-			ServerSocket listenSocket = new ServerSocket(port);
+			listenSocket = new ServerSocket(port);
 
 			while (true) {
 

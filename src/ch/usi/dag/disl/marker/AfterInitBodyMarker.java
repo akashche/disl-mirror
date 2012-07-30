@@ -25,7 +25,7 @@ public class AfterInitBodyMarker extends AbstractMarker {
 			int opcode = instr.getOpcode();
 
 			if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
-				region.addExitPoint(instr.getPrevious());
+				region.addEnd(instr.getPrevious());
 			}
 		}
 

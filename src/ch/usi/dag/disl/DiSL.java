@@ -52,6 +52,10 @@ import ch.usi.dag.disl.utilinstr.tlvinserter.TLVInserter;
 import ch.usi.dag.disl.weaver.Weaver;
 
 // TODO javadoc comment all
+/**
+ * Main DiSL class providing interface for an instrumentation framework
+ * (normally DiSL Server)
+ */
 public class DiSL {
 
 	public final String PROP_DEBUG = "debug";
@@ -77,6 +81,10 @@ public class DiSL {
 	
 	private final List<Snippet> snippets;
 
+	/**
+	 * DiSL initialization 
+	 * @param useDynamicBypass enable or disable dynamic bypass instrumentation
+	 */
 	// this method should be called only once
 	public DiSL(boolean useDynamicBypass) throws DiSLException {
 
@@ -144,6 +152,10 @@ public class DiSL {
 		// specify this for InstructionMarker
 	}
 	
+	/**
+	 * Finds transformer class in configuration and allocates it.
+	 * @return newly allocated transformer.
+	 */
 	private Transformer resolveTransformer() throws ManifestInfoException,
 			ReflectionException {
 		
@@ -191,8 +203,6 @@ public class DiSL {
 	 *            class that will be instrumented
 	 * @param methodNode
 	 *            method in the classNode argument, that will be instrumented
-	 * @param staticContextInstances
-	 *
 	 */
 	private boolean instrumentMethod(ClassNode classNode, MethodNode methodNode)
 			throws ReflectionException, StaticContextGenException,
@@ -311,6 +321,13 @@ public class DiSL {
 		return true;
 	}
 
+	/**
+	 * Selects only shadows matching the passed guard.
+	 * 
+	 * @param guard guard, on witch conditions are the shadows selected
+	 * @param marking the list of shadows from where the gurads selects
+	 * @return selected shadows
+	 */
 	private List<Shadow> selectShadowsWithGuard(Method guard,
 			List<Shadow> marking) {
 		
@@ -332,6 +349,9 @@ public class DiSL {
 		return selectedMarking;
 	}
 
+	/**
+	 * Data holder for an instrumented class 
+	 */
 	private static class InstrumentedClass {
 		
 		private ClassNode classNode;
@@ -353,7 +373,15 @@ public class DiSL {
 		}
 	}
 	
-	// this method is thread safe after initialization
+	/**
+	 * Instruments class node.
+	 * 
+	 * Note: This method is thread safe. Parameter classNode is changed during
+	 * the invocation.
+	 * 
+	 * @param classNode class node to instrument
+	 * @return instrumented class
+	 */
 	private InstrumentedClass instrumentClass(ClassNode classNode)
 			throws DiSLException {
 
@@ -416,6 +444,12 @@ public class DiSL {
 		return null;
 	}
 
+	/**
+	 * Instruments array of bytes representing a class
+	 * 
+	 * @param classAsBytes class as array of bytes
+	 * @return instrumeted class as array of bytes
+	 */
 	public byte[] instrument(byte[] classAsBytes) throws DiSLException {
 	
 		// output bytes into the file
@@ -511,6 +545,9 @@ public class DiSL {
 		return cw.toByteArray();
 	}
 	
+	/**
+	 * Termination handler - should be invoked by the instrumentation framework
+	 */
 	public void terminate() {
 		
 	}

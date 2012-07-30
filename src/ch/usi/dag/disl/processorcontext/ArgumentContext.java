@@ -1,5 +1,8 @@
 package ch.usi.dag.disl.processorcontext;
 
+/**
+ * Allows to access information about particular argument.
+ */
 public interface ArgumentContext {
 
 	/**

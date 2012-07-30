@@ -1,0 +1,8 @@
+The DiSL language is hosted in Java using annotations, therefore, no special compiler is required.
+A convenient way to specify an instrumentation and to pass it to the DiSL framework is to pack the instrumentation classes with a manifest file into one jar.
+The DiSL framework will load the jar, parse the instrumentation specification, and instrument all classes used by an application at load-time.
+
+The examples of simple instrumentation are in src-test directory.
+The test can be invoked using runTest.sh script in the root directory.
+For user defined instrumentation, it is recommended to mimic the start and build script as they are provided for test.
+We are working on better setup scripts to ease the setup effort for developer.

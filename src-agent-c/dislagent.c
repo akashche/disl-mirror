@@ -143,14 +143,14 @@ static void parse_agent_options(char *options) {
 
 		// convert number
 		int fitsP = strlen(port_start) < sizeof(port_number);
-		check_std_error(fitsP, FALSE, "Port number is too long");
+		check_error(! fitsP, "Port number is too long");
 
 		strcpy(port_number, port_start);
 	}
 
 	// check if host_name is big enough
 	int fitsH = strlen(options) < sizeof(host_name);
-	check_std_error(fitsH, FALSE, "Host name is too long");
+	check_error(! fitsH, "Host name is too long");
 
 	strcpy(host_name, options);
 }
@@ -237,7 +237,7 @@ static connection_item * open_connection() {
 	// get host address
 	struct addrinfo * addr;
 	int gai_res = getaddrinfo(host_name, port_number, NULL, &addr);
-	check_std_error(gai_res == 0, FALSE, gai_strerror(gai_res));
+	check_error(gai_res != 0, gai_strerror(gai_res));
 
 	// create stream socket
 	int sockfd = socket(addr->ai_family, SOCK_STREAM, 0);

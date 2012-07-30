@@ -14,8 +14,22 @@
 #define FALSE 0
 
 // error nums
-#define ERR_JVMTI 10001
-#define ERR_COMM 10002
+#define ERR 10000
+#define ERR_STD 10002
+#define ERR_JVMTI 10003
+
+/*
+ * Reports error if condition is true
+ */
+void check_error(int cond, const char *str) {
+
+	if (cond) {
+
+		fprintf(stderr, "%s%s\n", ERR_PREFIX, str);
+
+		exit(ERR);
+	}
+}
 
 /*
  * Check error routine - reporting on one place
@@ -32,7 +46,7 @@ void check_std_error(int retval, int errorval, const char *str) {
 
 		perror(msgbuf);
 
-		exit(ERR_COMM);
+		exit(ERR_STD);
 	}
 }
 

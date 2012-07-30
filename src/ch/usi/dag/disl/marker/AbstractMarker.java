@@ -17,9 +17,19 @@ import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.util.AsmHelper;
 
+/**
+ * AbstractMarker eases the effort to implement new marker by providing mark
+ * method returning MarkedRegion class instead of Shadow. The MarkedRegion
+ * class itself supports automatic computation of weaving region based
+ * simplified region specification.
+ */
 public abstract class AbstractMarker implements Marker {
 
-	// holder for marked region
+	/**
+	 * The class specifies marked region. The start and ends are mandatory
+	 * values where the weaving region can be precomputed by 
+	 * computeDefaultWeavingRegion method. 
+	 */
 	public static class MarkedRegion {
 
 		private AbstractInsnNode start;
@@ -27,46 +37,76 @@ public abstract class AbstractMarker implements Marker {
 		
 		private WeavingRegion weavingRegion;
 
+		/**
+		 * Access region start
+		 */
 		public AbstractInsnNode getStart() {
 			return start;
 		}
 
+		/**
+		 * Set region start
+		 */
 		public void setStart(AbstractInsnNode start) {
 			this.start = start;
 		}
 		
+		/**
+		 * Access list of region ends
+		 */
 		public List<AbstractInsnNode> getEnds() {
 			return ends;
 		}
-		
-		public void addExitPoint(AbstractInsnNode exitpoint) {
+
+		/**
+		 * Add one region end to the list
+		 */
+		public void addEnd(AbstractInsnNode exitpoint) {
 			this.ends.add(exitpoint);
 		}
 		
+		/**
+		 * Access weaving region
+		 */
 		public WeavingRegion getWeavingRegion() {
 			return weavingRegion;
 		}
 
+		/**
+		 * Set weaving region
+		 */
 		public void setWeavingRegion(WeavingRegion weavingRegion) {
 			this.weavingRegion = weavingRegion;
 		}
 		
+		/**
+		 * Crate marked region with start
+		 */
 		public MarkedRegion(AbstractInsnNode start) {
 			this.start = start;
 			this.ends = new LinkedList<AbstractInsnNode>();
 		}
 
+		/**
+		 * Create marked region with start and one end
+		 */
 		public MarkedRegion(AbstractInsnNode start, AbstractInsnNode end) {
 			this.start = start;
 			this.ends = new LinkedList<AbstractInsnNode>();
 			this.ends.add(end);
 		}
 
+		/**
+		 * Create marked region with start and list of ends
+		 */
 		public MarkedRegion(AbstractInsnNode start,	List<AbstractInsnNode> ends) {
 			this.start = start;
 			this.ends = ends;
 		}
 		
+		/**
+		 * Create marked region with start, multiple ends and weaving region
+		 */
 		public MarkedRegion(AbstractInsnNode start,
 				List<AbstractInsnNode> ends, WeavingRegion weavingRegion) {
 			super();
@@ -75,10 +115,18 @@ public abstract class AbstractMarker implements Marker {
 			this.weavingRegion = weavingRegion;
 		}
 
+		/**
+		 * Test if all required fields are filled
+		 */
 		public boolean valid() {
 			return start != null && ends != null && weavingRegion != null;
 		}
 
+		/**
+		 * Computes default weaving region for this MarkedRegion. Computed
+		 * weaving region will NOT be automatically associated with this 
+		 * MarkedRegion.
+		 */
 		public WeavingRegion computeDefaultWeavingRegion(MethodNode methodNode) {
 
 			// skip branch instruction at the end
@@ -167,5 +215,12 @@ public abstract class AbstractMarker implements Marker {
 		return result;
 	}
 	
+	/**
+	 * Implementation of this method should return list of MarkedRegion with
+	 * start, ends end weaving region filled.
+	 * 
+	 * @param methodNode
+	 * @return
+	 */
 	public abstract List<MarkedRegion> mark(MethodNode methodNode);
 }

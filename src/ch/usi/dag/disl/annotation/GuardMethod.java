@@ -6,10 +6,12 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Marks guard validation method.
  * 
+ * This annotation should be used with methods.
+ * 
  * Guard method should be static and state-less.
  * 
- * Method argument can be Shadow, StaticContext and for ArgumentProcessor guard
- * also ArgumentContext.
+ * Method argument can be Shadow, StaticContext, GuardContext and for
+ * ArgumentProcessor guard also ArgumentContext.
  */
 @Retention(RetentionPolicy.RUNTIME) // to resolve annotation using reflection 
 public @interface GuardMethod {
