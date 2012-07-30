@@ -13,8 +13,8 @@ import ch.usi.dag.dislreserver.stringcache.StringCache;
 
 public class AnalysisResolver {
 
-	private static final Map<Long, AnalysisMethodHolder> methodMap = 
-			new HashMap<Long, AnalysisMethodHolder>();
+	private static final Map<Short, AnalysisMethodHolder> methodMap = 
+			new HashMap<Short, AnalysisMethodHolder>();
 	
 	private static final Map<String, RemoteAnalysis> analysisMap = 
 			new HashMap<String, RemoteAnalysis>();
@@ -44,14 +44,14 @@ public class AnalysisResolver {
 		}
 	}
 
-	private static AnalysisMethodHolder resolveMethod(long methodId)
+	private static AnalysisMethodHolder resolveMethod(long methodStringId)
 			throws DiSLREServerException {
 		
 		try {
 		
 			final String METHOD_DELIM = ".";
 			
-			String methodStr = StringCache.resolve(methodId);
+			String methodStr = StringCache.resolve(methodStringId);
 			
 			int classNameEnd = methodStr.lastIndexOf(METHOD_DELIM);
 			
@@ -105,15 +105,10 @@ public class AnalysisResolver {
 		}
 	}
 
-	public static AnalysisMethodHolder getMethod(long methodId)
+	public static AnalysisMethodHolder getMethod(short methodId)
 			throws DiSLREServerException {
 		
 		AnalysisMethodHolder result = methodMap.get(methodId);
-		
-		if(result == null) {
-			result = resolveMethod(methodId);
-			methodMap.put(methodId, result);
-		}
 		
 		if(result == null) {
 			throw new DiSLREServerFatalException("Unknow method id");
@@ -121,6 +116,14 @@ public class AnalysisResolver {
 		
 		return result;
 	}
+	
+	public static void registerMethodId(short methodId, long methodStringId)
+			throws DiSLREServerException {
+		
+		methodMap.put(methodId, resolveMethod(methodStringId));
+	}
+	
+	
 	
 	public static Set<RemoteAnalysis> getAllAnalyses() {
 		return analysisSet;

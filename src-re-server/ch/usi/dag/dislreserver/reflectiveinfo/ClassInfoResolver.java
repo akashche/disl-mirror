@@ -13,9 +13,10 @@ public class ClassInfoResolver {
 	static Map<Long, Map<String, byte[]>> classLoaderMap = 
 			new HashMap<Long, Map<String, byte[]>>();
 	
+	// resolve class info by id
 	static Map<Integer, ClassInfo> classIdMap =
 			new HashMap<Integer, ClassInfo>();
-
+	
 	public static void addNewClass(String className, NetReference classLoaderNR,
 			byte[] classCode) {
 		
@@ -39,16 +40,15 @@ public class ClassInfoResolver {
 
 		// resolve super class
 		ClassInfo superClassInfo = classIdMap.get(superClassId);
-		
+
 		// array handling
 		if(classASMType.getSort() == Type.ARRAY) {
 			
-			// TODO re ! create specific ClassInfo for array
-			//  - we need info about the inner type
+			// TODO ! re - send arrayComponentId from client
 			
-			ClassInfo classInfo = new ClassInfo(classId, classSignature,
-					classGenericStr, true, classASMType.getDimensions(), null,
-					classLoaderNR, superClassInfo, new byte[0]);
+			ClassInfo classInfo = new ArrayClassInfo(classId, classSignature,
+					classGenericStr, classLoaderNR, superClassInfo,
+					classASMType.getDimensions(), null);
 			
 			classIdMap.put(classId, classInfo);
 			return classInfo;
@@ -57,9 +57,9 @@ public class ClassInfoResolver {
 		// basic type handling
 		if (classASMType.getSort() != Type.OBJECT) {
 			
-			// TODO re ! ExtractedClassInfo for basic types
-			ClassInfo classInfo = new ClassInfo(classId, classSignature,
-					classGenericStr, false, 0, null, null, null, new byte[0]);
+			ClassInfo classInfo = new PrimitiveClassInfo(classId,
+					classSignature, classGenericStr, classLoaderNR,
+					superClassInfo);
 			
 			classIdMap.put(classId, classInfo);
 			return classInfo;
@@ -70,7 +70,10 @@ public class ClassInfoResolver {
 		Map<String, byte[]> classNameMap = 
 				classLoaderMap.get(classLoaderNR.getObjectId());
 
-		// TODO re ! this can be null because of bad class loader tagging
+		// NOTE: It is not expected but this pointer can be NULL if this
+		// class loader loaded some class in pre-init jvm phase and nothing
+		// after that
+		// the best is to resolve the problem as in the next if
 		if(classNameMap == null) {
 			throw new DiSLREServerFatalException("Class loader not known");
 		}
@@ -79,22 +82,21 @@ public class ClassInfoResolver {
 				classNameMap.get(classASMType.getInternalName());
 		
 		if(classCode == null) {
-			
-			// TODO re ! should not be needed when class loader tagging is fixed
-			classNameMap = classLoaderMap.get(new Long(0)); // something will be there
+
+			// try to lookup the code from the pre-init jvm phase
+			// the code is send with class loader 0 flag
+			classNameMap = classLoaderMap.get(new Long(0));
 			classCode = classNameMap.get(classASMType.getInternalName());
-			if(classCode == null) {
-				System.err.println("Class not known: " + classASMType.getInternalName());
-				return null;
-			}
 			
-			// TODO re ! replace with this
-			//throw new DiSLREServerFatalException("Class not known");
+			// nothing found
+			if(classCode == null) {
+				throw new DiSLREServerFatalException(
+						"Class not known: " + classASMType.getInternalName());
+			}
 		}
 		
-		ClassInfo classInfo = new ClassInfo(classId, classSignature,
-				classGenericStr, false, 0, null, classLoaderNR, superClassInfo,
-				classCode);
+		ClassInfo classInfo = new CommonClassInfo(classId, classSignature,
+				classGenericStr, classLoaderNR, superClassInfo, classCode);
 		
 		classIdMap.put(classId, classInfo);
 		return classInfo;

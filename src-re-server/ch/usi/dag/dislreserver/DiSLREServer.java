@@ -20,6 +20,8 @@ public abstract class DiSLREServer {
 	private static final int DEFAULT_PORT = 11218;
 	private static final int port = Integer.getInteger(PROP_PORT, DEFAULT_PORT);
 	
+	private static ServerSocket listenSocket;
+	
 	public static void main(String args[]) {
 
 		try {
@@ -29,7 +31,7 @@ public abstract class DiSLREServer {
 						+ port);
 			}
 
-			ServerSocket listenSocket = new ServerSocket(port);
+			listenSocket = new ServerSocket(port);
 
 			Socket socket = listenSocket.accept();
 
@@ -64,15 +66,12 @@ public abstract class DiSLREServer {
 			final DataOutputStream os = new DataOutputStream(
 					new BufferedOutputStream(sock.getOutputStream()));
 
-			//WARNING: DiSLRE server is not processing incoming messages
-			byte[] buffer = new byte[10000];
 			boolean exit = false;
 			do {
 
-			    is.read(buffer);
-//				int requestNo = is.readInt();
-//				
-//				exit = RequestDispatcher.dispatch(requestNo, is, os, debug);
+				byte requestNo = is.readByte();
+				
+				exit = RequestDispatcher.dispatch(requestNo, is, os, debug);
 				
 			} while(! exit);
 

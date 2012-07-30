@@ -8,8 +8,6 @@
 
 // initial buffer size
 static const size_t INIT_BUFF_SIZE = 512;
-// max limit buffer size
-static const size_t MAX_BUFF_SIZE = 8192;
 
 typedef struct {
 	unsigned char * buff;
@@ -62,15 +60,27 @@ void buffer_fill(buffer * b, const void * data, size_t data_length) {
 	b->occupied += data_length;
 }
 
-void buffer_clean(buffer * b) {
+// the space has to be already filled with data - no extensions
+void buffer_fill_at_pos(buffer * b, size_t pos, const void * data,
+		size_t data_length) {
 
-	// if capacity is higher then limit "reset" buffer
-	// should keep memory consumption in limits
-	if(b->capacity > MAX_BUFF_SIZE) {
-
-		buffer_free(b);
-		buffer_alloc(b);
+	// space is not filled already - error
+	if(b->occupied < pos + data_length) {
+		check_error(TRUE, "Filling buffer at non-occupied position.");
 	}
+
+	memcpy(b->buff + pos, data, data_length);
+}
+
+void buffer_read(buffer * b, size_t pos, void * data, size_t data_length) {
+	memcpy(data, b->buff + pos, data_length);
+}
+
+size_t buffer_filled(buffer * b) {
+	return b->occupied;
+}
+
+void buffer_clean(buffer * b) {
 
 	b->occupied = 0;
 }

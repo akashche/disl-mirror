@@ -9,68 +9,76 @@ import ch.usi.dag.dislre.REDispatch;
 // functionality
 public class CodeExecutedRE {
 
+	private static short beId = REDispatch.registerMethod(
+			"ch.usi.dag.disl.test.dispatch.CodeExecuted.bytecodesExecuted");
+
+	private static short tbId = REDispatch.registerMethod(
+			"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingBasic");
+	
+	private static short taId = REDispatch.registerMethod(
+			"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingAdvanced");
+	
+	private static short ta2Id = REDispatch.registerMethod(
+			"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingAdvanced2");
+	
 	public static void bytecodesExecuted(int count) {
 		
-		int sid = REDispatch.analysisStart(
-				"ch.usi.dag.disl.test.dispatch.CodeExecuted.bytecodesExecuted");
+		REDispatch.analysisStart(beId);
 		
-		REDispatch.sendInt(sid, count);
+		REDispatch.sendInt(count);
 		
-		REDispatch.analysisEnd(sid);
+		REDispatch.analysisEnd();
 	}
 	
 	public static void testingBasic(boolean b, byte by, char c, short s, int i,
 			long l, float f, double d) {
 		
-		int sid = REDispatch.analysisStart(
-				"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingBasic");
+		REDispatch.analysisStart(tbId);
 		
-		REDispatch.sendBoolean(sid, b);
-		REDispatch.sendByte(sid, by);
-		REDispatch.sendChar(sid, c);
-		REDispatch.sendShort(sid, s);
-		REDispatch.sendInt(sid, i);
-		REDispatch.sendLong(sid, l);
-		REDispatch.sendFloat(sid, f);
-		REDispatch.sendDouble(sid, d);
+		REDispatch.sendBoolean(b);
+		REDispatch.sendByte(by);
+		REDispatch.sendChar(c);
+		REDispatch.sendShort(s);
+		REDispatch.sendInt(i);
+		REDispatch.sendLong(l);
+		REDispatch.sendFloat(f);
+		REDispatch.sendDouble(d);
 		
-		REDispatch.analysisEnd(sid);
+		REDispatch.analysisEnd();
 	}
 	
 	public static void testingAdvanced(String s, Object o, Class<?> c,
 			int classID) {
 		
-		int sid = REDispatch.analysisStart(
-				"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingAdvanced");
+		REDispatch.analysisStart(taId);
 		
-		REDispatch.sendString(sid, s);
-		REDispatch.sendObject(sid, o);
-		REDispatch.sendClass(sid, c);
+		REDispatch.sendString(s);
+		REDispatch.sendObject(o);
+		REDispatch.sendClass(c);
 		// class_id ignored
 		
-		REDispatch.analysisEnd(sid);
+		REDispatch.analysisEnd();
 	}
 
 	public static void testingAdvanced2(Object o1, Object o2, Object o3,
 			Object o4, Class<?> class1, int cid1, Class<?> class2, int cid2,
 			Class<?> class3, int cid3, Class<?> class4, int cid4) {
 
-		int sid = REDispatch.analysisStart(
-				"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingAdvanced2");
+		REDispatch.analysisStart(ta2Id);
 		
-		REDispatch.sendObject(sid, o1);
-		REDispatch.sendObject(sid, o2);
-		REDispatch.sendObject(sid, o3);
-		REDispatch.sendObject(sid, o4);
-		REDispatch.sendClass(sid, class1);
+		REDispatch.sendObject(o1);
+		REDispatch.sendObject(o2);
+		REDispatch.sendObject(o3);
+		REDispatch.sendObject(o4);
+		REDispatch.sendClass(class1);
 		// class_id ignored
-		REDispatch.sendClass(sid, class2);
+		REDispatch.sendClass(class2);
 		// class_id ignored
-		REDispatch.sendClass(sid, class3);
+		REDispatch.sendClass(class3);
 		// class_id ignored
-		REDispatch.sendClass(sid, class4);
+		REDispatch.sendClass(class4);
 		// class_id ignored
 		
-		REDispatch.analysisEnd(sid);		
+		REDispatch.analysisEnd();		
 	}
 }

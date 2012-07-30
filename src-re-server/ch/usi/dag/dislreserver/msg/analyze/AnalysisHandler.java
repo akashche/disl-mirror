@@ -3,7 +3,6 @@ package ch.usi.dag.dislreserver.msg.analyze;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,19 +16,43 @@ import ch.usi.dag.dislreserver.stringcache.StringCache;
 
 public class AnalysisHandler implements RequestHandler {
 
+	private AnalysisDispatcher dispatcher = new AnalysisDispatcher();
+	
 	public void handle(DataInputStream is, DataOutputStream os, boolean debug)
+			throws DiSLREServerException {
+	
+		try {
+			
+			// get net reference for the thread
+			NetReference threadNR = new NetReference(is.readLong());
+			
+			// read  and create method invocations
+			int numberOfMethods = is.readInt();
+			
+			List<AnalysisInvocation> invocations
+				= new LinkedList<AnalysisInvocation>();
+			
+			for(int i = 0; i < numberOfMethods; ++i) {
+				invocations.add(createInvocation(is, debug));
+			}
+			
+			dispatcher.addTask(threadNR, invocations);
+		}
+		catch (IOException e) {
+			throw new DiSLREServerException(e);
+		}
+	}
+
+	public AnalysisInvocation createInvocation(DataInputStream is, boolean debug)
 			throws DiSLREServerException {
 
 		try {
 
 			// *** retrieve method ***
 			
-			// read method string id from network
-			NetReference analysisMethodStrNR = new NetReference(is.readLong());
-			
-			// retrieve method
-			AnalysisMethodHolder amh = AnalysisResolver.getMethod(
-					analysisMethodStrNR.getObjectId());
+			// read method id from network and retrieve method
+			AnalysisMethodHolder amh = 
+					AnalysisResolver.getMethod(is.readShort());
 			
 			if(debug) {
 				System.out.println("Processing analysis "
@@ -64,26 +87,10 @@ public class AnalysisHandler implements RequestHandler {
 				args.add(argValue);
 			}
 			
-			// *** invoke method ***
+			// *** create analysis invocation ***
 
-			try {
-				analysisMethod.invoke(amh.getAnalysisInstance(), args.toArray());
-			}
-			catch(InvocationTargetException e) {
-				
-				// report analysis error
-				
-				Throwable cause = e.getCause();
-				
-				System.err.println("DiSL-RE analysis exception: "
-						+ cause.getMessage());
-				
-				cause.printStackTrace();
-			}
-			catch(Exception e) {
-				
-				throw new DiSLREServerException(e);
-			}
+			return new AnalysisInvocation(analysisMethod,
+					amh.getAnalysisInstance(), args);
 			
 		}
 		catch (IOException e) {

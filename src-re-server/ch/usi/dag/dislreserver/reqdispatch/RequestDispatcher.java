@@ -13,6 +13,7 @@ import ch.usi.dag.dislreserver.msg.close.CloseHandler;
 import ch.usi.dag.dislreserver.msg.newclass.NewClassHandler;
 import ch.usi.dag.dislreserver.msg.newstring.NewStringHandler;
 import ch.usi.dag.dislreserver.msg.objfree.ObjectFreeHandler;
+import ch.usi.dag.dislreserver.msg.reganalysis.RegAnalysisHandler;
 
 public class RequestDispatcher {
 
@@ -35,6 +36,8 @@ public class RequestDispatcher {
 		requestMap.put(4, new ClassInfoHandler());
 		// new string
 		requestMap.put(5, new NewStringHandler());
+		// new string
+		requestMap.put(6, new RegAnalysisHandler());
 	}
 	
 	public static boolean dispatch(int requestNo, DataInputStream is,
@@ -43,14 +46,14 @@ public class RequestDispatcher {
 		// request handler
 		RequestHandler rh = requestMap.get(requestNo);
 		
-		if(debug) {
-			System.out.println("Dispatching " + rh.getClass().getName());
-		}
-
 		if(rh == null) {
 			
 			throw new DiSLREServerFatalException("Message type (" + requestNo +
 					") not supported");
+		}
+		
+		if(debug) {
+			System.out.println("Dispatching " + rh.getClass().getName());
 		}
 		
 		// process request

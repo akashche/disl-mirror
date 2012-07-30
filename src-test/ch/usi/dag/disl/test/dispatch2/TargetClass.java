@@ -1,0 +1,18 @@
+package ch.usi.dag.disl.test.dispatch2;
+public class TargetClass {
+	
+	public static void main(String[] args) throws InterruptedException {
+
+		int COUNT = 10000000;
+		
+		TargetClass ta[] = new TargetClass[COUNT];
+		
+		int i;
+		
+		for(i = 0; i < COUNT; ++i) {
+			ta[i] = new TargetClass();
+		}
+		
+		System.out.println("Sent " + i + " events");
+	}
+}

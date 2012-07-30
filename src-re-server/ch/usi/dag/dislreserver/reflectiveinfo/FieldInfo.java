@@ -1,35 +1,12 @@
 package ch.usi.dag.dislreserver.reflectiveinfo;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.FieldNode;
+public interface FieldInfo {
 
-public class FieldInfo {
+	public String getName();
 
-	private int modifiers;
-	private String name;
-	private String type;
+	public int getModifiers();
 
-	public FieldInfo(FieldNode fieldNode) {
-		// *) parse fieldNode
-		// *) initialize all fields required for the following methods
-		name = fieldNode.name;
-		type = fieldNode.desc;
-		modifiers = fieldNode.access;
-	}
+	public String getType();
 
-	public String getName() {
-		return name;
-	}
-
-	public int getModifiers() {
-		return modifiers;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public boolean isPublic() {
-		return (modifiers & Opcodes.ACC_PUBLIC) != 0;
-	}
+	public boolean isPublic();
 }

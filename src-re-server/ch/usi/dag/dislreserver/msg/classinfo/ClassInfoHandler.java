@@ -22,7 +22,8 @@ public class ClassInfoHandler implements RequestHandler {
 			NetReference classLoaderNR = new NetReference(is.readLong());
 			int superClassId = is.readInt();
 			
-			ClassInfoResolver.createHierarchy(classSignature, classGenericStr, classLoaderNR, classId, superClassId);
+			ClassInfoResolver.createHierarchy(classSignature, classGenericStr,
+					classLoaderNR, classId, superClassId);
 		}
 		catch (IOException e) {
 			throw new DiSLREServerException(e);

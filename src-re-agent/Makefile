@@ -25,7 +25,7 @@ LINK_SHARED=$(LINK.c) -shared -o $@
 # GNU Compiler options needed to build it
 COMMON_FLAGS=-fPIC
 # Options that help find errors
-COMMON_FLAGS+= -W -Wall -Wextra -O3 -Wno-unused-parameter
+COMMON_FLAGS+= -W -Wall -Wextra -O3 -Wno-unused-parameter -lpthread
 
 CFLAGS += $(COMMON_FLAGS)
 
