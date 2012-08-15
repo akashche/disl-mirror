@@ -483,9 +483,7 @@ public class DiSL {
 		//  - classNode with API param is required by ASM 4.0 guidelines
 		ClassNode classNode = new ClassNode(Opcodes.ASM4);
 
-		// TODO jb - try without SKIP_DEBUG
-		classReader.accept(classNode, ClassReader.SKIP_DEBUG
-				| ClassReader.EXPAND_FRAMES);
+		classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
 		
 		InstrumentedClass instrClass = instrumentClass(classNode);
 		
@@ -508,9 +506,7 @@ public class DiSL {
 			ClassReader origCR = new ClassReader(classAsBytes);
 			ClassNode origCN = new ClassNode();
 
-			// TODO jb - try without SKIP_DEBUG
-			origCR.accept(origCN, ClassReader.SKIP_DEBUG
-					| ClassReader.EXPAND_FRAMES);
+			origCR.accept(origCN, ClassReader.EXPAND_FRAMES);
 
 			// origCN and instrCN are destroyed during the merging
 			instrCN = CodeMerger.mergeClasses(origCN, instrCN,
