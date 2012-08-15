@@ -1,3 +1,0 @@
-Manifest-Version: 1.0
-DiSL-Classes: ch.usi.dag.disl.example.racer.DiSLClass
-DiSL-Transformer: ch.usi.dag.disl.example.racer.SynchronizedMethodsTransformer
