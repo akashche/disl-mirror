@@ -1,2 +1,0 @@
-Manifest-Version: 1.0
-DiSL-Classes: ch.usi.dag.disl.example.classgen.shadowheap.instrument.AbstractShadowHeapInstrumentation:ch.usi.dag.disl.example.classgen.sharing.instrument.SharedFieldsInstrumentation
