@@ -8,6 +8,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -22,7 +23,9 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal.Initialize;
+import ch.usi.dag.disl.annotation.SyntheticStaticField;
 import ch.usi.dag.disl.exception.DynamicInfoException;
+import ch.usi.dag.disl.localvar.SyntheticStaticFieldVar;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.snippet.Shadow;
@@ -150,6 +153,57 @@ public class Weaver {
 		methodNode.maxLocals += syntheticLocalVars.size();
 	}
 
+	private static void fixSyntheticStaticField(ClassNode clazz, MethodNode method,
+			List<SyntheticStaticFieldVar> syntheticStaticFieldVars) {
+
+		for (AbstractInsnNode instr : method.instructions.toArray()) {
+
+			int opcode = instr.getOpcode();
+
+			if (!(opcode == Opcodes.GETSTATIC)
+					&& !(opcode == Opcodes.PUTSTATIC)) {
+				continue;
+			}
+
+			FieldInsnNode field_instr = (FieldInsnNode) instr;
+
+			for (SyntheticStaticFieldVar var : syntheticStaticFieldVars) {
+
+				if (!field_instr.owner.equals(var.getOwner())
+						|| !field_instr.name.equals(var.getName())) {
+					continue;
+				}
+
+				field_instr.owner = clazz.name;
+				field_instr.name = "$DISL_" + field_instr.name;
+
+				if (var.getScope() == SyntheticStaticField.Scope.PERMETHOD) {
+
+					field_instr.name += clazz.methods.indexOf(method);
+				}
+
+				int count = 0;
+
+				for (FieldNode field : clazz.fields) {
+
+					if (field.name.equals(field_instr.name)) {
+						break;
+					}
+
+					count++;
+				}
+
+				if (count == clazz.fields.size()) {
+
+					clazz.fields.add(new FieldNode(var.getAccess(), field_instr.name,
+							field_instr.desc, null, null));
+				}
+
+				break;
+			}
+		}
+	}
+
 	// Return a successor label of weaving location corresponding to
 	// the input 'end'.
 	private static LabelNode getEndLabel(MethodNode methodNode,
@@ -243,6 +297,7 @@ public class Weaver {
 	public static void instrument(ClassNode classNode, MethodNode methodNode,
 			Map<Snippet, List<Shadow>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
+			List<SyntheticStaticFieldVar> syntheticStaticFieldVars,
 			SCGenerator staticInfoHolder, PIResolver piResolver)
 			throws DynamicInfoException {
 
@@ -315,6 +370,7 @@ public class Weaver {
 		}
 
 		static2Local(methodNode, syntheticLocalVars);
+		fixSyntheticStaticField(classNode, methodNode, syntheticStaticFieldVars);
 		AdvancedSorter.sort(methodNode);
 	}
 

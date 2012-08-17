@@ -35,6 +35,7 @@ import ch.usi.dag.disl.exception.TransformerException;
 import ch.usi.dag.disl.exclusion.ExclusionSet;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
+import ch.usi.dag.disl.localvar.SyntheticStaticFieldVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.processor.generator.PIResolver;
@@ -80,6 +81,8 @@ public class DiSL {
 	private final Set<Scope> exclusionSet;
 	
 	private final List<Snippet> snippets;
+	
+	private final List<SyntheticStaticFieldVar> syntheticStaticFields;
 
 	/**
 	 * DiSL initialization 
@@ -142,6 +145,10 @@ public class DiSL {
 		// - this is set when everything is ok
 		// - it serves as initialization flag
 		snippets = parsedSnippets;
+		
+		// get parsed synthetic static fields
+		syntheticStaticFields = new LinkedList<SyntheticStaticFieldVar>(parser
+				.getAllLocalVars().getSyntheticStaticFields().values());
 
 		// TODO put checker here
 		// like After should catch normal and abnormal execution
@@ -309,8 +316,8 @@ public class DiSL {
 		// *** viewing ***
 
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
-				new LinkedList<SyntheticLocalVar>(usedSLVs), staticInfo,
-				piResolver);
+				new LinkedList<SyntheticLocalVar>(usedSLVs),
+				syntheticStaticFields, staticInfo, piResolver);
 
 		if(debug) {
 			System.out.println("Instumenting method: " + className
