@@ -8,12 +8,12 @@ import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
 
-public class StConResolver {
+public class SCResolver {
 	
 	// NOTE: This is internal DiSL cache. For user static context cache see
 	// ch.usi.dag.disl.staticcontext.cache.StaticContextCache
 
-	private static StConResolver instance = null;
+	private static SCResolver instance = null;
 	
 	// list of static context instances
 	// validity of an instance is for whole instrumentation run
@@ -40,10 +40,10 @@ public class StConResolver {
 		return (StaticContext) scInst;
 	}
 	
-	public static synchronized StConResolver getInstance() {
+	public static synchronized SCResolver getInstance() {
 		
 		if (instance == null) {
-			instance = new StConResolver();
+			instance = new SCResolver();
 		}
 		return instance;
 	}

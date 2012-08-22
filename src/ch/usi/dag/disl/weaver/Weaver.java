@@ -22,7 +22,7 @@ import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.annotation.SyntheticLocal.Initialize;
-import ch.usi.dag.disl.exception.DynamicInfoException;
+import ch.usi.dag.disl.exception.DynamicContextException;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.snippet.Shadow;
@@ -214,7 +214,7 @@ public class Weaver {
 	private static void insert(MethodNode methodNode,
 			SCGenerator staticInfoHolder, PIResolver piResolver,
 			WeavingInfo info, Snippet snippet, SnippetCode code, Shadow shadow,
-			AbstractInsnNode loc) throws DynamicInfoException {
+			AbstractInsnNode loc) throws DynamicContextException {
 		
 		// exception handler will discard the stack and push the
 		// exception object. Thus, before entering this snippet,
@@ -244,7 +244,7 @@ public class Weaver {
 			Map<Snippet, List<Shadow>> snippetMarkings,
 			List<SyntheticLocalVar> syntheticLocalVars,
 			SCGenerator staticInfoHolder, PIResolver piResolver)
-			throws DynamicInfoException {
+			throws DynamicContextException {
 
 		WeavingInfo info = new WeavingInfo(classNode, methodNode,
 				snippetMarkings);

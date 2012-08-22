@@ -25,7 +25,7 @@ import ch.usi.dag.disl.classparser.ClassParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLIOException;
 import ch.usi.dag.disl.exception.DiSLInMethodException;
-import ch.usi.dag.disl.exception.DynamicInfoException;
+import ch.usi.dag.disl.exception.DynamicContextException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ManifestInfoException;
 import ch.usi.dag.disl.exception.MarkerException;
@@ -207,7 +207,7 @@ public class DiSL {
 	 */
 	private boolean instrumentMethod(ClassNode classNode, MethodNode methodNode)
 			throws ReflectionException, StaticContextGenException,
-			ProcessorException, DynamicInfoException, MarkerException {
+			ProcessorException, DynamicContextException, MarkerException {
 
 		// skip abstract methods
 		if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {

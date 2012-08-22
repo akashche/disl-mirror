@@ -24,7 +24,7 @@ import ch.usi.dag.disl.classcontext.ClassContext;
 import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
-import ch.usi.dag.disl.exception.DynamicInfoException;
+import ch.usi.dag.disl.exception.DynamicContextException;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
@@ -142,7 +142,7 @@ public class WeavingCode {
 		}
 	}
 
-	private void preFixDynamicInfoCheck() throws DynamicInfoException {
+	private void preFixDynamicInfoCheck() throws DynamicContextException {
 
 		for (AbstractInsnNode instr : iList.toArray()) {
 
@@ -180,7 +180,7 @@ public class WeavingCode {
 				break;
 
 			default:
-				throw new DynamicInfoException("In snippet "
+				throw new DynamicContextException("In snippet "
 						+ snippet.getOriginClassName() + "."
 						+ snippet.getOriginMethodName()
 						+ " - pass the first (pos)"
@@ -190,7 +190,7 @@ public class WeavingCode {
 
 			// second operand test
 			if (AsmHelper.getClassType(secondOperand) == null) {
-				throw new DynamicInfoException("In snippet "
+				throw new DynamicContextException("In snippet "
 						+ snippet.getOriginClassName() + "."
 						+ snippet.getOriginMethodName()
 						+ " - pass the second (type)"
@@ -219,7 +219,7 @@ public class WeavingCode {
 	// NOTE that if the user requests for the stack value, some store
 	// instructions will be inserted to the target method, and new local slot
 	// will be used for storing this.
-	public void fixDynamicInfo(boolean throwing) throws DynamicInfoException {
+	public void fixDynamicInfo(boolean throwing) throws DynamicContextException {
 
 		preFixDynamicInfoCheck();
 
@@ -300,7 +300,7 @@ public class WeavingCode {
 
 					// index should be less than the stack height
 					if (operand >= basicframe.getStackSize() || operand < 0) {
-						throw new DynamicInfoException(
+						throw new DynamicContextException(
 								"Dynamic context wrong access." +
 								" Access out of bounds. Accessed " + operand +
 								", but the size of stack is "
@@ -312,7 +312,7 @@ public class WeavingCode {
 							operand).getType();
 
 					if (t.getSort() != targetType.getSort()) {
-						throw new DynamicInfoException(
+						throw new DynamicContextException(
 								"Dynamic context wrong access. Requested \"" +
 								t + "\" but found \"" + targetType
 								+ "\" on the stack.");
@@ -346,7 +346,7 @@ public class WeavingCode {
 
 				// index should be less than the size of local variables
 				if (slot >= basicframe.getLocals() || slot < 0) {
-					throw new DynamicInfoException(
+					throw new DynamicContextException(
 							"Dynamic context wrong access." +
 							" Access out of bounds. Accessed " + slot +
 							", but the size of stack is "
@@ -357,7 +357,7 @@ public class WeavingCode {
 				Type targetType = basicframe.getLocal(slot).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DynamicInfoException(
+					throw new DynamicContextException(
 							"Dynamic context wrong access. Requested \"" +
 							t + "\" but found \"" + targetType
 							+ "\" on the stack.");
@@ -379,7 +379,7 @@ public class WeavingCode {
 
 				// index should be less than the size of local variables
 				if (operand >= basicframe.getLocals() || operand < 0) {
-					throw new DynamicInfoException(
+					throw new DynamicContextException(
 							"Dynamic context wrong access." +
 							" Access out of bounds. Accessed " + operand +
 							", but the size of stack is "
@@ -390,7 +390,7 @@ public class WeavingCode {
 				Type targetType = basicframe.getLocal(operand).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DynamicInfoException(
+					throw new DynamicContextException(
 							"Dynamic context wrong access. Requested \"" +
 							t + "\" but found \"" + targetType
 							+ "\" on the stack.");
@@ -824,7 +824,7 @@ public class WeavingCode {
 	}
 
 	public void transform(SCGenerator staticInfoHolder, PIResolver piResolver, boolean throwing)
-			throws DynamicInfoException {
+			throws DynamicContextException {
 		fixProcessor(piResolver);
 		fixProcessorInfo();
 		fixStaticInfo(staticInfoHolder);

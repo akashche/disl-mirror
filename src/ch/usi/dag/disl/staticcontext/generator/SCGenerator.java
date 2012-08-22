@@ -10,7 +10,7 @@ import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.processor.ProcMethod;
-import ch.usi.dag.disl.resolver.StConResolver;
+import ch.usi.dag.disl.resolver.SCResolver;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
@@ -153,7 +153,7 @@ public class SCGenerator {
 				for (StaticContextMethod stConMth : stConMethods) {
 
 					// get static context instance
-					StaticContext scInst = StConResolver.getInstance()
+					StaticContext scInst = SCResolver.getInstance()
 							.getStaticContextInstance(
 									stConMth.getReferencedClass());
 					

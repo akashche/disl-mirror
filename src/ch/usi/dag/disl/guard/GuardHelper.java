@@ -15,7 +15,7 @@ import ch.usi.dag.disl.guardcontext.GuardContext;
 import ch.usi.dag.disl.processorcontext.ArgumentContext;
 import ch.usi.dag.disl.resolver.GuardMethod;
 import ch.usi.dag.disl.resolver.GuardResolver;
-import ch.usi.dag.disl.resolver.StConResolver;
+import ch.usi.dag.disl.resolver.SCResolver;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.ReflectionHelper;
@@ -237,7 +237,7 @@ public abstract class GuardHelper {
 			try {
 				
 				// get static context
-				StaticContext scInst = StConResolver.getInstance()
+				StaticContext scInst = SCResolver.getInstance()
 						.getStaticContextInstance(argType);
 				
 				// populate with data
