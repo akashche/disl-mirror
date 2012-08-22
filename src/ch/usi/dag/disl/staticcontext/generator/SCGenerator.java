@@ -15,8 +15,6 @@ import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.staticcontext.StaticContext;
-import ch.usi.dag.disl.staticcontext.cache.CacheableStaticContext;
-import ch.usi.dag.disl.staticcontext.cache.StaticContextCache;
 import ch.usi.dag.disl.util.Constants;
 
 public class SCGenerator {
@@ -175,33 +173,6 @@ public class SCGenerator {
 			Shadow shadow) throws StaticContextGenException,
 			ReflectionException {
 
-		// NOTE: default cache
-		// some default cache is not needed because for each marked region,
-		// the computation is called only once
-		
-		StaticContextCache cache = null;
-		
-		// cacheable static context data - try to query cache first
-		if(scInst instanceof CacheableStaticContext) {
-			
-			CacheableStaticContext cacheableSC = 
-					(CacheableStaticContext) scInst;
-			
-			cache = cacheableSC.getRetValCache(method.getName());
-			
-			// static context has cache for this method
-			if(cache != null) {
-				
-				Object result = cache.getCachedResult(shadow);
-				
-				// cache is valid - return cache hit
-				if(result != null) {
-					return result;
-				}
-			}
-		}
-		
-		// if cache wasn't hit...
 		try {
 
 			// populate static context instance with data
@@ -209,11 +180,6 @@ public class SCGenerator {
 
 			// get static data by invoking static context method
 			Object result = method.invoke(scInst);
-
-			// cache result if applicable
-			if (cache != null) {
-				cache.cacheResult(shadow, result);
-			}
 
 			return result;
 

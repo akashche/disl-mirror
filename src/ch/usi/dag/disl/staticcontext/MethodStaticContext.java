@@ -2,47 +2,10 @@ package ch.usi.dag.disl.staticcontext;
 
 import org.objectweb.asm.Opcodes;
 
-import ch.usi.dag.disl.staticcontext.cache.ClassCache;
-import ch.usi.dag.disl.staticcontext.cache.MethodCache;
 import ch.usi.dag.disl.util.Constants;
 
 public class MethodStaticContext extends AbstractStaticContext {
 
-	public MethodStaticContext() {
-		
-		registerCache("thisClassName", ClassCache.class);
-		registerCache("thisClassOuterClass", ClassCache.class);
-		registerCache("thisClassOuterMethod", ClassCache.class);
-		registerCache("thisClassOuterMethodDesc", ClassCache.class);
-		registerCache("thisClassSignature", ClassCache.class);
-		registerCache("thisClassSourceFile", ClassCache.class);
-		registerCache("thisClassSuperName", ClassCache.class);
-		registerCache("thisClassVersion", ClassCache.class);
-		registerCache("thisClassName", ClassCache.class);
-		registerCache("isClassAbstract", ClassCache.class);
-		registerCache("isClassAnnotation", ClassCache.class);
-		registerCache("isClassEnum", ClassCache.class);
-		registerCache("isClassFinal", ClassCache.class);
-		registerCache("isClassInterface", ClassCache.class);
-		registerCache("isClassPrivate", ClassCache.class);
-		registerCache("isClassProtected", ClassCache.class);
-		registerCache("isClassPublic", ClassCache.class);
-		registerCache("isClassSynthetic", ClassCache.class);
-		
-		registerCache("thisMethodName", MethodCache.class);
-		registerCache("thisMethodFullName", MethodCache.class);
-		registerCache("thisMethodDescriptor", MethodCache.class);
-		registerCache("thisMethodSignature", MethodCache.class);
-		registerCache("isMethodBridge", MethodCache.class);
-		registerCache("isMethodFinal", MethodCache.class);
-		registerCache("isMethodPrivate", MethodCache.class);
-		registerCache("isMethodProtected", MethodCache.class);
-		registerCache("isMethodPublic", MethodCache.class);
-		registerCache("isMethodStatic", MethodCache.class);
-		registerCache("isMethodSynchronized", MethodCache.class);
-		registerCache("isMethodVarArgs", MethodCache.class);
-	}	
-	
 	// *** Class ***
 
 	public String thisClassName() {
