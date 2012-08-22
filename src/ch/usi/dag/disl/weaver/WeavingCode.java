@@ -310,9 +310,10 @@ public class WeavingCode {
 							operand).getType();
 
 					if (t.getSort() != targetType.getSort()) {
-						throw new DiSLFatalException("Unwanted type \""
-								+ targetType + "\", while user needs \"" + t
-								+ "\"");
+						throw new DiSLFatalException(
+								"Dynamic context wrong access. Requested \"" +
+								t + "\" but found \"" + targetType
+								+ "\" on the stack.");
 					}
 
 					// store the stack value without changing the semantic
@@ -352,8 +353,10 @@ public class WeavingCode {
 				Type targetType = basicframe.getLocal(slot).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DiSLFatalException("Unwanted type \""
-							+ targetType + "\", while user needs \"" + t + "\"");
+					throw new DiSLFatalException(
+							"Dynamic context wrong access. Requested \"" +
+							t + "\" but found \"" + targetType
+							+ "\" on the stack.");
 				}
 
 				// box value if applicable
@@ -381,8 +384,10 @@ public class WeavingCode {
 				Type targetType = basicframe.getLocal(operand).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DiSLFatalException("Unwanted type \""
-							+ targetType + "\", while user needs \"" + t + "\"");
+					throw new DiSLFatalException(
+							"Dynamic context wrong access. Requested \"" +
+							t + "\" but found \"" + targetType
+							+ "\" on the stack.");
 				}
 
 				// box value if applicable

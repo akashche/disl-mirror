@@ -24,6 +24,7 @@ import ch.usi.dag.disl.cbloader.ManifestHelper.ManifestInfo;
 import ch.usi.dag.disl.classparser.ClassParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLIOException;
+import ch.usi.dag.disl.exception.DiSLInMethodException;
 import ch.usi.dag.disl.exception.DynamicInfoException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ManifestInfoException;
@@ -402,7 +403,17 @@ public class DiSL {
 		// instrument all methods in a class
 		for (MethodNode methodNode : classNode.methods) {
 
-			boolean methodChanged = instrumentMethod(classNode, methodNode);
+			boolean methodChanged = false;
+			
+			// intercept all exceptions and add a method name
+			try {
+				methodChanged = instrumentMethod(classNode, methodNode);
+			}	
+			catch(DiSLException e) {
+
+				throw new DiSLInMethodException(
+						classNode.name + "." + methodNode.name, e);
+			}
 
 			// add method to the set of changed methods
 			if (methodChanged) {
