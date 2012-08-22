@@ -300,9 +300,11 @@ public class WeavingCode {
 
 					// index should be less than the stack height
 					if (operand >= basicframe.getStackSize() || operand < 0) {
-						throw new DiSLFatalException("Illegal access of index "
-								+ operand + " on a stack with "
-								+ basicframe.getStackSize() + " operands");
+						throw new DynamicInfoException(
+								"Dynamic context wrong access." +
+								" Access out of bounds. Accessed " + operand +
+								", but the size of stack is "
+								+ basicframe.getLocals());
 					}
 
 					// Type checking
@@ -310,9 +312,10 @@ public class WeavingCode {
 							operand).getType();
 
 					if (t.getSort() != targetType.getSort()) {
-						throw new DiSLFatalException("Unwanted type \""
-								+ targetType + "\", while user needs \"" + t
-								+ "\"");
+						throw new DynamicInfoException(
+								"Dynamic context wrong access. Requested \"" +
+								t + "\" but found \"" + targetType
+								+ "\" on the stack.");
 					}
 
 					// store the stack value without changing the semantic
@@ -343,8 +346,10 @@ public class WeavingCode {
 
 				// index should be less than the size of local variables
 				if (slot >= basicframe.getLocals() || slot < 0) {
-					throw new DiSLFatalException("Illegal access of index "
-							+ slot + " while the size of local variable is "
+					throw new DynamicInfoException(
+							"Dynamic context wrong access." +
+							" Access out of bounds. Accessed " + slot +
+							", but the size of stack is "
 							+ basicframe.getLocals());
 				}
 
@@ -352,8 +357,10 @@ public class WeavingCode {
 				Type targetType = basicframe.getLocal(slot).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DiSLFatalException("Unwanted type \""
-							+ targetType + "\", while user needs \"" + t + "\"");
+					throw new DynamicInfoException(
+							"Dynamic context wrong access. Requested \"" +
+							t + "\" but found \"" + targetType
+							+ "\" on the stack.");
 				}
 
 				// box value if applicable
@@ -372,8 +379,10 @@ public class WeavingCode {
 
 				// index should be less than the size of local variables
 				if (operand >= basicframe.getLocals() || operand < 0) {
-					throw new DiSLFatalException("Illegal access of index "
-							+ operand + " while the size of local variable is "
+					throw new DynamicInfoException(
+							"Dynamic context wrong access." +
+							" Access out of bounds. Accessed " + operand +
+							", but the size of stack is "
 							+ basicframe.getLocals());
 				}
 
@@ -381,8 +390,10 @@ public class WeavingCode {
 				Type targetType = basicframe.getLocal(operand).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DiSLFatalException("Unwanted type \""
-							+ targetType + "\", while user needs \"" + t + "\"");
+					throw new DynamicInfoException(
+							"Dynamic context wrong access. Requested \"" +
+							t + "\" but found \"" + targetType
+							+ "\" on the stack.");
 				}
 
 				// box value if applicable
