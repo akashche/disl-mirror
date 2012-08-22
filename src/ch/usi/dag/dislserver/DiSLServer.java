@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.exception.DiSLException;
-import ch.usi.dag.disl.exception.DiSLInMethodException;
 
 public abstract class DiSLServer {
 
@@ -84,19 +83,7 @@ public abstract class DiSLServer {
 
 		if (e instanceof DiSLException) {
 
-			System.err.print("DiSL error");
-			
-			// report during which method it happened
-			if (e instanceof DiSLInMethodException) {
-				
-				System.err.print(" (while instrumenting method \""
-						+ e.getMessage() + "\")");
-				
-				// set inner error
-				e = e.getCause();
-			}
-			
-			System.err.println(": " + e.getMessage());
+			System.err.println("DiSL error: " + e.getMessage());
 			
 			reportInnerError(e);
 			

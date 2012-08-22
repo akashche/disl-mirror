@@ -24,7 +24,6 @@ import ch.usi.dag.disl.cbloader.ManifestHelper.ManifestInfo;
 import ch.usi.dag.disl.classparser.ClassParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLIOException;
-import ch.usi.dag.disl.exception.DiSLInMethodException;
 import ch.usi.dag.disl.exception.DynamicInfoException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ManifestInfoException;
@@ -36,7 +35,6 @@ import ch.usi.dag.disl.exception.TransformerException;
 import ch.usi.dag.disl.exclusion.ExclusionSet;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
-import ch.usi.dag.disl.localvar.SyntheticStaticFieldVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.processor.generator.PIResolver;
@@ -82,8 +80,6 @@ public class DiSL {
 	private final Set<Scope> exclusionSet;
 	
 	private final List<Snippet> snippets;
-	
-	private final List<SyntheticStaticFieldVar> syntheticStaticFields;
 
 	/**
 	 * DiSL initialization 
@@ -146,10 +142,6 @@ public class DiSL {
 		// - this is set when everything is ok
 		// - it serves as initialization flag
 		snippets = parsedSnippets;
-		
-		// get parsed synthetic static fields
-		syntheticStaticFields = new LinkedList<SyntheticStaticFieldVar>(parser
-				.getAllLocalVars().getSyntheticStaticFields().values());
 
 		// TODO put checker here
 		// like After should catch normal and abnormal execution
@@ -317,8 +309,8 @@ public class DiSL {
 		// *** viewing ***
 
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
-				new LinkedList<SyntheticLocalVar>(usedSLVs),
-				syntheticStaticFields, staticInfo, piResolver);
+				new LinkedList<SyntheticLocalVar>(usedSLVs), staticInfo,
+				piResolver);
 
 		if(debug) {
 			System.out.println("Instumenting method: " + className
@@ -403,17 +395,7 @@ public class DiSL {
 		// instrument all methods in a class
 		for (MethodNode methodNode : classNode.methods) {
 
-			boolean methodChanged = false;
-			
-			// intercept all exceptions and add a method name
-			try {
-				methodChanged = instrumentMethod(classNode, methodNode);
-			}	
-			catch(DiSLException e) {
-
-				throw new DiSLInMethodException(
-						classNode.name + "." + methodNode.name, e);
-			}
+			boolean methodChanged = instrumentMethod(classNode, methodNode);
 
 			// add method to the set of changed methods
 			if (methodChanged) {
