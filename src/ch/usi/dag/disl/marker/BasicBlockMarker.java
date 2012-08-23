@@ -9,19 +9,19 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
-public class BasicBlockMarker extends AbstractMarker {
+public class BasicBlockMarker extends AbstractDWRMarker {
 
 	protected boolean isPrecise = false;
 
 	@Override
-	public List<MarkedRegion> mark(MethodNode method) {
+	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode methodNode) {
 
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		List<AbstractInsnNode> seperators = BasicBlockCalc.getAll(
-				method.instructions, method.tryCatchBlocks, isPrecise);
+				methodNode.instructions, methodNode.tryCatchBlocks, isPrecise);
 
 		AbstractInsnNode last = AsmHelper.skipVirualInsns(
-				method.instructions.getLast(), false);
+				methodNode.instructions.getLast(), false);
 
 		seperators.add(last);
 
@@ -34,8 +34,8 @@ public class BasicBlockMarker extends AbstractMarker {
 				end = end.getPrevious();
 			}
 
-			regions.add(new MarkedRegion(start, AsmHelper.skipVirualInsns(
-					end, false)));
+			regions.add(new MarkedRegion(start, AsmHelper.skipVirualInsns(end,
+					false)));
 		}
 
 		return regions;

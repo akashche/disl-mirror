@@ -9,20 +9,20 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.util.AsmHelper;
 
-public class TryClauseMarker extends AbstractMarker {
+public class TryClauseMarker extends AbstractDWRMarker {
 
 	@Override
-	public List<MarkedRegion> mark(MethodNode method) {
-		
+	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
+
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		
-		for (TryCatchBlockNode tcb : method.tryCatchBlocks){
+
+		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
+
 			AbstractInsnNode start = AsmHelper.skipVirualInsns(tcb.start, true);
 			AbstractInsnNode end = AsmHelper.skipVirualInsns(tcb.end, false);
-			
 			regions.add(new MarkedRegion(start, end));
 		}
-		
+
 		return regions;
 	}
 

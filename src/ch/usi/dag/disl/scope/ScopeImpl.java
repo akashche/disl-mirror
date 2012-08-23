@@ -9,6 +9,38 @@ import org.objectweb.asm.Type;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.util.Constants;
 
+/**
+ * Class filters methods based on class name, method name and method parameters.
+ * 
+ * Name of the method is specified as follows:
+ * 
+ * returnparam packagename.classname.methodname(parameters)
+ *
+ * returnparam is the returning parameter of the method. Specified with fully
+ * qualified name of the class or basic type (defined as in java source code).
+ * If the returnparam is missing, it matches all the return types.
+ * 
+ * packagename is the name of the package where the class containing the method
+ * resides. The separator for inner packages is ".". Part of the package can be
+ * substituted with "*" ("*" matches also "." in package name).
+ * If the packagename is missing and the class is matched in all packages.
+ * The default package can be matched with "[default]".
+ * If the packagename is specified class name has to be specified also.
+ * 
+ * classname is the name of the class where the matched method resides. Part of
+ * the classname can be substituted with "*".
+ * If the classname is missing also the packagename and the separating "."
+ * should not be specified. The missing classname is matching every class in
+ * every package.
+ * 
+ * methodname is mandatory part of the method name. Part of the methodname can
+ * be substituted with "*".
+ * 
+ * parameters are specified as returnparam and separated by ",". Part of the
+ * parameter can be substituted with "*".
+ * ".." can be supplied instead of last parameter specification and matches
+ * all remaining method parameters.
+ */
 public class ScopeImpl implements Scope {
 
 	private final String PARAM_BEGIN = "(";
@@ -86,7 +118,7 @@ public class ScopeImpl implements Scope {
 			// test for emptiness
 			if(! paramsStr.trim().isEmpty()) {
 
-				// separate params ant trim them again
+				// separate params and trim them again
 				String[] params = paramsStr.split(PARAM_DELIM);
 				for(String param : Arrays.asList(params)) {
 					
@@ -95,11 +127,22 @@ public class ScopeImpl implements Scope {
 					if(param.isEmpty()) {
 						throw new ScopeParserException("Scope \""
 								+ scopeExpression
-								+ " has bad parameter definition");
+								+ "\" has bad parameter definition");
 					}
 					
 					paramsWildCard.add(param);
 				}
+			}
+			
+			int pmrIndex = paramsWildCard.indexOf(PARAM_MATCH_REST);
+			
+			// if the index is valid, the first occurrence of PARAM_MATCH_REST
+			// should be at the end of the parameters
+			if(pmrIndex != -1 && pmrIndex != paramsWildCard.size() - 1) {
+				throw new ScopeParserException("Scope \""
+						+ scopeExpression
+						+ "\" should have \"" + PARAM_MATCH_REST + "\""
+						+ " only as last parameter");
 			}
 		}
 		
@@ -226,6 +269,7 @@ public class ScopeImpl implements Scope {
 				String paramWC = paramsWildCard.get(i);
 				
 				// if there is PARAM_MATCH_REST then stop
+				// works even if there is no additional parameter
 				if(paramWC.equals(PARAM_MATCH_REST)) {
 					break;
 				}

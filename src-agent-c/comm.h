@@ -7,7 +7,7 @@
 #include "jvmtihelper.h"
 
 // sends data over network
-static void send_data(int sockfd, const void * data, int data_len) {
+void send_data(int sockfd, const void * data, int data_len) {
 
 	int sent = 0;
 
@@ -21,7 +21,7 @@ static void send_data(int sockfd, const void * data, int data_len) {
 }
 
 // receives data from network
-static void rcv_data(int sockfd, void * data, int data_len) {
+void rcv_data(int sockfd, void * data, int data_len) {
 
 	int received = 0;
 

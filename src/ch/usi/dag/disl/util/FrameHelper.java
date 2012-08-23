@@ -1,4 +1,7 @@
-package ch.usi.dag.disl.util.stack;
+package ch.usi.dag.disl.util;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -8,6 +11,7 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
+import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
@@ -15,7 +19,9 @@ import org.objectweb.asm.tree.analysis.SourceInterpreter;
 import org.objectweb.asm.tree.analysis.SourceValue;
 import org.objectweb.asm.tree.analysis.Value;
 
-public class StackUtil {
+import ch.usi.dag.disl.exception.DiSLFatalException;
+
+public class FrameHelper {
 
 	// generate a basic analyzer
 	public static Analyzer<BasicValue> getBasicAnalyzer() {
@@ -95,7 +101,7 @@ public class StackUtil {
 	// operand and store into a local slot.
 	public static int dupStack(Frame<SourceValue> frame, MethodNode method,
 			int operand, int sopcode, int slot) {
-		SourceValue source = StackUtil.getStackByIndex(frame, operand);
+		SourceValue source = getStackByIndex(frame, operand);
 
 		for (AbstractInsnNode itr : source.insns) {
 
@@ -125,13 +131,13 @@ public class StackUtil {
 					break;
 				}
 
-				SourceValue x2 = StackUtil.getStackByIndex(frame, operand + 2);
+				SourceValue x2 = getStackByIndex(frame, operand + 2);
 				dupStack(frame, method, operand + (4 - x2.size), sopcode, slot);
 				continue;
 
 			case Opcodes.SWAP:
 				if (operand > 0
-						&& StackUtil.getStackByIndex(frame, operand - 1).insns
+						&& getStackByIndex(frame, operand - 1).insns
 								.contains(itr)) {
 					// insert 'dup' instruction and then store to a local slot
 					method.instructions.insertBefore(itr, new InsnNode(
@@ -152,6 +158,55 @@ public class StackUtil {
 		}
 
 		return source.size;
+	}
+
+	public static <V extends Value> Frame<V>[] getFrames(Analyzer<V> analyzer,
+			String clazz, MethodNode method) {
+
+		try {
+			analyzer.analyze(clazz, method);
+		} catch (AnalyzerException e) {
+			throw new DiSLFatalException("Cause by AnalyzerException : \n"
+					+ e.getMessage());
+		}
+
+		return analyzer.getFrames();
+	}
+
+	public static Frame<BasicValue>[] getBasicFrames(String clazz,
+			MethodNode method) {
+		return getFrames(getBasicAnalyzer(), clazz, method);
+	}
+
+	public static Frame<SourceValue>[] getSourceFrames(String clazz,
+			MethodNode method) {
+		return getFrames(getSourceAnalyzer(), clazz, method);
+	}
+
+	public static <V extends Value> Map<AbstractInsnNode, Frame<V>> createMapping(
+			Analyzer<V> analyzer, String clazz, MethodNode method) {
+
+		Map<AbstractInsnNode, Frame<V>> mapping;
+
+		mapping = new HashMap<AbstractInsnNode, Frame<V>>();
+
+		Frame<V>[] frames = getFrames(analyzer, clazz, method);
+
+		for (int i = 0; i < method.instructions.size(); i++) {
+			mapping.put(method.instructions.get(i), frames[i]);
+		}
+
+		return mapping;
+	}
+
+	public static Map<AbstractInsnNode, Frame<BasicValue>> createBasicMapping(
+			String clazz, MethodNode method) {
+		return createMapping(getBasicAnalyzer(), clazz, method);
+	}
+
+	public static Map<AbstractInsnNode, Frame<SourceValue>> createSourceMapping(
+			String clazz, MethodNode method) {
+		return createMapping(getSourceAnalyzer(), clazz, method);
 	}
 
 }

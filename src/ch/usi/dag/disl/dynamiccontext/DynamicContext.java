@@ -1,5 +1,8 @@
 package ch.usi.dag.disl.dynamiccontext;
 
+/**
+ * Dynamic context provides access to dynamic information of the snippet. 
+ */
 public interface DynamicContext {
 
 	/**
@@ -36,4 +39,10 @@ public interface DynamicContext {
 	 * @param valueType type of the accessed argument
 	 */
 	public <T> T getMethodArgumentValue(int index, Class<T> valueType);
+
+	/**
+	 * Returns the exception reference when applying @After or @AfterThrowing,
+	 * null otherwise.
+	 */
+	public Throwable getException();
 }

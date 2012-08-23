@@ -73,7 +73,7 @@ public class Snippet implements Comparable<Snippet> {
 	}
 
 	public int compareTo(Snippet o) {
-		return order - o.getOrder();
+		return o.getOrder() - order;
 	}
 
 	public void init(LocalVars allLVs, Map<Type, Proc> processors,

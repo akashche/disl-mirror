@@ -12,7 +12,7 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.util.AsmOpcodes;
 
-public class BytecodeMarker extends AbstractMarker {
+public class BytecodeMarker extends AbstractDWRMarker {
 
 	protected static final String INSTR_DELIM = ",";
 	
@@ -49,15 +49,15 @@ public class BytecodeMarker extends AbstractMarker {
 	}
 
 	@Override
-	public List<MarkedRegion> mark(MethodNode method) {
+	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 		
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		InsnList ilst = method.instructions;
 
 		for (AbstractInsnNode instruction : ilst.toArray()) {
-			
+
 			if (searchedInstrNums.contains(instruction.getOpcode())) {
-				
+
 				regions.add(new MarkedRegion(instruction, instruction));
 			}
 		}

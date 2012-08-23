@@ -11,39 +11,36 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.Constants;
 
-public class NewObjMarker extends AbstractMarker {
-
-	protected boolean isPrecise = false;
+public class NewObjMarker extends AbstractDWRMarker {
 
 	// NOTE: does not work for arrays
-	
+
 	@Override
-	public List<MarkedRegion> mark(MethodNode method) {
+	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 		InsnList ilst = method.instructions;
 
 		int invokedNews = 0;
-		
+
 		// find invocation of constructor after new instruction
 		for (AbstractInsnNode instruction : ilst.toArray()) {
-			
+
 			// track new instruction
-			if(instruction.getOpcode() == Opcodes.NEW) {
-				
+			if (instruction.getOpcode() == Opcodes.NEW) {
+
 				++invokedNews;
 			}
-			
+
 			// if it is invoke special and there are new pending
-			if(instruction.getOpcode() == Opcodes.INVOKESPECIAL
+			if (instruction.getOpcode() == Opcodes.INVOKESPECIAL
 					&& invokedNews > 0) {
-				
+
 				MethodInsnNode min = (MethodInsnNode) instruction;
-				
-				if(min.name.equals(Constants.CONSTRUCTOR_NAME)) {
-					
-					regions.add(
-							new MarkedRegion(instruction, instruction));
+
+				if (min.name.equals(Constants.CONSTRUCTOR_NAME)) {
+
+					regions.add(new MarkedRegion(instruction, instruction));
 				}
 			}
 		}

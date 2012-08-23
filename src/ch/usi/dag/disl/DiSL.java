@@ -24,9 +24,11 @@ import ch.usi.dag.disl.cbloader.ManifestHelper.ManifestInfo;
 import ch.usi.dag.disl.classparser.ClassParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLIOException;
-import ch.usi.dag.disl.exception.DynamicInfoException;
+import ch.usi.dag.disl.exception.DiSLInMethodException;
+import ch.usi.dag.disl.exception.DynamicContextException;
 import ch.usi.dag.disl.exception.InitException;
 import ch.usi.dag.disl.exception.ManifestInfoException;
+import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
@@ -51,6 +53,10 @@ import ch.usi.dag.disl.utilinstr.tlvinserter.TLVInserter;
 import ch.usi.dag.disl.weaver.Weaver;
 
 // TODO javadoc comment all
+/**
+ * Main DiSL class providing interface for an instrumentation framework
+ * (normally DiSL Server)
+ */
 public class DiSL {
 
 	public final String PROP_DEBUG = "debug";
@@ -76,6 +82,10 @@ public class DiSL {
 	
 	private final List<Snippet> snippets;
 
+	/**
+	 * DiSL initialization 
+	 * @param useDynamicBypass enable or disable dynamic bypass instrumentation
+	 */
 	// this method should be called only once
 	public DiSL(boolean useDynamicBypass) throws DiSLException {
 
@@ -143,6 +153,10 @@ public class DiSL {
 		// specify this for InstructionMarker
 	}
 	
+	/**
+	 * Finds transformer class in configuration and allocates it.
+	 * @return newly allocated transformer.
+	 */
 	private Transformer resolveTransformer() throws ManifestInfoException,
 			ReflectionException {
 		
@@ -190,12 +204,10 @@ public class DiSL {
 	 *            class that will be instrumented
 	 * @param methodNode
 	 *            method in the classNode argument, that will be instrumented
-	 * @param staticContextInstances
-	 *
 	 */
 	private boolean instrumentMethod(ClassNode classNode, MethodNode methodNode)
 			throws ReflectionException, StaticContextGenException,
-			ProcessorException, DynamicInfoException {
+			ProcessorException, DynamicContextException, MarkerException {
 
 		// skip abstract methods
 		if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
@@ -210,6 +222,11 @@ public class DiSL {
 		String className = classNode.name;
 		String methodName = methodNode.name;
 		String methodDesc = methodNode.desc;
+
+		if(debug) {
+			System.out.println("Instrumenting method: " + className
+					+ Constants.CLASS_DELIM + methodName + "(" + methodDesc
+					+ ")");
 		
 		// evaluate exclusions
 		for (Scope exclScope : exclusionSet) {
@@ -300,16 +317,18 @@ public class DiSL {
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(usedSLVs), staticInfo,
 				piResolver);
-
-		if(debug) {
-			System.out.println("Instumenting method: " + className
-					+ Constants.CLASS_DELIM + methodName + "(" + methodDesc
-					+ ")");
 		}
 		
 		return true;
 	}
 
+	/**
+	 * Selects only shadows matching the passed guard.
+	 * 
+	 * @param guard guard, on witch conditions are the shadows selected
+	 * @param marking the list of shadows from where the gurads selects
+	 * @return selected shadows
+	 */
 	private List<Shadow> selectShadowsWithGuard(Method guard,
 			List<Shadow> marking) {
 		
@@ -331,6 +350,9 @@ public class DiSL {
 		return selectedMarking;
 	}
 
+	/**
+	 * Data holder for an instrumented class 
+	 */
 	private static class InstrumentedClass {
 		
 		private ClassNode classNode;
@@ -352,7 +374,15 @@ public class DiSL {
 		}
 	}
 	
-	// this method is thread safe after initialization
+	/**
+	 * Instruments class node.
+	 * 
+	 * Note: This method is thread safe. Parameter classNode is changed during
+	 * the invocation.
+	 * 
+	 * @param classNode class node to instrument
+	 * @return instrumented class
+	 */
 	private InstrumentedClass instrumentClass(ClassNode classNode)
 			throws DiSLException {
 
@@ -366,7 +396,17 @@ public class DiSL {
 		// instrument all methods in a class
 		for (MethodNode methodNode : classNode.methods) {
 
-			boolean methodChanged = instrumentMethod(classNode, methodNode);
+			boolean methodChanged = false;
+			
+			// intercept all exceptions and add a method name
+			try {
+				methodChanged = instrumentMethod(classNode, methodNode);
+			}	
+			catch(DiSLException e) {
+
+				throw new DiSLInMethodException(
+						classNode.name + "." + methodNode.name, e);
+			}
 
 			// add method to the set of changed methods
 			if (methodChanged) {
@@ -415,6 +455,12 @@ public class DiSL {
 		return null;
 	}
 
+	/**
+	 * Instruments array of bytes representing a class
+	 * 
+	 * @param classAsBytes class as array of bytes
+	 * @return instrumeted class as array of bytes
+	 */
 	public byte[] instrument(byte[] classAsBytes) throws DiSLException {
 	
 		// output bytes into the file
@@ -448,9 +494,7 @@ public class DiSL {
 		//  - classNode with API param is required by ASM 4.0 guidelines
 		ClassNode classNode = new ClassNode(Opcodes.ASM4);
 
-		// TODO jb - try without SKIP_DEBUG
-		classReader.accept(classNode, ClassReader.SKIP_DEBUG
-				| ClassReader.EXPAND_FRAMES);
+		classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
 		
 		InstrumentedClass instrClass = instrumentClass(classNode);
 		
@@ -473,9 +517,7 @@ public class DiSL {
 			ClassReader origCR = new ClassReader(classAsBytes);
 			ClassNode origCN = new ClassNode();
 
-			// TODO jb - try without SKIP_DEBUG
-			origCR.accept(origCN, ClassReader.SKIP_DEBUG
-					| ClassReader.EXPAND_FRAMES);
+			origCR.accept(origCN, ClassReader.EXPAND_FRAMES);
 
 			// origCN and instrCN are destroyed during the merging
 			instrCN = CodeMerger.mergeClasses(origCN, instrCN,
@@ -510,6 +552,9 @@ public class DiSL {
 		return cw.toByteArray();
 	}
 	
+	/**
+	 * Termination handler - should be invoked by the instrumentation framework
+	 */
 	public void terminate() {
 		
 	}

@@ -12,8 +12,6 @@ else
   RE_AGENT="${BASE_DIR}/src-re-agent/libdislreagent.so"
 fi
 
-# ipc.socket is the default communication
-# to enable shared memory, remove ",ipc.socket" from the options
 java -agentpath:${C_AGENT} \
      -agentpath:${RE_AGENT} \
      -javaagent:${BASE_DIR}/build/dislagent-unspec.jar \

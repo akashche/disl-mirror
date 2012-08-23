@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.weaver.pe;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,15 +21,13 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
-import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.util.cfg.BasicBlock;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
-import ch.usi.dag.disl.util.stack.StackUtil;
 
 public class PartialEvaluator {
 
@@ -137,8 +134,8 @@ public class PartialEvaluator {
 				case Opcodes.IF_ACMPEQ:
 				case Opcodes.IF_ACMPNE: {
 
-					ConstValue value1 = StackUtil.getStackByIndex(frame, 1);
-					ConstValue value2 = StackUtil.getStackByIndex(frame, 0);
+					ConstValue value1 = FrameHelper.getStackByIndex(frame, 1);
+					ConstValue value2 = FrameHelper.getStackByIndex(frame, 0);
 					result = ConstInterpreter.getInstance().binaryOperation(
 							instr, value1, value2);
 					popTwice = true;
@@ -147,7 +144,7 @@ public class PartialEvaluator {
 
 				default: {
 
-					ConstValue value = StackUtil.getStackByIndex(frame, 0);
+					ConstValue value = FrameHelper.getStackByIndex(frame, 0);
 					result = ConstInterpreter.getInstance().unaryOperation(
 							instr, value);
 					break;
@@ -197,7 +194,7 @@ public class PartialEvaluator {
 				// Covers LOOKUPSWITCH
 				LookupSwitchInsnNode lsin = (LookupSwitchInsnNode) instr;
 
-				ConstValue value = StackUtil.getStackByIndex(frame, 0);
+				ConstValue value = FrameHelper.getStackByIndex(frame, 0);
 
 				if (value.cst == null) {
 					continue;
@@ -239,7 +236,7 @@ public class PartialEvaluator {
 				// Covers TABLESWITCH
 				TableSwitchInsnNode tsin = (TableSwitchInsnNode) instr;
 
-				ConstValue value = StackUtil.getStackByIndex(frame, 0);
+				ConstValue value = FrameHelper.getStackByIndex(frame, 0);
 
 				if (value.cst == null) {
 					continue;
@@ -317,7 +314,7 @@ public class PartialEvaluator {
 
 			if (ConstInterpreter.mightBeUnaryConstOperation(instr)) {
 
-				ConstValue value = StackUtil.getStackByIndex(frame, 0);
+				ConstValue value = FrameHelper.getStackByIndex(frame, 0);
 				Object cst = ConstInterpreter.getInstance().unaryOperation(
 						instr, value).cst;
 
@@ -332,8 +329,8 @@ public class PartialEvaluator {
 				continue;
 			} else if (ConstInterpreter.mightBeBinaryConstOperation(instr)) {
 
-				ConstValue value1 = StackUtil.getStackByIndex(frame, 1);
-				ConstValue value2 = StackUtil.getStackByIndex(frame, 0);
+				ConstValue value1 = FrameHelper.getStackByIndex(frame, 1);
+				ConstValue value2 = FrameHelper.getStackByIndex(frame, 0);
 				Object cst = ConstInterpreter.getInstance().binaryOperation(
 						instr, value1, value2).cst;
 
@@ -375,7 +372,9 @@ public class PartialEvaluator {
 	private boolean loadAfterStore(BasicBlock bb, AbstractInsnNode instr,
 			int var) {
 
-		while (instr != bb.getExit()) {
+		AbstractInsnNode prev = instr.getPrevious();
+
+		while (prev != bb.getExit()) {
 			switch (instr.getOpcode()) {
 			case Opcodes.ILOAD:
 			case Opcodes.LLOAD:
@@ -385,7 +384,9 @@ public class PartialEvaluator {
 				if (((VarInsnNode) instr).var == var) {
 					return true;
 				}
+
 			default:
+				prev = instr;
 				instr = instr.getNext();
 			}
 		}
@@ -544,7 +545,7 @@ public class PartialEvaluator {
 				Type[] args = Type
 						.getArgumentTypes(((MethodInsnNode) instr).desc);
 				Frame<SourceValue> frame = frames.get(instr);
-				Set<AbstractInsnNode> sources = StackUtil.getStackByIndex(
+				Set<AbstractInsnNode> sources = FrameHelper.getStackByIndex(
 						frame, args.length).insns;
 
 				if (sources.contains(next)) {
@@ -565,22 +566,8 @@ public class PartialEvaluator {
 
 	private boolean removePop() {
 
-		Analyzer<SourceValue> sourceAnalyzer = StackUtil.getSourceAnalyzer();
-
-		try {
-			sourceAnalyzer.analyze(PartialEvaluator.class.getName(), method);
-		} catch (AnalyzerException e) {
-			e.printStackTrace();
-			throw new DiSLFatalException("Cause by AnalyzerException : \n"
-					+ e.getMessage());
-		}
-
 		Map<AbstractInsnNode, Frame<SourceValue>> frames = 
-				new HashMap<AbstractInsnNode, Frame<SourceValue>>();
-
-		for (int i = 0; i < ilist.size(); i++) {
-			frames.put(ilist.get(i), sourceAnalyzer.getFrames()[i]);
-		}
+				FrameHelper.createSourceMapping(PartialEvaluator.class.getName(), method);
 
 		boolean isOptimized = false;
 
@@ -598,7 +585,7 @@ public class PartialEvaluator {
 				continue;
 			}
 
-			Set<AbstractInsnNode> sources = StackUtil.getStackByIndex(frame, 0).insns;
+			Set<AbstractInsnNode> sources = FrameHelper.getStackByIndex(frame, 0).insns;
 
 			if (unremovablePop(sources)) {
 				continue;
@@ -736,21 +723,9 @@ public class PartialEvaluator {
 		ilist.add(new InsnNode(Opcodes.RETURN));
 		Analyzer<ConstValue> constAnalyzer = new Analyzer<ConstValue>(
 				ConstInterpreter.getInstance());
-
-		try {
-			constAnalyzer.analyze(PartialEvaluator.class.getName(), method);
-		} catch (AnalyzerException e) {
-			throw new DiSLFatalException("Cause by AnalyzerException : \n"
-					+ e.getMessage());
-		}
-
-		Map<AbstractInsnNode, Frame<ConstValue>> frames = 
-				new HashMap<AbstractInsnNode, Frame<ConstValue>>();
-		Frame<ConstValue>[] constFrames = constAnalyzer.getFrames();
-
-		for (int i = 0; i < method.instructions.size(); i++) {
-			frames.put(method.instructions.get(i), constFrames[i]);
-		}
+		Map<AbstractInsnNode, Frame<ConstValue>> frames = FrameHelper
+				.createMapping(constAnalyzer, PartialEvaluator.class.getName(),
+						method);
 
 		boolean isOptimized = conditionalReduction(frames);
 		isOptimized |= replaceLoadWithLDC(frames);

@@ -133,6 +133,8 @@ public abstract class ExclusionSet {
 				}
 			}
 			
+			jarFile.close();
+			
 			return exclSet;
 		
 		} catch(IOException e) {

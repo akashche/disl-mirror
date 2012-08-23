@@ -15,8 +15,6 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.analysis.Analyzer;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
@@ -27,7 +25,7 @@ import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
-import ch.usi.dag.disl.util.stack.StackUtil;
+import ch.usi.dag.disl.util.FrameHelper;
 
 /**
  * Parses DiSL class with local variables
@@ -257,16 +255,8 @@ abstract class AbstractParser {
 	private void parseInitCodeForTLV(String className, MethodNode cinitMethod,
 			Map<String, ThreadLocalVar> tlvs) throws ParserException {
 
-		// crate analyzer
-		Analyzer<SourceValue> analyzer = StackUtil.getSourceAnalyzer();
-
-		try {
-			analyzer.analyze(className, cinitMethod);
-		} catch (AnalyzerException e) {
-			throw new ParserException(e);
-		}
-
-		Frame<SourceValue>[] frames = analyzer.getFrames();
+		Frame<SourceValue>[] frames = FrameHelper.getSourceFrames(className,
+				cinitMethod);
 
 		// analyze instructions in each frame
 		// one frame should cover one field initialization

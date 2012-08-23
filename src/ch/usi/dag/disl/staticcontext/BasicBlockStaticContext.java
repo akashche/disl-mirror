@@ -1,18 +1,39 @@
 package ch.usi.dag.disl.staticcontext;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 
+import ch.usi.dag.disl.snippet.Shadow;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
-import ch.usi.dag.disl.util.cfg.LoopAnalyzer;
 
 public class BasicBlockStaticContext extends AbstractStaticContext {
 
+	private Map<String, CtrlFlowGraph> cache = new HashMap<String, CtrlFlowGraph>();
+	protected CtrlFlowGraph customData;
+	
+	public void staticContextData(Shadow sa) {
+
+		super.staticContextData(sa);
+		
+		String key = staticContextData.getClassNode().name
+				+ staticContextData.getMethodNode().name
+				+ staticContextData.getMethodNode().desc;
+		
+		customData = cache.get(key);
+
+		if (customData == null) {
+
+			customData = produceCustomData();
+			cache.put(key, customData);
+		}
+	}
+	
 	public int getTotBBs() {
-		CtrlFlowGraph cfg = new CtrlFlowGraph(
-				staticContextData.getMethodNode());
-		return cfg.getNodes().size();
+		return customData.getNodes().size();
 	}
 
 	public int getBBSize() {
@@ -26,7 +47,7 @@ public class BasicBlockStaticContext extends AbstractStaticContext {
 
 		while (!ends.contains(start)) {
 
-			if (start.getOpcode() != 1) {
+			if (! AsmHelper.isVirtualInstr(start)) {
 				count++;
 			}
 
@@ -37,15 +58,10 @@ public class BasicBlockStaticContext extends AbstractStaticContext {
 	}
 
 	public int getBBindex() {
-
-		CtrlFlowGraph cfg = new CtrlFlowGraph(
-				staticContextData.getMethodNode());
-		return cfg.getIndex(staticContextData.getRegionStart());
+		return customData.getIndex(staticContextData.getRegionStart());
 	}
 
-	public boolean isFirstOfLoop() {
-
-		return LoopAnalyzer.isEntryOfLoop(staticContextData.getMethodNode(),
-				staticContextData.getRegionStart());
+	protected CtrlFlowGraph produceCustomData() {
+		return new CtrlFlowGraph(staticContextData.getMethodNode());
 	}
 }

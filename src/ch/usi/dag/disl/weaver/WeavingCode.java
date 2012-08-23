@@ -20,10 +20,11 @@ import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
+import ch.usi.dag.disl.classcontext.ClassContext;
 import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
-import ch.usi.dag.disl.exception.DynamicInfoException;
+import ch.usi.dag.disl.exception.DynamicContextException;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
@@ -35,7 +36,7 @@ import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.AsmHelper;
-import ch.usi.dag.disl.util.stack.StackUtil;
+import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.weaver.pe.MaxCalculator;
 import ch.usi.dag.disl.weaver.pe.PartialEvaluator;
 
@@ -50,18 +51,19 @@ public class WeavingCode {
 	private AbstractInsnNode[] iArray;
 	private Snippet snippet;
 	private Shadow shadow;
-	private int index;
+	private AbstractInsnNode weavingLoc;
 	private int maxLocals;
 
 	public WeavingCode(WeavingInfo weavingInfo, MethodNode method,
-			SnippetCode src, Snippet snippet, Shadow shadow, int index) {
+			SnippetCode src, Snippet snippet, Shadow shadow,
+			AbstractInsnNode loc) {
 
 		this.info = weavingInfo;
 		this.method = method;
 		this.code = src.clone();
 		this.snippet = snippet;
 		this.shadow = shadow;
-		this.index = index;
+		this.weavingLoc = loc;
 
 		this.iList = code.getInstructions();
 		this.iArray = iList.toArray();
@@ -121,9 +123,12 @@ public class WeavingCode {
 			}
 
 			LdcInsnNode ldc = (LdcInsnNode) previous;
-			MethodInsnNode invocation = (MethodInsnNode) instr;
+			MethodInsnNode invoke = (MethodInsnNode) instr;
 
-			if (!(ldc.cst instanceof String)) {
+			if (!((ldc.cst instanceof String)
+					&& invoke.owner.equals(Type
+							.getInternalName(ClassContext.class)) && invoke.name
+						.equals("asClass"))) {
 				continue;
 			}
 
@@ -133,11 +138,11 @@ public class WeavingCode {
 			iList.insert(instr, new LdcInsnNode(clazz));
 			iList.remove(ldc.getPrevious());
 			iList.remove(ldc);
-			iList.remove(invocation);
+			iList.remove(invoke);
 		}
 	}
 
-	private void preFixDynamicInfoCheck() throws DynamicInfoException {
+	private void preFixDynamicInfoCheck() throws DynamicContextException {
 
 		for (AbstractInsnNode instr : iList.toArray()) {
 
@@ -154,7 +159,8 @@ public class WeavingCode {
 				continue;
 			}
 
-			if (invoke.name.equals("getThis")) {
+			if (invoke.name.equals("getThis")
+					|| invoke.name.equals("getException")) {
 				continue;
 			}
 
@@ -174,7 +180,7 @@ public class WeavingCode {
 				break;
 
 			default:
-				throw new DynamicInfoException("In snippet "
+				throw new DynamicContextException("In snippet "
 						+ snippet.getOriginClassName() + "."
 						+ snippet.getOriginMethodName()
 						+ " - pass the first (pos)"
@@ -184,7 +190,7 @@ public class WeavingCode {
 
 			// second operand test
 			if (AsmHelper.getClassType(secondOperand) == null) {
-				throw new DynamicInfoException("In snippet "
+				throw new DynamicContextException("In snippet "
 						+ snippet.getOriginClassName() + "."
 						+ snippet.getOriginMethodName()
 						+ " - pass the second (type)"
@@ -194,6 +200,7 @@ public class WeavingCode {
 		}
 	}
 
+	private static final int INVALID_SLOT = -1;
 	private static List<String> primitiveTypes;
 
 	static {
@@ -212,12 +219,18 @@ public class WeavingCode {
 	// NOTE that if the user requests for the stack value, some store
 	// instructions will be inserted to the target method, and new local slot
 	// will be used for storing this.
-	public void fixDynamicInfo() throws DynamicInfoException {
+	public void fixDynamicInfo(boolean throwing) throws DynamicContextException {
 
 		preFixDynamicInfoCheck();
 
-		Frame<BasicValue> basicframe = info.getBasicFrame(index);
-		Frame<SourceValue> sourceframe = info.getSourceFrame(index);
+		Frame<BasicValue> basicframe = info.getBasicFrame(weavingLoc);
+		Frame<SourceValue> sourceframe = info.getSourceFrame(weavingLoc);
+		int exceptionslot = INVALID_SLOT;
+
+		if (throwing) {
+			exceptionslot = method.maxLocals;
+			method.maxLocals++;
+		}
 
 		for (AbstractInsnNode instr : iList.toArray()) {
 			// pseudo function call
@@ -240,6 +253,18 @@ public class WeavingCode {
 					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 				} else {
 					iList.insert(instr, new VarInsnNode(Opcodes.ALOAD, 0));
+				}
+
+				iList.remove(invoke);
+				iList.remove(prev);
+				continue;
+			} else if (invoke.name.equals("getException")) {
+
+				if (throwing) {
+					iList.insert(instr, new VarInsnNode(Opcodes.ALOAD,
+							exceptionslot));
+				} else {
+					iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 				}
 
 				iList.remove(invoke);
@@ -275,23 +300,26 @@ public class WeavingCode {
 
 					// index should be less than the stack height
 					if (operand >= basicframe.getStackSize() || operand < 0) {
-						throw new DiSLFatalException("Illegal access of index "
-								+ operand + " on a stack with "
-								+ basicframe.getStackSize() + " operands");
+						throw new DynamicContextException(
+								"Dynamic context wrong access." +
+								" Access out of bounds. Accessed " + operand +
+								", but the size of stack is "
+								+ basicframe.getLocals());
 					}
 
 					// Type checking
-					Type targetType = StackUtil.getStackByIndex(basicframe,
+					Type targetType = FrameHelper.getStackByIndex(basicframe,
 							operand).getType();
 
 					if (t.getSort() != targetType.getSort()) {
-						throw new DiSLFatalException("Unwanted type \""
-								+ targetType + "\", while user needs \"" + t
-								+ "\"");
+						throw new DynamicContextException(
+								"Dynamic context wrong access. Requested \"" +
+								t + "\" but found \"" + targetType
+								+ "\" on the stack.");
 					}
 
 					// store the stack value without changing the semantic
-					int size = StackUtil.dupStack(sourceframe, method, operand,
+					int size = FrameHelper.dupStack(sourceframe, method, operand,
 							sopcode, method.maxLocals);
 					// load the stack value
 
@@ -318,8 +346,10 @@ public class WeavingCode {
 
 				// index should be less than the size of local variables
 				if (slot >= basicframe.getLocals() || slot < 0) {
-					throw new DiSLFatalException("Illegal access of index "
-							+ slot + " while the size of local variable is "
+					throw new DynamicContextException(
+							"Dynamic context wrong access." +
+							" Access out of bounds. Accessed " + slot +
+							", but the size of stack is "
 							+ basicframe.getLocals());
 				}
 
@@ -327,8 +357,10 @@ public class WeavingCode {
 				Type targetType = basicframe.getLocal(slot).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DiSLFatalException("Unwanted type \""
-							+ targetType + "\", while user needs \"" + t + "\"");
+					throw new DynamicContextException(
+							"Dynamic context wrong access. Requested \"" +
+							t + "\" but found \"" + targetType
+							+ "\" on the stack.");
 				}
 
 				// box value if applicable
@@ -347,8 +379,10 @@ public class WeavingCode {
 
 				// index should be less than the size of local variables
 				if (operand >= basicframe.getLocals() || operand < 0) {
-					throw new DiSLFatalException("Illegal access of index "
-							+ operand + " while the size of local variable is "
+					throw new DynamicContextException(
+							"Dynamic context wrong access." +
+							" Access out of bounds. Accessed " + operand +
+							", but the size of stack is "
 							+ basicframe.getLocals());
 				}
 
@@ -356,8 +390,10 @@ public class WeavingCode {
 				Type targetType = basicframe.getLocal(operand).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DiSLFatalException("Unwanted type \""
-							+ targetType + "\", while user needs \"" + t + "\"");
+					throw new DynamicContextException(
+							"Dynamic context wrong access. Requested \"" +
+							t + "\" but found \"" + targetType
+							+ "\" on the stack.");
 				}
 
 				// box value if applicable
@@ -409,6 +445,14 @@ public class WeavingCode {
 
 			iList.remove(prev);
 			iList.remove(instr);
+		}
+
+		if (throwing) {
+
+			iList.insertBefore(iList.getFirst(), new VarInsnNode(
+					Opcodes.ASTORE, exceptionslot));
+			iList.add(new VarInsnNode(Opcodes.ALOAD, exceptionslot));
+			iList.add(new InsnNode(Opcodes.ATHROW));
 		}
 	}
 
@@ -530,9 +574,9 @@ public class WeavingCode {
 
 	// combine processors into an instruction list
 	// NOTE that these processors are for the callee
-	private InsnList procBeforeInvoke(ProcInstance processor, int index) {
+	private InsnList procBeforeInvoke(ProcInstance processor) {
 
-		Frame<SourceValue> frame = info.getSourceFrame(index);
+		Frame<SourceValue> frame = info.getSourceFrame(weavingLoc);
 		InsnList ilist = new InsnList();
 
 		for (ProcMethodInstance processorMethod : processor.getMethods()) {
@@ -546,7 +590,7 @@ public class WeavingCode {
 
 			fixArgumentContext(instructions, position, totalCount, type);
 
-			SourceValue source = StackUtil.getStackByIndex(frame, totalCount
+			SourceValue source = FrameHelper.getStackByIndex(frame, totalCount
 					- 1 - position);
 			int sopcode = type.getOpcode(Opcodes.ISTORE);
 
@@ -580,7 +624,7 @@ public class WeavingCode {
 				if (processor.getProcApplyType() == ArgumentProcessorMode.METHOD_ARGS) {
 					iList.insert(instr, procInMethod(processor));
 				} else {
-					iList.insert(instr, procBeforeInvoke(processor, index));
+					iList.insert(instr, procBeforeInvoke(processor));
 				}
 			}
 
@@ -692,7 +736,7 @@ public class WeavingCode {
 					
 					for (int i = 0; i < argTypes.length; i++) {
 
-						SourceValue source = StackUtil.getStackByIndex(frame,
+						SourceValue source = FrameHelper.getStackByIndex(frame,
 								argTypes.length - 1 - i);
 						Type type = argTypes[i];
 						int sopcode = type.getOpcode(Opcodes.ISTORE);
@@ -745,7 +789,7 @@ public class WeavingCode {
 						iList.insert(instr, new InsnNode(Opcodes.ACONST_NULL));
 					} else {
 						String desc = ((MethodInsnNode) callee).desc;
-						SourceValue source = StackUtil.getStackByIndex(frame,
+						SourceValue source = FrameHelper.getStackByIndex(frame,
 								Type.getArgumentTypes(desc).length);
 						
 						for (AbstractInsnNode itr : source.insns) {
@@ -779,8 +823,8 @@ public class WeavingCode {
 		return code.getTryCatchBlocks();
 	}
 
-	public void transform(SCGenerator staticInfoHolder, PIResolver piResolver)
-			throws DynamicInfoException {
+	public void transform(SCGenerator staticInfoHolder, PIResolver piResolver, boolean throwing)
+			throws DynamicContextException {
 		fixProcessor(piResolver);
 		fixProcessorInfo();
 		fixStaticInfo(staticInfoHolder);
@@ -788,7 +832,7 @@ public class WeavingCode {
 		fixLocalIndex();
 		optimize();
 
-		fixDynamicInfo();
+		fixDynamicInfo(throwing);
 	}
 
 	public void optimize() {

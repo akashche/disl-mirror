@@ -16,7 +16,7 @@ public class ReflectionHelper {
 	 * @param args
 	 * @return
 	 */
-	public static Object createInstance(Class<?> classToInstantiate,
+	public static <T> T createInstance(Class<T> classToInstantiate,
 			Object... args) throws ReflectionException {
 
 		try {
@@ -32,7 +32,7 @@ public class ReflectionHelper {
 					.getConstructor(argTypes);
 
 			// invoke constructor
-			return constructor.newInstance(args);
+			return classToInstantiate.cast(constructor.newInstance(args));
 
 		} catch (Exception e) {
 			throw new ReflectionException("Class "
