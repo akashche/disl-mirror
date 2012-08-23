@@ -18,9 +18,11 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
+import ch.usi.dag.disl.annotation.SyntheticStaticField;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.localvar.LocalVars;
+import ch.usi.dag.disl.localvar.SyntheticStaticFieldVar;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
@@ -115,6 +117,15 @@ abstract class AbstractParser {
 
 				result.getSyntheticLocals().put(slv.getID(), slv);
 
+				continue;
+			}
+
+			// static local
+			if (annotationType.equals(Type.getType(SyntheticStaticField.class))) {
+
+				SyntheticStaticFieldVar slv = parseSyntheticStaticField(
+						className, field, annotation);
+				result.getSyntheticStaticFields().put(slv.getID(), slv);
 				continue;
 			}
 
@@ -371,4 +382,40 @@ abstract class AbstractParser {
 			}
 		}
 	}
+
+	private SyntheticStaticFieldVar parseSyntheticStaticField(String className,
+			FieldNode field, AnnotationNode annotation) throws ParserException {
+
+		// check if field is static
+		if ((field.access & Opcodes.ACC_STATIC) == 0) {
+			throw new ParserException("Field " + field.name + className + "."
+					+ " declared as SyntheticLocalField but is not static");
+		}
+
+		// parse annotation data
+		STLAnnotaionData slad = new STLAnnotaionData();
+		ParserHelper.parseAnnotation(slad, annotation);
+
+		SyntheticStaticField.Scope ssfScope = SyntheticStaticField.Scope.PERMETHOD;
+
+		if (slad.scope != null) {
+
+			// enum is converted to array
+			// - first value is class name
+			// - second value is value name
+			ssfScope = SyntheticStaticField.Scope.valueOf(slad.scope[1]);
+		}
+
+		// field type
+		Type fieldType = Type.getType(field.desc);
+
+		return new SyntheticStaticFieldVar(className, field.name, fieldType,
+				ssfScope, field.access);
+	}
+
+	private static class STLAnnotaionData {
+
+		public String[] scope = null;
+	}
+
 }
