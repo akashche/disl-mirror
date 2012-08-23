@@ -17,27 +17,6 @@
 #include "../src-agent-c/jvmtihelper.h"
 #include "../src-agent-c/comm.h"
 
-// TODO ***** remove when trunk merged
-#define TRUE 1
-#define FALSE 0
-
-#define ERR 10000
-
-/*
- * Reports error if condition is true
- */
-void check_error(int cond, const char *str) {
-
-	if (cond) {
-
-		fprintf(stderr, "%s%s\n", ERR_PREFIX, str);
-
-		exit(ERR);
-	}
-}
-
-// TODO *****
-
 #include "messagetype.h"
 #include "buffer.h"
 #include "buffpack.h"
