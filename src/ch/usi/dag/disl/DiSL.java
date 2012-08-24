@@ -234,6 +234,7 @@ public class DiSL {
 			System.out.println("Instrumenting method: " + className
 					+ Constants.CLASS_DELIM + methodName + "(" + methodDesc
 					+ ")");
+		}
 		
 		// evaluate exclusions
 		for (Scope exclScope : exclusionSet) {
@@ -324,8 +325,7 @@ public class DiSL {
 		Weaver.instrument(classNode, methodNode, snippetMarkings,
 				new LinkedList<SyntheticLocalVar>(usedSLVs),
 				syntheticStaticFields, staticInfo, piResolver);
-		}
-		
+
 		return true;
 	}
 
