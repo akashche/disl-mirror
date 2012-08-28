@@ -16,6 +16,9 @@ import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
 
+/**
+ * Stores the information about snippet code.
+ */
 public class SnippetCode extends Code {
 
 	private boolean usesProcessorContext;
@@ -42,6 +45,9 @@ public class SnippetCode extends Code {
 		this.usesProcessorContext = usesProcessorContext;
 	}
 
+	/**
+	 * Returns list of all argument processors referenced in the code.
+	 */
 	public Map<Integer, ProcInvocation> getInvokedProcessors() {
 		return invokedProcessors;
 	}

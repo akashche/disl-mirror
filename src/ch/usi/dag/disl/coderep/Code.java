@@ -12,6 +12,9 @@ import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
 
+/**
+ * Stores various information about a piece of java bytecode.
+ */
 public class Code {
 
 	private InsnList instructions;
@@ -25,6 +28,9 @@ public class Code {
 	// it further - can cause stack inconsistency that has to be handled
 	private boolean containsHandledException;
 
+	/**
+	 * Constructs the Code structure.
+	 */
 	public Code(InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
 			Set<SyntheticLocalVar> referencedSLVs,
 			Set<ThreadLocalVar> referencedTLVs,
@@ -43,34 +49,58 @@ public class Code {
 		this.containsHandledException = containsHandledException;
 	}
 	
+	/**
+	 * Returns an ASM instruction list.
+	 */
 	public InsnList getInstructions() {
 		return instructions;
 	}
 
+	/**
+	 * Returns list of exceptions (as represented in ASM).
+	 */
 	public List<TryCatchBlockNode> getTryCatchBlocks() {
 		return tryCatchBlocks;
 	}
 
+	/**
+	 * Returns list of all synthetic local variables referenced in the code. 
+	 */
 	public Set<SyntheticLocalVar> getReferencedSLVs() {
 		return referencedSLVs;
 	}
 	
+	/**
+	 * Returns list of all thread local variables referenced in the code. 
+	 */
 	public Set<ThreadLocalVar> getReferencedTLVs() {
 		return referencedTLVs;
 	}
 
+	/**
+	 * Returns list of all static contexts referenced in the code. 
+	 */
 	public Set<StaticContextMethod> getStaticContexts() {
 		return staticContexts;
 	}
 
+	/**
+	 * Returns true if the code is using dynamic context. False otherwise. 
+	 */
 	public boolean usesDynamicContext() {
 		return usesDynamicContext;
 	}
 	
+	/**
+	 * Returns true if the code is using class context. False otherwise. 
+	 */
 	public boolean usesClassContext() {
 		return usesClassContext;
 	}
 	
+	/**
+	 * Returns true if the code contains catch block (handles exception). 
+	 */
 	public boolean containsHandledException() {
 		return containsHandledException;
 	}

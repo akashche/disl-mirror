@@ -21,14 +21,7 @@ then
     rm ${SERVER_FILE}
 fi
 
-# kill running RE server
-if [ -e ${RE_SERVER_FILE} ]
-then
-    kill -KILL `cat ${RE_SERVER_FILE}`
-    rm ${RE_SERVER_FILE}
-fi
-
-DISL_CLASS="./bin/ch/usi/dag/disl/test/$1/DiSLClass.class"
+# represents the observed program
 TARGET_CLASS="ch.usi.dag.disl.test.$1.TargetClass"
 
 # start server and take pid
