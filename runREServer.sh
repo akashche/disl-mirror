@@ -4,7 +4,7 @@ BASE_DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # available options
 #    -Ddebug=true \
-#    -Ddislserver.port="portNum" \
+#    -Ddislreserver.port="portNum" \
 
 java $* \
      -jar ${BASE_DIR}/build/dislre-server-unspec.jar \
