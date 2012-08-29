@@ -8,10 +8,6 @@
 		<pathelement location="${bin}" />
 	</path>
 
-	<path id="bootpath">
-		<pathelement location="${extendedthread.path}" />
-	</path>
-
 	<!-- it automatically compiles all other necessary stuff :) -->
 	<target name="compile-tlvinserter">
 		<mkdir dir="${bin}" />
@@ -34,7 +30,7 @@
 		<mkdir dir="${bin}" />
 		<javac srcdir="${src.dynbypass}" destdir="${bin}" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath" />
-			<compilerarg value="-Xbootclasspath/p:${toString:bootpath}" />
+			<compilerarg value="-Xbootclasspath/p:${extendedthread.path}" />
 		</javac>
 		<delete file="${extendedthread.path}" />
 	</target>
@@ -51,34 +47,43 @@
 		</javac>
 	</target>
 
-	<target name="compile-dislre-server">
-		<javac srcdir="${src.dislre.server}" destdir="${bin}" debug="true" includeAntRuntime="false">
+	<target name="compile-agent-c">
+		<exec executable="make" dir="${src.agent.c}" />
+	</target>
+
+	<target name="compile-reserver">
+		<javac srcdir="${src.reserver}" destdir="${bin}" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath" />
 		</javac>
 	</target>
 
-	<target name="compile-dislre-dispatch">
-		<javac srcdir="${src.dislre.dispatch}" destdir="${bin}" debug="true" includeAntRuntime="false">
+	<target name="compile-redispatch">
+		<javac srcdir="${src.redispatch}" destdir="${bin}" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath" />
 		</javac>
 	</target>
 
-	<target name="compile-test" depends="compile-disl,compile-dislre-server,compile-dislre-dispatch">
+	<target name="compile-reagent">
+		<exec executable="make" dir="${src.reagent}" />
+	</target>
+
+	<target name="compile-test" depends="compile-disl,compile-reserver,compile-redispatch">
 		<javac srcdir="${src.test}" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath" />
 		</javac>
 	</target>
 
-	<target name="compile" depends="compile-disl,compile-agent-java,compile-test,compile-dislre-server,compile-dislre-dispatch" />
+	<target name="compile" depends="compile-disl,compile-agent-java,compile-agent-c,compile-test,compile-reserver,compile-redispatch" />
 
 	<target name="package-dislserver" depends="compile-disl">
-		<jar basedir="${bin}" destfile="${build}/dislserver-${disl.version}.jar"
+		<jar basedir="${bin}" destfile="${build}/disl-server.jar"
 			includes="ch/usi/dag/disl/**,ch/usi/dag/dislserver/**"
 			excludes="ch/usi/dag/disl/test/**,ch/usi/dag/disl/testtools/**">
 
 			<manifest>
-				<attribute name="Class-Path" value="${asm.lib} ${instr.jar.name}" />
+				<attribute name="Class-Path" value="${asm.lib}" />
 				<attribute name="Main-Class" value="ch.usi.dag.dislserver.DiSLServer" />
+				<attribute name="DiSL-Version" value="${disl.version}" />
 			</manifest>
 		</jar>
 	</target>
@@ -96,13 +101,13 @@
 		<move file="${build.afterbootstrap}/ch/usi/dag/disl/dynamicbypass/DynamicBypassCheck.class"
 			tofile="${build.afterbootstrap}/DynamicBypassCheck-AfterBootstrap.class" />
 
-		<jar basedir="${bin}" destfile="${build}/dislagent-${disl.version}.jar"
+		<jar basedir="${bin}" destfile="${build}/disl-agent.jar"
 			includes="ch/usi/dag/dislagent/**,ch/usi/dag/disl/dynamicbypass/**">
 
 			<manifest>
-				<attribute name="Class-Path" value="${instr.jar.name}" />
 				<attribute name="Premain-Class" value="ch.usi.dag.dislagent.DiSLAgent" />
 				<attribute name="Can-Redefine-Classes" value="true" />
+				<attribute name="DiSL-Version" value="${disl.version}" />
 			</manifest>
 
 			<!-- include after bootstrap class -->
@@ -113,24 +118,24 @@
 		<delete dir="${build.afterbootstrap}" />
 	</target>
 
-	<target name="package-dislre-server" depends="compile-dislre-server">
-		<jar basedir="${bin}" destfile="${build}/dislre-server-${disl.version}.jar"
+	<target name="package-reserver" depends="compile-reserver">
+		<jar basedir="${bin}" destfile="${build}/dislre-server.jar"
 			includes="ch/usi/dag/dislreserver/**">
-
 			<manifest>
-				<attribute name="Class-Path" value="${asm.lib} ${instr.jar.name}" />
+				<attribute name="Class-Path" value="${asm.lib}" />
 				<attribute name="Main-Class" value="ch.usi.dag.dislreserver.DiSLREServer" />
+				<attribute name="DiSL-Version" value="${disl.version}" />
 			</manifest>
 		</jar>
 	</target>
 
-	<target name="package-dislre-dispatch" depends="compile-dislre-dispatch">
-		<jar basedir="${bin}" destfile="${build}/dislre-dispatch-${disl.version}.jar"
+	<target name="package-redispatch" depends="compile-redispatch">
+		<jar basedir="${bin}" destfile="${build}/dislre-dispatch.jar"
 			includes="ch/usi/dag/dislre/**">
 		</jar>
 	</target>
 
-	<target name="package" depends="package-dislserver,package-dislagent-java,package-dislre-server,package-dislre-dispatch" />
+	<target name="package" depends="package-dislserver,package-dislagent-java,package-reserver,package-redispatch,compile-agent-c,compile-reagent" />
 
 	<target name="eclipse-agent" description="creates simple agent jar file for eclipse">
 		<mkdir dir="build" />
@@ -161,6 +166,14 @@
 		<delete dir="${build}" />
 		<delete dir="${build.thread}" />
 		<delete dir="${build.afterbootstrap}" />
+		<exec executable="make" dir="${src.agent.c}">
+			<arg value="clean" />
+		</exec>
+		<exec executable="make" dir="${src.reagent}">
+			<arg value="clean" />
+		</exec>
+		
+
 	</target>
 
 	<!-- *** test instrumentaion package *** -->

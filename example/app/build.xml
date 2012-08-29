@@ -1,0 +1,28 @@
+<project name="example-app" default="package" basedir=".">
+
+	<path id="buildpath">
+		<pathelement location="${bin}" />
+	</path>
+
+	<target name="compile">
+		<mkdir dir="bin" />
+		<javac srcdir="src" destdir="bin" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
+	</target>
+
+	<target name="package" depends="compile">
+		<mkdir dir="build" />
+		<jar basedir="bin" destfile="build/example-app.jar">
+			<manifest>
+				<attribute name="Main-Class" value="Main" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="clean">
+		<delete dir="bin" />
+		<delete dir="build" />
+	</target>
+
+</project>

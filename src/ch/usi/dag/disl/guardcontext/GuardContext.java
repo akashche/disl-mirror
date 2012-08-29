@@ -2,6 +2,8 @@ package ch.usi.dag.disl.guardcontext;
 
 /**
  * Guard context is used to invoke guard inside of other guard.
+ * 
+ * Guard implementation has to thread-safe.
  */
 public interface GuardContext {
 

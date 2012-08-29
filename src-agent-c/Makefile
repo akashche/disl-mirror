@@ -3,6 +3,8 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
+BUILDDIR=../build
+
 # Source lists
 LIBNAME=dislagent
 SOURCES=dislagent.c
@@ -36,7 +38,8 @@ ifeq ($(DEBUG), TRUE)
 CFLAGS += -DDEBUG
 endif
 
-all: $(LIBRARY) 
+build: $(LIBRARY)
+	cp $(LIBRARY) $(BUILDDIR)
 
 # Build native library
 $(LIBRARY): $(OBJECTS)
@@ -48,3 +51,5 @@ clean:
 
 debug:
 	$(MAKE) DEBUG=TRUE
+
+all: build

@@ -1,0 +1,9 @@
+Exception in thread "main" java.lang.VerifyError: (class: ..., method: ... signature: ... Expecting to find object/array on stack
+ - error occurs if an instrumentation uses uninitialized object
+ - how to fix: disable java verifier or fix the instrumentation
+
+java process ends with SEGFAULT
+ - error occurs if an instrumentation instruments one of the java.lang.* classes
+   and disturbs the java initialization
+ - how to fix: change the instrumentation or exclude the class causing the
+   problem in the exclusion list

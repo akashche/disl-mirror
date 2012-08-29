@@ -3,6 +3,8 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
+BUILDDIR=../build
+
 # Source lists
 LIBNAME=dislreagent
 SOURCES=dislreagent.c
@@ -31,7 +33,8 @@ CFLAGS += $(COMMON_FLAGS)
 
 CFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
 
-all: $(LIBRARY) 
+build: $(LIBRARY)
+	cp $(LIBRARY) $(BUILDDIR)
 
 # Build native library
 $(LIBRARY): $(OBJECTS)
@@ -40,3 +43,5 @@ $(LIBRARY): $(OBJECTS)
 # Cleanup the built bits
 clean:
 	rm -f $(LIBRARY) $(OBJECTS)
+
+all: build

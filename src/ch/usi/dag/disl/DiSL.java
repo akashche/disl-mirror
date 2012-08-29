@@ -459,9 +459,13 @@ public class DiSL {
 	 * Instruments array of bytes representing a class
 	 * 
 	 * @param classAsBytes class as array of bytes
-	 * @return instrumeted class as array of bytes
+	 * @return instrumented class as array of bytes
 	 */
-	public byte[] instrument(byte[] classAsBytes) throws DiSLException {
+	// TODO ! current static context interface does not allow to have nice
+	// synchronization - it should be redesigned such as the staticContextData
+	// also invokes the required method and returns result - if this method
+	// (and static context class itself) will be synchronized, it should work
+	public synchronized byte[] instrument(byte[] classAsBytes) throws DiSLException {
 	
 		// output bytes into the file
 		try {

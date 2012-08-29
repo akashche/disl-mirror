@@ -3,6 +3,8 @@ package ch.usi.dag.disl.transformer;
 /**
  * Allows to transform a class before it is passed to DiSL. The transformer
  * class has to be specified in the instrumentation manifest.
+ * 
+ * Transformer implementation has to thread-safe.  
  */
 public interface Transformer {
 

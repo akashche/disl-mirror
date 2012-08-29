@@ -19,7 +19,7 @@ import ch.usi.dag.disl.util.Constants;
 
 public class SCGenerator {
 
-	class StaticContextKey {
+	static class StaticContextKey {
 
 		private Shadow shadow;
 		private String methodID;
@@ -35,8 +35,6 @@ public class SCGenerator {
 
 			final int prime = 31;
 			int result = 1;
-
-			result = prime * result + getOuterType().hashCode();
 
 			result = prime * result
 					+ ((shadow == null) ? 0 : shadow.hashCode());
@@ -57,8 +55,6 @@ public class SCGenerator {
 			if (getClass() != obj.getClass())
 				return false;
 			StaticContextKey other = (StaticContextKey) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
 
 			if (shadow == null) {
 				if (other.shadow != null) {
@@ -77,10 +73,6 @@ public class SCGenerator {
 			}
 
 			return true;
-		}
-
-		private SCGenerator getOuterType() {
-			return SCGenerator.this;
 		}
 	}
 

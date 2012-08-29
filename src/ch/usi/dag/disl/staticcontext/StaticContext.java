@@ -8,6 +8,8 @@ import ch.usi.dag.disl.snippet.Shadow;
  * All static context methods should follow convention:
  * a) static context methods does not have parameters
  * b) return value can be only basic type or String
+ * 
+ * StaticContext implementation has to thread-safe.
  */
 public interface StaticContext {
 

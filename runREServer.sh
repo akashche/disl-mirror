@@ -1,13 +1,25 @@
-#!/bin/bash
+#!/bin/sh
 
-BASE_DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# set default lib path
+if [ -z "${DISL_LIB_P}" ]; then
+	DISL_LIB_P=./build
+fi
 
 # available options
 #    -Ddebug=true \
 #    -Ddislreserver.port="portNum" \
 
+# get instrumentation library and shift parameters
+INSTR_LIB=$1
+shift
+
+# start server
 java $* \
-     -jar ${BASE_DIR}/build/dislre-server-unspec.jar \
+     -cp ${INSTR_LIB}:${DISL_LIB_P}/dislre-server.jar \
+     ch.usi.dag.dislreserver.DiSLREServer \
      &
 
-echo $! > ${RE_SERVER_FILE}
+# print pid to the server file
+if [ -n "${RE_SERVER_FILE}" ]; then
+    echo $! > ${RE_SERVER_FILE}
+fi
