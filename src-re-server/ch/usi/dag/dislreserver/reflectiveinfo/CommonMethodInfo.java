@@ -8,6 +8,9 @@ import org.objectweb.asm.tree.MethodNode;
 
 public class CommonMethodInfo implements MethodInfo {
 
+	// TODO ! is this implementation of methods really working ??
+	
+	private MethodNode methodNode;
 	private int modifiers;
 	private String name;
 	private String returnType;
@@ -16,6 +19,7 @@ public class CommonMethodInfo implements MethodInfo {
 
 	public CommonMethodInfo(MethodNode methodNode) {
 
+		this.methodNode = methodNode;
 		name = methodNode.name;
 		modifiers = methodNode.access;
 		returnType = methodNode.desc
@@ -33,6 +37,11 @@ public class CommonMethodInfo implements MethodInfo {
 		exceptionTypes = methodNode.exceptions.toArray(new String[0]);
 	}
 
+	public MethodNode getMethodNode() {
+		return methodNode;
+	}
+
+	
 	public String getName() {
 		return name;
 	}

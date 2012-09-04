@@ -1,5 +1,7 @@
 package ch.usi.dag.dislreserver.reflectiveinfo;
 
+import org.objectweb.asm.tree.ClassNode;
+
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.netreference.NetReference;
 
@@ -23,6 +25,10 @@ public class ArrayClassInfo extends AbstractClassInfo {
 		this.arrayComponentInfo = arrayComponentInfo;
 	}
 
+	public ClassNode getClassNode() {
+		return null;
+	}
+	
 	public boolean isArray() {
 		return true;
 	}
@@ -144,5 +150,4 @@ public class ArrayClassInfo extends AbstractClassInfo {
 		// TODO Auto-generated method stub
 		throw new DiSLREServerFatalException("Not implemented");
 	}
-
 }

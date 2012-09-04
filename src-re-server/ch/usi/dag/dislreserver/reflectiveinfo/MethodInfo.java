@@ -1,7 +1,11 @@
 package ch.usi.dag.dislreserver.reflectiveinfo;
 
+import org.objectweb.asm.tree.MethodNode;
+
 public interface MethodInfo {
 
+	public MethodNode getMethodNode();
+	
 	public String getName();
 
 	public int getModifiers();

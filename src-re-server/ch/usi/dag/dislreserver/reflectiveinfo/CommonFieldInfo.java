@@ -5,17 +5,25 @@ import org.objectweb.asm.tree.FieldNode;
 
 public class CommonFieldInfo implements FieldInfo {
 
+	// TODO ! is this implementation of methods really working ??
+	
+	private FieldNode fieldNode;
 	private int modifiers;
 	private String name;
 	private String type;
 
 	public CommonFieldInfo(FieldNode fieldNode) {
 		
+		this.fieldNode = fieldNode;
 		name = fieldNode.name;
 		type = fieldNode.desc;
 		modifiers = fieldNode.access;
 	}
 
+	public FieldNode getFieldNode() {
+		return fieldNode;
+	}
+	
 	public String getName() {
 		return name;
 	}

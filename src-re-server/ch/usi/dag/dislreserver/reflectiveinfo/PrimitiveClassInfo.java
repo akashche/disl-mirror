@@ -1,5 +1,7 @@
 package ch.usi.dag.dislreserver.reflectiveinfo;
 
+import org.objectweb.asm.tree.ClassNode;
+
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.netreference.NetReference;
 
@@ -15,6 +17,10 @@ public class PrimitiveClassInfo extends AbstractClassInfo {
 				superClassInfo);
 	}
 
+	public ClassNode getClassNode() {
+		return null;
+	}
+	
 	public boolean isArray() {
 		return false;
 	}

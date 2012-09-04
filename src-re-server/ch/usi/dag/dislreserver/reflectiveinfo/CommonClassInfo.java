@@ -20,6 +20,10 @@ import ch.usi.dag.dislreserver.netreference.NetReference;
  */
 public class CommonClassInfo extends AbstractClassInfo {
 
+	// TODO ! is this implementation of methods really working ??
+	
+	private ClassNode classNode;
+	
 	CommonClassInfo(int classId, String classSignature, String classGenericStr,
 			NetReference classLoaderNR, ClassInfo superClassInfo,
 			byte[] classCode) {
@@ -34,6 +38,10 @@ public class CommonClassInfo extends AbstractClassInfo {
 		}
 		
 		initializeClassInfo(classCode);
+	}
+	
+	public ClassNode getClassNode() {
+		return classNode;
 	}
 
 	public boolean isArray() {
@@ -51,7 +59,7 @@ public class CommonClassInfo extends AbstractClassInfo {
 	private void initializeClassInfo(byte[] classCode) {
 
 		ClassReader classReader = new ClassReader(classCode);
-		ClassNode classNode = new ClassNode(Opcodes.ASM4);
+		classNode = new ClassNode(Opcodes.ASM4);
 		classReader.accept(classNode, ClassReader.SKIP_DEBUG
 				| ClassReader.EXPAND_FRAMES);
 

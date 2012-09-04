@@ -1,9 +1,13 @@
 package ch.usi.dag.dislreserver.reflectiveinfo;
 
+import org.objectweb.asm.tree.ClassNode;
+
 import ch.usi.dag.dislreserver.netreference.NetReference;
 
 public interface ClassInfo {
 
+	public ClassNode getClassNode();
+	
 	public int getId();
 
 	public String getSignature();

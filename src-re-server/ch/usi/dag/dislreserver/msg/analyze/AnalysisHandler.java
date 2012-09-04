@@ -145,7 +145,8 @@ public class AnalysisHandler implements RequestHandler {
 		}
 
 		// read id only
-		if(argClass.equals(Object.class)) {
+		// covers Object and NetReference classes
+		if(argClass.isAssignableFrom(NetReference.class)) {
 			return new NetReference(is.readLong());
 		}
 		
