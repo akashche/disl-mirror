@@ -10,6 +10,8 @@ import java.util.List;
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver.AnalysisMethodHolder;
 import ch.usi.dag.dislreserver.netreference.NetReference;
+import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfo;
+import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfoResolver;
 import ch.usi.dag.dislreserver.reflectiveinfo.InvalidClass;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 import ch.usi.dag.dislreserver.stringcache.StringCache;
@@ -148,6 +150,11 @@ public class AnalysisHandler implements RequestHandler {
 		// covers Object and NetReference classes
 		if(argClass.isAssignableFrom(NetReference.class)) {
 			return new NetReference(is.readLong());
+		}
+		
+		// return ClassInfo object
+		if(argClass.equals(ClassInfo.class)) {
+			return ClassInfoResolver.getClass(is.readInt());
 		}
 		
 		// return "invalid" class object

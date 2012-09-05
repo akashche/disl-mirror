@@ -3,10 +3,10 @@ package ch.usi.dag.dislreserver.reflectiveinfo;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.FieldNode;
 
+import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+
 public class CommonFieldInfo implements FieldInfo {
 
-	// TODO ! is this implementation of methods really working ??
-	
 	private FieldNode fieldNode;
 	private int modifiers;
 	private String name;
@@ -29,7 +29,8 @@ public class CommonFieldInfo implements FieldInfo {
 	}
 
 	public int getModifiers() {
-		return modifiers;
+		// TODO Auto-generated method stub
+		throw new DiSLREServerFatalException("Not implemented");
 	}
 
 	public String getType() {

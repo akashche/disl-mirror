@@ -20,8 +20,6 @@ import ch.usi.dag.dislreserver.netreference.NetReference;
  */
 public class CommonClassInfo extends AbstractClassInfo {
 
-	// TODO ! is this implementation of methods really working ??
-	
 	private ClassNode classNode;
 	
 	CommonClassInfo(int classId, String classSignature, String classGenericStr,
@@ -66,85 +64,79 @@ public class CommonClassInfo extends AbstractClassInfo {
 		access = classNode.access;
 		name = classNode.name.replace('/', '.');
 
-		methods = new ArrayList<MethodInfo>(classNode.methods.size());
-		public_methods = new LinkedList<MethodInfo>();
+		List<MethodInfo> methodsLst = new ArrayList<MethodInfo>(classNode.methods.size());
+		List<MethodInfo> publicMethodsLst = new LinkedList<MethodInfo>();
 
 		for (MethodNode methodNode : classNode.methods) {
 
 			MethodInfo methodInfo = new CommonMethodInfo(methodNode);
-			methods.add(methodInfo);
+			methodsLst.add(methodInfo);
 
 			if (methodInfo.isPublic()) {
-				public_methods.add(methodInfo);
+				publicMethodsLst.add(methodInfo);
 			}
 		}
 
-		fields = new ArrayList<FieldInfo>(classNode.fields.size());
-		public_fields = new LinkedList<FieldInfo>();
+		List<FieldInfo> fieldsLst = new ArrayList<FieldInfo>(classNode.fields.size());
+		List<FieldInfo> publicFieldsLst = new LinkedList<FieldInfo>();
 
 		for (FieldNode fieldNode : classNode.fields) {
 
 			FieldInfo fieldInfo = new CommonFieldInfo(fieldNode);
-			fields.add(fieldInfo);
+			fieldsLst.add(fieldInfo);
 
 			if (fieldInfo.isPublic()) {
-				public_fields.add(fieldInfo);
+				publicFieldsLst.add(fieldInfo);
 			}
 		}
 
 		if (getSuperclass() != null) {
 
 			for (MethodInfo methodInfo : getSuperclass().getMethods()) {
-				public_methods.add(methodInfo);
+				publicMethodsLst.add(methodInfo);
 			}
 
 			for (FieldInfo fieldInfo : getSuperclass().getFields()) {
-				public_fields.add(fieldInfo);
+				publicFieldsLst.add(fieldInfo);
 			}
 		}
 
-		interfaces = new ArrayList<String>(classNode.interfaces);
-		innerclasses = new ArrayList<String>(classNode.innerClasses.size());
+		List<String> innerClassesLst = new ArrayList<String>(classNode.innerClasses.size());
 
 		for (InnerClassNode innerClassNode : classNode.innerClasses) {
-			innerclasses.add(innerClassNode.name);
+			innerClassesLst.add(innerClassNode.name);
 		}
+		
+		// to have "checked" array :(
+		methods = methodsLst.toArray(new MethodInfo[0]);
+		publicMethods = publicMethodsLst.toArray(new MethodInfo[0]);
+		fields = fieldsLst.toArray(new FieldInfo[0]);
+		publicFields = publicFieldsLst.toArray(new FieldInfo[0]);
+		interfaces = classNode.interfaces.toArray(new String[0]);
+		innerClasses = innerClassesLst.toArray(new String[0]);
 	}
 
 	private int access;
 	private String name;
 
-	private List<MethodInfo> methods;
-	private List<MethodInfo> public_methods;
-	private List<FieldInfo> fields;
-	private List<FieldInfo> public_fields;
-	private List<String> interfaces;
-	private List<String> innerclasses;
+	private MethodInfo[] methods;
+	private MethodInfo[] publicMethods;
+	private FieldInfo[] fields;
+	private FieldInfo[] publicFields;
+	private String[] interfaces;
+	private String[] innerClasses;
 
 	// All these methods should return the value of fields initialized by
 	// generateClassInfo(byte[])
 	// NOTE: returned arrays should be copies (obtained using
 	// Arrays.copyOf(...))
-
 	public boolean isInstance(NetReference nr) {
-//		ClassInfo current = ClassInfoResolver.getClass(nr.getClassId());
-//
-//		while (current != null) {
-//
-//			if (this == current) {
-//				return true;
-//			}
-//
-//			current = current.getSuperclass();
-//		}
-
-		// TODO isInstance
+		// TODO Auto-generated method stub
 		throw new DiSLREServerFatalException("Not implemented");
 	}
 
 	public boolean isAssignableFrom(ClassInfo ci) {
-		
-		// TODO isAssignableFrom
+		// TODO Auto-generated method stub
 		throw new DiSLREServerFatalException("Not implemented");
 	}
 
@@ -173,18 +165,17 @@ public class CommonClassInfo extends AbstractClassInfo {
 	}
 
 	public String getCanonicalName() {
-		
-		// TODO getCanonicalName
+		// TODO Auto-generated method stub
 		throw new DiSLREServerFatalException("Not implemented");
 	}
 
 	public String[] getInterfaces() {
-
-		// to have "checked" array :(
-		return interfaces.toArray(new String[0]);
+		
+		return Arrays.copyOf(interfaces, interfaces.length);
 	}
 
 	public String getPackage() {
+		
 		int i = name.lastIndexOf('.');
 
 		if (i != -1) {
@@ -196,8 +187,7 @@ public class CommonClassInfo extends AbstractClassInfo {
 
 	public FieldInfo[] getFields() {
 		
-		// to have "checked" array :(
-		return public_fields.toArray(new FieldInfo[0]);
+		return Arrays.copyOf(publicFields, publicFields.length);
 	}
 
 	public FieldInfo getField(String fieldName) throws NoSuchFieldException {
@@ -217,8 +207,7 @@ public class CommonClassInfo extends AbstractClassInfo {
 
 	public MethodInfo[] getMethods() {
 		
-		// to have "checked" array :(
-		return public_methods.toArray(new MethodInfo[0]);
+		return Arrays.copyOf(publicMethods, publicMethods.length);
 	}
 
 	public MethodInfo getMethod(String methodName, ClassInfo[] argumentCIs)
@@ -247,11 +236,13 @@ public class CommonClassInfo extends AbstractClassInfo {
 	}
 
 	public String[] getDeclaredClasses() {
-		return (String[]) innerclasses.toArray();
+		
+		return Arrays.copyOf(innerClasses, innerClasses.length);
 	}
 
 	public FieldInfo[] getDeclaredFields() {
-		return (FieldInfo[]) fields.toArray();
+		
+		return Arrays.copyOf(fields, fields.length);
 	}
 
 	public FieldInfo getDeclaredField(String fieldName)
@@ -267,7 +258,8 @@ public class CommonClassInfo extends AbstractClassInfo {
 	}
 
 	public MethodInfo[] getDeclaredMethods() {
-		return (MethodInfo[]) methods.toArray();
+		
+		return Arrays.copyOf(methods, methods.length);
 	}
 
 	public MethodInfo getDeclaredMethod(String methodName,
@@ -292,21 +284,25 @@ public class CommonClassInfo extends AbstractClassInfo {
 
 	private static String[] classesToStrings(ClassInfo[] argumentCIs) {
 
-		if (argumentCIs == null) {
-			return new String[0];
-		}
+		throw new DiSLREServerFatalException("Not implemented");
 
-		int size = argumentCIs.length;
-		String[] argumentNames = new String[size];
-
-		for (int i = 0; i < size; i++) {
-			argumentNames[i] = argumentCIs[i].getName();
-		}
-
-		return argumentNames;
+		// TODO it should return the same as methodInfo.getParameterTypes()
+//		if (argumentCIs == null) {
+//			return new String[0];
+//		}
+//
+//		int size = argumentCIs.length;
+//		String[] argumentNames = new String[size];
+//
+//		for (int i = 0; i < size; i++) {
+//			argumentNames[i] = argumentCIs[i].getName();
+//		}
+//
+//		return argumentNames;
 	}
 
 	private static String argumentNamesToString(String[] argumentNames) {
+
 		StringBuilder buf = new StringBuilder();
 		buf.append("(");
 

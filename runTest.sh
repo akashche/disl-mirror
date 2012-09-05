@@ -18,7 +18,7 @@ export RE_SERVER_FILE
 if [ -e ${SERVER_FILE} ]
 then
     kill -KILL `cat ${SERVER_FILE}`
-    rm .server.pid
+    rm ${SERVER_FILE}
 fi
 
 # kill running server
@@ -54,6 +54,6 @@ sleep 1
 
 # kill server
 kill -KILL `cat ${SERVER_FILE}` 2> /dev/null
-rm .server.pid
+rm ${SERVER_FILE}
 kill -KILL `cat ${RE_SERVER_FILE}` 2> /dev/null
 rm ${RE_SERVER_FILE}

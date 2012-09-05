@@ -6,10 +6,10 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+
 public class CommonMethodInfo implements MethodInfo {
 
-	// TODO ! is this implementation of methods really working ??
-	
 	private MethodNode methodNode;
 	private int modifiers;
 	private String name;
@@ -22,8 +22,7 @@ public class CommonMethodInfo implements MethodInfo {
 		this.methodNode = methodNode;
 		name = methodNode.name;
 		modifiers = methodNode.access;
-		returnType = methodNode.desc
-				.substring(methodNode.desc.indexOf(')') + 1);
+		returnType = Type.getReturnType(methodNode.desc).getDescriptor();
 
 		Type[] parameters = Type.getArgumentTypes(methodNode.desc);
 		int size = parameters.length;
@@ -47,7 +46,8 @@ public class CommonMethodInfo implements MethodInfo {
 	}
 
 	public int getModifiers() {
-		return modifiers;
+		// TODO Auto-generated method stub
+		throw new DiSLREServerFatalException("Not implemented");
 	}
 
 	public String getReturnType() {
