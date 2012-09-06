@@ -20,4 +20,8 @@ public class CloseHandler implements RequestHandler {
 		}
 	}
 
+	public void exit() {
+		
+	}
+
 }

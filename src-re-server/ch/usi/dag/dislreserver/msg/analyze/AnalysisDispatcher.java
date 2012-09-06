@@ -113,4 +113,8 @@ public class AnalysisDispatcher {
 		// add task - dispatch if if possible
 		adRec.addTask(at);
 	}
+
+	public void exit() {
+		execSrvc.shutdown();
+	}
 }

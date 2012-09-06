@@ -60,7 +60,18 @@ public class RequestDispatcher {
 		rh.handle(is, os, debug);
 		
 		// if close handler is there then exit
-		return rh instanceof CloseHandler;
+		if(rh instanceof CloseHandler) {
+			
+			// call exit on all handlers
+			for(RequestHandler reqhl : requestMap.values()) {
+				reqhl.exit();
+			}
+			
+			// return exit confirmation
+			return true;
+		}
+		
+		return false;
 	}
 
 }

@@ -9,4 +9,6 @@ public interface RequestHandler {
 
 	void handle(DataInputStream is, DataOutputStream os, boolean debug)
 			throws DiSLREServerException;
+	
+	void exit();
 }

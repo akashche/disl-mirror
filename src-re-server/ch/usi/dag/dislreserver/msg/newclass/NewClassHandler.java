@@ -29,4 +29,8 @@ public class NewClassHandler implements RequestHandler {
 		}
 	}
 
+	public void exit() {
+		
+	}
+
 }

@@ -26,4 +26,8 @@ public class NewStringHandler implements RequestHandler {
 		}
 	}
 
+	public void exit() {
+		
+	}
+
 }

@@ -165,4 +165,8 @@ public class AnalysisHandler implements RequestHandler {
 		return null;
 	}
 
+	public void exit() {
+		dispatcher.exit();
+	}
+
 }

@@ -32,4 +32,8 @@ public class ObjectFreeHandler implements RequestHandler {
 		}
 	}
 
+	public void exit() {
+		
+	}
+
 }

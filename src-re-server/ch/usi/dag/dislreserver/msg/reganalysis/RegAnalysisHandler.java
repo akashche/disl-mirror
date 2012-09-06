@@ -28,4 +28,8 @@ public class RegAnalysisHandler implements RequestHandler {
 		}
 	}
 
+	public void exit() {
+		
+	}
+
 }
