@@ -165,6 +165,10 @@ public class AnalysisHandler implements RequestHandler {
 		return null;
 	}
 
+	public void awaitProcessing() {
+		dispatcher.awaitProcessing();
+	}
+	
 	public void exit() {
 		dispatcher.exit();
 	}

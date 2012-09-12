@@ -32,6 +32,10 @@ public class ObjectFreeHandler implements RequestHandler {
 		}
 	}
 
+	public void awaitProcessing() {
+		
+	}
+	
 	public void exit() {
 		
 	}

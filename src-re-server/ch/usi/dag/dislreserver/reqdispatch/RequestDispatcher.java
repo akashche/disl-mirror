@@ -40,6 +40,10 @@ public class RequestDispatcher {
 		requestMap.put(6, new RegAnalysisHandler());
 	}
 	
+	public static Map<Integer, RequestHandler> getRequestmap() {
+		return requestMap;
+	}
+	
 	public static boolean dispatch(int requestNo, DataInputStream is,
 			DataOutputStream os, boolean debug) throws DiSLREServerException {
 
@@ -59,19 +63,7 @@ public class RequestDispatcher {
 		// process request
 		rh.handle(is, os, debug);
 		
-		// if close handler is there then exit
-		if(rh instanceof CloseHandler) {
-			
-			// call exit on all handlers
-			for(RequestHandler reqhl : requestMap.values()) {
-				reqhl.exit();
-			}
-			
-			// return exit confirmation
-			return true;
-		}
-		
-		return false;
+		return rh instanceof CloseHandler;
 	}
 
 }

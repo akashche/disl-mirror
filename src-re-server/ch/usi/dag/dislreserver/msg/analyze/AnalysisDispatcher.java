@@ -7,7 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.netreference.NetReference;
 
 // NOTE: Task is list of analysis methods from the same thread.
@@ -15,21 +17,23 @@ import ch.usi.dag.dislreserver.netreference.NetReference;
 // completed so there is at most one task running.
 public class AnalysisDispatcher {
 
-	ConcurrentMap<NetReference, AnalysisDispRec> threadMap =
-			new ConcurrentHashMap<NetReference, AnalysisDispRec>();
+	ConcurrentMap<NetReference, AnalysisThreadTasks> threadMap =
+			new ConcurrentHashMap<NetReference, AnalysisThreadTasks>();
 	
 	ExecutorService execSrvc = Executors.newCachedThreadPool();
+	
+	Object waitObject = new Object();
 	
 	// NOTE: access to this object should be synchronized
 	// Holds all unprocessed tasks for some thread. It also dispatches tasks
 	// as necessary.
-	private static class AnalysisDispRec {
+	private static class AnalysisThreadTasks {
 
 		ExecutorService execSrvc;
 		private boolean inProgress = false;
 		private Queue<AnalysisTask> tasks = new LinkedList<AnalysisTask>();
 
-		public AnalysisDispRec(ExecutorService execSrvc) {
+		public AnalysisThreadTasks(ExecutorService execSrvc) {
 			this.execSrvc = execSrvc;
 		}
 
@@ -62,7 +66,23 @@ public class AnalysisDispatcher {
 			
 			inProgress = false;
 			
+			// notify all waiting threads
+			this.notifyAll();
+			
 			dispatchTask();
+		}
+		
+		// Returns when no task is running and no task can be scheduled 
+		public synchronized void awaitProcessing() throws InterruptedException {
+
+			while(true) {
+			
+				if(inProgress == false && tasks.isEmpty()) {
+					return;
+				}
+				
+				this.wait();
+			}
 		}
 	}
 	
@@ -70,13 +90,13 @@ public class AnalysisDispatcher {
 
 		// holds reference to the recored where it was stored for next task
 		// dispatch
-		AnalysisDispRec adRec;
+		AnalysisThreadTasks att;
 		List<AnalysisInvocation> invocations;
 		
-		public AnalysisTask(AnalysisDispRec adRec,
+		public AnalysisTask(AnalysisThreadTasks att,
 				List<AnalysisInvocation> invocations) {
 			super();
-			this.adRec = adRec;
+			this.att = att;
 			this.invocations = invocations;
 		}
 
@@ -88,7 +108,7 @@ public class AnalysisDispatcher {
 			}
 			
 			// this task is completed - dispatch new one if possible
-			adRec.taskCompleted();
+			att.taskCompleted();
 		}
 		
 	}
@@ -98,23 +118,56 @@ public class AnalysisDispatcher {
 		
 		// add task to the dispatch record
 		
-		AnalysisDispRec adRec = threadMap.get(threadNR);
+		AnalysisThreadTasks att = threadMap.get(threadNR);
 		
-		if(adRec == null) {
+		if(att == null) {
 			
 			// create new dispatch record
-			adRec = new AnalysisDispRec(execSrvc);
-			threadMap.put(threadNR, adRec);
+			// in the case of concurrent allocations putIfAbsent guarantees only
+			// one proper value
+			att = new AnalysisThreadTasks(execSrvc);
+			AnalysisThreadTasks old = threadMap.putIfAbsent(threadNR, att);
+			
+			// replace with proper value
+			if(old != null) {
+				att = old;
+			}
 		}
 		
 		// create new task to add
-		AnalysisTask at = new AnalysisTask(adRec, invocations);
+		AnalysisTask at = new AnalysisTask(att, invocations);
 		
-		// add task - dispatch if if possible
-		adRec.addTask(at);
+		// add task - dispatch, if it is possible
+		att.addTask(at);
 	}
 
+	public void awaitProcessing() {
+		
+		try {
+			
+			// no new thread will be added, no new task will be added
+			//  - only main thread is adding tasks and it will wait here :)
+			for(AnalysisThreadTasks att : threadMap.values()) {
+				att.awaitProcessing();
+			}
+		}
+		catch (InterruptedException e) {
+			throw new DiSLREServerFatalException("Main thread interupted while"
+					+ " waiting on analysis to complete", e);
+		}
+	}
+	
 	public void exit() {
+		
 		execSrvc.shutdown();
+		
+		try {
+			// wait for termination in the loop
+			while(! execSrvc.awaitTermination(60, TimeUnit.SECONDS));
+		}
+		catch (InterruptedException e) {
+			throw new DiSLREServerFatalException("Main thread interupted while"
+					+ " waiting on analysis to complete", e);
+		}
 	}
 }

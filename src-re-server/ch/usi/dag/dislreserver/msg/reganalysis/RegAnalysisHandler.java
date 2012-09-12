@@ -28,6 +28,10 @@ public class RegAnalysisHandler implements RequestHandler {
 		}
 	}
 
+	public void awaitProcessing() {
+		
+	}
+	
 	public void exit() {
 		
 	}
