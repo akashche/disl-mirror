@@ -54,7 +54,7 @@ public class BasicBlockCalc {
 
 			@Override
 			public boolean add(AbstractInsnNode e) {
-				return super.add(AsmHelper.skipVirualInsns(e, true));
+				return super.add(AsmHelper.skipVirtualInsns(e, true));
 			}
 		};
 					
