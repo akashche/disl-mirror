@@ -13,6 +13,8 @@ public class ArrayClassInfo extends AbstractClassInfo {
 	private int arrayDimensions;
 	private ClassInfo arrayComponentInfo;
 	
+	private static final FieldInfo[] NO_FIELDS = new FieldInfo[0];
+	
 	public ArrayClassInfo(int classId, String classSignature,
 			String classGenericStr, NetReference classLoaderNR,
 			ClassInfo superClassInfo, int arrayDimensions,
@@ -72,8 +74,14 @@ public class ArrayClassInfo extends AbstractClassInfo {
 	}
 
 	public String getName() {
-		// TODO Auto-generated method stub
-		throw new DiSLREServerFatalException("Not implemented");
+		String componentName = arrayComponentInfo.getName();
+		StringBuffer buffer = new StringBuffer(arrayDimensions + componentName.length());
+		
+		for (int i = 0; i < arrayDimensions; i++)
+		buffer.append('[');
+			buffer.append(componentName);
+		
+		return buffer.toString();
 	}
 
 	public String getCanonicalName() {
@@ -92,13 +100,11 @@ public class ArrayClassInfo extends AbstractClassInfo {
 	}
 
 	public FieldInfo[] getFields() {
-		// TODO Auto-generated method stub
-		throw new DiSLREServerFatalException("Not implemented");
+		return NO_FIELDS;
 	}
 
 	public FieldInfo getField(String fieldName) throws NoSuchFieldException {
-		// TODO Auto-generated method stub
-		throw new DiSLREServerFatalException("Not implemented");
+		throw new NoSuchFieldException("Arrays do not have fields");
 	}
 
 	public MethodInfo[] getMethods() {
@@ -124,14 +130,12 @@ public class ArrayClassInfo extends AbstractClassInfo {
 	}
 
 	public FieldInfo[] getDeclaredFields() {
-		// TODO Auto-generated method stub
-		throw new DiSLREServerFatalException("Not implemented");
+		return NO_FIELDS;
 	}
 
 	public FieldInfo getDeclaredField(String fieldName)
 			throws NoSuchFieldException {
-		// TODO Auto-generated method stub
-		throw new DiSLREServerFatalException("Not implemented");
+		throw new NoSuchFieldException("Arrays do not have fields");
 	}
 
 	public MethodInfo[] getDeclaredMethods() {
