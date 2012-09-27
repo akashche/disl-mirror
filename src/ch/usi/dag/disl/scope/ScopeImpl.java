@@ -23,9 +23,9 @@ import ch.usi.dag.disl.util.Constants;
  * packagename is the name of the package where the class containing the method
  * resides. The separator for inner packages is ".". Part of the package can be
  * substituted with "*" ("*" matches also "." in package name).
- * If the packagename is missing and the class is matched in all packages.
+ * If the packagename is missing, the class is matched in all packages.
  * The default package can be matched with "[default]".
- * If the packagename is specified class name has to be specified also.
+ * If the packagename is specified, class name has to be specified also.
  * 
  * classname is the name of the class where the matched method resides. Part of
  * the classname can be substituted with "*".

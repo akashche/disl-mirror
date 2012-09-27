@@ -541,7 +541,7 @@ public class DiSL {
 		
 		// Use compute frames for newer classes
 		// It is required for >= 1.7
-		final int COMPUTEFRAMES_VERSION = Opcodes.V1_6;
+		final int COMPUTEFRAMES_VERSION = Opcodes.V1_7;
 		ClassWriter cw = null;
 		
 		if(classMajorVersion >= COMPUTEFRAMES_VERSION) {

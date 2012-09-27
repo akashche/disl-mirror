@@ -21,7 +21,7 @@ export SERVER_FILE
 if [ -e ${SERVER_FILE} ]
 then
 	kill -KILL `cat ${SERVER_FILE}`
-	rm .server.pid
+	rm ${SERVER_FILE}
 fi
 
 export DISL_LIB_P
@@ -40,4 +40,4 @@ sleep 1
 
 # kill server
 kill -KILL `cat ${SERVER_FILE}` 2> /dev/null
-rm .server.pid
+rm ${SERVER_FILE}

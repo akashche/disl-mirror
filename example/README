@@ -23,7 +23,12 @@ The last command starts the application together with DiSL. The output of the
 application and the applied instrumentation should be visible on command line.
 
 NOTE: If you want to use "runApp.sh" to run your application, don't forget to set
-"DISL_LIB_P" variable correctly. Also, you can modify DiSL setting in "runServer.sh".
+      "DISL_LIB_P" variable correctly. Also, you can modify DiSL setting in
+      "runServer.sh".
+
+NOTE: If you want to include use some library in your instrumentation you shlould
+      insert it directly to the instrumentation jar using jarjar.
+      http://code.google.com/p/jarjar/
 
 DIRECTORIES (FILES)
 ===================

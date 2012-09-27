@@ -20,7 +20,7 @@ import ch.usi.dag.disl.util.AsmHelper;
 /**
  * AbstractMarker eases the effort to implement new marker by providing mark
  * method returning MarkedRegion class instead of Shadow. The MarkedRegion
- * class itself supports automatic computation of weaving region based
+ * class itself supports automatic computation of weaving region based on
  * simplified region specification.
  */
 public abstract class AbstractMarker implements Marker {
