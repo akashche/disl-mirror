@@ -115,6 +115,21 @@ public class CodeExecuted extends RemoteAnalysis {
 		printClassInfo(class4);
 	}
 	
+	public static void testingNull(String s, Object o, ClassInfo c) {
+		
+		if(s != null) {
+			throw new RuntimeException("String is not null");
+		}
+		
+		if(o != null) {
+			throw new RuntimeException("Object is not null");
+		}
+		
+		if(c != null) {
+			throw new RuntimeException("Class is not null");
+		}
+	}
+	
 	public void atExit() {
 		System.out.println("Total number of executed bytecodes: "
 				+ totalExecutedBytecodes);

@@ -26,5 +26,7 @@ public class DiSLClass {
 				new LinkedList<Integer>(), new LinkedList[0], new int[0],
 				int[].class, 0, int.class, 0, LinkedList.class, 0,
 				LinkedList.class.getClass(), 0);
+		
+		CodeExecutedRE.testingNull(null, null, null);
 	}
 }

@@ -298,27 +298,36 @@ static void _fill_ot_rec(JNIEnv * jni_env, buffer * cmd_buff,
 static void pack_object(JNIEnv * jni_env, buffer * buff, buffer * cmd_buff,
 		jobject to_send) {
 
-	_fill_ot_rec(jni_env, cmd_buff, OT_OBJECT, buff, to_send);
+	// create entry for object tagging thread that will replace the null ref
+	if(to_send != NULL) {
+		_fill_ot_rec(jni_env, cmd_buff, OT_OBJECT, buff, to_send);
+	}
 
-	// pack dummy net reference
+	// pack null net reference
 	pack_long(buff, 0);
 }
 
 static void pack_string_java(JNIEnv * jni_env, buffer * buff, buffer * cmd_buff,
 		jstring to_send) {
 
-	_fill_ot_rec(jni_env, cmd_buff, OT_STRING, buff, to_send);
+	// create entry for object tagging thread that will replace the null ref
+	if(to_send != NULL) {
+		_fill_ot_rec(jni_env, cmd_buff, OT_STRING, buff, to_send);
+	}
 
-	// pack dummy net reference
+	// pack null net reference
 	pack_long(buff, 0);
 }
 
 static void pack_class(JNIEnv * jni_env, buffer * buff, buffer * cmd_buff,
 		jclass to_send) {
 
-	_fill_ot_rec(jni_env, cmd_buff, OT_CLASS, buff, to_send);
+	// create entry for object tagging thread that will replace the null ref
+	if(to_send != NULL) {
+		_fill_ot_rec(jni_env, cmd_buff, OT_CLASS, buff, to_send);
+	}
 
-	// pack dummy class id
+	// pack null class id
 	pack_int(buff, 0);
 }
 

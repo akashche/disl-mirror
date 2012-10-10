@@ -20,7 +20,7 @@ public class NetReference {
 		this.spec = net_ref_get_spec(netReference);
 	}
 	
-	public long getNetRefeference() {
+	public long getNetRefeferenceRawNum() {
 		return netRefeference;
 	}
 

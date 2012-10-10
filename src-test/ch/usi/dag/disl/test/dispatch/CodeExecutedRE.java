@@ -21,6 +21,9 @@ public class CodeExecutedRE {
 	private static short ta2Id = REDispatch.registerMethod(
 			"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingAdvanced2");
 	
+	private static short tnId = REDispatch.registerMethod(
+			"ch.usi.dag.disl.test.dispatch.CodeExecuted.testingNull");
+	
 	public static void bytecodesExecuted(int count) {
 		
 		REDispatch.analysisStart(beId);
@@ -80,5 +83,16 @@ public class CodeExecutedRE {
 		// class_id ignored
 		
 		REDispatch.analysisEnd();		
+	}
+	
+	public static void testingNull(String s, Object o, Class<?> c) {
+		
+		REDispatch.analysisStart(tnId);
+		
+		REDispatch.sendString(s);
+		REDispatch.sendObject(o);
+		REDispatch.sendClass(c);
+		
+		REDispatch.analysisEnd();
 	}
 }

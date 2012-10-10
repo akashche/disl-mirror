@@ -74,17 +74,7 @@ public class AnalysisHandler implements RequestHandler {
 			// read data according to argument types
 			for(Class<?> argClass : analysisMethod.getParameterTypes()) {
 				
-				Object argValue = readType(is, argClass);
-				
-				if(argValue == null) {
-					throw new DiSLREServerException(
-							"Unsupported data type "
-							+ argClass.toString()
-							+ " in analysis method "
-							+ analysisMethod.getDeclaringClass().toString()
-							+ "."
-							+ analysisMethod.toString());
-				}
+				Object argValue = readType(is, argClass, analysisMethod);
 				
 				args.add(argValue);
 			}
@@ -103,8 +93,8 @@ public class AnalysisHandler implements RequestHandler {
 		}
 	}
 
-	private Object readType(DataInputStream is, Class<?> argClass)
-			throws IOException {
+	private Object readType(DataInputStream is, Class<?> argClass,
+			Method analysisMethod) throws IOException, DiSLREServerException {
 		
 		if(argClass.equals(boolean.class)) {
 			return is.readBoolean();
@@ -140,8 +130,15 @@ public class AnalysisHandler implements RequestHandler {
 		
 		if(argClass.equals(String.class)) {
 
+			long netRefNum = is.readLong();
+			
+			// null handling
+			if(netRefNum == 0) {
+				return null;
+			}
+			
 			// read string net reference
-			NetReference stringNR = new NetReference(is.readLong());
+			NetReference stringNR = new NetReference(netRefNum);
 			// resolve string from cache 
 			return StringCache.resolve(stringNR.getObjectId());
 		}
@@ -149,12 +146,28 @@ public class AnalysisHandler implements RequestHandler {
 		// read id only
 		// covers Object and NetReference classes
 		if(argClass.isAssignableFrom(NetReference.class)) {
-			return new NetReference(is.readLong());
+			
+			long netRefNum = is.readLong();
+			
+			// null handling
+			if(netRefNum == 0) {
+				return null;
+			}
+			
+			return new NetReference(netRefNum);
 		}
 		
 		// return ClassInfo object
 		if(argClass.equals(ClassInfo.class)) {
-			return ClassInfoResolver.getClass(is.readInt());
+			
+			int classNetRefNum = is.readInt();
+			
+			// null handling
+			if(classNetRefNum == 0) {
+				return null;
+			}
+			
+			return ClassInfoResolver.getClass(classNetRefNum);
 		}
 		
 		// return "invalid" class object
@@ -162,7 +175,13 @@ public class AnalysisHandler implements RequestHandler {
 			return InvalidClass.class;
 		}
 		
-		return null;
+		throw new DiSLREServerException(
+				"Unsupported data type "
+				+ argClass.toString()
+				+ " in analysis method "
+				+ analysisMethod.getDeclaringClass().toString()
+				+ "."
+				+ analysisMethod.toString());
 	}
 
 	public void awaitProcessing() {
