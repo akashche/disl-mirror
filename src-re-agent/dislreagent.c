@@ -581,14 +581,10 @@ static void analysis_end_buff() {
 				t_local_pb->analysis_buff->buff,
 				t_local_pb->analysis_buff->occupied);
 
-		printf("Analysis buffer put %ld\n", t_local_pb->analysis_buff->occupied);
-
 		buffer_fill(tobs->pb->command_buff,
 				// NOTE: normally access the buffer using methods
 				t_local_pb->command_buff->buff,
 				t_local_pb->command_buff->occupied);
-
-		printf("Command buffer put %ld\n", t_local_pb->command_buff->occupied);
 
 		// empty local buffers
 		buffer_clean(t_local_pb->analysis_buff);
