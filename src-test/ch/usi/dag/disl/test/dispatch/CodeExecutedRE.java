@@ -26,7 +26,8 @@ public class CodeExecutedRE {
 	
 	public static void bytecodesExecuted(int count) {
 		
-		REDispatch.analysisStart(beId);
+		final byte orderingid = 1;
+		REDispatch.analysisStart(beId, orderingid);
 		
 		REDispatch.sendInt(count);
 		

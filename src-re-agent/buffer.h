@@ -13,7 +13,6 @@ typedef struct {
 	unsigned char * buff;
 	size_t occupied;
 	size_t capacity;
-	volatile int available;
 } buffer;
 
 // ******************* Buffer routines *******************
@@ -23,7 +22,6 @@ void buffer_alloc(buffer * b) {
 	b->buff = (unsigned char *) malloc(INIT_BUFF_SIZE);
 	b->capacity = INIT_BUFF_SIZE;
 	b->occupied = 0;
-	b->available = TRUE;
 }
 
 void buffer_free(buffer * b) {
@@ -32,7 +30,6 @@ void buffer_free(buffer * b) {
 	b->buff = NULL;
 	b->capacity = 0;
 	b->occupied = 0;
-	b->available = TRUE;
 }
 
 void buffer_fill(buffer * b, const void * data, size_t data_length) {
@@ -81,7 +78,6 @@ size_t buffer_filled(buffer * b) {
 }
 
 void buffer_clean(buffer * b) {
-
 	b->occupied = 0;
 }
 

@@ -25,8 +25,16 @@ JNIEXPORT jshort JNICALL Java_ch_usi_dag_dislre_REDispatch_registerMethod
  * Method:    analysisStart
  * Signature: (S)V
  */
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__S
   (JNIEnv *, jclass, jshort);
+
+/*
+ * Class:     ch_usi_dag_dislre_REDispatch
+ * Method:    analysisStart
+ * Signature: (SB)V
+ */
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__SB
+  (JNIEnv *, jclass, jshort, jbyte);
 
 /*
  * Class:     ch_usi_dag_dislre_REDispatch
