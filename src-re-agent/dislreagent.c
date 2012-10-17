@@ -42,7 +42,6 @@ static jvmtiEnv * jvmti_env;
 static JavaVM * java_vm;
 
 static int jvm_started = FALSE;
-static volatile int jvm_terminated = FALSE;
 
 static volatile int no_tagging_work = FALSE;
 static volatile int no_sending_work = FALSE;
@@ -124,10 +123,15 @@ static volatile jshort avail_analysis_id = 1;
 
 #define INVALID_THREAD_ID -1
 
+#define STARTING_THREAD_ID (TO_BUFFER_MAX_ID + 1)
+
 // initial ids are reserved for total ordering buffers
-static volatile jlong avail_thread_id = TO_BUFFER_MAX_ID + 1;
+static volatile jlong avail_thread_id = STARTING_THREAD_ID;
 
 // *** Thread locals ***
+
+// NOTE: Functionality in JVMTI allows to implement everything there but
+// gnu implementation is faster and WORKING
 
 static __thread jlong t_id = INVALID_THREAD_ID;
 static __thread process_buffs * t_local_pb = NULL;
@@ -188,7 +192,7 @@ static void parse_agent_options(char *options) {
 // owner_id can have several states
 // > 0 && <= TO_BUFFER_MAX_ID
 //    - means that buffer is reserved for total ordering events
-// >  TO_BUFFER_MAX_ID
+// >= STARTING_THREAD_ID
 //    - means that buffer is owned by some thread that is marked
 // == -1 - means that buffer is owned by some thread that is NOT tagged
 
@@ -984,19 +988,24 @@ void JNICALL jvmti_callback_class_file_load_hook(jvmtiEnv *jvmti_env,
 
 static void send_all_to_buffers() {
 
-	int i;
-	for(i = 0; i < TO_BUFFER_COUNT; ++i) {
+	// send all total ordering buffers - with lock
+	enter_critical_section(jvmti_env, to_buff_lock);
+	{
+		int i;
+		for(i = 0; i < TO_BUFFER_COUNT; ++i) {
 
-		// send all buffers for occupied ids
-		if(to_buff_array[i].pb != NULL) {
+			// send all buffers for occupied ids
+			if(to_buff_array[i].pb != NULL) {
 
-			// send buffers for object tagging
-			buffs_objtag(to_buff_array[i].pb);
+				// send buffers for object tagging
+				buffs_objtag(to_buff_array[i].pb);
 
-			// invalidate buffer pointer
-			to_buff_array[i].pb = NULL;
+				// invalidate buffer pointer
+				to_buff_array[i].pb = NULL;
+			}
 		}
 	}
+	exit_critical_section(jvmti_env, to_buff_lock);
 }
 
 void JNICALL jvmti_callback_object_free_hook(jvmtiEnv *jvmti_env,
@@ -1061,6 +1070,26 @@ void JNICALL jvmti_callback_vm_init_hook(jvmtiEnv *jvmti_env,
 
 // ******************* SHUTDOWN callback *******************
 
+void send_buffers_of_this_thread() {
+
+	// thread is marked -> worked with buffers
+	if(t_id != INVALID_THREAD_ID) {
+
+		int i; // C99 needed for in cycle definition :)
+		for(i = 0; i < BQ_BUFFERS; ++i) {
+
+			// if buffer is owned by tagged thread, send it
+			if(pb_list[i].owner_id == t_id) {
+				buffs_objtag(&(pb_list[i]));
+			}
+		}
+	}
+
+	t_analysis_buff = NULL;
+	t_command_buff = NULL;
+	t_pb = NULL;
+}
+
 void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 		JNIEnv* jni_env) {
 
@@ -1071,9 +1100,22 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 	// send all buffers for total order
 	send_all_to_buffers();
 
-	// shutdown - first tagging then sending thread
+	// send buffers of shutdown thread
+	send_buffers_of_this_thread();
 
-	jvm_terminated = TRUE;
+	// TODO ! suspend all *other* threads (they should no be in native code)
+	// and send their buffers
+	// resume threads after the sending thread is finished
+
+	//jthread thread_obj;
+	//jvmtiError error = (*jvmti_env)->GetCurrentThread(jvmti_env, &thread_obj);
+	//check_jvmti_error(jvmti_env, error, "Cannot get object of current thread.");
+	//GetAllThreads
+	//SuspendThread
+	//ResumeThread
+	//GetThreadState
+
+	// shutdown - first tagging then sending thread
 
 	no_tagging_work = TRUE;
 
@@ -1114,13 +1156,15 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 	int i; // C99 needed for in cycle definition :)
 	for(i = 0; i < BQ_BUFFERS; ++i) {
 
-		// buffer held by thread that performed (is doing) analysis
-		//  - probabbly analysis data
-		// or buffer used for total ordered sending
-		if(pb_list[i].owner_id > 0) {
+		// buffer held by thread that performed (is still doing) analysis
+		//  - probably analysis data
+		if(pb_list[i].owner_id >= STARTING_THREAD_ID) {
 			relevant_count += buffer_filled(pb_list[i].analysis_buff);
 			support_count += buffer_filled(pb_list[i].command_buff);
 			++marked_thread_count;
+#ifdef DEBUG
+	printf("Lost buffer for id %ld\n", pb_list[i].owner_id);
+#endif
 		}
 
 		// buffer held by thread that did NOT perform analysis
@@ -1129,9 +1173,6 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 			support_count += buffer_filled(pb_list[i].analysis_buff) +
 				buffer_filled(pb_list[i].command_buff);
 			++non_marked_thread_count;
-#ifdef DEBUG
-	printf("Lost buffer for id %ld\n", owner_id);
-#endif
 		}
 
 		check_error(pb_list[i].owner_id == PB_OBJTAG,
@@ -1141,10 +1182,11 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 				"Unprocessed buffers left in sending queue");
 	}
 
+#ifdef DEBUG
 	if(relevant_count > 0 || support_count > 0) {
 		fprintf(stderr, "%s%s%d%s%d%s%s%d%s%d%s",
 				"Warning: ",
-				"Due to non-terminated threads, ",
+				"Due to non-terminated (daemon) threads, ",
 				relevant_count,
 				" bytes of relevant data and ",
 				support_count,
@@ -1155,6 +1197,7 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 				non_marked_thread_count,
 				").\n");
 	}
+#endif
 
 	// NOTE: If we clean up, and daemon thread will use the structures,
 	// it will crash. It is then better to leave it all as is.
@@ -1177,19 +1220,7 @@ void JNICALL jvmti_callback_thread_end_hook(jvmtiEnv *jvmti_env,
 	// method has finished execution.
 
 	// send all non-send buffers associated with this thread
-
-	// thread is marked -> worked with buffers
-	if(t_id != INVALID_THREAD_ID) {
-
-		int i; // C99 needed for in cycle definition :)
-		for(i = 0; i < BQ_BUFFERS; ++i) {
-
-			// if buffer is owned by tagged thread, send it
-			if(pb_list[i].owner_id == t_id) {
-				buffs_objtag(&(pb_list[i]));
-			}
-		}
-	}
+	send_buffers_of_this_thread();
 }
 
 // ******************* JVMTI entry method *******************
