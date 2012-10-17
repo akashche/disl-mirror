@@ -1108,6 +1108,8 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 
 	int relevant_count = 0;
 	int support_count = 0;
+	int marked_thread_count = 0;
+	int non_marked_thread_count = 0;
 
 	int i; // C99 needed for in cycle definition :)
 	for(i = 0; i < BQ_BUFFERS; ++i) {
@@ -1118,6 +1120,7 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 		if(pb_list[i].owner_id > 0) {
 			relevant_count += buffer_filled(pb_list[i].analysis_buff);
 			support_count += buffer_filled(pb_list[i].command_buff);
+			++marked_thread_count;
 		}
 
 		// buffer held by thread that did NOT perform analysis
@@ -1125,6 +1128,7 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 		if(pb_list[i].owner_id == INVALID_THREAD_ID) {
 			support_count += buffer_filled(pb_list[i].analysis_buff) +
 				buffer_filled(pb_list[i].command_buff);
+			++non_marked_thread_count;
 		}
 
 		check_error(pb_list[i].owner_id == PB_OBJTAG,
@@ -1135,13 +1139,18 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 	}
 
 	if(relevant_count > 0 || support_count > 0) {
-		fprintf(stderr, "%s%s%d%s%d%s",
+		fprintf(stderr, "%s%s%d%s%d%s%s%d%s%d%s",
 				"Warning: ",
-				"Due to non-terminated daemon threads, ",
+				"Due to non-terminated threads, ",
 				relevant_count,
-				" Bytes of relevant data and ",
+				" bytes of relevant data and ",
 				support_count,
-				" Bytes of support data were lost.\n");
+				" bytes of support data were lost.",
+				"(marked: ",
+				marked_thread_count,
+				", non-marked: ",
+				non_marked_thread_count,
+				")\n");
 	}
 
 	// NOTE: If we clean up, and daemon thread will use the structures,
