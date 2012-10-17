@@ -26,7 +26,7 @@ public class AnalysisHandler implements RequestHandler {
 		try {
 			
 			// get net reference for the thread
-			NetReference threadNR = new NetReference(is.readLong());
+			long orderingID = is.readLong();
 			
 			// read  and create method invocations
 			int numberOfMethods = is.readInt();
@@ -38,7 +38,7 @@ public class AnalysisHandler implements RequestHandler {
 				invocations.add(createInvocation(is, debug));
 			}
 			
-			dispatcher.addTask(threadNR, invocations);
+			dispatcher.addTask(orderingID, invocations);
 		}
 		catch (IOException e) {
 			throw new DiSLREServerException(e);

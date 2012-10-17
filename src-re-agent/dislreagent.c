@@ -449,17 +449,17 @@ static void mark_thread(JNIEnv * jni_env) {
 }
 
 void analysis_start_buff(JNIEnv * jni_env, jshort analysis_method_id,
-		  jbyte buffer_id) {
+		  jbyte ordering_id) {
 
 #ifdef DEBUG
 	printf("Analysis (buffer) start enter (thread %ld)\n", t_id);
 #endif
 
-	check_error(buffer_id < 0, "Buffer id has negative value");
+	check_error(ordering_id < 0, "Buffer id has negative value");
 
 	if(t_local_pb == NULL) {
 
-		// tag thread
+		// mark thread
 		if(t_id == INVALID_THREAD_ID) {
 
 			mark_thread(jni_env);
@@ -473,7 +473,7 @@ void analysis_start_buff(JNIEnv * jni_env, jshort analysis_method_id,
 	t_analysis_buff = t_local_pb->analysis_buff;
 	t_command_buff = t_local_pb->command_buff;
 
-	t_to_buff_id = buffer_id;
+	t_to_buff_id = ordering_id;
 
 	// analysis method desc
 	pack_short(t_analysis_buff, analysis_method_id);
@@ -497,7 +497,7 @@ static size_t createAnalysisMsg(buffer * buff, jlong id) {
 	size_t pos = buffer_filled(buff);
 
 	// space initialization
-	pack_int(buff, NULL_NET_REF);
+	pack_int(buff, 0);
 
 	return pos;
 
@@ -511,7 +511,7 @@ static void analysis_start(JNIEnv * jni_env, jshort analysis_method_id) {
 
 	if(t_analysis_buff == NULL) {
 
-		// tag thread
+		// mark thread
 		if(t_id == INVALID_THREAD_ID) {
 
 			mark_thread(jni_env);
@@ -537,6 +537,30 @@ static void analysis_start(JNIEnv * jni_env, jshort analysis_method_id) {
 #endif
 }
 
+static void correct_cmd_buff_pos(buffer * cmd_buff, size_t shift) {
+
+	size_t cmd_buff_len = buffer_filled(cmd_buff);
+	size_t read = 0;
+
+	objtag_rec ot_rec;
+
+	// go through all records and shift the buffer position
+	while(read < cmd_buff_len) {
+
+		// read ot_rec data
+		buffer_read(cmd_buff, read, &ot_rec, sizeof(ot_rec));
+
+		// shift buffer position
+		ot_rec.buff_pos += shift;
+
+		// write ot_rec data
+		buffer_fill_at_pos(cmd_buff, read, &ot_rec, sizeof(ot_rec));
+
+		// next
+		read += sizeof(ot_rec);
+	}
+}
+
 static void analysis_end_buff() {
 
 #ifdef DEBUG
@@ -545,7 +569,7 @@ static void analysis_end_buff() {
 
 	// TODO lock for each buffer id
 
-	// sending of half-full buffer is done in shutdown hook
+	// sending of half-full buffer is done in shutdown hook and obj free hook
 
 	// write analysis to total order buffer - with lock
 	enter_critical_section(jvmti_env, to_buff_lock);
@@ -568,6 +592,13 @@ static void analysis_end_buff() {
 			tobs->analysis_count_pos = createAnalysisMsg(
 					tobs->pb->analysis_buff, t_to_buff_id);
 		}
+
+		// first correct positions in command buffer
+		// records in command buffer are positioned according to the local
+		// analysis buffer but we want the position to be valid in total ordered
+		// buffer
+		correct_cmd_buff_pos(t_local_pb->command_buff,
+				buffer_filled(tobs->pb->analysis_buff));
 
 		// fill total order buffers
 		buffer_fill(tobs->pb->analysis_buff,
@@ -624,16 +655,16 @@ static void analysis_end_buff() {
 
 static void analysis_end() {
 
-#ifdef DEBUG
-	printf("Analysis end enter (thread %ld)\n", t_id);
-#endif
-
 	// this method is also called for end of analysis for totally ordered API
 	if(t_to_buff_id != INVALID_BUFF_ID) {
 
 		analysis_end_buff();
 		return;
 	}
+
+#ifdef DEBUG
+	printf("Analysis end enter (thread %ld)\n", t_id);
+#endif
 
 	// sending of half-full buffer is done in thread end hook
 
@@ -1070,7 +1101,7 @@ void JNICALL jvmti_callback_vm_init_hook(jvmtiEnv *jvmti_env,
 
 // ******************* SHUTDOWN callback *******************
 
-void send_buffers_of_this_thread() {
+static void send_buffers_of_this_thread() {
 
 	// thread is marked -> worked with buffers
 	if(t_id != INVALID_THREAD_ID) {
@@ -1103,7 +1134,7 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 	// send buffers of shutdown thread
 	send_buffers_of_this_thread();
 
-	// TODO ! suspend all *other* threads (they should no be in native code)
+	// TODO ! suspend all *other* marked threads (they should no be in native code)
 	// and send their buffers
 	// resume threads after the sending thread is finished
 
@@ -1366,9 +1397,9 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__S
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__SB
   (JNIEnv * jni_env, jclass this_class, jshort analysis_method_id,
-		  jbyte buffer_id) {
+		  jbyte ordering_id) {
 
-	analysis_start_buff(jni_env, analysis_method_id, buffer_id);
+	analysis_start_buff(jni_env, analysis_method_id, ordering_id);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd

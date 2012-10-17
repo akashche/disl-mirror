@@ -10,15 +10,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
-import ch.usi.dag.dislreserver.netreference.NetReference;
 
 // NOTE: Task is list of analysis methods from the same thread.
 // Dispatches new task when new one is added or when the running one is
 // completed so there is at most one task running.
 public class AnalysisDispatcher {
 
-	ConcurrentMap<NetReference, AnalysisThreadTasks> threadMap =
-			new ConcurrentHashMap<NetReference, AnalysisThreadTasks>();
+	ConcurrentMap<Long, AnalysisThreadTasks> threadMap =
+			new ConcurrentHashMap<Long, AnalysisThreadTasks>();
 	
 	ExecutorService execSrvc = Executors.newCachedThreadPool();
 	
@@ -113,12 +112,12 @@ public class AnalysisDispatcher {
 		
 	}
 	
-	public void addTask(NetReference threadNR,
+	public void addTask(long orderingID,
 			List<AnalysisInvocation> invocations) {
 		
 		// add task to the dispatch record
 		
-		AnalysisThreadTasks att = threadMap.get(threadNR);
+		AnalysisThreadTasks att = threadMap.get(orderingID);
 		
 		if(att == null) {
 			
@@ -126,7 +125,7 @@ public class AnalysisDispatcher {
 			// in the case of concurrent allocations putIfAbsent guarantees only
 			// one proper value
 			att = new AnalysisThreadTasks(execSrvc);
-			AnalysisThreadTasks old = threadMap.putIfAbsent(threadNR, att);
+			AnalysisThreadTasks old = threadMap.putIfAbsent(orderingID, att);
 			
 			// replace with proper value
 			if(old != null) {
