@@ -1129,6 +1129,9 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 			support_count += buffer_filled(pb_list[i].analysis_buff) +
 				buffer_filled(pb_list[i].command_buff);
 			++non_marked_thread_count;
+#ifdef DEBUG
+	printf("Lost buffer for id %ld\n", owner_id);
+#endif
 		}
 
 		check_error(pb_list[i].owner_id == PB_OBJTAG,
@@ -1145,12 +1148,12 @@ void JNICALL jvmti_callback_vm_death_hook(jvmtiEnv *jvmti_env,
 				relevant_count,
 				" bytes of relevant data and ",
 				support_count,
-				" bytes of support data were lost.",
-				"(marked: ",
+				" bytes of support data were lost ",
+				"(thread count - analysis: ",
 				marked_thread_count,
-				", non-marked: ",
+				", helper: ",
 				non_marked_thread_count,
-				")\n");
+				").\n");
 	}
 
 	// NOTE: If we clean up, and daemon thread will use the structures,
