@@ -300,11 +300,13 @@ public class WeavingCode {
 
 					// index should be less than the stack height
 					if (operand >= basicframe.getStackSize() || operand < 0) {
-						throw new DynamicContextException(
-								"Dynamic context wrong access." +
-								" Access out of bounds. Accessed " + operand +
-								", but the size of stack is "
-								+ basicframe.getLocals());
+
+						throw new DynamicContextException("In snippet "
+								+ snippet.getOriginClassName() + "."
+								+ snippet.getOriginMethodName()
+								+ " - trying to access the stack item NO."
+								+ operand + ", but the size of the stack is "
+								+ basicframe.getStackSize());
 					}
 
 					// Type checking
@@ -312,10 +314,12 @@ public class WeavingCode {
 							operand).getType();
 
 					if (t.getSort() != targetType.getSort()) {
-						throw new DynamicContextException(
-								"Dynamic context wrong access. Requested \"" +
-								t + "\" but found \"" + targetType
-								+ "\" on the stack.");
+						throw new DynamicContextException("In snippet "
+								+ snippet.getOriginClassName() + "."
+								+ snippet.getOriginMethodName()
+								+ " - trying to access the stack item NO."
+								+ operand + " with a provided type \"" + t
+								+ "\", but we found \"" + targetType + "\".");
 					}
 
 					// store the stack value without changing the semantic
@@ -343,24 +347,31 @@ public class WeavingCode {
 				}
 
 				int slot = AsmHelper.getInternalParamIndex(method, operand);
+				int args = Type.getArgumentTypes(method.desc).length;
 
 				// index should be less than the size of local variables
-				if (slot >= basicframe.getLocals() || slot < 0) {
-					throw new DynamicContextException(
-							"Dynamic context wrong access." +
-							" Access out of bounds. Accessed " + slot +
-							", but the size of stack is "
-							+ basicframe.getLocals());
+				if (operand >= args || operand < 0) {
+
+					throw new DynamicContextException("In snippet "
+							+ snippet.getOriginClassName() + "."
+							+ snippet.getOriginMethodName()
+							+ " - trying to access the method argument NO."
+							+ operand
+							+ ", but the size of the method argument is "
+							+ args);
 				}
 
 				// Type checking
 				Type targetType = basicframe.getLocal(slot).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DynamicContextException(
-							"Dynamic context wrong access. Requested \"" +
-							t + "\" but found \"" + targetType
-							+ "\" on the stack.");
+					
+					throw new DynamicContextException("In snippet "
+							+ snippet.getOriginClassName() + "."
+							+ snippet.getOriginMethodName()
+							+ " - trying to access the method argument NO."
+							+ operand + " with a provided type \"" + t
+							+ "\", but we found \"" + targetType + "\".");
 				}
 
 				// box value if applicable
@@ -379,10 +390,13 @@ public class WeavingCode {
 
 				// index should be less than the size of local variables
 				if (operand >= basicframe.getLocals() || operand < 0) {
-					throw new DynamicContextException(
-							"Dynamic context wrong access." +
-							" Access out of bounds. Accessed " + operand +
-							", but the size of stack is "
+
+					throw new DynamicContextException("In snippet "
+							+ snippet.getOriginClassName() + "."
+							+ snippet.getOriginMethodName()
+							+ " - trying to access the local variable NO."
+							+ operand
+							+ ", but the size of the local varaibles is "
 							+ basicframe.getLocals());
 				}
 
@@ -390,10 +404,13 @@ public class WeavingCode {
 				Type targetType = basicframe.getLocal(operand).getType();
 
 				if (t.getSort() != targetType.getSort()) {
-					throw new DynamicContextException(
-							"Dynamic context wrong access. Requested \"" +
-							t + "\" but found \"" + targetType
-							+ "\" on the stack.");
+
+					throw new DynamicContextException("In snippet "
+							+ snippet.getOriginClassName() + "."
+							+ snippet.getOriginMethodName()
+							+ " - trying to access the local variable NO."
+							+ operand + " with a provided type \"" + t
+							+ "\", but we found \"" + targetType + "\".");
 				}
 
 				// box value if applicable
@@ -698,7 +715,11 @@ public class WeavingCode {
 			AbstractInsnNode prev = instr.getPrevious();
 
 			if (prev.getOpcode() != Opcodes.GETSTATIC) {
-				throw new DiSLFatalException("Unknown processor mode");
+				
+				throw new DiSLFatalException("In snippet "
+						+ snippet.getOriginClassName() + "."
+						+ snippet.getOriginMethodName()
+						+ " - unknown processor mode");
 			}
 
 			ArgumentProcessorMode procApplyType = ArgumentProcessorMode
@@ -720,16 +741,24 @@ public class WeavingCode {
 							shadow.getRegionStart(), true);
 					
 					if (!(callee instanceof MethodInsnNode)) {
-						throw new DiSLFatalException("Unexpected instruction");
+						throw new DiSLFatalException("In snippet "
+								+ snippet.getOriginClassName() + "."
+								+ snippet.getOriginMethodName()
+								+ " - unexpected bytecode when applying"
+								+ " \"ArgumentProcessorContext.getArgs\"");
 					}
 
 					String desc = ((MethodInsnNode) callee).desc;
 					Type[] argTypes = Type.getArgumentTypes(desc);
 
 					Frame<SourceValue> frame = info.getSourceFrame(callee);
-					
+
 					if (frame == null) {
-						throw new DiSLFatalException("Unknown target");
+						throw new DiSLFatalException("In snippet "
+								+ snippet.getOriginClassName() + "."
+								+ snippet.getOriginMethodName()
+								+ " - unexpected bytecode when applying"
+								+ " \"ArgumentProcessorContext.getArgs\"");
 					}
 					
 					int argIndex = 0;
@@ -776,13 +805,21 @@ public class WeavingCode {
 							shadow.getRegionStart(), true);
 					
 					if (!(callee instanceof MethodInsnNode)) {
-						throw new DiSLFatalException("Unexpected instruction");
+						throw new DiSLFatalException("In snippet "
+								+ snippet.getOriginClassName() + "."
+								+ snippet.getOriginMethodName()
+								+ " - unexpected bytecode when applying"
+								+ " \"ArgumentProcessorContext.getReceiver\"");
 					}
 
 					Frame<SourceValue> frame = info.getSourceFrame(callee);
 
 					if (frame == null) {
-						throw new DiSLFatalException("Unknown target");
+						throw new DiSLFatalException("In snippet "
+								+ snippet.getOriginClassName() + "."
+								+ snippet.getOriginMethodName()
+								+ " - unexpected bytecode when applying"
+								+ " \"ArgumentProcessorContext.getReceiver\"");
 					}
 
 					if (callee.getOpcode() == Opcodes.INVOKESTATIC) {
