@@ -34,8 +34,8 @@ CFLAGS += $(COMMON_FLAGS)
 CFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
 
 # add debugging output
-ifeq ($(DEBUG), TRUE)
-CFLAGS += -DDEBUG
+ifneq ($(DEBUG),)
+CFLAGS += -DDEBUG -g3
 endif
 
 build: $(LIBRARY)
