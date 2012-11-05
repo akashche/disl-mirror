@@ -1,7 +1,19 @@
 #ifndef _BUFFPACK_H
 #define	_BUFFPACK_H
 
-#include <arpa/inet.h>
+#if defined (__APPLE__) && defined (__MACH__)
+
+#include <machine/endian.h>
+
+#if BYTE_ORDER == BIG_ENDIAN
+#define htobe64(x) (x)
+#else // BYTE_ORDER != BIG_ENDIAN
+#define htobe64(x) __DARWIN_OSSwapInt64((x))
+#endif
+
+#else // !(__APPLE__ && __MACH__)
+#include <endian.h>
+#endif
 
 #include "../src-agent-c/jvmtihelper.h"
 
