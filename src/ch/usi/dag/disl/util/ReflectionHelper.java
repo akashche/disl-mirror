@@ -31,7 +31,8 @@ public class ReflectionHelper {
 			Constructor<?> constructor = classToInstantiate
 					.getConstructor(argTypes);
 
-			// invoke constructor
+			// make the constructor accessible and invoke it
+			constructor.setAccessible (true);
 			return classToInstantiate.cast(constructor.newInstance(args));
 
 		} catch (Exception e) {

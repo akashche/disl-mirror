@@ -56,7 +56,8 @@ public class GuardResolver {
 					+ guardClass.getName());
 		}
 		
-		// put into cache
+		// make the method accessible and put it into cache
+		guardMethod.getMethod ().setAccessible (true);
 		guardToMethod.put(guardClass, guardMethod);
 		
 		return guardMethod;

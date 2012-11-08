@@ -171,6 +171,7 @@ public class SCGenerator {
 			scInst.staticContextData(shadow);
 
 			// get static data by invoking static context method
+			method.setAccessible (true);
 			Object result = method.invoke(scInst);
 
 			return result;
