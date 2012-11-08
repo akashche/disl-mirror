@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.util;
 
+import org.objectweb.asm.tree.AbstractInsnNode;
+
 public enum AsmOpcodes {
 
 	// NOTE this opcode list is generated from org.objectweb.asm.Opcodes.java
@@ -221,4 +223,14 @@ public enum AsmOpcodes {
 	public int getNumber() {
 		return number;
 	}
+
+    public static AsmOpcodes valueOf (final AbstractInsnNode insn) {
+        for (final AsmOpcodes opcode : values ()) {
+            if (opcode.number == insn.getOpcode ()) {
+                return opcode;
+            }
+        }
+        
+        return null;
+    }
 }
