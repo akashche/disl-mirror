@@ -368,7 +368,7 @@ public abstract class AsmHelper {
 		return dst;
 	}
 
-	public static AbstractInsnNode skipVirualInsns(AbstractInsnNode instr,
+	public static AbstractInsnNode skipVirtualInsns(AbstractInsnNode instr,
 			boolean isForward) {
 		
 		while (instr != null && isVirtualInstr(instr)) {

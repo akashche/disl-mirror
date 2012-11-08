@@ -116,7 +116,7 @@ public class WeavingInfo {
 		sourceFrameMap = FrameHelper.createSourceMapping(classNode.name,
 				methodNode);
 
-		AbstractInsnNode last = AsmHelper.skipVirualInsns(
+		AbstractInsnNode last = AsmHelper.skipVirtualInsns(
 				instructions.getLast(), false);
 		retFrame = basicFrameMap.get(last);
 	}

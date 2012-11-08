@@ -156,7 +156,7 @@ public class Weaver {
 			AbstractInsnNode instr) {
 
 		if (instr.getNext() != null
-				&& AsmHelper.skipVirualInsns(instr.getNext(), true) != null) {
+				&& AsmHelper.skipVirtualInsns(instr.getNext(), true) != null) {
 
 			LabelNode branch = new LabelNode();
 			methodNode.instructions.insert(instr, branch);

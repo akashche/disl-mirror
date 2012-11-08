@@ -18,8 +18,8 @@ public class TryClauseMarker extends AbstractDWRMarker {
 
 		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
 
-			AbstractInsnNode start = AsmHelper.skipVirualInsns(tcb.start, true);
-			AbstractInsnNode end = AsmHelper.skipVirualInsns(tcb.end, false);
+			AbstractInsnNode start = AsmHelper.skipVirtualInsns(tcb.start, true);
+			AbstractInsnNode end = AsmHelper.skipVirtualInsns(tcb.end, false);
 			regions.add(new MarkedRegion(start, end));
 		}
 

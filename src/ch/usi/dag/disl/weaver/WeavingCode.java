@@ -737,7 +737,7 @@ public class WeavingCode {
 									- method.maxLocals);
 				} else {
 
-					AbstractInsnNode callee = AsmHelper.skipVirualInsns(
+					AbstractInsnNode callee = AsmHelper.skipVirtualInsns(
 							shadow.getRegionStart(), true);
 					
 					if (!(callee instanceof MethodInsnNode)) {
@@ -801,7 +801,7 @@ public class WeavingCode {
 					}
 				} else {
 
-					AbstractInsnNode callee = AsmHelper.skipVirualInsns(
+					AbstractInsnNode callee = AsmHelper.skipVirtualInsns(
 							shadow.getRegionStart(), true);
 					
 					if (!(callee instanceof MethodInsnNode)) {
