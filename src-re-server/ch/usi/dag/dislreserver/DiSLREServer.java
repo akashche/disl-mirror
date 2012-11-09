@@ -32,7 +32,6 @@ public abstract class DiSLREServer {
 
 		try {
 			listenSocket = new ServerSocket (port);
-
 			if (debug) {
 				System.out.printf (
 					"DiSL-RE: listening at %s:%d\n",
@@ -40,9 +39,8 @@ public abstract class DiSLREServer {
 					listenSocket.getLocalPort ()
 				);
 			}
-			Socket socket = listenSocket.accept();
 
-
+			Socket socket = listenSocket.accept ();
 			if (debug) {
 				System.out.printf (
 					"DiSL-RE: accepting connection from %s:%d\n",
@@ -50,8 +48,9 @@ public abstract class DiSLREServer {
 					socket.getPort ()
 				);
 			}
-			requestLoop(socket);
-			socket.close();
+
+			requestLoop (socket);
+			socket.close ();
 
 		} catch (final IOException ioe) {
 			reportError (new DiSLREServerException (ioe));
@@ -97,12 +96,10 @@ public abstract class DiSLREServer {
 
 	private static void reportError (final Throwable throwable) {
 		if (throwable instanceof DiSLREServerException) {
-			final String message = throwable.getMessage ();
-
 			System.err.print ("DiSL-RE: server error");
-			if (message != null) {
-				System.err.println (": " + throwable.getMessage ());
-			}
+
+			final String message = throwable.getMessage ();
+			System.err.println ((message != null) ? ": "+ message : "");
 
 			reportInnerError (throwable);
 			if (debug) {

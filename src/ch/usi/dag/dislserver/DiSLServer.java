@@ -18,135 +18,134 @@ public abstract class DiSLServer {
 	private static final String PROP_PORT = "dislserver.port";
 	private static final int DEFAULT_PORT = 11217;
 	private static final int port = Integer.getInteger(PROP_PORT, DEFAULT_PORT);
-	
+
 	private static final String PROP_TIME_STAT = "dislserver.timestat";
 	private static final boolean timeStat = Boolean.getBoolean(PROP_TIME_STAT);
-	
+
 	private static final String PROP_CONT = "dislserver.continuous";
 	private static final boolean continuous = Boolean.getBoolean(PROP_CONT);
 
 	private static final AtomicInteger aliveWorkers = new AtomicInteger();
 	private static final AtomicLong instrumentationTime = new AtomicLong();
-	
+
 	private static DiSL disl;
 	private static ServerSocket listenSocket;
 
-	public static void main(String args[]) {
+	//
 
+	public static void main (final String [] args) {
 		try {
-
 			// use dynamic bypass
-			disl = new DiSL(true);
+			disl = new DiSL (true);
 
 			if (debug) {
-				System.out.println("Instrumentation server is starting on port "
-						+ port);
+				System.out.println ("DiSL: starting instrumentation server...");
 			}
 
-			listenSocket = new ServerSocket(port);
+			listenSocket = new ServerSocket (port);
+			if (debug) {
+				System.out.printf (
+					"DiSL: listening at %s:%d\n",
+					listenSocket.getInetAddress ().getHostAddress (),
+					listenSocket.getLocalPort ()
+				);
+			}
 
 			while (true) {
-
-				Socket newClient = listenSocket.accept();
-				
-				NetMessageReader sc = new NetMessageReader(newClient);
-				
-				aliveWorkers.incrementAndGet();
-				
-				new Worker(sc, disl).start();
-
+				final Socket newClient = listenSocket.accept ();
 				if (debug) {
-					System.out.println("Accpeting new connection from "
-							+ newClient.getInetAddress().toString());
+					System.out.printf (
+						"DiSL: accepting connection from %s:%d\n",
+						newClient.getInetAddress ().getHostAddress (),
+						newClient.getPort ()
+					);
 				}
+
+				NetMessageReader sc = new NetMessageReader (newClient);
+				aliveWorkers.incrementAndGet ();
+				new Worker (sc, disl).start ();
 			}
-			
-		}
-		catch (IOException e) {
-			reportError(new DiSLServerException(e));
-		}
-		catch (Throwable e) {
-			reportError(e);
+
+		} catch (final IOException ioe) {
+			reportError (new DiSLServerException (ioe));
+		} catch (final Throwable throwable) {
+			reportError (throwable);
 		}
 	}
 
-	private static void reportInnerError(Throwable e) {
-	
-		Throwable cause = e.getCause();
-		
-		while (cause != null && cause.getMessage() != null) {
-			System.err.println("  Inner error: " + cause.getMessage());
-			cause = cause.getCause();
+
+	private static void reportInnerError (final Throwable throwable) {
+		Throwable cause = throwable.getCause ();
+		while (cause != null && cause.getMessage () != null) {
+			System.err.println ("  Inner error: " + cause.getMessage ());
+			cause = cause.getCause ();
 		}
 	}
-	
-	public static void reportError(Throwable e) {
 
-		if (e instanceof DiSLException) {
 
-			System.err.print("DiSL error");
-			
+	public static void reportError (Throwable throwable) {
+		if (throwable instanceof DiSLException) {
+			System.err.print ("DiSL: error");
+
 			// report during which method it happened
-			if (e instanceof DiSLInMethodException) {
-				
-				System.err.print(" (while instrumenting method \""
-						+ e.getMessage() + "\")");
-				
+			if (throwable instanceof DiSLInMethodException) {
+				System.err.printf (
+					" (while instrumenting method \"%s\")", throwable.getMessage ()
+				);
+
 				// set inner error
-				e = e.getCause();
-			}
-			
-			System.err.println(": " + e.getMessage());
-			
-			reportInnerError(e);
-			
-			if(debug) {
-				e.printStackTrace();
+				throwable = throwable.getCause ();
 			}
 
-			return;
-		}
-
-		if (e instanceof DiSLServerException) {
-
-			System.err.println("DiSL server error: " + e.getMessage());
-
-			reportInnerError(e);
-			
+			reportOptionalMessage (throwable);
+			reportInnerError (throwable);
 			if (debug) {
-				e.printStackTrace();
+				throwable.printStackTrace ();
 			}
-			
-			return;
+
+		} else if (throwable instanceof DiSLServerException) {
+			System.err.print ("DiSL: server error");
+
+			reportOptionalMessage (throwable);
+			reportInnerError (throwable);
+			if (debug) {
+				throwable.printStackTrace ();
+			}
+
+		} else {
+			// some other exception
+			System.err.print ("DiSL: fatal error: ");
+			throwable.printStackTrace ();
 		}
-
-		// fatal exception (unexpected)
-		System.err.println("DiSL fatal error: " + e.getMessage());
-
-		e.printStackTrace();
 	}
-	
-	public static void workerDone(long instrTime) {
 
-		instrumentationTime.addAndGet(instrTime);
-		
-		if (aliveWorkers.decrementAndGet() == 0) {
-			
+
+	private static void reportOptionalMessage (final Throwable throwable) {
+		final String message = throwable.getMessage ();
+		System.err.println ((message != null) ? ": "+ message : "");
+	}
+
+
+	public static void workerDone (final long instrTime) {
+		instrumentationTime.addAndGet (instrTime);
+
+		if (aliveWorkers.decrementAndGet () == 0) {
 			if (timeStat) {
-				System.out.println("Instrumentation took " +
-						instrumentationTime.get() / 1000000 + " milliseconds");
+				System.out.printf (
+					"DiSL: instrumentation took %d milliseconds\n",
+					instrumentationTime.get () / 1000000
+				);
 			}
-			
-			// no workers - shutdown
-			if(! continuous) {
 
-				disl.terminate();
-				
+			// no workers - shutdown
+			if (!continuous) {
+				disl.terminate ();
+
 				if (debug) {
-					System.out.println("Instrumentation server is shutting down");
+					System.out.println ("DiSL: shutting down instrumentation server...");
 				}
-				
-				System.exit(0);				
+
+				System.exit(0);
 			}
 		}
 	}
