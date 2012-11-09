@@ -281,7 +281,7 @@ public class WeavingCode {
 			// invoke (current instruction)
 			// [checkcast]
 			// [invoke]
-			int operand = AsmHelper.getIConstOperand(prev.getPrevious());
+			int operand = AsmHelper.getIntConstOperand(prev.getPrevious());
 			Type t = AsmHelper.getClassType(prev);
 
 			if (invoke.name.equals("getStackValue")) {
