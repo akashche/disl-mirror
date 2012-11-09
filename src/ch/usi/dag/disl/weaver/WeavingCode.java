@@ -288,7 +288,7 @@ public class WeavingCode {
 
 				if (basicframe == null) {
 					// TODO warn user that weaving location is unreachable.
-					iList.insert(instr, AsmHelper.loadNull(t));
+					iList.insert(instr, AsmHelper.loadDefault(t));
 
 					if (!AsmHelper.isReferenceType(t)) {
 						iList.insert(instr, AsmHelper.boxValueOnStack(t));

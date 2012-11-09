@@ -148,7 +148,7 @@ public abstract class AsmHelper {
 		}
 	}
 
-	public static AbstractInsnNode loadNull(Type type) {
+	public static AbstractInsnNode loadDefault(Type type) {
 
 		switch (type.getSort()) {
 		case Type.BOOLEAN:
