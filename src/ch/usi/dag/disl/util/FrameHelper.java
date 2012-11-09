@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -99,23 +100,24 @@ public class FrameHelper {
 
 	// find out where a stack operand is pushed onto stack, and duplicate the
 	// operand and store into a local slot.
-	public static int dupStack(Frame<SourceValue> frame, MethodNode method,
-			int operand, int sopcode, int slot) {
-		SourceValue source = getStackByIndex(frame, operand);
-
-		for (AbstractInsnNode itr : source.insns) {
+	public static int dupStack (
+		Frame <SourceValue> frame, MethodNode method,
+		int operand, Type type, int slot
+	) {
+		SourceValue source = getStackByIndex (frame, operand);
+		for (final AbstractInsnNode insn : source.insns) {
 
 			// if the instruction duplicates two-size operand(s), weaver should
 			// be careful that the operand might be either 2 one-size operands,
 			// or 1 two-size operand.
-			switch (itr.getOpcode()) {
+			switch (insn.getOpcode()) {
 
 			case Opcodes.DUP2:
 				if (source.size != 1) {
 					break;
 				}
 
-				dupStack(frame, method, operand + 2, sopcode, slot);
+				dupStack (frame, method, operand + 2, type, slot);
 				continue;
 
 			case Opcodes.DUP2_X1:
@@ -123,7 +125,7 @@ public class FrameHelper {
 					break;
 				}
 
-				dupStack(frame, method, operand + 3, sopcode, slot);
+				dupStack (frame, method, operand + 3, type, slot);
 				continue;
 
 			case Opcodes.DUP2_X2:
@@ -131,19 +133,22 @@ public class FrameHelper {
 					break;
 				}
 
-				SourceValue x2 = getStackByIndex(frame, operand + 2);
-				dupStack(frame, method, operand + (4 - x2.size), sopcode, slot);
+				SourceValue x2 = getStackByIndex (frame, operand + 2);
+				dupStack (frame, method, operand + (4 - x2.size), type, slot);
 				continue;
 
 			case Opcodes.SWAP:
-				if (operand > 0
-						&& getStackByIndex(frame, operand - 1).insns
-								.contains(itr)) {
+				if (operand > 0 &&
+					getStackByIndex (frame, operand - 1).insns.contains (insn)
+				) {
 					// insert 'dup' instruction and then store to a local slot
-					method.instructions.insertBefore(itr, new InsnNode(
-							Opcodes.DUP));
-					method.instructions.insertBefore(itr, new VarInsnNode(
-							sopcode, slot));
+					method.instructions.insertBefore (
+						insn, new InsnNode (Opcodes.DUP)
+					);
+
+					method.instructions.insertBefore (
+						insn, AsmHelper.storeVar (type,  slot)
+					);
 					continue;
 				}
 
@@ -152,9 +157,10 @@ public class FrameHelper {
 			}
 
 			// insert 'dup' instruction and then store to a local slot
-			method.instructions.insert(itr, new VarInsnNode(sopcode, slot));
-			method.instructions.insert(itr, new InsnNode(
-					source.size == 2 ? Opcodes.DUP2 : Opcodes.DUP));
+			method.instructions.insert (insn, AsmHelper.storeVar (type, slot));
+			method.instructions.insert (
+				insn, new InsnNode (source.size == 2 ? Opcodes.DUP2 : Opcodes.DUP)
+			);
 		}
 
 		return source.size;

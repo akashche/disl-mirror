@@ -324,7 +324,7 @@ public class WeavingCode {
 
 					// store the stack value without changing the semantic
 					int size = FrameHelper.dupStack(sourceframe, method, operand,
-							sopcode, method.maxLocals);
+							t, method.maxLocals);
 					// load the stack value
 
 					// box value if applicable
