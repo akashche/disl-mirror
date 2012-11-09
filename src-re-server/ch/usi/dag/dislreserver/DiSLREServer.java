@@ -11,103 +11,108 @@ import java.net.Socket;
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.reqdispatch.RequestDispatcher;
 
+
 public abstract class DiSLREServer {
 
-	public static final String PROP_DEBUG = "debug";
+	private static final String PROP_DEBUG = "debug";
 	private static final boolean debug = Boolean.getBoolean(PROP_DEBUG);
 
 	private static final String PROP_PORT = "dislreserver.port";
 	private static final int DEFAULT_PORT = 11218;
 	private static final int port = Integer.getInteger(PROP_PORT, DEFAULT_PORT);
-	
+
 	private static ServerSocket listenSocket;
-	
-	public static void main(String args[]) {
+
+	//
+
+	public static void main (final String [] args) {
+		if (debug) {
+			System.out.println("DiSL-RE: starting analysis server...");
+		}
 
 		try {
+			listenSocket = new ServerSocket (port);
 
 			if (debug) {
-				System.out.println("DiSL-RE server is starting on port "
-						+ port);
+				System.out.printf (
+					"DiSL-RE: listening at %s:%d\n",
+					listenSocket.getInetAddress ().getHostAddress (),
+					listenSocket.getLocalPort ()
+				);
 			}
-
-			listenSocket = new ServerSocket(port);
-
 			Socket socket = listenSocket.accept();
 
+
 			if (debug) {
-				System.out.println("Accpeting new connection from "
-						+ socket.getInetAddress().toString());
+				System.out.printf (
+					"DiSL-RE: accepting connection from %s:%d\n",
+					socket.getInetAddress ().getHostAddress (),
+					socket.getPort ()
+				);
 			}
-			
 			requestLoop(socket);
-			
 			socket.close();
-			
-			if (debug) {
-				System.out.println("DiSL-RE server is shutting down");
-			}
-			
+
+		} catch (final IOException ioe) {
+			reportError (new DiSLREServerException (ioe));
+		} catch (final Throwable throwable) {
+			reportError (throwable);
 		}
-		catch (IOException e) {
-			reportError(new DiSLREServerException(e));
-		}
-		catch (Throwable e) {
-			reportError(e);
+
+		if (debug) {
+			System.out.println ("DiSL-RE: shutting down analysis server...");
 		}
 	}
+
 
 	private static void requestLoop(Socket sock) throws DiSLREServerException {
-		
 		try {
-
 			final DataInputStream is = new DataInputStream(
-					new BufferedInputStream(sock.getInputStream()));
+				new BufferedInputStream(sock.getInputStream()));
 			final DataOutputStream os = new DataOutputStream(
-					new BufferedOutputStream(sock.getOutputStream()));
+				new BufferedOutputStream(sock.getOutputStream()));
 
-			boolean exit = false;
-			do {
+			REQUEST_LOOP: while (true) {
+				final byte requestNo = is.readByte();
+				if (RequestDispatcher.dispatch (requestNo, is, os, debug)) {
+					break REQUEST_LOOP;
+				}
+			}
 
-				byte requestNo = is.readByte();
-				
-				exit = RequestDispatcher.dispatch(requestNo, is, os, debug);
-				
-			} while(! exit);
-
-		} catch (IOException e) {
-			throw new DiSLREServerException(e);
+		} catch (final IOException ioe) {
+			throw new DiSLREServerException (ioe);
 		}
 	}
 
+
 	private static void reportInnerError(Throwable e) {
-		
 		Throwable cause = e.getCause();
-		
+
 		while (cause != null && cause.getMessage() != null) {
 			System.err.println("  Inner error: " + cause.getMessage());
 			cause = cause.getCause();
 		}
 	}
-	
-	private static void reportError(Throwable e) {
 
-		if (e instanceof DiSLREServerException) {
 
-			System.err.println("DiSL-RE server error: " + e.getMessage());
+	private static void reportError (final Throwable throwable) {
+		if (throwable instanceof DiSLREServerException) {
+			final String message = throwable.getMessage ();
 
-			reportInnerError(e);
-			
-			if (debug) {
-				e.printStackTrace();
+			System.err.print ("DiSL-RE: server error");
+			if (message != null) {
+				System.err.println (": " + throwable.getMessage ());
 			}
-			
-			return;
+
+			reportInnerError (throwable);
+			if (debug) {
+				throwable.printStackTrace ();
+			}
+
+		} else {
+			// some other exception
+			System.err.print ("DiSL-RE: fatal error: ");
+			throwable.printStackTrace ();
 		}
-
-		// fatal exception (unexpected)
-		System.err.println("DiSL-RE fatal error: " + e.getMessage());
-
-		e.printStackTrace();
 	}
 }

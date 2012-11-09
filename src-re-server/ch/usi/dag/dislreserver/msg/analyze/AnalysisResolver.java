@@ -111,7 +111,7 @@ public class AnalysisResolver {
 		AnalysisMethodHolder result = methodMap.get(methodId);
 		
 		if(result == null) {
-			throw new DiSLREServerFatalException("Unknow method id");
+			throw new DiSLREServerFatalException("Unknown method id: " + methodId);
 		}
 		
 		return result;
