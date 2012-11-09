@@ -2,8 +2,11 @@ package ch.usi.dag.dislreserver.reqdispatch;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
@@ -15,55 +18,95 @@ import ch.usi.dag.dislreserver.msg.newstring.NewStringHandler;
 import ch.usi.dag.dislreserver.msg.objfree.ObjectFreeHandler;
 import ch.usi.dag.dislreserver.msg.reganalysis.RegAnalysisHandler;
 
-public class RequestDispatcher {
 
-	private static final Map<Integer, RequestHandler> requestMap;
-	
+public final class RequestDispatcher {
+
+	/**
+	 * Request identifiers. MUST be kept in sync with the native agent.
+	 * <p>
+	 * TODO Generate a JNI header from a suitable class for the native agent.
+	 */
+	private static final byte __REQUEST_ID_CLOSE__ = 0;
+	private static final byte __REQUEST_ID_INVOKE_ANALYSIS__ = 1;
+	private static final byte __REQUEST_ID_OBJECT_FREE__ = 2;
+	private static final byte __REQUEST_ID_NEW_CLASS__ = 3;
+	private static final byte __REQUEST_ID_CLASS_INFO__ = 4;
+	private static final byte __REQUEST_ID_NEW_STRING__ = 5;
+	private static final byte __REQUEST_ID_REGISTER_ANALYSIS__ = 6;
+
+	//
+
+	private static RequestHandler [] __dispatchTable;
+	private static Collection <RequestHandler> __handlers;
+
+	//
+
 	static {
-		requestMap = new HashMap<Integer, RequestHandler>();
-		
-		// Messages - should be in sync with c agent
-		
-		// close
-		requestMap.put(0, new CloseHandler());
-		// analyze
-		requestMap.put(1, new AnalysisHandler());
-		// object free
-		requestMap.put(2, new ObjectFreeHandler());
-		// new class
-		requestMap.put(3, new NewClassHandler());
-		// class info
-		requestMap.put(4, new ClassInfoHandler());
-		// new string
-		requestMap.put(5, new NewStringHandler());
-		// new string
-		requestMap.put(6, new RegAnalysisHandler());
-	}
-	
-	public static Map<Integer, RequestHandler> getRequestmap() {
-		return requestMap;
-	}
-	
-	public static boolean dispatch(int requestNo, DataInputStream is,
-			DataOutputStream os, boolean debug) throws DiSLREServerException {
+		//
+		// Register request handlers.
+		// The indices should be in sync with the native agent.
+		//
+		final Map <Byte, RequestHandler> requestMap = new HashMap <Byte, RequestHandler> ();
+		requestMap.put (__REQUEST_ID_CLOSE__, new CloseHandler ());
+		requestMap.put (__REQUEST_ID_INVOKE_ANALYSIS__, new AnalysisHandler ());
+		requestMap.put (__REQUEST_ID_OBJECT_FREE__, new ObjectFreeHandler ());
+		requestMap.put (__REQUEST_ID_NEW_CLASS__, new NewClassHandler ());
+		requestMap.put (__REQUEST_ID_CLASS_INFO__, new ClassInfoHandler ());
+		requestMap.put (__REQUEST_ID_NEW_STRING__, new NewStringHandler ());
+		requestMap.put (__REQUEST_ID_REGISTER_ANALYSIS__, new RegAnalysisHandler ());
 
-		// request handler
-		RequestHandler rh = requestMap.get(requestNo);
-		
-		if(rh == null) {
-			
-			throw new DiSLREServerFatalException("Message type (" + requestNo +
-					") not supported");
+		__handlers = Collections.unmodifiableCollection (requestMap.values ());
+		__dispatchTable = __createDispatchTable (requestMap);
+	}
+
+
+	private static RequestHandler [] __createDispatchTable (
+		final Map <Byte, RequestHandler> requestMap
+	) {
+		final RequestHandler [] result = new RequestHandler [Byte.MAX_VALUE];
+
+		for (final Entry <Byte, RequestHandler> entry : requestMap.entrySet ()) {
+			final byte requestId = entry.getKey ();
+			if (requestId >= 0) {
+				result [requestId] = entry.getValue ();
+			}
 		}
-		
-		if(debug) {
-			System.out.println("Dispatching " + rh.getClass().getName());
+
+		return result;
+	}
+
+	//
+
+	public static boolean dispatch (
+		final byte requestId, final DataInputStream is,
+		final DataOutputStream os, boolean debug
+	) throws DiSLREServerException {
+		//
+		// Lookup the request handler and process the request using the handler.
+		// Signal to terminate the request loop after handling a close request.
+		//
+		final RequestHandler rh = __dispatchTable [requestId];
+		if (rh != null) {
+			if (debug) {
+				System.out.printf (
+					"DiSL-RE: dispatching request message (%d) to %s\n",
+					requestId, rh.getClass ().getSimpleName ()
+				);
+			}
+
+			rh.handle (is, os, debug);
+			return requestId == __REQUEST_ID_CLOSE__;
+
+		} else {
+			throw new DiSLREServerFatalException (
+				"Unsupported message type: "+ requestId
+			);
 		}
-		
-		// process request
-		rh.handle(is, os, debug);
-		
-		return rh instanceof CloseHandler;
+	}
+
+
+	public static Iterable <RequestHandler> getAllHandlers () {
+		return __handlers;
 	}
 
 }
