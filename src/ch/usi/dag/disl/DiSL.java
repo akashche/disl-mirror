@@ -47,7 +47,6 @@ import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.transformer.Transformer;
-import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.utilinstr.codemerger.CodeMerger;
 import ch.usi.dag.disl.utilinstr.tlvinserter.TLVInserter;
 import ch.usi.dag.disl.weaver.Weaver;
@@ -59,8 +58,11 @@ import ch.usi.dag.disl.weaver.Weaver;
  */
 public class DiSL {
 
+	public final String PROP_TRACE = "trace";
+	private final boolean trace = Boolean.getBoolean (PROP_TRACE);
+	
 	public final String PROP_DEBUG = "debug";
-	private final boolean debug = Boolean.getBoolean(PROP_DEBUG);
+	private final boolean debug = trace || Boolean.getBoolean (PROP_DEBUG);
 	
 	// default is that exception handler is inserted
 	// this is the reason for "double" negation in assignment
@@ -204,10 +206,13 @@ public class DiSL {
 	 *            class that will be instrumented
 	 * @param methodNode
 	 *            method in the classNode argument, that will be instrumented
+	 * @return
+	 *     {@code true} if the methods was changed, {@code false} otherwise.
 	 */
-	private boolean instrumentMethod(ClassNode classNode, MethodNode methodNode)
-			throws ReflectionException, StaticContextGenException,
-			ProcessorException, DynamicContextException, MarkerException {
+	private boolean instrumentMethod (
+		final ClassNode classNode, final MethodNode methodNode
+	) throws ReflectionException, StaticContextGenException,
+		ProcessorException, DynamicContextException, MarkerException {
 
 		// skip abstract methods
 		if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
@@ -223,103 +228,119 @@ public class DiSL {
 		String methodName = methodNode.name;
 		String methodDesc = methodNode.desc;
 
-		if(debug) {
-			System.out.println("Instrumenting method: " + className
-					+ Constants.CLASS_DELIM + methodName + "(" + methodDesc
-					+ ")");
-		}
-		
 		// evaluate exclusions
-		for (Scope exclScope : exclusionSet) {
-
-			if (exclScope.matches(className, methodName, methodDesc)) {
-
-				if (debug) {
-					System.out.println("Excluding method: " + className
-							+ Constants.CLASS_DELIM + methodName + "("
-							+ methodDesc + ")");
-				}
-
+		for (final Scope exclScope : exclusionSet) {
+			if (exclScope.matches (className, methodName, methodDesc)) {
+				__debug ("DiSL: excluding method: %s.%s(%s)\n",
+					className, methodName, methodDesc
+				);
 				return false;
 			}
 		}
 		
+		
 		// *** match snippet scope ***
 
-		List<Snippet> matchedSnippets = new LinkedList<Snippet>();
-
-		for (Snippet snippet : snippets) {
-
-			// snippet matching
-			if (snippet.getScope().matches(className, methodName, methodDesc)) {
-				matchedSnippets.add(snippet);
+		final List <Snippet> matchedSnippets = new LinkedList <Snippet> ();
+		for (final Snippet snippet : snippets) {
+			if (snippet.getScope ().matches (className, methodName, methodDesc)) {
+				matchedSnippets.add (snippet);
 			}
 		}
 
 		// if there is nothing to instrument -> quit
 		// just to be faster out
-		if (matchedSnippets.isEmpty()) {
+		if (matchedSnippets.isEmpty ()) {
+			__debug ("DiSL: skipping unaffected method: %s.%s(%s)\n",
+				className, methodName, methodDesc
+			);
 			return false;
 		}
 
 		// *** create shadows ***
 
-		// shadows maped to snippets - for viewing
-		Map<Snippet, List<Shadow>> snippetMarkings =
-			new HashMap<Snippet, List<Shadow>>();
+		__trace ("DiSL: processing method: %s.%s(%s)\n",
+			className, methodName, methodDesc
+		);
+		
+		// shadows mapped to snippets - for weaving
+		Map <Snippet, List <Shadow>> snippetMarkings = 
+			new HashMap <Snippet, List <Shadow>> ();
 
-		for (Snippet snippet : matchedSnippets) {
-
+		for (final Snippet snippet : matchedSnippets) {
+			__trace ("DiSL:     snippet: %s.%s()\n",
+				snippet.getOriginClassName (), snippet.getOriginMethodName ()
+			);
+			
 			// marking
-			List<Shadow> shadows = 
-					snippet.getMarker().mark(classNode, methodNode, snippet);
+			List <Shadow> shadows = snippet.getMarker ().mark (
+				classNode, methodNode, snippet
+			);
 
 			// select shadows according to snippet guard
-			List<Shadow> selectedShadows =
-				selectShadowsWithGuard(snippet.getGuard(), shadows);
+			List <Shadow> selectedShadows = selectShadowsWithGuard (
+				snippet.getGuard (), shadows
+			);
+			
+			__trace ("DiSL:         selected shadows: %d\n",
+				selectedShadows.size ()
+			);
 			
 			// add to map
-			if(! selectedShadows.isEmpty()) {
-				snippetMarkings.put(snippet, selectedShadows);
+			if (!selectedShadows.isEmpty ()) {
+				snippetMarkings.put (snippet, selectedShadows);
 			}
 		}
 		
 		// *** compute static info ***
 
 		// prepares SCGenerator class (computes static context)
-		SCGenerator staticInfo = new SCGenerator(snippetMarkings);
+		SCGenerator staticInfo = new SCGenerator (snippetMarkings);
 
 		// *** used synthetic local vars in snippets ***
+		
 		// weaver needs list of synthetic locals that are actively used in
 		// selected (matched) snippets
 
-		Set<SyntheticLocalVar> usedSLVs = new HashSet<SyntheticLocalVar>();
-		for (Snippet snippet : snippetMarkings.keySet()) {
-			usedSLVs.addAll(snippet.getCode().getReferencedSLVs());
+		Set <SyntheticLocalVar> usedSLVs = new HashSet <SyntheticLocalVar> ();
+		for (Snippet snippet : snippetMarkings.keySet ()) {
+			usedSLVs.addAll (snippet.getCode ().getReferencedSLVs ());
 		}
 
 		// *** prepare processors ***
 
-		PIResolver piResolver = new ProcGenerator().compute(snippetMarkings);
+		PIResolver piResolver = new ProcGenerator ().compute (snippetMarkings);
 
 		// *** used synthetic local vars in processors ***
 		
 		// include SLVs from processor methods into usedSLV
-		for(ProcInstance pi : piResolver.getAllProcInstances()) {
-			
-			for(ProcMethodInstance pmi : pi.getMethods()) {
-				
-				usedSLVs.addAll(pmi.getCode().getReferencedSLVs());
+		for (final ProcInstance pi : piResolver.getAllProcInstances ()) {
+			for (final ProcMethodInstance pmi : pi.getMethods ()) {
+				usedSLVs.addAll (pmi.getCode ().getReferencedSLVs ());
 			}
 		}
 
-		// *** viewing ***
+		// *** weaving ***
 
-		Weaver.instrument(classNode, methodNode, snippetMarkings,
-				new LinkedList<SyntheticLocalVar>(usedSLVs), staticInfo,
-				piResolver);
+		__trace ("DiSL:     snippet markings: %d\n", snippetMarkings.size ());
+		if (snippetMarkings.size () > 0) {
+			__debug ("DiSL: instrumenting method: %s.%s(%s)\n",
+				className, methodName, methodDesc
+			);
+			Weaver.instrument (
+				classNode, methodNode, snippetMarkings,
+				new LinkedList <SyntheticLocalVar> (usedSLVs), 
+				staticInfo, piResolver
+			);
 
-		return true;
+			return true;
+			
+		} else {
+			__debug ("DiSL: skipping unaffected method: %s.%s(%s)\n",
+				className, methodName, methodDesc
+			);
+			return false;
+		}
 	}
 
 	/**
@@ -465,24 +486,16 @@ public class DiSL {
 	// synchronization - it should be redesigned such as the staticContextData
 	// also invokes the required method and returns result - if this method
 	// (and static context class itself) will be synchronized, it should work
-	public synchronized byte[] instrument(byte[] classAsBytes) throws DiSLException {
-	
-		// output bytes into the file
-		try {
-			
-			if(debug) {
-				String errFile = "err.class";
-				FileOutputStream fos = new FileOutputStream(errFile);
-				fos.write(classAsBytes);
-				fos.close();
-			}
-		}
-		catch (IOException e) {
-			throw new DiSLIOException(e);
+	public synchronized byte [] instrument (
+		byte [] classAsBytes
+	) throws DiSLException {
+		// keep the currently processed class around in case of errors
+		if (debug) {
+			__dumpClassToFile (classAsBytes, "err.class");
 		}
 		
 		// apply transformer first
-		if(transformer != null) {
+		if (transformer != null) {
 			try {
 				classAsBytes = transformer.transform(classAsBytes);
 			}
@@ -555,11 +568,41 @@ public class DiSL {
 		instrCN.accept(cw);
 		return cw.toByteArray();
 	}
-	
+
+	private void __dumpClassToFile (
+		final byte [] classBytes, final String fileName
+	) throws DiSLIOException {
+		try {
+			final FileOutputStream fos = new FileOutputStream (fileName);
+			try {
+				fos.write (classBytes);
+			} finally {
+				fos.close ();
+			}
+		} catch (final IOException ioe) {
+			throw new DiSLIOException (ioe);
+		}
+	}
+
+
 	/**
 	 * Termination handler - should be invoked by the instrumentation framework
 	 */
 	public void terminate() {
 		
+	}
+
+	//
+	
+	private void __debug (final String format, final Object ... args) {
+		if (debug) {
+			System.out.printf (format, args);
+		}
+	}
+
+	private void __trace (final String format, final Object ... args) {
+		if (trace) {
+			System.out.printf (format, args);
+		}
 	}
 }
