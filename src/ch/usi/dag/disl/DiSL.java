@@ -58,11 +58,11 @@ import ch.usi.dag.disl.weaver.Weaver;
  */
 public class DiSL {
 
-	public final String PROP_TRACE = "trace";
-	private final boolean trace = Boolean.getBoolean (PROP_TRACE);
+	private static final String PROP_TRACE = "trace";
+	public static final boolean trace = Boolean.getBoolean (PROP_TRACE);
 	
-	public final String PROP_DEBUG = "debug";
-	private final boolean debug = trace || Boolean.getBoolean (PROP_DEBUG);
+	private static final String PROP_DEBUG = "debug";
+	public static final boolean debug = trace || Boolean.getBoolean (PROP_DEBUG);
 	
 	// default is that exception handler is inserted
 	// this is the reason for "double" negation in assignment
