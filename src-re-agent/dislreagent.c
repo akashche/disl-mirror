@@ -144,6 +144,7 @@ struct tldata {
     buffer * command_buff;
     jint analysis_count;
     size_t analysis_count_pos;
+    size_t args_length_pos;
 };
 
 
@@ -428,17 +429,21 @@ static void pack_class(JNIEnv * jni_env, buffer * buff, buffer * cmd_buff,
 	pack_int(buff, NULL_NET_REF);
 }
 
+static void buff_put_short(buffer * buff, size_t buff_pos, jshort to_put) {
+	// put the short at the position in network order
+	jshort nts = htons(to_put);
+	buffer_fill_at_pos(buff, buff_pos, &nts, sizeof(jshort));
+}
+
+
 static void buff_put_int(buffer * buff, size_t buff_pos, jint to_put) {
-
+	// put the int at the position in network order
 	jint nts = htonl(to_put);
-
-	// put the long on the position in a proper format
 	buffer_fill_at_pos(buff, buff_pos, &nts, sizeof(jint));
 }
 
 static void buff_put_long(buffer * buff, size_t buff_pos, jlong to_put) {
-
-	// put the long on the position in a proper format
+	// put the long at the position in network order
 	jlong nts = htobe64(to_put);
 	buffer_fill_at_pos(buff, buff_pos, &nts, sizeof(jlong));
 }
@@ -517,6 +522,23 @@ static jlong next_thread_id () {
 	return result;
 }
 
+
+static size_t createAnalysisRequestHeader (
+	buffer * buff, jshort analysis_method_id
+) {
+	// analysis method id
+	pack_short(buff, analysis_method_id);
+
+	// position of the short indicating the length of marshalled arguments
+	size_t pos = buffer_filled(buff);
+
+	// initial value of the length of the marshalled arguments
+	pack_short(buff, 0xBAAD);
+
+	return pos;
+}
+
+
 void analysis_start_buff(
 	JNIEnv * jni_env, jshort analysis_method_id, jbyte ordering_id,
 	struct tldata * tld
@@ -543,16 +565,17 @@ void analysis_start_buff(
 
 	tld->to_buff_id = ordering_id;
 
-	// analysis method desc
-	pack_short(tld->analysis_buff, analysis_method_id);
+	// create request header, keep track of the position
+	// of the length of marshalled arguments
+	tld->args_length_pos = createAnalysisRequestHeader(tld->analysis_buff, analysis_method_id);
 
 #ifdef DEBUG
 	printf("Analysis (buffer) start exit (thread %ld)\n", tld_get()->id);
 #endif
 }
 
-static size_t createAnalysisMsg(buffer * buff, jlong id) {
 
+static size_t createAnalysisMsg(buffer * buff, jlong id) {
 	// create analysis message
 
 	// analysis msg
@@ -564,11 +587,13 @@ static size_t createAnalysisMsg(buffer * buff, jlong id) {
 	// get pointer to the location where count of requests will stored
 	size_t pos = buffer_filled(buff);
 
-	// space initialization
-	pack_int(buff, 0);
+	// request count space initialization
+	pack_int(buff, 0xBAADF00D);
 
 	return pos;
 }
+
+
 
 static void analysis_start(
 	JNIEnv * jni_env, jshort analysis_method_id,
@@ -590,15 +615,16 @@ static void analysis_start(
 		tld->analysis_buff = tld->pb->analysis_buff;
 		tld->command_buff = tld->pb->command_buff;
 
-		// determines, how many analysis requests are send in one message
+		// determines, how many analysis requests are sent in one message
 		tld->analysis_count = 0;
 
-		// crate analysis message
+		// create analysis message
 		tld->analysis_count_pos = createAnalysisMsg(tld->analysis_buff, tld->id);
 	}
 
-	// analysis method desc
-	pack_short(tld->analysis_buff, analysis_method_id);
+	// create request header, keep track of the position
+	// of the length of marshalled arguments
+	tld->args_length_pos = createAnalysisRequestHeader(tld->analysis_buff, analysis_method_id);
 
 #ifdef DEBUG
 	printf("Analysis start exit (thread %ld)\n", tld_get()->id);
@@ -652,10 +678,10 @@ static void analysis_end_buff(struct tldata * tld) {
 			// set owner_id as t_buffid
 			tobs->pb->owner_id = tld->to_buff_id;
 
-			// determines, how many analysis requests are send in one message
+			// determines, how many analysis requests are sent in one message
 			tobs->analysis_count = 0;
 
-			// crate analysis message
+			// create analysis message
 			tobs->analysis_count_pos = createAnalysisMsg(
 					tobs->pb->analysis_buff, tld->to_buff_id);
 		}
@@ -721,6 +747,10 @@ static void analysis_end_buff(struct tldata * tld) {
 }
 
 static void analysis_end(struct tldata * tld) {
+	// update the length of the marshalled arguments
+	jshort args_length = buffer_filled(tld->analysis_buff) - tld->args_length_pos - sizeof (jshort);
+	buff_put_short(tld->analysis_buff, tld->args_length_pos, args_length);
+
 	// this method is also called for end of analysis for totally ordered API
 	if(tld->to_buff_id != INVALID_BUFF_ID) {
 		analysis_end_buff(tld);
@@ -742,7 +772,6 @@ static void analysis_end(struct tldata * tld) {
 
 	// send only when the method count is reached
 	if(tld->analysis_count >= ANALYSIS_COUNT) {
-
 		// invalidate buffer pointers
 		tld->analysis_buff = NULL;
 		tld->command_buff = NULL;

@@ -28,27 +28,44 @@ public final class AnalysisHandler implements RequestHandler {
 
 		try {
 			// get net reference for the thread
-			long orderingID = is.readLong();
+			long orderingID = is.readLong ();
 
-			// read  and create method invocations
-			int numberOfMethods = is.readInt();
-
-			List<AnalysisInvocation> invocations
-				= new LinkedList<AnalysisInvocation>();
-
-			for(int i = 0; i < numberOfMethods; ++i) {
-				invocations.add(createInvocation(is, debug));
+			// read and create method invocations
+			final int invocationCount = is.readInt ();
+			if (invocationCount < 0) {
+				throw new DiSLREServerException (String.format (
+					"invalid number of analysis invocation requests: %d",
+					invocationCount
+				));
 			}
 
-			dispatcher.addTask(orderingID, invocations);
-		}
-		catch (IOException e) {
-			throw new DiSLREServerException(e);
+			List <AnalysisInvocation> invocations = __unmarshalInvocations (
+				invocationCount, is, debug
+			);
+
+			dispatcher.addTask (orderingID, invocations);
+
+		} catch (final IOException ioe) {
+			throw new DiSLREServerException(ioe);
 		}
 	}
 
 
-	public AnalysisInvocation createInvocation (
+	private List <AnalysisInvocation> __unmarshalInvocations (
+		final int invocationCount, final DataInputStream is, final boolean debug
+	) throws DiSLREServerException {
+		final List <AnalysisInvocation> result =
+			new LinkedList <AnalysisInvocation> ();
+
+		for (int i = 0; i < invocationCount; ++i) {
+			result.add (__unmarshalInvocation (is, debug));
+		}
+
+		return result;
+	}
+
+
+	private AnalysisInvocation __unmarshalInvocation (
 		final DataInputStream is, final boolean debug
 	) throws DiSLREServerException {
 		try {
@@ -60,13 +77,33 @@ public final class AnalysisHandler implements RequestHandler {
 
 			// *** retrieve method argument values ***
 
-			final Method analysisMethod = amh.getAnalysisMethod();
+			final Method method = amh.getAnalysisMethod ();
+
+			// read the length of argument data in the request
+			final short argsLength = is.readShort ();
+			if (argsLength < 0) {
+				throw new DiSLREServerException (String.format (
+					"invalid value of marshalled argument data length for analysis method %d (%s.%s): %d",
+					methodId, method.getDeclaringClass ().getName (),
+					method.getName (), argsLength
+				));
+			}
 
 			// read argument values data according to argument types
+			int readLength = 0;
 			final List <Object> args = new LinkedList <Object> ();
-			for (Class <?> argClass : analysisMethod.getParameterTypes ()) {
-				Object argValue = readType (is, argClass, analysisMethod);
-				args.add (argValue);
+			for (Class <?> argClass : method.getParameterTypes ()) {
+				readLength += unmarshalAndCollectArgument (
+					is, argClass, method, args
+				);
+			}
+
+			if (readLength != argsLength) {
+				throw new DiSLREServerException (String.format (
+					"received %d, but unmarshalled %d bytes of argument data for analysis method %d (%s.%s)",
+					argsLength, readLength, methodId, method.getDeclaringClass ().getName (),
+					method.getName ()
+				));
 			}
 
 			// *** create analysis invocation ***
@@ -75,11 +112,11 @@ public final class AnalysisHandler implements RequestHandler {
 				System.out.printf (
 					"DiSL-RE: dispatching analysis method (%d) to %s.%s()\n",
 					methodId, amh.getAnalysisInstance().getClass().getSimpleName (),
-					analysisMethod.getName()
+					method.getName()
 				);
 			}
 			return new AnalysisInvocation (
-				analysisMethod, amh.getAnalysisInstance (), args
+				method, amh.getAnalysisInstance (), args
 			);
 
 		} catch (final IOException ioe) {
@@ -90,103 +127,114 @@ public final class AnalysisHandler implements RequestHandler {
 	}
 
 
-	private Object readType(DataInputStream is, Class<?> argClass,
-			Method analysisMethod) throws IOException, DiSLREServerException {
+	private int unmarshalAndCollectArgument (
+		final DataInputStream is, final Class <?> argClass,
+		final Method analysisMethod, List <Object> args
+	) throws IOException, DiSLREServerException {
 
-		if(argClass.equals(boolean.class)) {
-			return is.readBoolean();
+		if (argClass.equals (boolean.class)) {
+			args.add (is.readBoolean ());
+			return Byte.SIZE / Byte.SIZE;
 		}
 
-		if(argClass.equals(char.class)) {
-			return is.readChar();
+		if (argClass.equals (char.class)) {
+			args.add (is.readChar ());
+			return Character.SIZE / Byte.SIZE;
 		}
 
-		if(argClass.equals(byte.class)) {
-			return is.readByte();
+		if (argClass.equals (byte.class)) {
+			args.add (is.readByte ());
+			return Byte.SIZE / Byte.SIZE;
 		}
 
-		if(argClass.equals(short.class)) {
-			return is.readShort();
+		if (argClass.equals (short.class)) {
+			args.add (is.readShort ());
+			return Short.SIZE / Byte.SIZE;
 		}
 
-		if(argClass.equals(int.class)) {
-			return is.readInt();
+		if (argClass.equals (int.class)) {
+			args.add (is.readInt ());
+			return Integer.SIZE / Byte.SIZE;
 		}
 
-		if(argClass.equals(long.class)) {
-			return is.readLong();
+		if (argClass.equals (long.class)) {
+			args.add (is.readLong ());
+			return Long.SIZE / Byte.SIZE;
 		}
 
-		if(argClass.equals(float.class)) {
-			return is.readFloat();
+		if (argClass.equals (float.class)) {
+			args.add (is.readFloat ());
+			return Float.SIZE / Byte.SIZE;
 		}
 
-		if(argClass.equals(double.class)) {
-			return is.readDouble();
+		if (argClass.equals (double.class)) {
+			args.add (is.readDouble ());
+			return Double.SIZE / Byte.SIZE;
 		}
 
-		if(argClass.equals(String.class)) {
-
-			long netRefNum = is.readLong();
-
-			// null handling
-			if(netRefNum == 0) {
-				return null;
+		if (argClass.equals (String.class)) {
+			long netRefNum = is.readLong ();
+			if (netRefNum != 0) {
+				// read string net reference and resolve it from cache
+				NetReference stringNR = new NetReference (netRefNum);
+				args.add (StringCache.resolve (stringNR.getObjectId ()));
+			} else {
+				// null handling
+				args.add (null);
 			}
 
-			// read string net reference
-			NetReference stringNR = new NetReference(netRefNum);
-			// resolve string from cache
-			return StringCache.resolve(stringNR.getObjectId());
+			return Long.SIZE / Byte.SIZE;
 		}
 
 		// read id only
 		// covers Object and NetReference classes
-		if(argClass.isAssignableFrom(NetReference.class)) {
-
-			long netRefNum = is.readLong();
-
-			// null handling
-			if(netRefNum == 0) {
-				return null;
+		if (argClass.isAssignableFrom (NetReference.class)) {
+			long netRefNum = is.readLong ();
+			if (netRefNum != 0) {
+				// TODO: Lookup the reference
+				args.add (new NetReference (netRefNum));
+			} else {
+				// null handling
+				args.add (null);
 			}
 
-			return new NetReference(netRefNum);
+			return Long.SIZE / Byte.SIZE;
 		}
 
 		// return ClassInfo object
-		if(argClass.equals(ClassInfo.class)) {
-
-			int classNetRefNum = is.readInt();
-
-			// null handling
-			if(classNetRefNum == 0) {
-				return null;
+		if (argClass.equals (ClassInfo.class)) {
+			int classNetRefNum = is.readInt ();
+			if (classNetRefNum != 0) {
+				args.add (ClassInfoResolver.getClass (classNetRefNum));
+			} else {
+				// null handling
+				args.add (null);
 			}
 
-			return ClassInfoResolver.getClass(classNetRefNum);
+			return Integer.SIZE / Byte.SIZE;
 		}
 
 		// return "invalid" class object
-		if(argClass.equals(Class.class)) {
-			return InvalidClass.class;
+		if (argClass.equals (Class.class)) {
+			args.add (InvalidClass.class);
+			return 0;
 		}
 
-		throw new DiSLREServerException(
-				"Unsupported data type "
-				+ argClass.toString()
-				+ " in analysis method "
-				+ analysisMethod.getDeclaringClass().toString()
-				+ "."
-				+ analysisMethod.toString());
+		throw new DiSLREServerException (String.format (
+			"Unsupported data type %s in analysis method %s.%s",
+			argClass.getName (), analysisMethod.getDeclaringClass ().getName (),
+			analysisMethod.getName ()
+		));
 	}
 
-	public void awaitProcessing() {
-		dispatcher.awaitProcessing();
+
+	public void awaitProcessing () {
+		dispatcher.awaitProcessing ();
 	}
 
-	public void exit() {
-		dispatcher.exit();
+
+	public void exit () {
+		dispatcher.exit ();
 	}
 
 }
