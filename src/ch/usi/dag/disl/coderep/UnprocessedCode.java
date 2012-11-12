@@ -26,6 +26,7 @@ import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
+
 public class UnprocessedCode {
 
 	private InsnList instructions;
@@ -46,33 +47,26 @@ public class UnprocessedCode {
 		this.usesClassContext = usesClassContext;
 	}
 
-	public Code process(LocalVars allLVs) throws StaticContextGenException,
-			ReflectionException {
 
+	public Code process (LocalVars allLVs)
+	throws StaticContextGenException, ReflectionException {
 		// *** CODE ANALYSIS ***
 
-		Set<SyntheticLocalVar> slvList = new HashSet<SyntheticLocalVar>();
+		Set <SyntheticLocalVar> slvList = new HashSet <SyntheticLocalVar> ();
+		Set <ThreadLocalVar> tlvList = new HashSet <ThreadLocalVar> ();
 
-		Set<ThreadLocalVar> tlvList = new HashSet<ThreadLocalVar>();
-
-		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom(instructions)) {
-
+		for (AbstractInsnNode insn : AsmHelper.allInsnsFrom (instructions)) {
 			// *** Parse synthetic local variables ***
-
-			SyntheticLocalVar slv = insnUsesField(instr,
-					allLVs.getSyntheticLocals());
-
+			SyntheticLocalVar slv = insnUsesField (insn, allLVs.getSyntheticLocals ());
 			if (slv != null) {
-				slvList.add(slv);
+				slvList.add (slv);
 				continue;
 			}
 
 			// *** Parse thread local variables ***
-
-			ThreadLocalVar tlv = insnUsesField(instr, allLVs.getThreadLocals());
-
+			ThreadLocalVar tlv = insnUsesField (insn, allLVs.getThreadLocals ());
 			if (tlv != null) {
-				tlvList.add(tlv);
+				tlvList.add (tlv);
 				continue;
 			}
 		}
@@ -96,7 +90,6 @@ public class UnprocessedCode {
 				new HashMap<String, StaticContextMethod>();
 		
 		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (instructions)) {
-
 			// *** Parse static context methods in use ***
 
 			StaticContextMethod scm = insnInvokesStaticContext(
@@ -254,83 +247,89 @@ public class UnprocessedCode {
 		return false;
 	}
 
-	private void translateThreadLocalVars(InsnList instructions,
-			Set<ThreadLocalVar> threadLocalVars) {
-
-		// generate set of ids - better lookup
-		Set<String> tlvIDs = new HashSet<String>();
-		for(ThreadLocalVar tlv : threadLocalVars) {
-			tlvIDs.add(tlv.getID());
+	//
+	
+	private static final Type threadType = Type.getType (Thread.class);
+	private static final String currentThreadName = "currentThread";
+	private static final Type currentThreadType = Type.getMethodType (threadType);
+	
+	private void translateThreadLocalVars (
+		final InsnList instructions, final Set <ThreadLocalVar> threadLocalVars
+	) {
+		//
+		// Generate a set of TLV identifiers for faster lookup.
+		//
+		final Set <String> tlvIds = new HashSet <String> ();
+		for (final ThreadLocalVar tlv : threadLocalVars) {
+			tlvIds.add (tlv.getID ());
 		}
 		
-		for (AbstractInsnNode instr : instructions.toArray()) {
+		//
+		// Scan the method code for GETSTATIC/PUTSTATIC instructions accessing
+		// the static fields marked to be thread locals. Replace all the
+		// static accesses with thread variable accesses.
+		//
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK        
+		for (final AbstractInsnNode instr : instructions.toArray ()) {
+			final int opcode = instr.getOpcode();
+			if (! AsmHelper.isStaticFieldAccess (opcode)) {
+				continue;
+			}
 
-			int opcode = instr.getOpcode();
-
-			// test if it is static field instruction
-			if (!(opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC)) {
+			final FieldInsnNode fieldInsn = (FieldInsnNode) instr;
+			final String fieldId = ThreadLocalVar.fqFieldNameFor (fieldInsn.owner, fieldInsn.name);
+			if (! tlvIds.contains (fieldId)) {
 				continue;
 			}
 			
-			FieldInsnNode fieldInstr = (FieldInsnNode) instr;
-			String fieldId = ThreadLocalVar.fqFieldNameFor (
-				fieldInstr.owner, fieldInstr.name
-			);
-			
-			// test if it is thread local variable
-			if (! tlvIDs.contains(fieldId)) {
-				continue;
-			}
-			
-			final String threadInternalName = 
-				Type.getType(Thread.class).getInternalName();
-			
-			final String currentThreadMethod = "currentThread";
-			
-			final String currentThreadMethodDesc = 
-				"()L" + threadInternalName + ";";
-
-			// insert currentThread method invocation
-			instructions.insertBefore(instr, new MethodInsnNode(
-					Opcodes.INVOKESTATIC, threadInternalName,
-					currentThreadMethod, currentThreadMethodDesc));
+			//
+			// Issue a call to Thread.currentThread() and access a field
+			// in the current thread corresponding to the thread-local
+			// variable.
+			//
+			instructions.insertBefore (fieldInsn, AsmHelper.invokeStatic (
+				threadType, currentThreadName, currentThreadType
+			));
 
 			if (opcode == Opcodes.GETSTATIC) {
-
-				// insert new field access
-				instructions.insertBefore(instr, new FieldInsnNode(
-						Opcodes.GETFIELD, threadInternalName, fieldInstr.name,
-						fieldInstr.desc));
-			} 
-			
-			if (opcode == Opcodes.PUTSTATIC) {
-
-				// we need to invoke putfield which has an opposite order of
-				// arguments on a stack, than we have now
-				//  - so we need to rearrange the arguments
-				// - there is no easier general solution unless, we want to
-				// track, where the value was pushed on a stack and put
-				// currentThread invocation before it
-				if (Type.getType(fieldInstr.desc).getSize() == 1) {
+				instructions.insertBefore (fieldInsn, AsmHelper.getField (
+					threadType.getInternalName (), fieldInsn.name, fieldInsn.desc
+				));
+				
+			} else {
+				//
+				// We need to execute a PUTFIELD instruction, which requires
+				// two operands, but the current thread reference that we
+				// currently have on the top of the stack needs to come after
+				// the value that is to be stored.
+				//
+				// We therefore need to swap the two operands on the stack. 
+				// There is no easier way, unless we want to track where the 
+				// value to be stored was pushed on the stack and put the 
+				// currentThread() method invocation before it.
+				//
+				// For primitive operands, we just swap the values. For wide
+				// operands, we need to rearrange 3 slots in total, with the
+				// slot 0 becoming slot 2, and slots 1 and 2 becoming 0 and 1.
+				//
+				if (Type.getType (fieldInsn.desc).getSize () == 1) {
+					instructions.insertBefore (fieldInsn, new InsnNode (Opcodes.SWAP));
 					
-					// rearrange for single size operand
-					instructions
-							.insertBefore(instr, new InsnNode(Opcodes.SWAP));
 				} else {
-					// rearrange for double size operand
-					instructions.insertBefore(instr, new InsnNode(
-							Opcodes.DUP_X2));
-					instructions.insertBefore(instr, new InsnNode(Opcodes.POP));
+					instructions.insertBefore (fieldInsn, new InsnNode (Opcodes.DUP_X2));
+					instructions.insertBefore (fieldInsn, new InsnNode (Opcodes.POP));
 				}
 
-				// insert new field access
-				instructions.insertBefore(instr, new FieldInsnNode(
-						Opcodes.PUTFIELD, threadInternalName, fieldInstr.name,
-						fieldInstr.desc));
+				
+				instructions.insertBefore (fieldInsn, AsmHelper.putField (
+					threadType.getInternalName (), fieldInsn.name, fieldInsn.desc
+				));
 			}
 
-			// remove translated instruction
-			instructions.remove(instr);
+			//
+			// Finally remote the translated static field access instruction.
+			//
+			instructions.remove (fieldInsn);
 		}
 	}
 }
