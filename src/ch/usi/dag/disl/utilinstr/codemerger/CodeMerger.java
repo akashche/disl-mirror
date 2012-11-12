@@ -16,7 +16,6 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.dynamicbypass.DynamicBypassCheck;
 import ch.usi.dag.disl.exception.DiSLFatalException;
-import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
 
 public abstract class CodeMerger {
@@ -68,15 +67,14 @@ public abstract class CodeMerger {
 			// crate copy of the original instruction list
 			// this copy will be destroyed during merging
 			// we need the original code if the method is too long
-			ClonedCode origCodeCopy = AsmHelper.cloneCode(origMN.instructions,
-					origMN.tryCatchBlocks);
+			ClonedCode origCodeCopy = ClonedCode.create (
+				origMN.instructions, origMN.tryCatchBlocks
+			);
 			
 			// create copy of the lists for splitting
 			ClonedCode splitCopy = null;
-			
-			if(splitLongMethods) {
-				
-				splitCopy = AsmHelper.cloneCode(ilist, tcblist);
+			if (splitLongMethods) {
+				splitCopy = ClonedCode.create (ilist, tcblist);
 			}
 
 			// add reference to the original code

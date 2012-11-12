@@ -11,7 +11,6 @@ import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
 
 public class ProcCode extends Code {
@@ -40,18 +39,16 @@ public class ProcCode extends Code {
 	}
 	
 	public ProcCode clone() {
-
 		// clone code first
-		ClonedCode cc = 
-				AsmHelper.cloneCode(getInstructions(), getTryCatchBlocks());
+		ClonedCode cc = ClonedCode.create (getInstructions (), getTryCatchBlocks ());
 
-		return new ProcCode(cc.getInstructions(), cc.getTryCatchBlocks(),
-				new HashSet<SyntheticLocalVar>(getReferencedSLVs()),
-				new HashSet<ThreadLocalVar>(getReferencedTLVs()),
-				containsHandledException(),
-				new HashSet<StaticContextMethod>(getStaticContexts()),
-				usesDynamicContext(),
-				usesClassContext(),
-				usesArgumentContext);
+		return new ProcCode (
+			cc.getInstructions (), cc.getTryCatchBlocks (),
+			new HashSet <SyntheticLocalVar> (getReferencedSLVs ()),
+			new HashSet <ThreadLocalVar> (getReferencedTLVs ()),
+			containsHandledException (), 
+			new HashSet <StaticContextMethod> (getStaticContexts ()), 
+			usesDynamicContext (), usesClassContext (), usesArgumentContext
+		);
 	}
 }

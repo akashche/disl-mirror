@@ -189,7 +189,7 @@ public class WeavingCode {
 			}
 
 			// second operand test
-			if (AsmHelper.getClassType(secondOperand) == null) {
+			if (! AsmHelper.isTypeConstLoadInsn (secondOperand)) {
 				throw new DynamicContextException("In snippet "
 						+ snippet.getOriginClassName() + "."
 						+ snippet.getOriginMethodName()
@@ -282,7 +282,7 @@ public class WeavingCode {
 			// [checkcast]
 			// [invoke]
 			int operand = AsmHelper.getIntConstOperand(prev.getPrevious());
-			Type t = AsmHelper.getClassType(prev);
+			Type t = AsmHelper.getTypeConstOperand(prev);
 
 			if (invoke.name.equals("getStackValue")) {
 

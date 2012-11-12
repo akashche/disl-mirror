@@ -1,6 +1,7 @@
 package ch.usi.dag.disl.util;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +24,11 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
+
 
 public abstract class AsmHelper {
 
@@ -167,9 +170,11 @@ public abstract class AsmHelper {
 			return 4;
 		case Opcodes.ICONST_5:
 			return 5;
+
 		case Opcodes.BIPUSH:
 		case Opcodes.SIPUSH:
 			return ((IntInsnNode) insn).operand;
+
 		case Opcodes.LDC: {
 			final LdcInsnNode ldc = (LdcInsnNode) insn;
 			if (ldc.cst instanceof Integer) {
@@ -188,47 +193,91 @@ public abstract class AsmHelper {
 	}
 
 
-	public static AbstractInsnNode loadThis () {
+	public static Type getTypeConstOperand (final AbstractInsnNode insn) {
+		if (insn.getOpcode () == Opcodes.LDC) {
+			final LdcInsnNode ldcNode = (LdcInsnNode) insn;
+			if (ldcNode.cst instanceof Type) {
+				return (Type) ldcNode.cst;
+			} else {
+				throw new DiSLFatalException ("LDC operand is not a Type");
+			}
+
+		} else {
+			throw new DiSLFatalException (String.format (
+				"Expected LdcInsnNode, but found %s (%s)",
+				insn.getClass ().getSimpleName (), AsmOpcodes.valueOf (insn)
+			));
+		}
+	}
+
+
+	/**
+	 * Returns {@code true} if the given instruction loads a type constant
+	 * (i.e. a class literal) on the stack, {@code false} otherwise.
+	 * 
+	 * @param insn
+	 *      the instruction to check
+	 * @return
+	 *      {@code true} if the instruction loads a type constant on the
+	 *      stack, {@code false} otherwise.
+	 */
+	public static boolean isTypeConstLoadInsn (final AbstractInsnNode insn) {
+		if (insn.getOpcode () == Opcodes.LDC) {
+			return ((LdcInsnNode) insn).cst instanceof Type;
+			
+		} else {
+			return false;
+		}
+	}
+
+
+	public static VarInsnNode loadThis () {
 		return loadObjectVar (0);
 	}
 
 
-	public static AbstractInsnNode loadObjectVar (final int slot) {
+	public static VarInsnNode loadObjectVar (final int slot) {
 		return loadVar (Type.getType (Object.class), slot);
 	}
 
 
-	public static AbstractInsnNode loadVar (final Type type, final int slot) {
+	public static VarInsnNode loadVar (final Type type, final int slot) {
 		return new VarInsnNode (type.getOpcode (Opcodes.ILOAD), slot);
 	}
 
 
-	public static AbstractInsnNode storeVar (final Type type, final int slot) {
+	public static VarInsnNode storeObjectVar (final int slot) {
+		return storeVar (Type.getType (Object.class), slot);
+	}
+
+	
+	public static VarInsnNode storeVar (final Type type, final int slot) {
 		return new VarInsnNode (type.getOpcode (Opcodes.ISTORE), slot);
 	}
 
 
-	public static AbstractInsnNode loadNull () {
+	public static InsnNode loadNull () {
 		return loadDefault (Type.getType (Object.class));
 	}
 
 
-	public static AbstractInsnNode loadDefault (Type type) {
+	public static InsnNode loadDefault (Type type) {
 		switch (type.getSort ()) {
 		case Type.BOOLEAN:
 		case Type.BYTE:
 		case Type.CHAR:
 		case Type.INT:
 		case Type.SHORT:
-			return new InsnNode(Opcodes.ICONST_0);
+			return new InsnNode (Opcodes.ICONST_0);
 		case Type.LONG:
-			return new InsnNode(Opcodes.LCONST_0);
+			return new InsnNode (Opcodes.LCONST_0);
 		case Type.FLOAT:
-			return new InsnNode(Opcodes.FCONST_0);
+			return new InsnNode (Opcodes.FCONST_0);
 		case Type.DOUBLE:
-			return new InsnNode(Opcodes.DCONST_0);
+			return new InsnNode (Opcodes.DCONST_0);
 		case Type.OBJECT:
-			return new InsnNode(Opcodes.ACONST_NULL);
+			// XXX LB: consider putting Type.ARRAY here as well
+			return new InsnNode (Opcodes.ACONST_NULL);
 		default:
 			throw new DiSLFatalException (
 				"No default value for type: "+ type.getDescriptor ()
@@ -236,20 +285,47 @@ public abstract class AsmHelper {
 		}
 	}
 
+	public static TypeInsnNode checkCast (final Type type) {
+		return new TypeInsnNode (Opcodes.CHECKCAST, type.getDescriptor ());
+	}
 
-	public static AbstractInsnNode getField (
+
+	public static FieldInsnNode getField (
 		final String owner, final String name, final String desc
 	) {
 		return new FieldInsnNode (Opcodes.GETFIELD, owner, name, desc);
 	}
 
+	
+	public static FieldInsnNode putField (
+		final String owner, final String name, final String desc
+	) {
+		return new FieldInsnNode (Opcodes.PUTFIELD, owner, name, desc);
+	}
 
-	public static AbstractInsnNode getStatic (
+
+	public static FieldInsnNode getStatic (
 		final String owner, final String name, final String desc
 	) {
 		return new FieldInsnNode (Opcodes.GETSTATIC, owner, name, desc);
 	}
 
+	public static FieldInsnNode putStatic (
+		final String owner, final String name, final String desc
+	) {
+		return new FieldInsnNode (Opcodes.PUTSTATIC, owner, name, desc);
+	}
+	
+
+	public static MethodInsnNode invokeStatic (
+		final Type ownerType, final String methodName, final Type methodType
+	){
+		return new MethodInsnNode (
+			Opcodes.INVOKESTATIC, ownerType.getInternalName (), 
+			methodName, methodType.getDescriptor ()
+		);
+	}
+	
 
 	public static int getInternalParamIndex(MethodNode method, int parIndex) {
 
@@ -278,13 +354,13 @@ public abstract class AsmHelper {
 	/**
 	 * Returns type if the int.class or String.class construct is used
 	 */
-	public static Type getClassType(AbstractInsnNode instr) {
+	public static Type getOwnerBoxedType (final AbstractInsnNode insn) {
 
-		switch (instr.getOpcode()) {
+		switch (insn.getOpcode()) {
 		// type for basic class types int, float,...
 		case Opcodes.GETSTATIC:
 
-			String owner = ((FieldInsnNode) instr).owner;
+			String owner = ((FieldInsnNode) insn).owner;
 
 			if (owner.endsWith("Boolean")) {
 				return Type.BOOLEAN_TYPE;
@@ -306,152 +382,163 @@ public abstract class AsmHelper {
 
 			return null;
 
-		// type for object types String,...
-		case Opcodes.LDC:
-
-			Object tObj = ((LdcInsnNode) instr).cst;
-
-			if (tObj instanceof Type) {
-				return (Type) tObj;
-			}
-
-			return null;
-
 		default:
 			return null;
 		}
 
 	}
 
-	public static void replaceRetWithGoto(InsnList ilst) {
 
-		// collect all returns to the list
-		List<AbstractInsnNode> returns = new LinkedList<AbstractInsnNode>();
+	/**
+	 * Adds a label to the end of the given instruction list and replaces all
+	 * types of RETURN instructions in the list with a GOTO instruction to jump
+	 * to the label at the end of the instruction list.
+	 * 
+	 * @param insnList
+	 *     list of instructions to perform the replacement on
+	 */
+	public static void replaceRetWithGoto (final InsnList insnList) {
 
-		for (AbstractInsnNode instr : ilst.toArray()) {
-			int opcode = instr.getOpcode();
-
-			if (isReturn(opcode)) {
-				returns.add(instr);
+		// collect all RETURN instructions
+		List <AbstractInsnNode> returnInsns = new LinkedList <AbstractInsnNode> ();
+		for (AbstractInsnNode instr : allInsnsFrom (insnList)) {
+			if (isReturn (instr.getOpcode ())) {
+				returnInsns.add (instr);
 			}
 		}
 
-		if (returns.size() > 1) {
-
-			// replace 'return' instructions with 'goto' that will point to the
-			// end
-			LabelNode endL = new LabelNode(new Label());
-			ilst.add(endL);
-
-			for (AbstractInsnNode instr : returns) {
-				ilst.insertBefore(instr, new JumpInsnNode(Opcodes.GOTO, endL));
-				ilst.remove(instr);
+		if (returnInsns.size () > 1) {
+			//
+			// Replace all RETURN instructions with a GOTO instruction to 
+			// jump to a label at the end of the list.
+			//
+			final LabelNode endLabel = new LabelNode (new Label ());
+			for (final AbstractInsnNode insn : returnInsns) {
+				insnList.insertBefore (insn, new JumpInsnNode (Opcodes.GOTO, endLabel));
+				insnList.remove (insn);
 			}
+			
+			insnList.add (endLabel);
 
-		} else if (returns.size() == 1) {
-
+		} else if (returnInsns.size() == 1) {
 			// there is only one return at the end
-			ilst.remove(returns.get(0));
+			insnList.remove (returnInsns.get (0));
 		}
 	}
 
-	public static class ClonedCode {
 
-		private InsnList instructions;
-		private List<TryCatchBlockNode> tryCatchBlocks;
+	public static final class ClonedCode {
+		private final InsnList instructions;
+		private final List <TryCatchBlockNode> tryCatchBlocks;
 
-		public ClonedCode(InsnList instructions,
-				List<TryCatchBlockNode> tryCatchBlocks) {
-			super();
+
+		public ClonedCode (
+			final InsnList instructions, final List <TryCatchBlockNode> tryCatchBlocks
+		) {
 			this.instructions = instructions;
 			this.tryCatchBlocks = tryCatchBlocks;
 		}
 
-		public InsnList getInstructions() {
+		public InsnList getInstructions () {
 			return instructions;
 		}
 
-		public List<TryCatchBlockNode> getTryCatchBlocks() {
+		public List <TryCatchBlockNode> getTryCatchBlocks () {
 			return tryCatchBlocks;
 		}
+		
+
+		public static ClonedCode create (
+			final InsnList instructions, final List <TryCatchBlockNode> tryCatchBlocks
+		) {
+			final Map <LabelNode, LabelNode> replacementLabels = 
+				AsmHelper.createReplacementLabelMap (instructions);
+			
+			return new ClonedCode (
+				AsmHelper.cloneInsnList (instructions, replacementLabels), 
+				AsmHelper.cloneTryCatchBlocks (tryCatchBlocks, replacementLabels)
+			);
+		}
 	}
 
-	public static ClonedCode cloneCode(InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks) {
 
-		Map<LabelNode, LabelNode> tmpLblMap =
-				AsmHelper.createLabelMap(instructions);
-
-		InsnList clonedInstructions =
-				AsmHelper.cloneInsnList(instructions, tmpLblMap);
-		List<TryCatchBlockNode> clonedTryCatchBlocks =
-				AsmHelper.cloneTryCatchBlocks(tryCatchBlocks, tmpLblMap);
-
-		return new ClonedCode(clonedInstructions, clonedTryCatchBlocks);
+	/**
+	 * Returns a clone of the given instruction list.
+	 * 
+	 * @param insnList
+	 *     instruction list to clone.
+	 *     
+	 * @return
+	 *     A cloned instruction list.
+	 */
+	public static InsnList cloneInsnList (final InsnList insnList) {
+		//
+		// To clone an instruction list, we have to clone the labels and
+		// use the cloned labels to clone the individual instructions.
+		//
+		return cloneInsnList (insnList, createReplacementLabelMap (insnList));
 	}
 
-	// makes a clone of an instruction list
-	public static InsnList cloneInsnList(InsnList src) {
 
-		Map<LabelNode, LabelNode> map = createLabelMap(src);
-		return cloneInsnList(src, map);
-	}
-
-	private static Map<LabelNode, LabelNode> createLabelMap(InsnList src) {
-
-		Map<LabelNode, LabelNode> map = new HashMap<LabelNode, LabelNode>();
-
-		// iterate the instruction list and get all the labels
-		for (AbstractInsnNode instr : src.toArray()) {
-			if (instr instanceof LabelNode) {
-				LabelNode label = new LabelNode(new Label());
-				map.put((LabelNode) instr, label);
+	private static Map <LabelNode, LabelNode> createReplacementLabelMap (
+		final InsnList insnList
+	) {
+		//
+		// Clone all the labels and key them to the original label.
+		//
+		final Map <LabelNode, LabelNode> result = new HashMap <LabelNode, LabelNode> ();
+		for (final AbstractInsnNode insn : allInsnsFrom (insnList)) {
+			if (insn instanceof LabelNode) {
+				final LabelNode clone = new LabelNode (new Label ());
+				final LabelNode original = (LabelNode) insn;
+				result.put (original, clone);
 			}
 		}
 
-		return map;
+		return result;
 	}
 
-	private static InsnList cloneInsnList(InsnList src,
-			Map<LabelNode, LabelNode> map) {
 
-		InsnList dst = new InsnList();
-
-		// copy instructions using clone
-		AbstractInsnNode instr = src.getFirst();
-		while (instr != src.getLast().getNext()) {
-
-			// special case where we put a new label instead of old one
-			if (instr instanceof LabelNode) {
-
-				dst.add(map.get(instr));
-
-				instr = instr.getNext();
-
-				continue;
-			}
-
-			dst.add(instr.clone(map));
-
-			instr = instr.getNext();
+	private static InsnList cloneInsnList (
+		final InsnList insnList, 
+		final Map <LabelNode, LabelNode> replacementLabels
+	) {
+		//
+		// Clone individual instructions using the clone label map.
+		//
+		final InsnList result = new InsnList ();
+		for (final AbstractInsnNode insn : allInsnsFrom (insnList)) {
+			result.add (insn.clone (replacementLabels));
 		}
 
-		return dst;
+		return result;
 	}
 
-	private static List<TryCatchBlockNode> cloneTryCatchBlocks(
-			List<TryCatchBlockNode> src, Map<LabelNode, LabelNode> map) {
 
-		List<TryCatchBlockNode> dst = new LinkedList<TryCatchBlockNode>();
-
-		for (TryCatchBlockNode tcb : src) {
-
-			dst.add(new TryCatchBlockNode(map.get(tcb.start), map.get(tcb.end),
-					map.get(tcb.handler), tcb.type));
+	private static List <TryCatchBlockNode> cloneTryCatchBlocks (
+		final List <TryCatchBlockNode> tryCatchBlocks, 
+		final Map <LabelNode, LabelNode> replacementLabels
+	) {
+		final List <TryCatchBlockNode> result = new LinkedList <TryCatchBlockNode> ();
+		for (final TryCatchBlockNode tcb : tryCatchBlocks) {
+			final TryCatchBlockNode tcbClone = new TryCatchBlockNode (
+				replacementLabels.get (tcb.start), 
+				replacementLabels.get (tcb.end),
+				replacementLabels.get (tcb.handler), 
+				tcb.type
+			);
+			result.add (tcbClone);
 		}
 
-		return dst;
+		return result;
 	}
 
+	//
+	
+	public static AbstractInsnNode skipVirtualInsnsForward (AbstractInsnNode instr) {
+		return skipVirtualInsns (instr, true);
+	}
+	
 	public static AbstractInsnNode skipVirtualInsns(AbstractInsnNode instr,
 			boolean isForward) {
 
@@ -527,6 +614,10 @@ public abstract class AsmHelper {
 		return isReturn(instr.getOpcode());
 	}
 
+	public static boolean isStaticFieldAccess (int opcode) {
+		return opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC;	    
+	}
+	
 	public static boolean isReturn(int opcode) {
 		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
 	}
@@ -602,10 +693,12 @@ public abstract class AsmHelper {
 			// New instruction in JDK7
 		case Opcodes.INVOKEDYNAMIC:
 			return true;
+
 		default:
 			return false;
 		}
 	}
+
 
 	// helper method for boxValueOnStack
 	private static MethodInsnNode constructValueOf (
@@ -613,17 +706,9 @@ public abstract class AsmHelper {
 	) {
 		final Type boxType = Type.getType (boxClass);
 		final Type primitiveType = Type.getType (primitiveClass);
-
-		final String descriptor = String.format (
-			"(%s)%s", primitiveType.getDescriptor (), boxType.getDescriptor ()
-		);
-
-		return new MethodInsnNode (
-			Opcodes.INVOKESTATIC,
-			boxType.getInternalName() /* method owner */,
-			"valueOf" /* method name */,
-			descriptor /* method descriptor */
-		);
+		final Type methodType  = Type.getMethodType (boxType, primitiveType);
+		
+		return invokeStatic (boxType, "valueOf", methodType);
 	}
 
 
@@ -633,7 +718,7 @@ public abstract class AsmHelper {
 	 *
 	 * @param valueType type to be boxed
 	 */
-	public static AbstractInsnNode boxValueOnStack (final Type valueType) {
+	public static MethodInsnNode boxValueOnStack (final Type valueType) {
 		switch (valueType.getSort ()) {
 		case Type.BOOLEAN:
 			return constructValueOf (Boolean.class, boolean.class);
@@ -696,7 +781,7 @@ public abstract class AsmHelper {
 		// object initialization
 		adapter.visitCode();
 
-		for (AbstractInsnNode iterator : method.instructions.toArray()) {
+		for (AbstractInsnNode iterator : allInsnsFrom (method.instructions)) {
 
 			iterator.accept(adapter);
 
@@ -708,6 +793,27 @@ public abstract class AsmHelper {
 		}
 
 		return first;
+	}
+
+	//
+	
+	/**
+	 * Returns an {@link Iterable} for a list of instructions. The
+	 * {@link InsnList} in ASM unfortunately does not implement the
+	 * {@link Iterable} interface, even though it provides an iterator.
+	 * 
+	 * @param list
+	 *      the instruction list to create the iterable for.
+	 * @return
+	 *      An {@link Iterable} instance for the given instruction list.
+	 */
+	public static final Iterable <AbstractInsnNode> allInsnsFrom (final InsnList list) {
+		return new Iterable <AbstractInsnNode> () {
+			@Override
+			public Iterator <AbstractInsnNode> iterator () {
+				return list.iterator ();
+			}
+		};
 	}
 
 }
