@@ -8,29 +8,33 @@ public class AnalysisInvocation {
 	private Method analysisMethod;
 	private Object analysisInstance;
 	private List<Object> args;
-	
-	public AnalysisInvocation(Method analysisMethod, Object analysisInstance,
-			List<Object> args) {
+
+	public AnalysisInvocation (
+		Method analysisMethod, Object analysisInstance,
+		List<Object> args
+	) {
 		super();
 		this.analysisMethod = analysisMethod;
 		this.analysisInstance = analysisInstance;
 		this.args = args;
 	}
 
-	public void invoke() {
-		
+	public void invoke () {
 		try {
-			analysisMethod.invoke(analysisInstance, args.toArray());
-		}
-		catch(Exception e) {
-			
-			// reports error during analysis
-			
-			Throwable cause = e.getCause();
-			
-			System.err.println("DiSL-RE analysis exception: "
-					+ cause.getMessage());
-			
+			analysisMethod.invoke (analysisInstance, args.toArray());
+
+		} catch (final Exception e) {
+			// report error during analysis invocation
+			final Throwable cause = e.getCause ();
+			final String message = cause.getMessage ();
+
+			System.err.format (
+				"DiSL-RE: exception in analysis %s.%s(): %s",
+				analysisMethod.getDeclaringClass ().getName (),
+				analysisMethod.getName (),
+				(message != null) ? message : ""
+			);
+
 			cause.printStackTrace();
 		}
 	}
