@@ -1,5 +1,6 @@
 package ch.usi.dag.disl.classparser;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,6 +14,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.Frame;
@@ -150,7 +152,7 @@ abstract class AbstractParser {
 				tlad.inheritable);
 	}
 
-	private static class SLAnnotaionData {
+	private static class SLAnnotationData {
 		
 		// see code below for default
 		public String[] initialize = null;
@@ -167,7 +169,7 @@ abstract class AbstractParser {
 		}
 
 		// parse annotation data
-		SLAnnotaionData slad = new SLAnnotaionData();
+		SLAnnotationData slad = new SLAnnotationData();
 		ParserHelper.parseAnnotation(slad, annotation);
 		
 		// default val for init
@@ -187,105 +189,136 @@ abstract class AbstractParser {
 		return new SyntheticLocalVar(className, field.name, fieldType, slvInit);
 	}
 	
-	// synthetic local var initialization can contain only basic constants
-	// or single method calls
-	private void parseInitCodeForSLV(InsnList origInitCodeIL,
-			Map<String, SyntheticLocalVar> slVars) {
 
-		// first initialization instruction for some field
-		AbstractInsnNode firstInitInsn = origInitCodeIL.getFirst();
+	//
+	// Parses the initialization code for synthetic local variables. Such code
+	// can only contain assignment from constants of basic types, or a single
+	// method call.
+	//
+	private void parseInitCodeForSLV (
+		InsnList initInsns, final Map <String, SyntheticLocalVar> slvs
+	) {
+		//
+		// Mark the first instruction of a block of initialization code and scan
+		// the code. Ignore any instructions that do not access fields and stop
+		// scanning when encountering any RETURN instruction.
+		//
+		// When encountering a field access instruction for a synthetic local
+		// variable field, copy the code starting at the instruction marked as
+		// first and ending with the field access instruction, and mark the
+		// instruction following the field access as the first instruction of
+		// the next initialization block.
+		//
+		AbstractInsnNode firstInitInsn = initInsns.getFirst ();
+		for (final AbstractInsnNode insn : AsmHelper.allInsnsFrom (initInsns)) {
+			if (AsmHelper.isReturn (insn.getOpcode ())) {
+				break;
+			}
+			
+			//
+			// Only consider instructions access fields. This will leave us only
+			// with GETFIELD, PUTFIELD, GETSTATIC, and PUTSTATIC instructions.
+			//
+			// XXX LB: Could we only consider PUTSTATIC instructions?
+			//
+			if (insn instanceof FieldInsnNode) {
+				final FieldInsnNode lastInitInsn = (FieldInsnNode) insn;
 
-		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom(origInitCodeIL)) {
-
-			// if our instruction is field
-			if (instr instanceof FieldInsnNode) {
-
-				FieldInsnNode fieldInstr = (FieldInsnNode) instr;
-
-				// get whole name of the field
-				String wholeFieldName = SyntheticLocalVar.fqFieldNameFor (fieldInstr.owner, fieldInstr.name);
-				SyntheticLocalVar slv = slVars.get(wholeFieldName);
-
-				// something else then synthetic local var
+				//
+				// Skip accesses to fields that are not synthetic locals.
+				//
+				final SyntheticLocalVar slv = slvs.get (SyntheticLocalVar.fqFieldNameFor (
+					lastInitInsn.owner, lastInitInsn.name
+				));
 				if (slv == null) {
+					// XXX LB: Advance firstInitInsn also here?
 					continue;
 				}
 
-				// clone part of the asm code
-				InsnList initASMCode = simpleInsnListClone(origInitCodeIL,
-						firstInitInsn, instr);
+				//
+				// Clone the initialization code between the current first
+				// initialization instruction and this field access instruction,
+				// which marks the end of the initialization code.
+				//
+				if (slv.hasInitCode ()) {
+					System.out.printf (
+						"DiSL: warning, replacing initialization code "+
+						"for synthetic local variable %s\n", slv.getID ()
+					);
+				}
+				slv.setInitCode (simpleInsnListClone (
+					firstInitInsn, lastInitInsn
+				));
 
-				// store the code
-				slv.setInitCode(initASMCode);
-
-				// prepare first init for next field
-				firstInitInsn = instr.getNext();
-			}
-
-			// if opcode is return then we are done
-			if (AsmHelper.isReturn(instr.getOpcode())) {
-				break;
+				firstInitInsn = insn.getNext ();
 			}
 		}
 	}
 	
-	private InsnList simpleInsnListClone(InsnList src, AbstractInsnNode from,
-			AbstractInsnNode to) {
 
-		InsnList dst = new InsnList();
+	private InsnList simpleInsnListClone (
+		final AbstractInsnNode first, final AbstractInsnNode last
+	) {
+		//
+		// Clone the instructions from "first" to "last", inclusive.
+		// Therefore at least one instruction will be always copied.
+		//
+		final InsnList result = new InsnList ();
 
-		// copy instructions using clone
-		AbstractInsnNode instr = from;
-		while (instr != to.getNext()) {
+		final AbstractInsnNode end = last.getNext ();
+		final Map <LabelNode, LabelNode> dummy = Collections.emptyMap ();
 
-			// clone only real instructions - labels should not be needed
-			if (!AsmHelper.isVirtualInstr(instr)) {
-
-				dst.add(instr.clone(null));
+		for (AbstractInsnNode insn = first; insn != end; insn = insn.getNext ()) {
+			//
+			// Clone only real instructions, we should not need labels.
+			//
+			if (! AsmHelper.isVirtualInstr (insn)) {
+				result.add (insn.clone (dummy));
 			}
-
-			instr = instr.getNext();
 		}
-
-		return dst;
+		
+		return result;
 	}
-	
-	private void parseInitCodeForTLV(String className, MethodNode cinitMethod,
-			Map<String, ThreadLocalVar> tlvs) throws ParserException {
 
-		Frame<SourceValue>[] frames = FrameHelper.getSourceFrames(className,
-				cinitMethod);
+
+	private void parseInitCodeForTLV (
+		final String className, final MethodNode cinitMethod, 
+		final Map <String, ThreadLocalVar> tlvs
+	) throws ParserException {
+		Frame <SourceValue> [] frames = 
+			FrameHelper.getSourceFrames (className, cinitMethod);
 
 		// analyze instructions in each frame
 		// one frame should cover one field initialization
 		for (int i = 0; i < frames.length; i++) {
-
-			AbstractInsnNode instr = cinitMethod.instructions.get(i);
+			AbstractInsnNode instr = cinitMethod.instructions.get (i);
 
 			// if the last instruction puts some value into the field...
 			if (instr.getOpcode() != Opcodes.PUTSTATIC) {
 				continue;
 			}
-
-			FieldInsnNode fin = (FieldInsnNode) instr;
-
-			final ThreadLocalVar tlv = tlvs.get (
-				ThreadLocalVar.fqFieldNameFor (className, fin.name)
-			);
 			
-			// ... and the field is thread local var
+			final FieldInsnNode fieldInsn = (FieldInsnNode) instr;
+
+			//
+			// Skip accesses to fields that are not thread locals.
+			//
+			final ThreadLocalVar tlv = tlvs.get (ThreadLocalVar.fqFieldNameFor (
+				className, fieldInsn.name
+			));
 			if (tlv == null) {
 				continue;
 			}
 
 			// get the instruction that put the field value on the stack
-			Set<AbstractInsnNode> sources = frames[i].getStack(frames[i]
-					.getStackSize() - 1).insns;
+			Set <AbstractInsnNode> sources = 
+				frames [i].getStack (frames [i].getStackSize () - 1).insns;
 
-			if (sources.size() != 1) {
-				throw new ParserException("Thread local variable "
-						+ tlv.getName()
-						+ " can be initialized only by single constant");
+			if (sources.size () != 1) {
+				throw new ParserException(String.format (
+					"Thread local variable %s can be only initialized "+
+					"by a single constant", tlv.getName()
+				));
 			}
 
 			AbstractInsnNode source = sources.iterator().next();
@@ -303,7 +336,7 @@ abstract class AbstractParser {
 
 			case Opcodes.ICONST_0:
 
-				if (fin.desc.equals("Z")) {
+				if (fieldInsn.desc.equals("Z")) {
 					tlv.setDefaultValue(false);
 				} else {
 					tlv.setDefaultValue(0);
@@ -322,7 +355,7 @@ abstract class AbstractParser {
 
 			case Opcodes.ICONST_1:
 
-				if (fin.desc.equals("Z")) {
+				if (fieldInsn.desc.equals("Z")) {
 					tlv.setDefaultValue(true);
 				} else {
 					tlv.setDefaultValue(1);
