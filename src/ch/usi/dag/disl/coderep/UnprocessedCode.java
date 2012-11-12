@@ -216,8 +216,7 @@ public class UnprocessedCode {
 		FieldInsnNode fieldInstr = (FieldInsnNode) instr;
 
 		// get whole name of the field
-		String wholeFieldName = fieldInstr.owner + SyntheticLocalVar.NAME_DELIM
-				+ fieldInstr.name;
+		String wholeFieldName = SyntheticLocalVar.fqFieldNameFor (fieldInstr.owner, fieldInstr.name);
 
 		// check - it is SyntheticLocal variable (it's defined in snippet)
 		return allPossibleFieldNames.get(wholeFieldName);
@@ -274,8 +273,9 @@ public class UnprocessedCode {
 			}
 			
 			FieldInsnNode fieldInstr = (FieldInsnNode) instr;
-			String fieldId = fieldInstr.owner + ThreadLocalVar.NAME_DELIM
-					+ fieldInstr.name;
+			String fieldId = ThreadLocalVar.fqFieldNameFor (
+				fieldInstr.owner, fieldInstr.name
+			);
 			
 			// test if it is thread local variable
 			if (! tlvIDs.contains(fieldId)) {

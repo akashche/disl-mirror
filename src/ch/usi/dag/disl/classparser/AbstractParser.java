@@ -203,9 +203,7 @@ abstract class AbstractParser {
 				FieldInsnNode fieldInstr = (FieldInsnNode) instr;
 
 				// get whole name of the field
-				String wholeFieldName = fieldInstr.owner
-						+ SyntheticLocalVar.NAME_DELIM + fieldInstr.name;
-
+				String wholeFieldName = SyntheticLocalVar.fqFieldNameFor (fieldInstr.owner, fieldInstr.name);
 				SyntheticLocalVar slv = slVars.get(wholeFieldName);
 
 				// something else then synthetic local var
@@ -218,7 +216,7 @@ abstract class AbstractParser {
 						firstInitInsn, instr);
 
 				// store the code
-				slv.setInitASMCode(initASMCode);
+				slv.setInitCode(initASMCode);
 
 				// prepare first init for next field
 				firstInitInsn = instr.getNext();
@@ -271,8 +269,9 @@ abstract class AbstractParser {
 
 			FieldInsnNode fin = (FieldInsnNode) instr;
 
-			ThreadLocalVar tlv = 
-				tlvs.get(className + ThreadLocalVar.NAME_DELIM + fin.name);
+			final ThreadLocalVar tlv = tlvs.get (
+				ThreadLocalVar.fqFieldNameFor (className, fin.name)
+			);
 			
 			// ... and the field is thread local var
 			if (tlv == null) {

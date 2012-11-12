@@ -5,27 +5,38 @@ import org.objectweb.asm.tree.InsnList;
 
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 
+
 public class SyntheticLocalVar extends AbstractLocalVar {
 
 	private SyntheticLocal.Initialize initialize;
-	private InsnList initASMCode;
-	
-	public SyntheticLocalVar(String className, String fieldName, Type type, 
-			SyntheticLocal.Initialize initialize) {
-		
-		super(className, fieldName, type);
+
+	private InsnList initCode;
+
+	//
+
+	public SyntheticLocalVar (
+		String className, String fieldName, Type type,
+		SyntheticLocal.Initialize initialize
+	) {
+		super (className, fieldName, type);
 		this.initialize = initialize;
 	}
-	
-	public SyntheticLocal.Initialize getInitialize() {
+
+
+	public SyntheticLocal.Initialize getInitialize () {
 		return initialize;
 	}
-	
-	public InsnList getInitASMCode() {
-		return initASMCode;
+
+
+	public InsnList getInitCode () {
+		return initCode;
 	}
 
-	public void setInitASMCode(InsnList initASMCode) {
-		this.initASMCode = initASMCode;
+	public boolean hasInitCode () {
+		return initCode != null;
+	}
+	
+	public void setInitCode (final InsnList initCode) {
+		this.initCode = initCode;
 	}
 }

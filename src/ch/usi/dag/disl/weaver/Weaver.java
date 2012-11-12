@@ -54,10 +54,10 @@ public class Weaver {
 				continue;
 			}
 
-			if (var.getInitASMCode() != null) {
-
-				InsnList newlst = AsmHelper.cloneInsnList(var.getInitASMCode());
+			if (var.hasInitCode()) {
+				InsnList newlst = AsmHelper.cloneInsnList(var.getInitCode());
 				instructions.insertBefore(first, newlst);
+
 			} else {
 
 				Type type = var.getType();
@@ -116,8 +116,9 @@ public class Weaver {
 			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
 
 				FieldInsnNode field_instr = (FieldInsnNode) instr;
-				String id = field_instr.owner + SyntheticLocalVar.NAME_DELIM
-						+ field_instr.name;
+				String id = SyntheticLocalVar.fqFieldNameFor (
+					field_instr.owner, field_instr.name
+				);
 
 				int index = 0, count = 0;
 
