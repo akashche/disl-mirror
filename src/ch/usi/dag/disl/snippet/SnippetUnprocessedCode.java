@@ -96,30 +96,33 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		Map<Integer, ProcInvocation> invokedProcessors = 
 			new HashMap<Integer, ProcInvocation>();
 
-		AbstractInsnNode[] instructionArray = instructions.toArray();
-		for (int i = 0; i < instructionArray.length; ++i) {
-
-			AbstractInsnNode instr = instructionArray[i];
-
+		int insnIndex = 0;
+		for (AbstractInsnNode insn : AsmHelper.allInsnsFrom (instructions)) {
 			// *** Parse processors in use ***
 			// no other modifications to the code should be done before weaving
 			// otherwise, produced instruction reference can be invalid
 
-			ProcessorInfo processor = 
-				insnInvokesProcessor(instr, i, processors, marker);
+			ProcessorInfo processor = insnInvokesProcessor (
+				insn, insnIndex, processors, marker
+			);
 
 			if (processor != null) {
-				invokedProcessors.put(processor.getInstrPos(),
-						processor.getProcInvoke());
-				continue;
+				invokedProcessors.put (
+					processor.getInstrPos (),
+					processor.getProcInvoke ()
+				);
 			}
+
+			insnIndex++;
 		}
 
-		return new SnippetCode(instructions, tryCatchBlocks,
-				code.getReferencedSLVs(), code.getReferencedTLVs(),
-				code.containsHandledException(), code.getStaticContexts(),
-				code.usesDynamicContext(), code.usesClassContext(),
-				usesProcessorContext, invokedProcessors);
+		return new SnippetCode(
+			instructions, tryCatchBlocks, code.getReferencedSLVs(),
+			code.getReferencedTLVs(), code.containsHandledException(),
+			code.getStaticContexts(), code.usesDynamicContext(),
+			code.usesClassContext(), usesProcessorContext,
+			invokedProcessors
+		);
 	}
 
 	private static class ProcessorInfo {

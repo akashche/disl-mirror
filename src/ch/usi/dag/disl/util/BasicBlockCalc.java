@@ -16,34 +16,6 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 public class BasicBlockCalc {
 
-	// Make sure an instruction has a valid next-instruction.
-	// NOTE that in asm, label might be an AbstractInsnNode. If an instruction
-	// is followed with a label which is the end of an instruction list, then
-	// it has no next instruction.
-	public static boolean hasNextNonVirtInstr(InsnList instrLst, int i) {
-		
-		int nextInstrIndex = i + 1;
-		
-		// not valid next index
-		if (nextInstrIndex >= instrLst.size()) {
-			return false;
-		}
-
-		AbstractInsnNode nextInstruction = instrLst.get(nextInstrIndex);
-
-		// is non-virtual instruction later in a list ?
-		while(nextInstruction != null) {
-			
-			if(! AsmHelper.isVirtualInstr(nextInstruction)) {
-				return true;
-			}
-			
-			nextInstruction = nextInstruction.getNext();
-		}
-		
-		return false;
-	}
-	
 	// Get basic blocks of the given method node.
 	public static List<AbstractInsnNode> getAll(InsnList instructions,
 			List<TryCatchBlockNode> tryCatchBlocks, boolean isPrecise) {
@@ -72,12 +44,16 @@ public class BasicBlockCalc {
 				// IF_ACMPEQ, IF_ACMPNE, GOTO, JSR, IFNULL, and IFNONNULL.
 				bbStarts.add(((JumpInsnNode) instruction).label);
 
-				// goto never returns
-				if (opcode != Opcodes.GOTO &&
-						hasNextNonVirtInstr(instructions, i)) {
-					bbStarts.add(instruction.getNext());
+				if (instruction.getOpcode () != Opcodes.GOTO) {
+					//
+					// There must be a valid (non-virtual) instruction 
+					// following a conditional/subroutine jump instruction.
+					//
+					AbstractInsnNode nextInsn = AsmHelper.nextNonVirtualInsn (instruction);
+					if (nextInsn != null) {
+						bbStarts.add (nextInsn);
+					}
 				}
-
 				break;
 			}
 
@@ -122,8 +98,7 @@ public class BasicBlockCalc {
 		// sort starting instructions
 		List<AbstractInsnNode> bbSortedList = new ArrayList<AbstractInsnNode>();
 
-		for (AbstractInsnNode instruction : instructions.toArray()) {
-			
+		for (AbstractInsnNode instruction : AsmHelper.allInsnsFrom (instructions)) {
 			if (bbStarts.contains(instruction)) {
 				bbSortedList.add(instruction);
 			}

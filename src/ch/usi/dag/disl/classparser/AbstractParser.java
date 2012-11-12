@@ -195,7 +195,7 @@ abstract class AbstractParser {
 		// first initialization instruction for some field
 		AbstractInsnNode firstInitInsn = origInitCodeIL.getFirst();
 
-		for (AbstractInsnNode instr : origInitCodeIL.toArray()) {
+		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom(origInitCodeIL)) {
 
 			// if our instruction is field
 			if (instr instanceof FieldInsnNode) {

@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 
 public class NewObjMarker extends AbstractDWRMarker {
@@ -19,12 +20,10 @@ public class NewObjMarker extends AbstractDWRMarker {
 	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		InsnList ilst = method.instructions;
-
 		int invokedNews = 0;
 
 		// find invocation of constructor after new instruction
-		for (AbstractInsnNode instruction : ilst.toArray()) {
+		for (AbstractInsnNode instruction : AsmHelper.allInsnsFrom (method.instructions)) {
 
 			// track new instruction
 			if (instruction.getOpcode() == Opcodes.NEW) {

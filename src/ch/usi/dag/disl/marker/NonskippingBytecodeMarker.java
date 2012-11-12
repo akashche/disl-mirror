@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmOpcodes;
 
 public class NonskippingBytecodeMarker extends AbstractInsnMarker {
@@ -46,7 +47,7 @@ public class NonskippingBytecodeMarker extends AbstractInsnMarker {
 
 		List<AbstractInsnNode> seleted = new LinkedList<AbstractInsnNode>();
 
-		for (AbstractInsnNode instruction : method.instructions.toArray()) {
+		for (AbstractInsnNode instruction : AsmHelper.allInsnsFrom (method.instructions)) {
 
 			if (searchedInstrNums.contains(instruction.getOpcode())) {
 

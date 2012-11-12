@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
+import ch.usi.dag.disl.util.AsmHelper;
 
 public class InsnNodeMarker extends AbstractInsnMarker {
 
@@ -48,7 +49,7 @@ public class InsnNodeMarker extends AbstractInsnMarker {
 
 		List<AbstractInsnNode> seleted = new LinkedList<AbstractInsnNode>();
 
-		for (AbstractInsnNode instr : methodNode.instructions.toArray()) {
+		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (methodNode.instructions)) {
 
 			for (Class<? extends AbstractInsnNode> clazz : classes) {
 

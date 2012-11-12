@@ -55,7 +55,7 @@ public class UnprocessedCode {
 
 		Set<ThreadLocalVar> tlvList = new HashSet<ThreadLocalVar>();
 
-		for (AbstractInsnNode instr : instructions.toArray()) {
+		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom(instructions)) {
 
 			// *** Parse synthetic local variables ***
 
@@ -95,10 +95,7 @@ public class UnprocessedCode {
 		Map<String, StaticContextMethod> staticContexts = 
 				new HashMap<String, StaticContextMethod>();
 		
-		AbstractInsnNode[] instructionArray = instructions.toArray();
-		for (int i = 0; i < instructionArray.length; ++i) {
-
-			AbstractInsnNode instr = instructionArray[i];
+		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (instructions)) {
 
 			// *** Parse static context methods in use ***
 

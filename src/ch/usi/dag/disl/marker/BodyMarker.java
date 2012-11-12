@@ -8,6 +8,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
+import ch.usi.dag.disl.util.AsmHelper;
 
 public class BodyMarker extends AbstractMarker {
 
@@ -18,7 +19,7 @@ public class BodyMarker extends AbstractMarker {
 		MarkedRegion region = 
 			new MarkedRegion(method.instructions.getFirst());
 
-		for (AbstractInsnNode instr : method.instructions.toArray()) {
+		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (method.instructions)) {
 			
 			int opcode = instr.getOpcode();
 

@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmOpcodes;
 
 public class BytecodeMarker extends AbstractDWRMarker {
@@ -52,9 +53,7 @@ public class BytecodeMarker extends AbstractDWRMarker {
 	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 		
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		InsnList ilst = method.instructions;
-
-		for (AbstractInsnNode instruction : ilst.toArray()) {
+		for (AbstractInsnNode instruction : AsmHelper.allInsnsFrom (method.instructions)) {
 
 			if (searchedInstrNums.contains(instruction.getOpcode())) {
 

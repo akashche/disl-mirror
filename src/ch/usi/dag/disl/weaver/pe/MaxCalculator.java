@@ -15,6 +15,7 @@ import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.BasicBlock;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
@@ -52,7 +53,7 @@ public class MaxCalculator {
 			--maxLocals;
 		}
 
-		for (AbstractInsnNode instr : ilist.toArray()) {
+		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (ilist)) {
 
 			if (instr instanceof VarInsnNode) {
 

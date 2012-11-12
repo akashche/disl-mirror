@@ -76,6 +76,7 @@ public class WeavingCode {
 	// of fetching static information.
 	public void fixStaticInfo(SCGenerator staticInfoHolder) {
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : iList.toArray()) {
 
 			AbstractInsnNode previous = instr.getPrevious();
@@ -112,7 +113,7 @@ public class WeavingCode {
 	}
 
 	public void fixClassInfo() {
-
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : iList.toArray()) {
 
 			AbstractInsnNode previous = instr.getPrevious();
@@ -143,8 +144,7 @@ public class WeavingCode {
 	}
 
 	private void preFixDynamicInfoCheck() throws DynamicContextException {
-
-		for (AbstractInsnNode instr : iList.toArray()) {
+		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (iList)) {
 
 			// it is invocation...
 			if (instr.getOpcode() != Opcodes.INVOKEINTERFACE) {
@@ -232,6 +232,7 @@ public class WeavingCode {
 			method.maxLocals++;
 		}
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : iList.toArray()) {
 			// pseudo function call
 			if (instr.getOpcode() != Opcodes.INVOKEINTERFACE) {
@@ -436,6 +437,7 @@ public class WeavingCode {
 			}
 		}
 		
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : iList.toArray()) {
 
 			AbstractInsnNode prev = instr.getPrevious();
@@ -484,7 +486,7 @@ public class WeavingCode {
 	private int fixLocalIndex(InsnList src, int offset) {
 		int max = offset;
 
-		for (AbstractInsnNode instr : src.toArray()) {
+		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (src)) {
 
 			if (instr instanceof VarInsnNode) {
 
@@ -517,6 +519,7 @@ public class WeavingCode {
 	private void fixArgumentContext(InsnList instructions, int position,
 			int totalCount, Type type) {
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : instructions.toArray()) {
 
 			AbstractInsnNode previous = instr.getPrevious();
@@ -697,6 +700,7 @@ public class WeavingCode {
 
 	public void fixProcessorInfo() {
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : iList.toArray()) {
 
 			// it is invocation...

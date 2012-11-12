@@ -13,6 +13,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
 // package visible
@@ -83,7 +84,7 @@ abstract class ParserHelper {
 		}
 
 		// The following code assumes that all disl snippets are static
-		for (AbstractInsnNode instr : instructions.toArray()) {
+		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (instructions)) {
 
 			switch (instr.getOpcode()) {
 			// test if the context is stored somewhere else

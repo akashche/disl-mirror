@@ -108,6 +108,7 @@ public class Weaver {
 		}
 
 		// Scan for FIELD instructions and replace with local load/store.
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : instructions.toArray()) {
 			int opcode = instr.getOpcode();
 

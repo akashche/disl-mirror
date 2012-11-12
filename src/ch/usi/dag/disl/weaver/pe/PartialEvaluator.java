@@ -304,6 +304,7 @@ public class PartialEvaluator {
 
 		boolean isOptimized = false;
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 
 			Frame<ConstValue> frame = frames.get(instr);
@@ -432,6 +433,7 @@ public class PartialEvaluator {
 		CtrlFlowGraph cfg = CtrlFlowGraph.build(method);
 		boolean isOptimized = false;
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 
 			switch (instr.getOpcode()) {
@@ -540,6 +542,7 @@ public class PartialEvaluator {
 			return;
 		}
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 			if (instr.getOpcode() == Opcodes.INVOKESPECIAL) {
 				Type[] args = Type
@@ -571,6 +574,7 @@ public class PartialEvaluator {
 
 		boolean isOptimized = false;
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 
 			int opcode = instr.getOpcode();
@@ -622,6 +626,7 @@ public class PartialEvaluator {
 
 		boolean isOptimized = false;
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 
 			int opcode = instr.getOpcode();
