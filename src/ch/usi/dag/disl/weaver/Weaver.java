@@ -9,13 +9,10 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.tree.TypeInsnNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.AfterReturning;
@@ -26,131 +23,132 @@ import ch.usi.dag.disl.exception.DynamicContextException;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.snippet.Shadow;
+import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
-import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.AsmHelper;
 
 // The weaver instruments byte-codes into java class. 
 public class Weaver {
 
-	// Transform static fields to synthetic local
-	// NOTE that the field maxLocals of the method node will be automatically
-	// updated.
-	private static void static2Local(MethodNode methodNode,
-			List<SyntheticLocalVar> syntheticLocalVars) {
+	/**
+	 * Transforms static fields to synthetic local variables.
+	 * <p>
+	 * <b>Note:</b> This methods automatically updates the
+	 * {@link MethodNode#maxLocals maxLocals} field in the given
+	 * {@link MethodNode}.
+	 */
+	private static void static2Local (
+		final MethodNode methodNode, 
+		final List<SyntheticLocalVar> syntheticLocalVars
+	) {
+		final InsnList instructions = methodNode.instructions;
+		final AbstractInsnNode first = instructions.getFirst ();
 
-		InsnList instructions = methodNode.instructions;
-
-		// Extract the 'id' field in each synthetic local
-		AbstractInsnNode first = instructions.getFirst();
-
-		// Initialization
-		// TODO respect BEST_EFFORT initialization type in synthetic local variable
-		for (SyntheticLocalVar var : syntheticLocalVars) {
-
-			if (var.getInitialize() == Initialize.NEVER) {
+		//
+		// Insert code to initialize synthetic local variables (unless marked to
+		// be left uninitialized) at the beginning of a method.
+		//
+		// TODO Respect the BEST_EFFORT initialization type.
+		//
+		for (final SyntheticLocalVar var : syntheticLocalVars) {
+			if (var.getInitialize () == Initialize.NEVER) {
 				continue;
 			}
 
-			if (var.hasInitCode()) {
-				InsnList newlst = AsmHelper.cloneInsnList(var.getInitCode());
-				instructions.insertBefore(first, newlst);
-
-			} else {
-
-				Type type = var.getType();
-
-				switch (type.getSort()) {
-				case Type.ARRAY:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.ACONST_NULL));
-					instructions.insertBefore(first, new TypeInsnNode(
-							Opcodes.CHECKCAST, type.getDescriptor()));
-					break;
-
-				case Type.BOOLEAN:
-				case Type.BYTE:
-				case Type.CHAR:
-				case Type.INT:
-				case Type.SHORT:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.ICONST_0));
-					break;
-
-				case Type.DOUBLE:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.DCONST_0));
-					break;
-
-				case Type.FLOAT:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.FCONST_0));
-					break;
-
-				case Type.LONG:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.LCONST_0));
-					break;
-
-				case Type.OBJECT:
-				default:
-					instructions.insertBefore(first, new InsnNode(
-							Opcodes.ACONST_NULL));
-					break;
-				}
-
-				instructions.insertBefore(first,
-						new FieldInsnNode(Opcodes.PUTSTATIC, var.getOwner(),
-								var.getName(), type.getDescriptor()));
-			}
-		}
-
-		// Scan for FIELD instructions and replace with local load/store.
-		// TODO LB: iterate over a copy unless we are sure an iterator is OK
-		for (AbstractInsnNode instr : instructions.toArray()) {
-			int opcode = instr.getOpcode();
-
-			// Only field instructions will be transformed.
-			if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
-
-				FieldInsnNode field_instr = (FieldInsnNode) instr;
-				String id = SyntheticLocalVar.fqFieldNameFor (
-					field_instr.owner, field_instr.name
+			//
+			// If the variable has initialization code, just copy it. It will
+			// still refer to the static variable, but that will be fixed in
+			// the next step.
+			//
+			if (var.hasInitCode ()) {
+				instructions.insertBefore (
+					first, AsmHelper.cloneInsnList (var.getInitCode ())
 				);
-
-				int index = 0, count = 0;
-
-				for (SyntheticLocalVar var : syntheticLocalVars) {
-
-					if (id.equals(var.getID())) {
-						break;
-					}
-
-					index += var.getType().getSize();
-					count++;
+				
+			} else {
+				//
+				// Otherwise, just initialize it with a default value depending
+				// on its type. The default value for arrays is null, like for
+				// objects, but they also need an additional CHECKCAST 
+				// instruction to make the verifier happy.
+				// 
+				final Type type = var.getType ();
+				if (type.getSort () != Type.ARRAY) {
+					instructions.insertBefore (first, AsmHelper.loadDefault (type));
+				} else {
+					instructions.insertBefore (first, AsmHelper.loadNull ());
+					instructions.insertBefore (first, AsmHelper.checkCast (type));
 				}
 
-				if (count == syntheticLocalVars.size()) {
-					// Not contained in the synthetic locals.
-					continue;
-				}
-
-				// Construct a instruction for local
-				Type type = Type.getType(field_instr.desc);
-				int new_opcode = type
-						.getOpcode(opcode == Opcodes.GETSTATIC ? Opcodes.ILOAD
-								: Opcodes.ISTORE);
-				VarInsnNode insn = new VarInsnNode(new_opcode,
-						methodNode.maxLocals + index);
-				instructions.insertBefore(instr, insn);
-				instructions.remove(instr);
+				//
+				// For now, just issue an instruction to store the value into 
+				// the original static field. The transformation to local 
+				// variable comes in the next step.
+				//
+				instructions.insertBefore (first, AsmHelper.putStatic (
+					var.getOwner (), var.getName (), type.getDescriptor ()
+				));
 			}
 		}
 
-		methodNode.maxLocals += syntheticLocalVars.size();
+		
+		//
+		// Scan the method code for GETSTATIC/PUTSTATIC instructions accessing
+		// the static fields marked to be synthetic locals. Replace all the
+		// static accesses with local variables.
+		//
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
+		for (final AbstractInsnNode insn : instructions.toArray ()) {
+			final int opcode = insn.getOpcode ();
+			if (!AsmHelper.isStaticFieldAccess (opcode)) {
+				continue;
+			}
+			
+			final FieldInsnNode fieldInsn = (FieldInsnNode) insn;
+			final String varId = SyntheticLocalVar.fqFieldNameFor (fieldInsn.owner, fieldInsn.name);
+
+			//
+			// Try to find the static field being accessed among the synthetic
+			// local fields, and determine the local variable index and local 
+			// slot index while doing that.
+			//
+			int index = 0, count = 0;
+			for (final SyntheticLocalVar var : syntheticLocalVars) {
+				if (varId.equals (var.getID ())) {
+					break;
+				}
+
+				index += var.getType ().getSize ();
+				count++;
+			}
+
+			if (count == syntheticLocalVars.size ()) {
+				// Static field not found among the synthetic locals.
+				continue;
+			}
+			
+			//
+			// Replace the static field access with local variable access.
+			//
+			final Type type = Type.getType (fieldInsn.desc);
+			final int slot = methodNode.maxLocals + index;
+			
+			instructions.insertBefore (fieldInsn, 
+				(opcode == Opcodes.GETSTATIC) ?
+				AsmHelper.loadVar (type, slot) : AsmHelper.storeVar (type, slot)
+			);
+			
+			instructions.remove (fieldInsn);
+		}
+
+		//
+		// Adjust maxLocals allow for the new local variables.
+		//
+		methodNode.maxLocals += syntheticLocalVars.size ();
 	}
+
 
 	// Return a successor label of weaving location corresponding to
 	// the input 'end'.
@@ -221,13 +219,10 @@ public class Weaver {
 		// exception handler will discard the stack and push the
 		// exception object. Thus, before entering this snippet,
 		// weaver must backup the stack and restore when exiting
-		if (code.containsHandledException()
-				&& info.stackNotEmpty(loc)) {
+		if (code.containsHandledException() && info.stackNotEmpty(loc)) {
+			InsnList backup = info.backupStack (loc, methodNode.maxLocals);
+			InsnList restore = info.restoreStack (loc, methodNode.maxLocals);
 
-			InsnList backup = info.backupStack(loc,
-					methodNode.maxLocals);
-			InsnList restore = info.restoreStack(loc,
-					methodNode.maxLocals);
 			methodNode.maxLocals += info.getStackHeight(loc);
 
 			methodNode.instructions.insertBefore(loc, backup);
