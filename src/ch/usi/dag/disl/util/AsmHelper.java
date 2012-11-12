@@ -146,7 +146,7 @@ public abstract class AsmHelper {
 
 		} else {
 			throw new DiSLFatalException (String.format (
-				"Expected LdcInsnNode, but found %s (%s)",
+				"Expected LdcInsnNode, found %s (%s)",
 				insn.getClass ().getSimpleName (), AsmOpcodes.valueOf (insn)
 			));
 		}
@@ -193,7 +193,37 @@ public abstract class AsmHelper {
 	}
 
 
+	@SuppressWarnings ("serial")
+	public static final Map <String, Type> PRIMITIVE_TYPES = new HashMap <String, Type> () {
+		{
+			put (Boolean.class, Type.BOOLEAN_TYPE);
+			put (Byte.class, Type.BYTE_TYPE);
+			put (Character.class, Type.CHAR_TYPE);
+			put (Short.class, Type.SHORT_TYPE);
+			put (Integer.class, Type.INT_TYPE);
+			put (Float.class, Type.FLOAT_TYPE);
+			put (Long.class, Type.LONG_TYPE);
+			put (Double.class, Type.DOUBLE_TYPE);
+		}
+		
+		void put (Class <?> typeClass, Type type) {
+			put (Type.getInternalName (typeClass), type);
+		}
+	};
+
+	
 	public static Type getTypeConstOperand (final AbstractInsnNode insn) {
+		//
+		// Class literals are loaded on the stack in two ways:
+		// 
+		// Literals for common classes are loaded using the LDC instruction,
+		// referencing a constant pool item.
+		//
+		// Literals for primitive types are loaded by accessing the static
+		// TYPE field in the corresponding boxing class for the type. The
+		// field is a specialized Class<> instance, so the determine the type,
+		// we need to look at the owner.
+		//
 		if (insn.getOpcode () == Opcodes.LDC) {
 			final LdcInsnNode ldcNode = (LdcInsnNode) insn;
 			if (ldcNode.cst instanceof Type) {
@@ -201,10 +231,32 @@ public abstract class AsmHelper {
 			} else {
 				throw new DiSLFatalException ("LDC operand is not a Type");
 			}
+			
+		} else if (insn.getOpcode () == Opcodes.GETSTATIC) {
+			//
+			// When accessing a static TYPE field in a class boxing a primitive
+			// type, the result is the primitive type class literal.
+			// 
+			final FieldInsnNode fieldNode = (FieldInsnNode) insn;
+			if ("TYPE".equals (fieldNode.name)) {
+				final Type result = PRIMITIVE_TYPES.get (fieldNode.owner);
+				if (result == null) {
+					throw new DiSLFatalException (String.format (
+						"Expected primitive boxing class, found %s", fieldNode.owner
+					));
+				}
+				
+				return result;
+				
+			} else {
+				throw new DiSLFatalException (String.format (
+					"Expected access to static TYPE field, found %s", fieldNode.name
+				));
+			}
 
 		} else {
 			throw new DiSLFatalException (String.format (
-				"Expected LdcInsnNode, but found %s (%s)",
+				"Expected LdcInsnNode, found %s (%s)",
 				insn.getClass ().getSimpleName (), AsmOpcodes.valueOf (insn)
 			));
 		}
@@ -224,7 +276,11 @@ public abstract class AsmHelper {
 	public static boolean isTypeConstLoadInsn (final AbstractInsnNode insn) {
 		if (insn.getOpcode () == Opcodes.LDC) {
 			return ((LdcInsnNode) insn).cst instanceof Type;
-			
+		} else if (insn.getOpcode () == Opcodes.GETSTATIC) {
+			final FieldInsnNode fieldInsn = (FieldInsnNode) insn;
+			final Type type = PRIMITIVE_TYPES.get (fieldInsn.owner);
+			return "TYPE".equals (fieldInsn.name) && type != null;
+
 		} else {
 			return false;
 		}
@@ -348,44 +404,6 @@ public abstract class AsmHelper {
 		}
 
 		return index;
-	}
-
-
-	/**
-	 * Returns type if the int.class or String.class construct is used
-	 */
-	public static Type getOwnerBoxedType (final AbstractInsnNode insn) {
-
-		switch (insn.getOpcode()) {
-		// type for basic class types int, float,...
-		case Opcodes.GETSTATIC:
-
-			String owner = ((FieldInsnNode) insn).owner;
-
-			if (owner.endsWith("Boolean")) {
-				return Type.BOOLEAN_TYPE;
-			} else if (owner.endsWith("Byte")) {
-				return Type.BYTE_TYPE;
-			} else if (owner.endsWith("Character")) {
-				return Type.CHAR_TYPE;
-			} else if (owner.endsWith("Double")) {
-				return Type.DOUBLE_TYPE;
-			} else if (owner.endsWith("Float")) {
-				return Type.FLOAT_TYPE;
-			} else if (owner.endsWith("Integer")) {
-				return Type.INT_TYPE;
-			} else if (owner.endsWith("Long")) {
-				return Type.LONG_TYPE;
-			} else if (owner.endsWith("Short")) {
-				return Type.SHORT_TYPE;
-			}
-
-			return null;
-
-		default:
-			return null;
-		}
-
 	}
 
 
