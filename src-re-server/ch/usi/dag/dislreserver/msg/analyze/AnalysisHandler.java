@@ -9,12 +9,9 @@ import java.util.List;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver.AnalysisMethodHolder;
-import ch.usi.dag.dislreserver.netreference.NetReference;
-import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfo;
-import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfoResolver;
-import ch.usi.dag.dislreserver.reflectiveinfo.InvalidClass;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
-import ch.usi.dag.dislreserver.stringcache.StringCache;
+import ch.usi.dag.dislreserver.shadow.ShadowObject;
+import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
 
 
 public final class AnalysisHandler implements RequestHandler {
@@ -172,52 +169,17 @@ public final class AnalysisHandler implements RequestHandler {
 			return Double.SIZE / Byte.SIZE;
 		}
 
-		if (argClass.equals (String.class)) {
-			long netRefNum = is.readLong ();
-			if (netRefNum != 0) {
-				// read string net reference and resolve it from cache
-				NetReference stringNR = new NetReference (netRefNum);
-				args.add (StringCache.resolve (stringNR.getObjectId ()));
+		if (ShadowObject.class.isAssignableFrom(argClass)) {
+			long net_ref = is.readLong();
+
+			// null handling
+			if (net_ref == 0) {
+				args.add(null);
 			} else {
-				// null handling
-				args.add (null);
+				args.add(ShadowObjectTable.get(net_ref));
 			}
 
 			return Long.SIZE / Byte.SIZE;
-		}
-
-		// read id only
-		// covers Object and NetReference classes
-		if (argClass.isAssignableFrom (NetReference.class)) {
-			long netRefNum = is.readLong ();
-			if (netRefNum != 0) {
-				// TODO: Lookup the reference
-				args.add (new NetReference (netRefNum));
-			} else {
-				// null handling
-				args.add (null);
-			}
-
-			return Long.SIZE / Byte.SIZE;
-		}
-
-		// return ClassInfo object
-		if (argClass.equals (ClassInfo.class)) {
-			int classNetRefNum = is.readInt ();
-			if (classNetRefNum != 0) {
-				args.add (ClassInfoResolver.getClass (classNetRefNum));
-			} else {
-				// null handling
-				args.add (null);
-			}
-
-			return Integer.SIZE / Byte.SIZE;
-		}
-
-		// return "invalid" class object
-		if (argClass.equals (Class.class)) {
-			args.add (InvalidClass.class);
-			return 0;
 		}
 
 		throw new DiSLREServerException (String.format (

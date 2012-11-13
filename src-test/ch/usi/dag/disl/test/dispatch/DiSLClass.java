@@ -17,10 +17,10 @@ public class DiSLClass {
 	@After(marker = BodyMarker.class, scope = "TargetClass.main")
 	public static void testing() {
 		
-		CodeExecutedRE.testingBasic(true, (byte) 125, 'š', (short) 50000,
+		CodeExecutedRE.testingBasic(true, (byte) 125, 's', (short) 50000,
 				100000, 10000000000L, 1.5F, 2.5);
 		
-		CodeExecutedRE.testingAdvanced("ěščřžýáíé", new Object(), Object.class, 0);
+		CodeExecutedRE.testingAdvanced("Corect transfer of String", new Object(), Object.class, 0);
 
 		CodeExecutedRE.testingAdvanced2(new LinkedList<String>(),
 				new LinkedList<Integer>(), new LinkedList[0], new int[0],

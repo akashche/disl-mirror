@@ -6,46 +6,40 @@ import java.io.IOException;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver;
-import ch.usi.dag.dislreserver.netreference.NetReference;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
-import ch.usi.dag.dislreserver.stringcache.StringCache;
-
+import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
+import ch.usi.dag.dislreserver.shadow.ShadowString;
 
 public final class RegAnalysisHandler implements RequestHandler {
 
-	public void handle (
-		final DataInputStream is, final DataOutputStream os, final boolean debug
-	) throws DiSLREServerException {
+	public void handle(final DataInputStream is, final DataOutputStream os,
+			final boolean debug) throws DiSLREServerException {
 		try {
-			final short methodId = is.readShort ();
-			NetReference methodStringNR = new NetReference (is.readLong ());
+			final short methodId = is.readShort();
+			final long methodStringID = is.readLong();
+			ShadowString methodString = (ShadowString) ShadowObjectTable.get(methodStringID);
 
 			// register method
-			AnalysisResolver.registerMethodId (
-				methodId, methodStringNR.getObjectId ()
-			);
+			AnalysisResolver.registerMethodId(methodId, methodString);
 
 			if (debug) {
-				System.out.printf (
-					"DiSL-RE: registered %s as analysis method %d\n",
-					StringCache.resolve (methodStringNR.getObjectId ()), methodId
-				);
+				System.out.printf(
+						"DiSL-RE: registered %s as analysis method %d\n",
+						methodString.toString(), methodId);
 			}
 
 		} catch (final IOException ioe) {
-			throw new DiSLREServerException (ioe);
+			throw new DiSLREServerException(ioe);
 		}
 	}
 
-
 	//
 
-	public void awaitProcessing () {
+	public void awaitProcessing() {
 
 	}
 
-
-	public void exit () {
+	public void exit() {
 
 	}
 

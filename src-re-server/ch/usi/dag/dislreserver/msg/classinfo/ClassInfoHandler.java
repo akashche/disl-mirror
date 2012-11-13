@@ -5,9 +5,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
-import ch.usi.dag.dislreserver.netreference.NetReference;
-import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfoResolver;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
+import ch.usi.dag.dislreserver.shadow.ShadowClass;
+import ch.usi.dag.dislreserver.shadow.ShadowClassTable;
+import ch.usi.dag.dislreserver.shadow.ShadowObject;
+import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
 
 public class ClassInfoHandler implements RequestHandler {
 
@@ -15,26 +17,25 @@ public class ClassInfoHandler implements RequestHandler {
 			throws DiSLREServerException {
 
 		try {
-			
-			int classId = is.readInt();
+
+			long net_ref = is.readLong();
 			String classSignature = is.readUTF();
 			String classGenericStr = is.readUTF();
-			NetReference classLoaderNR = new NetReference(is.readLong());
-			int superClassId = is.readInt();
-			
-			ClassInfoResolver.createHierarchy(classSignature, classGenericStr,
-					classLoaderNR, classId, superClassId);
-		}
-		catch (IOException e) {
+			ShadowObject classLoader = ShadowObjectTable.get(is.readLong());
+
+			ShadowClass superClass = (ShadowClass) ShadowObjectTable.get(is.readLong());
+			ShadowClassTable.newInstance(net_ref, superClass, classLoader,
+					classSignature, classGenericStr);
+		} catch (IOException e) {
 			throw new DiSLREServerException(e);
 		}
 	}
 
 	public void awaitProcessing() {
-		
+
 	}
-	
+
 	public void exit() {
-		
+
 	}
 }

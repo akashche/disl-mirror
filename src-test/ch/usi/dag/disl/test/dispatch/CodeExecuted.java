@@ -1,10 +1,9 @@
 package ch.usi.dag.disl.test.dispatch;
 
-import ch.usi.dag.dislreserver.netreference.NetReference;
-import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfo;
-import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfoResolver;
-import ch.usi.dag.dislreserver.reflectiveinfo.InvalidClass;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
+import ch.usi.dag.dislreserver.shadow.ShadowClass;
+import ch.usi.dag.dislreserver.shadow.ShadowObject;
+import ch.usi.dag.dislreserver.shadow.ShadowString;
 
 // NOTE that this class is not static anymore
 public class CodeExecuted extends RemoteAnalysis {
@@ -26,7 +25,7 @@ public class CodeExecuted extends RemoteAnalysis {
 			throw new RuntimeException("Incorect transfer of byte");
 		}
 		
-		if(c != 'š') {
+		if(c != 's') {
 			throw new RuntimeException("Incorect transfer of char");
 		}
 		
@@ -51,71 +50,69 @@ public class CodeExecuted extends RemoteAnalysis {
 		}
 	}
 	
-	public static void testingAdvanced(String s, Object o, Class<?> c,
-			int classId) {
+	public static void testingAdvanced(ShadowString s, ShadowObject o, ShadowClass c) {
 
-		if(! s.equals("ěščřžýáíé")) {
+		if(! s.toString().equals("Corect transfer of String")) {
 			throw new RuntimeException("Incorect transfer of String");
 		}
 
-		long objId = ((NetReference)o).getObjectId();
+		long objId = ((ShadowObject)o).getId();
 		
 		// object id should be non 0
-		if(! (o instanceof NetReference) || objId == 0) {
+		if(! (o instanceof ShadowObject) || objId == 0) {
 			throw new RuntimeException("Incorect transfer of Object");
 		}
 		
 		System.out.println("Received object id: " + objId);
 		
 		// class id should be non 0
-		if(! c.equals(InvalidClass.class) || classId == 0) {
+		if(! (c instanceof ShadowClass) || c.getClassId() == 0) {
 			throw new RuntimeException("Incorect transfer of Class");
 		}
 		
-		System.out.println("Received class id: " + classId);
+		System.out.println("Received class id: " + c.getClassId());
 	}
 	
-	public static void printClassInfo(ClassInfo ci) {
+	public static void printClassInfo(ShadowClass sc) {
 		
-		if(ci == null) {
+		if(sc == null) {
 			System.out.println("null");
 			return;
 		}
 		
-		System.out.println("sig: " + ci.getSignature());
-		System.out.println("gen: " + ci.getGenericStr());
+		System.out.println("name: " + sc.getName());
 	}
-	
-	public static void testingAdvanced2(Object o1, NetReference o2, Object o3,
-			Object o4, Class<?> class1, int cid1, Class<?> class2, int cid2,
-			Class<?> class3, int cid3, ClassInfo class4) {
-		
+
+	public static void testingAdvanced2(ShadowObject o1, ShadowObject o2,
+			ShadowObject o3, ShadowObject o4, ShadowClass class1,
+			ShadowClass class2, ShadowClass class3, ShadowClass class4) {
+
 		System.out.println("* o1 class *");
-		printClassInfo(((NetReference)o1).getClassInfo());
+		printClassInfo(((ShadowObject)o1).getSClass());
 		
 		System.out.println("* o2 class *");
-		printClassInfo(o2.getClassInfo());
+		printClassInfo(o2.getSClass());
 		
 		System.out.println("* o3 class *");
-		printClassInfo(((NetReference)o3).getClassInfo());
+		printClassInfo(((ShadowObject)o3).getSClass());
 		
 		System.out.println("* o4 class *");
-		printClassInfo(((NetReference)o4).getClassInfo());
+		printClassInfo(((ShadowObject)o4).getSClass());
 		
 		System.out.println("* class 1 *");
-		printClassInfo(ClassInfoResolver.getClass(cid1));
+		printClassInfo(class1);
 		
 		System.out.println("* class 2 *");
-		printClassInfo(ClassInfoResolver.getClass(cid2));
+		printClassInfo(class2);
 		
 		System.out.println("* class 3 *");
-		printClassInfo(ClassInfoResolver.getClass(cid3));
+		printClassInfo(class3);
 		
 		System.out.println("* class 4 *");
 		printClassInfo(class4);
 	}
 	
-	public static void testingNull(String s, Object o, ClassInfo c) {
+	public static void testingNull(ShadowString s, ShadowObject o, ShadowClass c) {
 		
 		if(s != null) {
 			throw new RuntimeException("String is not null");
@@ -135,8 +132,8 @@ public class CodeExecuted extends RemoteAnalysis {
 				+ totalExecutedBytecodes);
 	}
 
-	public void objectFree(NetReference netRef) {
-		System.out.println("Object free for id " + netRef.getObjectId());
+	public void objectFree(ShadowObject netRef) {
+		System.out.println("Object free for id " + netRef.getId());
 		
 	}
 }

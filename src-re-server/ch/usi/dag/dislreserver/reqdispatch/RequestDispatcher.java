@@ -17,6 +17,7 @@ import ch.usi.dag.dislreserver.msg.newclass.NewClassHandler;
 import ch.usi.dag.dislreserver.msg.newstring.NewStringHandler;
 import ch.usi.dag.dislreserver.msg.objfree.ObjectFreeHandler;
 import ch.usi.dag.dislreserver.msg.reganalysis.RegAnalysisHandler;
+import ch.usi.dag.dislreserver.msg.threadinfo.ThreadInfoHandler;
 
 
 public final class RequestDispatcher {
@@ -33,6 +34,7 @@ public final class RequestDispatcher {
 	private static final byte __REQUEST_ID_CLASS_INFO__ = 4;
 	private static final byte __REQUEST_ID_NEW_STRING__ = 5;
 	private static final byte __REQUEST_ID_REGISTER_ANALYSIS__ = 6;
+	private static final byte __REQUEST_ID_THREAD_INFO__ = 7;
 
 	//
 
@@ -54,6 +56,7 @@ public final class RequestDispatcher {
 		requestMap.put (__REQUEST_ID_CLASS_INFO__, new ClassInfoHandler ());
 		requestMap.put (__REQUEST_ID_NEW_STRING__, new NewStringHandler ());
 		requestMap.put (__REQUEST_ID_REGISTER_ANALYSIS__, new RegAnalysisHandler ());
+		requestMap.put (__REQUEST_ID_THREAD_INFO__, new ThreadInfoHandler());
 
 		__handlers = Collections.unmodifiableCollection (requestMap.values ());
 		__dispatchTable = __createDispatchTable (requestMap);

@@ -426,7 +426,7 @@ static void pack_class(JNIEnv * jni_env, buffer * buff, buffer * cmd_buff,
 	}
 
 	// pack null class id
-	pack_int(buff, NULL_NET_REF);
+	pack_long(buff, NULL_NET_REF);
 }
 
 static void buff_put_short(buffer * buff, size_t buff_pos, jshort to_put) {
@@ -858,7 +858,7 @@ static void ot_tag_class(JNIEnv * jni_env, buffer * buff, size_t buff_pos,
 			get_net_reference(jni_env, jvmti_env, new_objs_buff, to_send);
 
 	// ... and put it on proper position
-	buff_put_int(buff, buff_pos, net_ref_get_class_id(net_ref));
+	buff_put_long(buff, buff_pos, net_ref);
 }
 
 static void ot_tag_buff(JNIEnv * jni_env, buffer * anl_buff, buffer * cmd_buff,

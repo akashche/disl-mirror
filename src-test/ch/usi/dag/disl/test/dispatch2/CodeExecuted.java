@@ -1,7 +1,7 @@
 package ch.usi.dag.disl.test.dispatch2;
 
-import ch.usi.dag.dislreserver.netreference.NetReference;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
+import ch.usi.dag.dislreserver.shadow.ShadowObject;
 
 // NOTE that this class is not static anymore
 public class CodeExecuted extends RemoteAnalysis {
@@ -31,13 +31,12 @@ public class CodeExecuted extends RemoteAnalysis {
 		}
 	}
 	
-	public void objectEvent(Object o) {
+	public void objectEvent(ShadowObject o) {
 
 		++totalObjEvents;
 	}
 	
-	public void objectFree(NetReference netRef) {
-		
+	public void objectFree(ShadowObject netRef) {
 		++totalFreeEvents;
 	}
 	

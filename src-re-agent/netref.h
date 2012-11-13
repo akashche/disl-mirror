@@ -28,10 +28,12 @@ static volatile jint avail_class_id;
 
 static const uint8_t OBJECT_ID_POS = 0;
 static const uint8_t CLASS_ID_POS = 40;
+static const uint8_t CLASS_INSTANCE_POS = 62;
 static const uint8_t SPEC_POS = 63;
 
 static const uint64_t OBJECT_ID_MASK = 0xFFFFFFFFFFL;
-static const uint64_t CLASS_ID_MASK = 0x7FFFFF;
+static const uint64_t CLASS_ID_MASK = 0x3FFFFF;
+static const uint64_t CLASS_INSTANCE_MASK = 0x1;
 static const uint64_t SPEC_MASK = 0x1;
 
 // get bits from "from" with pattern "bit_mask" lowest bit starting on position
@@ -74,6 +76,11 @@ inline unsigned char net_ref_get_spec(jlong net_ref) {
 	return get_bits(net_ref, SPEC_MASK, SPEC_POS);
 }
 
+inline unsigned char net_ref_get_class_instance_bit(jlong net_ref) {
+
+	return get_bits(net_ref, CLASS_INSTANCE_MASK, CLASS_INSTANCE_POS);
+}
+
 inline void net_ref_set_object_id(jlong * net_ref, jlong object_id) {
 
 	set_bits((uint64_t *)net_ref, object_id, OBJECT_ID_MASK, OBJECT_ID_POS);
@@ -82,6 +89,11 @@ inline void net_ref_set_object_id(jlong * net_ref, jlong object_id) {
 inline void net_ref_set_class_id(jlong * net_ref, jint class_id) {
 
 	set_bits((uint64_t *)net_ref, class_id, CLASS_ID_MASK, CLASS_ID_POS);
+}
+
+inline void net_ref_set_class_instance(jlong * net_ref, unsigned char cibit) {
+
+	set_bits((uint64_t *)net_ref, cibit, CLASS_INSTANCE_MASK, CLASS_INSTANCE_POS);
 }
 
 inline void net_ref_set_spec(jlong * net_ref, unsigned char spec) {
@@ -114,7 +126,7 @@ static jclass _get_class_for_object(JNIEnv * jni_env, jobject obj) {
 	return (*jni_env)->GetObjectClass(jni_env, obj);
 }
 
-static int _object_is_class(jvmtiEnv * jvmti_env, jobject obj) {
+static int _object_is_class(jvmtiEnv * jvmti_env,  jobject obj) {
 
 	// TODO isn't there better way?
 
@@ -129,15 +141,28 @@ static int _object_is_class(jvmtiEnv * jvmti_env, jobject obj) {
 	return TRUE;
 }
 
+static jclass DISL_JCLASS_JAVA_LANG_THREAD = NULL;
+
+static jboolean _object_instanceof_thread(JNIEnv * jni_env, jobject obj) {
+
+	if (DISL_JCLASS_JAVA_LANG_THREAD == NULL ) {
+		DISL_JCLASS_JAVA_LANG_THREAD = (*jni_env)->NewGlobalRef(jni_env,
+				(*jni_env)->FindClass(jni_env, "java/lang/Thread"));
+	}
+
+	return (*jni_env)->IsInstanceOf(jni_env, obj, DISL_JCLASS_JAVA_LANG_THREAD);
+}
+
 // does not increment any counter - just sets the values
 static jlong _set_net_reference(jvmtiEnv * jvmti_env, jobject obj,
-		jlong object_id, jint class_id, unsigned char spec) {
+		jlong object_id, jint class_id, unsigned char spec, unsigned char cbit) {
 
 	jlong net_ref = 0;
 
 	net_ref_set_object_id(&net_ref, object_id);
 	net_ref_set_class_id(&net_ref, class_id);
 	net_ref_set_spec(&net_ref, spec);
+	net_ref_set_class_instance(&net_ref, cbit);
 
 	jvmtiError error = (*jvmti_env)->SetTag(jvmti_env, obj, net_ref);
 	check_jvmti_error(jvmti_env, error, "Cannot set object tag");
@@ -159,7 +184,7 @@ static void _pack_class_info(buffer * buff, jlong class_net_ref,
 	// msg id
 	pack_byte(buff, MSG_CLASS_INFO);
 	// class id
-	pack_int(buff, net_ref_get_class_id(class_net_ref));
+	pack_long(buff, class_net_ref);
 	// class signature
 	pack_string_utf8(buff, class_sig, strlen(class_sig));
 	// class generic string
@@ -167,7 +192,26 @@ static void _pack_class_info(buffer * buff, jlong class_net_ref,
 	// class loader id
 	pack_long(buff, class_loader_net_ref);
 	// super class id
-	pack_int(buff, net_ref_get_class_id(super_class_net_ref));
+	pack_long(buff, super_class_net_ref);
+
+}
+
+static void _pack_thread_info(buffer * buff, jlong net_ref, const char *name,
+		jboolean isDaemon) {
+
+	// pack thread info message
+
+	// msg id
+	pack_byte(buff, MSG_THREAD_INFO);
+
+	// object id
+	pack_long(buff, net_ref);
+
+	// thread name
+	pack_string_utf8(buff, name, strlen(name));
+	// is daemon thread
+	pack_boolean(buff, isDaemon);
+
 }
 
 static jlong _set_net_reference_for_class(JNIEnv * jni_env,
@@ -183,7 +227,7 @@ static jlong _set_net_reference_for_class(JNIEnv * jni_env,
 
 	// assign new net reference - set spec to 1 (binding send over network)
 	jlong net_ref = _set_net_reference(jvmti_env, klass,
-			avail_object_id, avail_class_id, 1);
+			avail_object_id, avail_class_id, 1, 1);
 
 	// increment object id counter
 	++avail_object_id;
@@ -268,7 +312,17 @@ static jlong _set_net_reference_for_object(JNIEnv * jni_env,
 
 	// assign new net reference
 	jlong net_ref =
-			_set_net_reference(jvmti_env, obj, avail_object_id, class_id, 0);
+			_set_net_reference(jvmti_env, obj, avail_object_id, class_id, 0, 0);
+
+	if (_object_instanceof_thread(jni_env, obj)) {
+
+		jvmtiThreadInfo info_ptr;
+		jvmtiError error = (*jvmti_env)->GetThreadInfo(jvmti_env, obj,
+				&info_ptr);
+
+		check_jvmti_error(jvmti_env, error, "Cannot get thread info");
+		_pack_thread_info(buff, net_ref, info_ptr.name, info_ptr.is_daemon);
+	}
 
 	// increment object id counter
 	++avail_object_id;

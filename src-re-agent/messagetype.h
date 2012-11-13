@@ -18,5 +18,7 @@ static const jbyte MSG_CLASS_INFO = 4;
 static const jbyte MSG_NEW_STRING = 5;
 // sending registration for analysis method
 static const jbyte MSG_REG_ANALYSIS = 6;
+// sending thread info
+static const jbyte MSG_THREAD_INFO = 7;
 
 #endif	/* _MESSAGETYPE_H */

@@ -5,36 +5,37 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
-import ch.usi.dag.dislreserver.netreference.NetReference;
-import ch.usi.dag.dislreserver.reflectiveinfo.ClassInfoResolver;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
+import ch.usi.dag.dislreserver.shadow.ShadowClassTable;
+import ch.usi.dag.dislreserver.shadow.ShadowObject;
+import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
 
 public class NewClassHandler implements RequestHandler {
 
 	public void handle(DataInputStream is, DataOutputStream os, boolean debug)
 			throws DiSLREServerException {
-		
+
 		try {
-		
+
 			String className = is.readUTF();
-			NetReference classLoaderNR = new NetReference(is.readLong());
+			long oid = is.readLong();
+			ShadowObject classLoader = ShadowObjectTable.get(oid);
 			int classCodeLength = is.readInt();
 			byte[] classCode = new byte[classCodeLength];
 			is.readFully(classCode);
-			
-			ClassInfoResolver.addNewClass(className, classLoaderNR, classCode);
-		}
-		catch (IOException e) {
+
+			ShadowClassTable.load(classLoader, className, classCode);
+		} catch (IOException e) {
 			throw new DiSLREServerException(e);
 		}
 	}
 
 	public void awaitProcessing() {
-		
+
 	}
-	
+
 	public void exit() {
-		
+
 	}
 
 }

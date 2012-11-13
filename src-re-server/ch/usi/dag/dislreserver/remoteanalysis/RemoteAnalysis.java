@@ -1,6 +1,6 @@
 package ch.usi.dag.dislreserver.remoteanalysis;
 
-import ch.usi.dag.dislreserver.netreference.NetReference;
+import ch.usi.dag.dislreserver.shadow.ShadowObject;
 
 /**
  * Each analysis evaluated remotely have to implement this interface.
@@ -24,5 +24,5 @@ public abstract class RemoteAnalysis {
 
 	public abstract void atExit();
 	
-	public abstract void objectFree(NetReference netRef);
+	public abstract void objectFree(ShadowObject netRef);
 }
