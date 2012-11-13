@@ -64,4 +64,73 @@ public abstract class ShadowClass extends ShadowObject {
 
 		return false;
 	}
+	
+	public abstract FieldInfo[] getFields();
+
+	public abstract FieldInfo getField(String fieldName)
+			throws NoSuchFieldException;
+
+	public abstract MethodInfo[] getMethods();
+
+	public abstract MethodInfo getMethod(String methodName,
+			String[] argumentNames) throws NoSuchMethodException;
+
+	public abstract String[] getDeclaredClasses();
+
+	public abstract FieldInfo[] getDeclaredFields();
+
+	public abstract FieldInfo getDeclaredField(String fieldName)
+			throws NoSuchFieldException;
+
+	public abstract MethodInfo[] getDeclaredMethods();
+
+	public abstract MethodInfo getDeclaredMethod(String methodName,
+			String[] argumentNames) throws NoSuchMethodException;
+
+	public MethodInfo getMethod(String methodName, ShadowClass[] arguments)
+			throws NoSuchMethodException {
+		return getMethod(methodName, classesToStrings(arguments));
+	}
+
+	public MethodInfo getDeclaredMethod(String methodName,
+			ShadowClass[] arguments) throws NoSuchMethodException {
+		return getDeclaredMethod(methodName, classesToStrings(arguments));
+	}
+
+	protected static String[] classesToStrings(ShadowClass[] arguments) {
+
+		if (arguments == null) {
+			return new String[0];
+		}
+
+		int size = arguments.length;
+		String[] argumentNames = new String[size];
+
+		for (int i = 0; i < size; i++) {
+			argumentNames[i] = arguments[i].getName();
+		}
+
+		return argumentNames;
+	}
+
+	protected static String argumentNamesToString(String[] argumentNames) {
+		StringBuilder buf = new StringBuilder();
+		buf.append("(");
+
+		if (argumentNames != null) {
+
+			for (int i = 0; i < argumentNames.length; i++) {
+
+				if (i > 0) {
+					buf.append(", ");
+				}
+
+				buf.append(argumentNames[i]);
+			}
+		}
+
+		buf.append(")");
+		return buf.toString();
+	}
+
 }

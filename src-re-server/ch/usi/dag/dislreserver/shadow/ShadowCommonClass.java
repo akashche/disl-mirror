@@ -1,10 +1,22 @@
 package ch.usi.dag.dislreserver.shadow;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.InnerClassNode;
+import org.objectweb.asm.tree.MethodNode;
+
+import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 
 class ShadowCommonClass extends ShadowClass {
+
+	// TODO ! is this implementation of methods really working ??
 
 	private ShadowClass superClass;
 	private ClassNode classNode;
@@ -21,6 +33,22 @@ class ShadowCommonClass extends ShadowClass {
 
 		this.classGenericStr = classGenericStr;
 		this.superClass = superClass;
+		
+		if (classCode == null || classCode.length == 0) {
+			throw new DiSLREServerFatalException("Creating class info for "
+					+ classSignature + " with no code provided");
+		}
+
+		initializeClassInfo(classCode);
+	}
+
+	private List<MethodInfo> methods;
+	private List<MethodInfo> public_methods;
+	private List<FieldInfo> fields;
+	private List<FieldInfo> public_fields;
+	private List<String> innerclasses;
+
+	private void initializeClassInfo(byte[] classCode) {
 
 		ClassReader classReader = new ClassReader(classCode);
 		classNode = new ClassNode(Opcodes.ASM4);
@@ -29,6 +57,49 @@ class ShadowCommonClass extends ShadowClass {
 
 		access = classNode.access;
 		name = classNode.name.replace('/', '.');
+
+		methods = new ArrayList<MethodInfo>(classNode.methods.size());
+		public_methods = new LinkedList<MethodInfo>();
+
+		for (MethodNode methodNode : classNode.methods) {
+
+			MethodInfo methodInfo = new MethodInfo(methodNode);
+			methods.add(methodInfo);
+
+			if (methodInfo.isPublic()) {
+				public_methods.add(methodInfo);
+			}
+		}
+
+		fields = new ArrayList<FieldInfo>(classNode.fields.size());
+		public_fields = new LinkedList<FieldInfo>();
+
+		for (FieldNode fieldNode : classNode.fields) {
+
+			FieldInfo fieldInfo = new FieldInfo(fieldNode);
+			fields.add(fieldInfo);
+
+			if (fieldInfo.isPublic()) {
+				public_fields.add(fieldInfo);
+			}
+		}
+
+		if (getSuperclass() != null) {
+
+			for (MethodInfo methodInfo : getSuperclass().getMethods()) {
+				public_methods.add(methodInfo);
+			}
+
+			for (FieldInfo fieldInfo : getSuperclass().getFields()) {
+				public_fields.add(fieldInfo);
+			}
+		}
+
+		innerclasses = new ArrayList<String>(classNode.innerClasses.size());
+
+		for (InnerClassNode innerClassNode : classNode.innerClasses) {
+			innerclasses.add(innerClassNode.name);
+		}
 	}
 
 	@Override
@@ -43,24 +114,25 @@ class ShadowCommonClass extends ShadowClass {
 
 	@Override
 	public boolean isInstance(ShadowObject obj) {
-		// TODO consider interfaces
-		return equals(obj.getSClass());
+//		return equals(obj.getSClass());
+		throw new DiSLREServerFatalException(
+				"ShadowCommonClass.isInstance not implemented");
 	}
 
 	@Override
 	public boolean isAssignableFrom(ShadowClass klass) {
-		// TODO consider interfaces
-
-		while (klass != null) {
-
-			if (klass.equals(this)) {
-				return true;
-			}
-
-			klass = klass.getSuperclass();
-		}
-
-		return false;
+//		while (klass != null) {
+//
+//			if (klass.equals(this)) {
+//				return true;
+//			}
+//
+//			klass = klass.getSuperclass();
+//		}
+//
+//		return false;
+		throw new DiSLREServerFatalException(
+				"ShadowCommonClass.isAssignableFrom not implemented");
 	}
 
 	@Override
@@ -95,7 +167,8 @@ class ShadowCommonClass extends ShadowClass {
 
 	@Override
 	public String getCanonicalName() {
-		return name;
+		throw new DiSLREServerFatalException(
+				"ShadowCommonClass.getCanonicalName not implemented");
 	}
 
 	@Override
@@ -130,6 +203,87 @@ class ShadowCommonClass extends ShadowClass {
 	@Override
 	public ShadowClass getSuperclass() {
 		return superClass;
+	}
+
+	public FieldInfo[] getFields() {
+
+		// to have "checked" array :(
+		return public_fields.toArray(new FieldInfo[0]);
+	}
+
+	public FieldInfo getField(String fieldName) throws NoSuchFieldException {
+
+		for (FieldInfo fieldInfo : fields) {
+			if (fieldInfo.isPublic() && fieldInfo.getName().equals(fieldName)) {
+				return fieldInfo;
+			}
+		}
+
+		if (getSuperclass() == null) {
+			throw new NoSuchFieldException(name + "." + fieldName);
+		}
+
+		return getSuperclass().getField(fieldName);
+	}
+
+	public MethodInfo[] getMethods() {
+
+		// to have "checked" array :(
+		return public_methods.toArray(new MethodInfo[0]);
+	}
+
+	public MethodInfo getMethod(String methodName, String[] argumentNames)
+			throws NoSuchMethodException {
+
+		for (MethodInfo methodInfo : public_methods) {
+			if (methodName.equals(methodInfo.getName())
+					&& Arrays.equals(argumentNames,
+							methodInfo.getParameterTypes())) {
+				return methodInfo;
+			}
+		}
+
+		throw new NoSuchMethodException(name + "." + methodName
+				+ argumentNamesToString(argumentNames));
+	}
+
+	public FieldInfo[] getDeclaredFields() {
+		return (FieldInfo[]) fields.toArray();
+	}
+
+	public FieldInfo getDeclaredField(String fieldName)
+			throws NoSuchFieldException {
+
+		for (FieldInfo fieldInfo : fields) {
+			if (fieldInfo.getName().equals(fieldName)) {
+				return fieldInfo;
+			}
+		}
+
+		throw new NoSuchFieldException(name + "." + fieldName);
+	}
+
+	public MethodInfo[] getDeclaredMethods() {
+		return (MethodInfo[]) methods.toArray();
+	}
+
+	public String[] getDeclaredClasses() {
+		return (String[]) innerclasses.toArray();
+	}
+
+	public MethodInfo getDeclaredMethod(String methodName,
+			String[] argumentNames) throws NoSuchMethodException {
+
+		for (MethodInfo methodInfo : methods) {
+			if (methodName.equals(methodInfo.getName())
+					&& Arrays.equals(argumentNames,
+							methodInfo.getParameterTypes())) {
+				return methodInfo;
+			}
+		}
+
+		throw new NoSuchMethodException(name + "." + methodName
+				+ argumentNamesToString(argumentNames));
 	}
 
 }

@@ -2,8 +2,6 @@ package ch.usi.dag.dislreserver.shadow;
 
 import org.objectweb.asm.Type;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
-
 public class ShadowPrimitiveClass extends ShadowClass {
 
 	private Type t;
@@ -61,27 +59,7 @@ public class ShadowPrimitiveClass extends ShadowClass {
 
 	@Override
 	public String getName() {
-		switch (t.getSort()) {
-		case Type.BOOLEAN:
-			return "boolean";
-		case Type.BYTE:
-			return "byte";
-		case Type.CHAR:
-			return "char";
-		case Type.DOUBLE:
-			return "double";
-		case Type.FLOAT:
-			return "float";
-		case Type.INT:
-			return "int";
-		case Type.LONG:
-			return "long";
-		case Type.SHORT:
-			return "short";
-
-		default:
-			throw new DiSLREServerFatalException("Unknown primitive type");
-		}
+		return t.getClassName();
 	}
 
 	@Override
@@ -102,6 +80,56 @@ public class ShadowPrimitiveClass extends ShadowClass {
 	@Override
 	public ShadowClass getSuperclass() {
 		return null;
+	}
+
+	@Override
+	public FieldInfo[] getFields() {
+		return new FieldInfo[0];
+	}
+
+	@Override
+	public FieldInfo getField(String fieldName) throws NoSuchFieldException {
+		throw new NoSuchFieldException(t.getClassName() + "." + fieldName);
+	}
+
+	@Override
+	public MethodInfo[] getMethods() {
+		return new MethodInfo[0];
+	}
+
+	@Override
+	public MethodInfo getMethod(String methodName, String[] argumentNames)
+			throws NoSuchMethodException {
+		throw new NoSuchMethodException(t.getClassName() + "." + methodName
+				+ argumentNamesToString(argumentNames));
+	}
+
+	@Override
+	public String[] getDeclaredClasses() {
+		return new String[0];
+	}
+
+	@Override
+	public FieldInfo[] getDeclaredFields() {
+		return new FieldInfo[0];
+	}
+
+	@Override
+	public FieldInfo getDeclaredField(String fieldName)
+			throws NoSuchFieldException {
+		throw new NoSuchFieldException(t.getClassName() + "." + fieldName);
+	}
+
+	@Override
+	public MethodInfo[] getDeclaredMethods() {
+		return new MethodInfo[0];
+	}
+
+	@Override
+	public MethodInfo getDeclaredMethod(String methodName,
+			String[] argumentNames) throws NoSuchMethodException {
+		throw new NoSuchMethodException(t.getClassName() + "." + methodName
+				+ argumentNamesToString(argumentNames));
 	}
 
 }
