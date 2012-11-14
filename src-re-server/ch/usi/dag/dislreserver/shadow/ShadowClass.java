@@ -2,15 +2,21 @@ package ch.usi.dag.dislreserver.shadow;
 
 public abstract class ShadowClass extends ShadowObject {
 
-	private int classId;
-	private ShadowObject classLoader;
+	private final int classId;
+	private final ShadowObject classLoader;
 
-	protected ShadowClass(long net_ref, ShadowObject classLoader) {
-		super(net_ref, null);
+	//
+	
+    protected ShadowClass (
+        final long netReference, final ShadowObject classLoader
+    ) {
+        super (netReference, null);
 
-		this.classId = NetReferenceHelper.get_class_id(net_ref);
-		this.classLoader = classLoader;
-	}
+        this.classId = NetReferenceHelper.get_class_id (netReference);
+        this.classLoader = classLoader;
+    }
+
+    //
 
 	public final int getClassId() {
 		return classId;
