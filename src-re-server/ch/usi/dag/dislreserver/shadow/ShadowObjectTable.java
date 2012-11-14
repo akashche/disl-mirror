@@ -1,5 +1,7 @@
 package ch.usi.dag.dislreserver.shadow;
 
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
@@ -65,4 +67,8 @@ public class ShadowObjectTable {
 		shadowObjects.remove(obj.getId());
 	}
 
+	//TODO: find a more elegant way to allow users to traverse the shadow object table
+	public static Iterator<Entry<Long, ShadowObject>> getIterator() {
+	    return shadowObjects.entrySet().iterator();
+	}
 }
