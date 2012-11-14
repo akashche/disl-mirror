@@ -39,12 +39,12 @@ public class ShadowObject implements Formattable {
 	}
 
 
-    public Object getState () {
+    public synchronized Object getState () {
         return shadowState;
     }
 
 
-    public <T> T getState (final Class <T> type) {
+    public synchronized <T> T getState (final Class <T> type) {
         return type.cast (shadowState);
     }
 
