@@ -248,7 +248,7 @@ class ShadowCommonClass extends ShadowClass {
 	}
 
 	public FieldInfo[] getDeclaredFields() {
-		return (FieldInfo[]) fields.toArray();
+		return fields.toArray(new FieldInfo[0]);
 	}
 
 	public FieldInfo getDeclaredField(String fieldName)

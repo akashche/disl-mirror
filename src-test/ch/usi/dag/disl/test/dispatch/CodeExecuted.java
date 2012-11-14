@@ -88,16 +88,16 @@ public class CodeExecuted extends RemoteAnalysis {
 			ShadowClass class2, ShadowClass class3, ShadowClass class4) {
 
 		System.out.println("* o1 class *");
-		printClassInfo(((ShadowObject)o1).getSClass());
+		printClassInfo(((ShadowObject)o1).getShadowClass());
 		
 		System.out.println("* o2 class *");
-		printClassInfo(o2.getSClass());
+		printClassInfo(o2.getShadowClass());
 		
 		System.out.println("* o3 class *");
-		printClassInfo(((ShadowObject)o3).getSClass());
+		printClassInfo(((ShadowObject)o3).getShadowClass());
 		
 		System.out.println("* o4 class *");
-		printClassInfo(((ShadowObject)o4).getSClass());
+		printClassInfo(((ShadowObject)o4).getShadowClass());
 		
 		System.out.println("* class 1 *");
 		printClassInfo(class1);

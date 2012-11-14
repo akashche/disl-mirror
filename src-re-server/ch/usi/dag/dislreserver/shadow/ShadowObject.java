@@ -49,8 +49,19 @@ public class ShadowObject implements Formattable {
     }
 
 
-    public void setState (final Object shadowState) {
+    public synchronized void setState (final Object shadowState) {
 		this.shadowState = shadowState;
+	}
+
+	public synchronized Object setStateIfAbsent(Object shadowState) {
+
+		Object retVal = this.shadowState;
+
+		if (retVal == null) {
+			this.shadowState = shadowState;
+		}
+
+		return retVal;
 	}
 
     //

@@ -314,15 +314,15 @@ static jlong _set_net_reference_for_object(JNIEnv * jni_env,
 	jlong net_ref =
 			_set_net_reference(jvmti_env, obj, avail_object_id, class_id, 0, 0);
 
-	if (_object_instanceof_thread(jni_env, obj)) {
-
-		jvmtiThreadInfo info_ptr;
-		jvmtiError error = (*jvmti_env)->GetThreadInfo(jvmti_env, obj,
-				&info_ptr);
-
-		check_jvmti_error(jvmti_env, error, "Cannot get thread info");
-		_pack_thread_info(buff, net_ref, info_ptr.name, info_ptr.is_daemon);
-	}
+//	if (_object_instanceof_thread(jni_env, obj)) {
+//
+//		jvmtiThreadInfo info_ptr;
+//		jvmtiError error = (*jvmti_env)->GetThreadInfo(jvmti_env, obj,
+//				&info_ptr);
+//
+//		check_jvmti_error(jvmti_env, error, "Cannot get thread info");
+//		_pack_thread_info(buff, net_ref, info_ptr.name, info_ptr.is_daemon);
+//	}
 
 	// increment object id counter
 	++avail_object_id;
