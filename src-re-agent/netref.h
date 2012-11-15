@@ -141,16 +141,13 @@ static int _object_is_class(jvmtiEnv * jvmti_env,  jobject obj) {
 	return TRUE;
 }
 
-static jclass DISL_JCLASS_JAVA_LANG_THREAD = NULL;
+static jvmtiError _try_get_threadinfo(jvmtiEnv * jvmti_env, jobject obj,
+		jvmtiThreadInfo *info_ptr) {
 
-static jboolean _object_instanceof_thread(JNIEnv * jni_env, jobject obj) {
+	// TODO isn't there better way?
 
-	if (DISL_JCLASS_JAVA_LANG_THREAD == NULL ) {
-		DISL_JCLASS_JAVA_LANG_THREAD = (*jni_env)->NewGlobalRef(jni_env,
-				(*jni_env)->FindClass(jni_env, "java/lang/Thread"));
-	}
-
-	return (*jni_env)->IsInstanceOf(jni_env, obj, DISL_JCLASS_JAVA_LANG_THREAD);
+	jvmtiError error = (*jvmti_env)->GetThreadInfo(jvmti_env, obj, info_ptr);
+	return error;
 }
 
 // does not increment any counter - just sets the values
@@ -314,15 +311,13 @@ static jlong _set_net_reference_for_object(JNIEnv * jni_env,
 	jlong net_ref =
 			_set_net_reference(jvmti_env, obj, avail_object_id, class_id, 0, 0);
 
-//	if (_object_instanceof_thread(jni_env, obj)) {
-//
-//		jvmtiThreadInfo info_ptr;
-//		jvmtiError error = (*jvmti_env)->GetThreadInfo(jvmti_env, obj,
-//				&info_ptr);
-//
-//		check_jvmti_error(jvmti_env, error, "Cannot get thread info");
-//		_pack_thread_info(buff, net_ref, info_ptr.name, info_ptr.is_daemon);
-//	}
+	jvmtiThreadInfo info;
+	jvmtiError error;
+
+	if ((error = _try_get_threadinfo(jvmti_env, obj, &info))
+			== JVMTI_ERROR_NONE) {
+		_pack_thread_info(buff, net_ref, info.name, info.is_daemon);
+	}
 
 	// increment object id counter
 	++avail_object_id;
