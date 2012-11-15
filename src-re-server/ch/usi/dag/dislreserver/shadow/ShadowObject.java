@@ -35,7 +35,12 @@ public class ShadowObject implements Formattable {
 
     
     public ShadowClass getShadowClass () {
-		return shadowClass;
+    	
+    	if (shadowClass != null) {
+    		return shadowClass;
+    	} else {
+    		return ShadowClassTable.JAVA_LANG_CLASS;
+    	}
 	}
 
 

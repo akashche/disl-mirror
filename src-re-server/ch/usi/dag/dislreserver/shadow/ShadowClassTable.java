@@ -1,19 +1,37 @@
 package ch.usi.dag.dislreserver.shadow;
 
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 
 public class ShadowClassTable {
 
-	final static ShadowObject BOOTSTRAP_CLASSLOADER = new ShadowObject(0, null);
+	final static ShadowObject BOOTSTRAP_CLASSLOADER;
+
+	static ShadowClass JAVA_LANG_CLASS;
 
 	private static ConcurrentHashMap<ShadowObject, ConcurrentHashMap<String, byte[]>> classLoaderMap;
 	private static ConcurrentHashMap<Integer, ShadowClass> shadowClasses;
 
 	static {
+
+		BOOTSTRAP_CLASSLOADER = new ShadowObject(0, null);
+
+		try {
+			ClassReader cr = new ClassReader("java.lang.Class");
+			ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS
+					| ClassWriter.COMPUTE_FRAMES);
+			cr.accept(cw, ClassReader.SKIP_DEBUG | ClassReader.EXPAND_FRAMES);
+			JAVA_LANG_CLASS = new ShadowCommonClass(0, "Ljava/lang/Class;",
+					BOOTSTRAP_CLASSLOADER, null, cw.toByteArray());
+		} catch (IOException e) {
+			JAVA_LANG_CLASS = null;
+		}
 
 		classLoaderMap = new ConcurrentHashMap<ShadowObject, ConcurrentHashMap<String, byte[]>>();
 		shadowClasses = new ConcurrentHashMap<Integer, ShadowClass>();
@@ -82,8 +100,8 @@ public class ShadowClassTable {
 						+ t.getClassName() + " has not been loaded");
 			}
 
-			klass = new ShadowCommonClass(net_ref, classSignature,
-					classGenericStr, loader, superClass, classCode);
+			klass = new ShadowCommonClass(net_ref, classSignature, loader,
+					superClass, classCode);
 		} else {
 
 			klass = new ShadowPrimitiveClass(net_ref, loader, t);

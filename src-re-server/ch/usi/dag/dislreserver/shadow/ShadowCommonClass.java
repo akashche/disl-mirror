@@ -24,16 +24,12 @@ class ShadowCommonClass extends ShadowClass {
 	private int access;
 	private String name;
 
-	private String classGenericStr;
-
 	ShadowCommonClass(long net_ref, String classSignature,
-			String classGenericStr, ShadowObject classLoader,
-			ShadowClass superClass, byte[] classCode) {
+			ShadowObject classLoader, ShadowClass superClass, byte[] classCode) {
 		super(net_ref, classLoader);
 
-		this.classGenericStr = classGenericStr;
 		this.superClass = superClass;
-		
+
 		if (classCode == null || classCode.length == 0) {
 			throw new DiSLREServerFatalException("Creating class info for "
 					+ classSignature + " with no code provided");
@@ -173,19 +169,7 @@ class ShadowCommonClass extends ShadowClass {
 
 	@Override
 	public String[] getInterfaces() {
-
-		if (isInterface()) {
-			return new String[] { classGenericStr };
-		} else {
-			int index = classGenericStr.indexOf(':');
-
-			if (index == -1) {
-				return new String[0];
-			} else {
-				String interfaces = classGenericStr.substring(index + 1);
-				return interfaces.split(":");
-			}
-		}
+		return classNode.interfaces.toArray(new String[0]);
 	}
 
 	@Override
