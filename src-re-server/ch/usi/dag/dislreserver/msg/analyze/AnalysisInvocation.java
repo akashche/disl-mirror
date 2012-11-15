@@ -26,13 +26,11 @@ public class AnalysisInvocation {
 		} catch (final Exception e) {
 			// report error during analysis invocation
 			final Throwable cause = e.getCause ();
-			final String message = cause.getMessage ();
 
 			System.err.format (
-				"DiSL-RE: exception in analysis %s.%s(): %s",
+				"DiSL-RE: exception in analysis %s.%s(): ",
 				analysisMethod.getDeclaringClass ().getName (),
-				analysisMethod.getName (),
-				(message != null) ? message : ""
+				analysisMethod.getName ()
 			);
 
 			cause.printStackTrace();
