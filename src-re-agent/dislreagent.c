@@ -1119,29 +1119,6 @@ void JNICALL jvmti_callback_class_file_load_hook(
 
 // ******************* OBJECT FREE callback *******************
 
-static void send_all_to_buffers() {
-
-	// send all total ordering buffers - with lock
-	enter_critical_section(jvmti_env, to_buff_lock);
-	{
-		int i;
-		for(i = 0; i < TO_BUFFER_COUNT; ++i) {
-
-			// send all buffers for occupied ids
-			if(to_buff_array[i].pb != NULL) {
-
-				// send buffers for object tagging
-				buffs_objtag(to_buff_array[i].pb);
-
-				// invalidate buffer pointer
-				to_buff_array[i].pb = NULL;
-			}
-		}
-	}
-	exit_critical_section(jvmti_env, to_buff_lock);
-}
-
-
 void JNICALL jvmti_callback_object_free_hook(
 	jvmtiEnv *jvmti_env, jlong tag
 ) {
@@ -1149,15 +1126,15 @@ void JNICALL jvmti_callback_object_free_hook(
 	printf("Sending object free (thread %ld)\n", tld_get()->id);
 #endif
 
-	// send all buffers for total order
-	send_all_to_buffers();
+	// NOTE: we don't need to send any other buffer with this one because
+	// in the buffers are only life objects (global references)
 
 	// send new obj free message
 
 	// TODO buffer more msgs (send buffer at shutdown) - ??
 	// obtain buffer
 	process_buffs * buffs = buffs_get(tld_get()->id);
-	buffer * buff = buffs->command_buff;
+	buffer * buff = buffs->analysis_buff;
 
 	// msg id
 	pack_byte(buff, MSG_OBJ_FREE);
@@ -1165,7 +1142,16 @@ void JNICALL jvmti_callback_object_free_hook(
 	pack_long(buff, tag);
 
 	// send message
-	buffs_send(buffs);
+	// NOTE !: It is critical for proper ordering to send the buffer to the
+	// object tagging queue.
+	// Explanation: It is guaranteed, that no buffer held by an analysis thread
+	// has this object, because all buffers have references to the objects they
+	// are holding. The object tagging thread is the one who is releasing the
+	// references. It is then necessary, that this event is put to the sending
+	// queue after the object tagging thread puts the currently processed buffer
+	// to the sending queue. This is easily arranged by putting this buffer to
+	// the object tagging queue.
+	buffs_objtag(buffs);
 
 #ifdef DEBUG
 	printf("Object free sent (thread %ld)\n", tld_get()->id);
@@ -1206,6 +1192,28 @@ void JNICALL jvmti_callback_vm_init_hook(
 
 
 // ******************* SHUTDOWN callback *******************
+
+static void send_all_to_buffers() {
+
+	// send all total ordering buffers - with lock
+	enter_critical_section(jvmti_env, to_buff_lock);
+	{
+		int i;
+		for(i = 0; i < TO_BUFFER_COUNT; ++i) {
+
+			// send all buffers for occupied ids
+			if(to_buff_array[i].pb != NULL) {
+
+				// send buffers for object tagging
+				buffs_objtag(to_buff_array[i].pb);
+
+				// invalidate buffer pointer
+				to_buff_array[i].pb = NULL;
+			}
+		}
+	}
+	exit_critical_section(jvmti_env, to_buff_lock);
+}
 
 static void send_thread_buffers(struct tldata * tld) {
 	// thread is marked -> worked with buffers
