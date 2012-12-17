@@ -763,14 +763,13 @@ static void analysis_end(struct tldata * tld) {
 
 	// sending of half-full buffer is done in thread end hook
 
-	// add number of completed requests
+	// increment the number of completed requests
 	tld->analysis_count++;
 
-	// buffer has to be updated each time because thread could end and buffer
-	// has to be up-to date
+	// buffer has to be updated each time - the thread can end any time
 	buff_put_int(tld->analysis_buff, tld->analysis_count_pos, tld->analysis_count);
 
-	// send only when the method count is reached
+	// send only after the proper count is reached
 	if(tld->analysis_count >= ANALYSIS_COUNT) {
 		// invalidate buffer pointers
 		tld->analysis_buff = NULL;
@@ -1216,6 +1215,7 @@ static void send_all_to_buffers() {
 }
 
 static void send_thread_buffers(struct tldata * tld) {
+
 	// thread is marked -> worked with buffers
 	jlong thread_id = tld->id;
 	if(thread_id != INVALID_THREAD_ID) {

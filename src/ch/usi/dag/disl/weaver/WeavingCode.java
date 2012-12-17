@@ -296,7 +296,6 @@ public class WeavingCode {
 					}
 				} else {
 
-					int sopcode = t.getOpcode(Opcodes.ISTORE);
 					int lopcode = t.getOpcode(Opcodes.ILOAD);
 
 					// index should be less than the stack height
