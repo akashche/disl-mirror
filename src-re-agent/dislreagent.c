@@ -136,15 +136,15 @@ static volatile jlong avail_thread_id = STARTING_THREAD_ID;
 
 
 struct tldata {
-    jlong id;
-    process_buffs * local_pb;
-    jbyte to_buff_id;
-    process_buffs * pb;
-    buffer * analysis_buff;
-    buffer * command_buff;
-    jint analysis_count;
-    size_t analysis_count_pos;
-    size_t args_length_pos;
+	jlong id;
+	process_buffs * local_pb;
+	jbyte to_buff_id;
+	process_buffs * pb;
+	buffer * analysis_buff;
+	buffer * command_buff;
+	jint analysis_count;
+	size_t analysis_count_pos;
+	size_t args_length_pos;
 };
 
 
@@ -158,8 +158,8 @@ static pthread_key_t tls_key;
 
 
 static void tls_init () {
-    int result = pthread_key_create (& tls_key, NULL);
-    check_error(result != 0, "Failed to allocate thread-local storage key");
+	int result = pthread_key_create (& tls_key, NULL);
+	check_error(result != 0, "Failed to allocate thread-local storage key");
 }
 
 
@@ -195,19 +195,19 @@ inline static struct tldata * tld_get () {
 //
 
 static void tls_init () {
-    // empty 
+	// empty
 }
 
 
 static __thread struct tldata tld = {
-    .id = INVALID_THREAD_ID,
-    .local_pb = NULL,
-    .to_buff_id = INVALID_BUFF_ID,
-    .pb = NULL,
-    .analysis_buff = NULL,
-    .command_buff = NULL,
-    .analysis_count = 0,
-    .analysis_count_pos = 0,
+		.id = INVALID_THREAD_ID,
+		.local_pb = NULL,
+		.to_buff_id = INVALID_BUFF_ID,
+		.pb = NULL,
+		.analysis_buff = NULL,
+		.command_buff = NULL,
+		.analysis_count = 0,
+		.analysis_count_pos = 0,
 };
 
 inline static struct tldata * tld_get () {
@@ -467,8 +467,8 @@ static jshort next_analysis_id () {
 }
 
 static jshort register_method(
-	JNIEnv * jni_env, jstring analysis_method_desc,
-	jlong thread_id
+		JNIEnv * jni_env, jstring analysis_method_desc,
+		jlong thread_id
 ) {
 #ifdef DEBUG
 	printf("Registering method (thread %ld)\n", tld_get()->id);
@@ -524,7 +524,7 @@ static jlong next_thread_id () {
 
 
 static size_t createAnalysisRequestHeader (
-	buffer * buff, jshort analysis_method_id
+		buffer * buff, jshort analysis_method_id
 ) {
 	// analysis method id
 	pack_short(buff, analysis_method_id);
@@ -540,8 +540,8 @@ static size_t createAnalysisRequestHeader (
 
 
 void analysis_start_buff(
-	JNIEnv * jni_env, jshort analysis_method_id, jbyte ordering_id,
-	struct tldata * tld
+		JNIEnv * jni_env, jshort analysis_method_id, jbyte ordering_id,
+		struct tldata * tld
 ) {
 #ifdef DEBUG
 	printf("Analysis (buffer) start enter (thread %ld)\n", tld_get()->id);
@@ -596,8 +596,8 @@ static size_t createAnalysisMsg(buffer * buff, jlong id) {
 
 
 static void analysis_start(
-	JNIEnv * jni_env, jshort analysis_method_id,
-	struct tldata * tld
+		JNIEnv * jni_env, jshort analysis_method_id,
+		struct tldata * tld
 ) {
 #ifdef DEBUG
 	printf("Analysis start enter (thread %ld)\n", tld_get()->id);
@@ -919,7 +919,7 @@ static void * objtag_thread_loop(void * obj) {
 		process_buffs * pb = _buffs_objtag_get();
 
 #ifdef DEBUG
-	printf("Object tagging started (thread %ld)\n", tld_get()->id);
+		printf("Object tagging started (thread %ld)\n", tld_get()->id);
 #endif
 
 		// tag the objects - with lock
@@ -945,7 +945,7 @@ static void * objtag_thread_loop(void * obj) {
 		exit_critical_section(jvmti_env, tagging_lock);
 
 #ifdef DEBUG
-	printf("Object tagging ended (thread %ld)\n", tld_get()->id);
+		printf("Object tagging ended (thread %ld)\n", tld_get()->id);
 #endif
 	}
 
@@ -1011,7 +1011,7 @@ static void close_connection(int conn, jlong thread_id) {
 static void attach_current_thread_to_jvm () {
 	JNIEnv *jni_env;
 	jvmtiError error = (*java_vm)->AttachCurrentThreadAsDaemon(
-		java_vm, (void **)&jni_env, NULL
+			java_vm, (void **)&jni_env, NULL
 	);
 	check_jvmti_error(jvmti_env, error, "Unable to attach send thread.");
 }
@@ -1030,7 +1030,7 @@ static void * send_thread_loop(void * obj) {
 		process_buffs * pb = _buffs_send_get();
 
 #ifdef DEBUG
-	printf("Sending buffer (thread %ld)\n", tld_get()->id);
+		printf("Sending buffer (thread %ld)\n", tld_get()->id);
 #endif
 
 		// first send command buffer - contains new class or object ids,...
@@ -1042,7 +1042,7 @@ static void * send_thread_loop(void * obj) {
 		_buffs_release(pb);
 
 #ifdef DEBUG
-	printf("Buffer sent (thread %ld)\n", tld_get()->id);
+		printf("Buffer sent (thread %ld)\n", tld_get()->id);
 #endif
 	}
 
@@ -1054,11 +1054,11 @@ static void * send_thread_loop(void * obj) {
 // ******************* CLASS LOAD callback *******************
 
 void JNICALL jvmti_callback_class_file_load_hook(
-	jvmtiEnv *jvmti_env, JNIEnv* jni_env,
-	jclass class_being_redefined, jobject loader, 
-	const char* name, jobject protection_domain,
-	jint class_data_len, const unsigned char* class_data,
-	jint* new_class_data_len, unsigned char** new_class_data
+		jvmtiEnv *jvmti_env, JNIEnv* jni_env,
+		jclass class_being_redefined, jobject loader,
+		const char* name, jobject protection_domain,
+		jint class_data_len, const unsigned char* class_data,
+		jint* new_class_data_len, unsigned char** new_class_data
 ) {
 	struct tldata * tld = tld_get();
 
@@ -1089,8 +1089,8 @@ void JNICALL jvmti_callback_class_file_load_hook(
 		// is then handled by server
 		if(jvm_started) {
 			loader_id = get_net_reference(
-				jni_env, jvmti_env,
-				buffs->command_buff, loader
+					jni_env, jvmti_env,
+					buffs->command_buff, loader
 			);
 		}
 
@@ -1119,7 +1119,7 @@ void JNICALL jvmti_callback_class_file_load_hook(
 // ******************* OBJECT FREE callback *******************
 
 void JNICALL jvmti_callback_object_free_hook(
-	jvmtiEnv *jvmti_env, jlong tag
+		jvmtiEnv *jvmti_env, jlong tag
 ) {
 #ifdef DEBUG
 	printf("Sending object free (thread %ld)\n", tld_get()->id);
@@ -1161,7 +1161,7 @@ void JNICALL jvmti_callback_object_free_hook(
 // ******************* START callback *******************
 
 void JNICALL jvmti_callback_vm_start_hook(
-	jvmtiEnv *jvmti_env, JNIEnv* jni_env
+		jvmtiEnv *jvmti_env, JNIEnv* jni_env
 ) {
 	jvm_started = TRUE;
 }
@@ -1170,7 +1170,7 @@ void JNICALL jvmti_callback_vm_start_hook(
 // ******************* INIT callback *******************
 
 void JNICALL jvmti_callback_vm_init_hook(
-	jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread
+		jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread
 ) {
 #ifdef DEBUG
 	printf("Starting worker threads (thread %ld)\n", tld_get()->id);
@@ -1238,7 +1238,7 @@ static void send_thread_buffers(struct tldata * tld) {
 static void cleanup_jb_workers(JNIEnv * jni_env);
 
 void JNICALL jvmti_callback_vm_death_hook(
-	jvmtiEnv *jvmti_env, JNIEnv* jni_env
+		jvmtiEnv *jvmti_env, JNIEnv* jni_env
 ) {
 	struct tldata * tld = tld_get();
 
@@ -1322,7 +1322,7 @@ void JNICALL jvmti_callback_vm_death_hook(
 		//  - support data
 		if(pb_list[i].owner_id == INVALID_THREAD_ID) {
 			support_count += buffer_filled(pb_list[i].analysis_buff) +
-				buffer_filled(pb_list[i].command_buff);
+					buffer_filled(pb_list[i].command_buff);
 			++non_marked_thread_count;
 		}
 
@@ -1364,7 +1364,7 @@ void JNICALL jvmti_callback_vm_death_hook(
 // ******************* THREAD END callback *******************
 
 void JNICALL jvmti_callback_thread_end_hook(
-	jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread
+		jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread
 ) {
 	// It should be safe to use thread locals according to jvmti documentation:
 	// Thread end events are generated by a terminating thread after its initial
@@ -1396,10 +1396,10 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	jint res = (*jvm)->GetEnv(jvm, (void **) &jvmti_env, JVMTI_VERSION_1_0);
 	if (res != JNI_OK || jvmti_env == NULL) {
 		fprintf(stderr, 
-			"%sUnable to access JVMTI Version 1 (0x%x),"
-			" is your J2SE a 1.5 or newer version?"
-			" JNIEnv's GetEnv() returned %d\n",
-			ERR_PREFIX, JVMTI_VERSION_1, res
+				"%sUnable to access JVMTI Version 1 (0x%x),"
+				" is your J2SE a 1.5 or newer version?"
+				" JNIEnv's GetEnv() returned %d\n",
+				ERR_PREFIX, JVMTI_VERSION_1, res
 		);
 
 		exit(ERR_JVMTI);
@@ -1435,7 +1435,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	callbacks.ThreadEnd = &jvmti_callback_thread_end_hook;
 
 	error = (*jvmti_env)->SetEventCallbacks(
-		jvmti_env, &callbacks, (jint) sizeof(callbacks)
+			jvmti_env, &callbacks, (jint) sizeof(callbacks)
 	);
 	check_jvmti_error(jvmti_env, error, "Cannot set callbacks");
 
@@ -1513,94 +1513,94 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 // ******************* REDispatch methods *******************
 
 JNIEXPORT jshort JNICALL Java_ch_usi_dag_dislre_REDispatch_registerMethod
-  (JNIEnv * jni_env, jclass this_class, jstring analysis_method_desc) {
+(JNIEnv * jni_env, jclass this_class, jstring analysis_method_desc) {
 
 	return register_method(jni_env, analysis_method_desc, tld_get()->id);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__S
-  (JNIEnv * jni_env, jclass this_class, jshort analysis_method_id) {
+(JNIEnv * jni_env, jclass this_class, jshort analysis_method_id) {
 
 	analysis_start(jni_env, analysis_method_id, tld_get());
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__SB
-  (JNIEnv * jni_env, jclass this_class, jshort analysis_method_id,
-		  jbyte ordering_id) {
+(JNIEnv * jni_env, jclass this_class, jshort analysis_method_id,
+		jbyte ordering_id) {
 
 	analysis_start_buff(jni_env, analysis_method_id, ordering_id, tld_get());
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
-  (JNIEnv * jni_env, jclass this_class) {
+(JNIEnv * jni_env, jclass this_class) {
 
 	analysis_end(tld_get());
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean
-  (JNIEnv * jni_env, jclass this_class, jboolean to_send) {
+(JNIEnv * jni_env, jclass this_class, jboolean to_send) {
 
 	pack_boolean(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendByte
-  (JNIEnv * jni_env, jclass this_class, jbyte to_send) {
+(JNIEnv * jni_env, jclass this_class, jbyte to_send) {
 
 	pack_byte(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendChar
-  (JNIEnv * jni_env, jclass this_class, jchar to_send) {
+(JNIEnv * jni_env, jclass this_class, jchar to_send) {
 
 	pack_char(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendShort
-  (JNIEnv * jni_env, jclass this_class, jshort to_send) {
+(JNIEnv * jni_env, jclass this_class, jshort to_send) {
 
 	pack_short(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendInt
-  (JNIEnv * jni_env, jclass this_class, jint to_send) {
+(JNIEnv * jni_env, jclass this_class, jint to_send) {
 
 	pack_int(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendLong
-  (JNIEnv * jni_env, jclass this_class, jlong to_send) {
+(JNIEnv * jni_env, jclass this_class, jlong to_send) {
 
 	pack_long(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloatAsInt
-  (JNIEnv * jni_env, jclass this_class, jint to_send) {
+(JNIEnv * jni_env, jclass this_class, jint to_send) {
 
 	pack_int(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong
-  (JNIEnv * jni_env, jclass this_class, jlong to_send) {
+(JNIEnv * jni_env, jclass this_class, jlong to_send) {
 
 	pack_long(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendString
-  (JNIEnv * jni_env, jclass this_class, jstring to_send) {
+(JNIEnv * jni_env, jclass this_class, jstring to_send) {
 
 	struct tldata * tld = tld_get ();
 	pack_string_java(jni_env, tld->analysis_buff, tld->command_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
-  (JNIEnv * jni_env, jclass this_class, jobject to_send) {
+(JNIEnv * jni_env, jclass this_class, jobject to_send) {
 
 	struct tldata * tld = tld_get ();
 	pack_object(jni_env, tld->analysis_buff, tld->command_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendClass
-  (JNIEnv * jni_env, jclass this_class, jclass to_send) {
+(JNIEnv * jni_env, jclass this_class, jclass to_send) {
 
 	struct tldata * tld = tld_get ();
 	pack_class(jni_env, tld->analysis_buff, tld->command_buff, to_send);
@@ -1672,35 +1672,35 @@ static void * jb_worker_loop(void * obj) {
 	// TODO ! local references ???
 
 	// TODO ! err check
-    JNIEnv * jni_env;
-    (*java_vm)->AttachCurrentThreadAsDaemon(java_vm, (void **)&jni_env, NULL);
+	JNIEnv * jni_env;
+	(*java_vm)->AttachCurrentThreadAsDaemon(java_vm, (void **)&jni_env, NULL);
 
-    // exit when requested
-    while(! no_jb_work) {
+	// exit when requested
+	while(! no_jb_work) {
 
-    	// ** buff acquire **
+		// ** buff acquire **
 
-    	// acquire full buffer
-    	jobject obj_buff = (*jni_env)->CallStaticObjectMethod(jni_env, cl_buffer_pool, mtd_get_full);
+		// acquire full buffer
+		jobject obj_buff = (*jni_env)->CallStaticObjectMethod(jni_env, cl_buffer_pool, mtd_get_full);
 
-    	// get size of the data
-    	jint data_size = (*jni_env)->CallIntMethod(jni_env, obj_buff, mtd_get_data_array_size);
+		// get size of the data
+		jint data_size = (*jni_env)->CallIntMethod(jni_env, obj_buff, mtd_get_data_array_size);
 
-    	// get data array object
-    	jbyteArray data_jarray = (*jni_env)->CallObjectMethod(jni_env, obj_buff, mtd_get_data_array);
-    	// get data as C array
-    	jbyte * data = (*jni_env)->GetByteArrayElements(jni_env, data_jarray, NULL);
+		// get data array object
+		jbyteArray data_jarray = (*jni_env)->CallObjectMethod(jni_env, obj_buff, mtd_get_data_array);
+		// get data as C array
+		jbyte * data = (*jni_env)->GetByteArrayElements(jni_env, data_jarray, NULL);
 
-    	// get tagging object
-    	jobject obj_tag_buffer = (*jni_env)->CallObjectMethod(jni_env, obj_buff, mtd_get_object_tb);
+		// get tagging object
+		jobject obj_tag_buffer = (*jni_env)->CallObjectMethod(jni_env, obj_buff, mtd_get_object_tb);
 
 		// get size of the tag buffers
 		jint tag_size = (*jni_env)->CallIntMethod(jni_env, obj_tag_buffer, mtd_get_tag_ele_count);
 
-    	// get tag object array as object
-    	jobjectArray tag_objects_jarray = (*jni_env)->CallObjectMethod(jni_env, obj_tag_buffer, mtd_get_tag_obj_array);
+		// get tag object array as object
+		jobjectArray tag_objects_jarray = (*jni_env)->CallObjectMethod(jni_env, obj_tag_buffer, mtd_get_tag_obj_array);
 
-    	// get tag pos array as object
+		// get tag pos array as object
 		jintArray tag_pos_jarray = (*jni_env)->CallObjectMethod(jni_env, obj_tag_buffer, mtd_get_tag_pos_array);
 		// get tag pos as C array
 		jint * tag_pos = (*jni_env)->GetIntArrayElements(jni_env, tag_pos_jarray, NULL);
@@ -1722,19 +1722,19 @@ static void * jb_worker_loop(void * obj) {
 
 		// ** tmp buff release **
 
-    	//TODO ! check args + checking of return value
+		//TODO ! check args + checking of return value
 
 		(*jni_env)->ReleaseByteArrayElements(jni_env, data_jarray, data, JNI_ABORT);
-    	(*jni_env)->ReleaseIntArrayElements(jni_env, tag_pos_jarray, tag_pos, JNI_ABORT);
+		(*jni_env)->ReleaseIntArrayElements(jni_env, tag_pos_jarray, tag_pos, JNI_ABORT);
 
-    	// ** buff return **
+		// ** buff return **
 
-    	// return processed buffer - the reset (to empty) is done in java
-    	(*jni_env)->CallStaticVoidMethod(jni_env, cl_buffer_pool, mtd_put_empty, obj_buff);
-    }
+		// return processed buffer - the reset (to empty) is done in java
+		(*jni_env)->CallStaticVoidMethod(jni_env, cl_buffer_pool, mtd_put_empty, obj_buff);
+	}
 
-    // TODO ! free thread local memory and release thread local global jobject references
-    return NULL;
+	// TODO ! free thread local memory and release thread local global jobject references
+	return NULL;
 }
 
 static jclass get_java_class(JNIEnv * jni_env, char * class_name) {
@@ -1778,8 +1778,8 @@ static jmethodID get_java_static_method_id(JNIEnv * jni_env,
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_jb_JBBufferPool_register
-  (JNIEnv * jni_env, jclass this_class, jobject all_buffers,
-		  jobject full_buffers, jobject empty_buffers) {
+(JNIEnv * jni_env, jclass this_class, jobject all_buffers,
+		jobject full_buffers, jobject empty_buffers) {
 
 	all_buffs = (*jni_env)->NewGlobalRef(jni_env, all_buffers);
 	full_buffs = (*jni_env)->NewGlobalRef(jni_env, full_buffers);
@@ -1830,9 +1830,9 @@ static void cleanup_jb_workers(JNIEnv * jni_env) {
 	if(jb_initialized) {
 
 		// wait for full buffer queue to get empty
-		 while(full_queue_size(jni_env) == 0) {
-			 sleep(1);
-		 }
+		while(full_queue_size(jni_env) == 0) {
+			sleep(1);
+		}
 
 		no_jb_work = TRUE;
 
