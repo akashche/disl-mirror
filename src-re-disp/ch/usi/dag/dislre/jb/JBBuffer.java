@@ -61,6 +61,9 @@ public final class JBBuffer {
 
 	public void analysisStart(short analysisMethodId) {
 
+		// initialization (see below) should not be in init() because sometimes
+		// we need really empty buffer
+		
 		// initialize buffer
 		if (requestCount == 0) {
 

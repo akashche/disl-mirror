@@ -13,6 +13,7 @@ public class JBBufferPool {
 
 	// TODO ! JB - better exception handling
 	
+	// TODO ! variable not in sync with native code
 	public static final int NUMBER_OF_FETCHING_THREADS = 4;
     private static final int BUFFERS = NUMBER_OF_FETCHING_THREADS * 10;
 
@@ -43,6 +44,7 @@ public class JBBufferPool {
         }
     }
 
+    // called (also) by native code - during cleanup
     public static JBBuffer getEmpty() {
     	
     	while(true) {
@@ -58,6 +60,7 @@ public class JBBufferPool {
         }
     }
 
+    // called (also) by native code - during cleanup
     public static void putFull(JBBuffer buffer) {
         
     	boolean done = false;
@@ -75,7 +78,7 @@ public class JBBufferPool {
         }
     }
 
-    // called by the native code
+    // called by native code
     private static JBBuffer getFull() {
     	
     	// get buffer
@@ -91,7 +94,7 @@ public class JBBufferPool {
         }
     }
 
-    // called (also) by the native code
+    // called (also) by native code
     private static void putEmpty(JBBuffer buffer) {
         
     	boolean done = false;
@@ -108,6 +111,11 @@ public class JBBufferPool {
             	e.printStackTrace();
             }
         }
+    }
+    
+    // called by native code
+    private static int fullQueueSize() {
+    	return fullBuffers.size();
     }
 
     private static native void register(
