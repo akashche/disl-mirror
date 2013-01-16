@@ -3,6 +3,8 @@ public class TargetClass {
 	
 	public static void main(String[] args) throws InterruptedException {
 
+		long start = System.nanoTime();
+		
 		int COUNT = 10000000;
 		
 		TargetClass ta[] = new TargetClass[COUNT];
@@ -13,6 +15,7 @@ public class TargetClass {
 			ta[i] = new TargetClass();
 		}
 		
-		System.out.println("Sent " + i + " events");
+		System.out.println("Sent " + i + " events in "
+				+ (System.nanoTime() - start) / 1000000 + " ms");
 	}
 }

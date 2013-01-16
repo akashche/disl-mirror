@@ -1650,6 +1650,8 @@ static void jb_object_tagging(JNIEnv * jni_env, process_buffs * pb,
 	exit_critical_section(jvmti_env, tagging_lock);
 }
 
+// TODO !! buffers are not sorted correctly - buffer id needed for each thread
+
 static void * jb_worker_loop(void * obj) {
 
 	// TODO ! local references ???
