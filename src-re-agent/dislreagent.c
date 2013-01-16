@@ -1600,3 +1600,201 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendClass
 	struct tldata * tld = tld_get ();
 	pack_class(jni_env, tld->analysis_buff, tld->command_buff, to_send);
 }
+
+// *****************************************************************************
+
+static jobject all_buffs;
+static jobject full_buffs;
+static jobject empty_buffs;
+
+static jclass cl_buffer_pool;
+
+// JBBufferPool methods
+static jmethodID mtd_get_full;
+static jmethodID mtd_put_empty;
+
+// JBBuffer methods
+static jmethodID mtd_get_data_array;
+static jmethodID mtd_get_data_array_size;
+static jmethodID mtd_get_object_tb;
+
+// JBBuffer methods
+static jmethodID mtd_get_tag_obj_array;
+static jmethodID mtd_get_tag_pos_array;
+static jmethodID mtd_get_tag_ele_count;
+
+#define JB_WORKER_THREADS 3
+
+// NOTE: this tagging can cooperate with normal tagging thread
+static void jb_object_tagging(JNIEnv * jni_env, process_buffs * pb,
+		jint tag_size, jobjectArray tag_objects_jarray, jint * tag_pos_array) {
+
+	// TODO ! local references ???
+
+	// tag the objects - with lock
+	enter_critical_section(jvmti_env, tagging_lock);
+	{
+
+		jsize i;
+		for(i = 0; i < tag_size; ++i) {
+
+			jint pos = tag_pos_array[i];
+			jobject obj = (*jni_env)->GetObjectArrayElement(jni_env,
+					tag_objects_jarray, i);
+
+			ot_tag_object(jni_env, pb->analysis_buff, pos, obj,
+					pb->command_buff);
+		}
+
+	}
+	exit_critical_section(jvmti_env, tagging_lock);
+}
+
+static void * jb_worker_loop(void * obj) {
+
+	// TODO ! local references ???
+
+	// TODO ! err check
+    JNIEnv * jni_env;
+    (*java_vm)->AttachCurrentThreadAsDaemon(java_vm, (void **)&jni_env, NULL);
+
+    // TODO ! do better stopping
+    while(TRUE) {
+
+    	// ** buff acquire **
+
+    	// acquire full buffer
+    	jobject obj_buff = (*jni_env)->CallStaticObjectMethod(jni_env, cl_buffer_pool, mtd_get_full);
+
+    	// get size of the data
+    	jint data_size = (*jni_env)->CallIntMethod(jni_env, obj_buff, mtd_get_data_array_size);
+
+    	// get data array object
+    	jbyteArray data_jarray = (*jni_env)->CallObjectMethod(jni_env, obj_buff, mtd_get_data_array);
+    	// get data as C array
+    	jbyte * data = (*jni_env)->GetByteArrayElements(jni_env, data_jarray, NULL);
+
+    	// get tagging object
+    	jobject obj_tag_buffer = (*jni_env)->CallObjectMethod(jni_env, obj_buff, mtd_get_object_tb);
+
+		// get size of the tag buffers
+		jint tag_size = (*jni_env)->CallIntMethod(jni_env, obj_tag_buffer, mtd_get_tag_ele_count);
+
+    	// get tag object array as object
+    	jobjectArray tag_objects_jarray = (*jni_env)->CallObjectMethod(jni_env, obj_tag_buffer, mtd_get_tag_obj_array);
+
+    	// get tag pos array as object
+		jintArray tag_pos_jarray = (*jni_env)->CallObjectMethod(jni_env, obj_tag_buffer, mtd_get_tag_pos_array);
+		// get tag pos as C array
+		jint * tag_pos = (*jni_env)->GetIntArrayElements(jni_env, tag_pos_jarray, NULL);
+
+		// ** buff processing **
+
+		// acquire sending buffer
+		// TODO ! const
+		process_buffs * pb = buffs_get(-12345);
+
+		// copy data to the analysis buffer
+		buffer_fill(pb->analysis_buff, data, data_size);
+
+		// tag data
+		jb_object_tagging(jni_env, pb, tag_size, tag_objects_jarray, tag_pos);
+
+		// dispatch sending buffer
+		buffs_send(pb);
+
+		// ** tmp buff release **
+
+    	//TODO ! check args + checking of return value
+
+		(*jni_env)->ReleaseByteArrayElements(jni_env, data_jarray, data, JNI_ABORT);
+    	(*jni_env)->ReleaseIntArrayElements(jni_env, tag_pos_jarray, tag_pos, JNI_ABORT);
+
+    	// ** buff return **
+
+    	// return processed buffer - the reset (to empty) is done in java
+    	(*jni_env)->CallStaticVoidMethod(jni_env, cl_buffer_pool, mtd_put_empty, obj_buff);
+    }
+
+    // TODO ! free thread local memory and release thread local global jobject references
+    return NULL;
+}
+
+static jclass get_java_class(JNIEnv * jni_env, char * class_name) {
+
+	jclass jclazz = (*jni_env)->FindClass(jni_env, class_name);
+
+	// TODO ! use check_error
+	if (jclazz == NULL) {
+		printf("Class not found: %s\n", class_name);
+		exit(1);
+	}
+	return jclazz;
+}
+
+static jmethodID get_java_method_id(JNIEnv * jni_env, jclass class_interface,
+		char * method_name, char * method_signature) {
+
+	jmethodID jmid = (*jni_env)->GetMethodID(jni_env, class_interface,
+			method_name, method_signature);
+
+	// TODO ! use check_error
+	if (jmid == NULL) {
+		printf("Method not found: %s\n", method_name);
+		exit(1);
+	}
+	return jmid;
+}
+
+static jmethodID get_java_static_method_id(JNIEnv * jni_env,
+		jclass class_interface, char * method_name, char * method_signature) {
+
+	jmethodID jmid = (*jni_env)->GetStaticMethodID(jni_env, class_interface,
+			method_name, method_signature);
+
+	// TODO ! use check_error
+	if (jmid == NULL) {
+		printf("Method not found: %s\n", method_name);
+		exit(1);
+	}
+	return jmid;
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_jb_JBBufferPool_register
+  (JNIEnv * jni_env, jclass this_class, jobject all_buffers,
+		  jobject full_buffers, jobject empty_buffers) {
+
+	all_buffs = (*jni_env)->NewGlobalRef(jni_env, all_buffers);
+	full_buffs = (*jni_env)->NewGlobalRef(jni_env, full_buffers);
+	empty_buffs = (*jni_env)->NewGlobalRef(jni_env, empty_buffers);
+
+	cl_buffer_pool = get_java_class(jni_env, "ch/usi/dag/dislre/jb/JBBufferPool");
+
+	mtd_get_full = get_java_static_method_id(jni_env, cl_buffer_pool, "getFull", "()Lch/usi/dag/dislre/jb/JBBuffer;");
+	mtd_put_empty = get_java_static_method_id(jni_env, cl_buffer_pool, "putEmpty", "(Lch/usi/dag/dislre/jb/JBBuffer;)V");
+
+	jclass cl_buffer = get_java_class(jni_env, "ch/usi/dag/dislre/jb/JBBuffer");
+
+	mtd_get_data_array = get_java_method_id(jni_env, cl_buffer, "getDataAsArray", "()[B");
+	mtd_get_data_array_size = get_java_method_id(jni_env, cl_buffer, "sizeInBytes", "()I");
+	mtd_get_object_tb = get_java_method_id(jni_env, cl_buffer, "getObjectTB", "()Lch/usi/dag/dislre/jb/TagBuffer;");
+
+	jclass cl_tag_buffer = get_java_class(jni_env, "ch/usi/dag/dislre/jb/TagBuffer");
+
+	mtd_get_tag_obj_array = get_java_method_id(jni_env, cl_tag_buffer, "getObjArray", "()[Ljava/lang/Object;");
+	mtd_get_tag_pos_array = get_java_method_id(jni_env, cl_tag_buffer, "getPosArray", "()[I");
+	mtd_get_tag_ele_count = get_java_method_id(jni_env, cl_tag_buffer, "size", "()I");
+
+	// TODO !
+
+	//jfieldID jfid = (*jni_env)->GetStaticFieldID(jni_env, buffer_holder, "NUMBER_OF_SENDER_THREADS", "I");
+	//WORKER_THREADS = (*jni_env)->GetStaticIntField(jni_env, buffer_holder, jfid);
+
+	int i;
+	for(i = 0; i < JB_WORKER_THREADS; ++i) {
+
+		pthread_t pthread;
+		int pcr = pthread_create(&pthread, NULL, jb_worker_loop, NULL);
+		check_error(pcr != 0, "Failed to create worker thread");
+	}
+}
