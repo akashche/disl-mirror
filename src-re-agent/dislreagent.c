@@ -1830,7 +1830,7 @@ static void cleanup_jb_workers(JNIEnv * jni_env) {
 	if(jb_initialized) {
 
 		// wait for full buffer queue to get empty
-		while(full_queue_size(jni_env) == 0) {
+		while(full_queue_size(jni_env) != 0) {
 			sleep(1);
 		}
 
