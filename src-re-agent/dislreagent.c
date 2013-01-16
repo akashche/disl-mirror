@@ -1676,7 +1676,7 @@ static void * jb_worker_loop(void * obj) {
     (*java_vm)->AttachCurrentThreadAsDaemon(java_vm, (void **)&jni_env, NULL);
 
     // exit when requested
-    while(no_jb_work) {
+    while(! no_jb_work) {
 
     	// ** buff acquire **
 

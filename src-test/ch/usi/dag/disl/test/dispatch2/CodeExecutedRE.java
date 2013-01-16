@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.test.dispatch2;
 
-import ch.usi.dag.dislre.REDispatch;
+import ch.usi.dag.dislre.jb.REDispatchJ;
 
 // Optimally, this class is automatically created on analysis machine
 // and redefines during loading the CodeExecuted class on the client vm
@@ -9,27 +9,27 @@ import ch.usi.dag.dislre.REDispatch;
 // functionality
 public class CodeExecutedRE {
 
-	private static short ieId = REDispatch.registerMethod(
+	private static short ieId = REDispatchJ.registerMethod(
 			"ch.usi.dag.disl.test.dispatch2.CodeExecuted.intEvent");
 	
-	private static short oeId = REDispatch.registerMethod(
+	private static short oeId = REDispatchJ.registerMethod(
 			"ch.usi.dag.disl.test.dispatch2.CodeExecuted.objectEvent");
 	
 	public static void intEvent(int num) {
 		
-		REDispatch.analysisStart(ieId);
+		REDispatchJ.analysisStart(ieId);
 		
-		REDispatch.sendInt(num);
+		REDispatchJ.sendInt(num);
 		
-		REDispatch.analysisEnd();
+		REDispatchJ.analysisEnd();
 	}
 	
 	public static void objectEvent(Object o) {
 		
-		REDispatch.analysisStart(oeId);
+		REDispatchJ.analysisStart(oeId);
 		
-		REDispatch.sendObject(o);
+		REDispatchJ.sendObject(o);
 		
-		REDispatch.analysisEnd();
+		REDispatchJ.analysisEnd();
 	}
 }
