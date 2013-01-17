@@ -15,7 +15,7 @@ public class TargetClass {
 			ta[i] = new TargetClass();
 		}
 		
-		System.out.println("Sent " + i + " events in "
+		System.out.println("Allocated " + i + " objects in "
 				+ (System.nanoTime() - start) / 1000000 + " ms");
 	}
 }

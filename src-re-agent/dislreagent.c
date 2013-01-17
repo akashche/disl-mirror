@@ -1711,6 +1711,7 @@ static void * jb_worker_loop(void * obj) {
 		// TODO ! const
 		process_buffs * pb = buffs_get(-12345);
 
+		// TODO perf improvement - you are copying the data twice
 		// copy data to the analysis buffer
 		buffer_fill(pb->analysis_buff, data, data_size);
 
