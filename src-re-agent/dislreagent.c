@@ -1723,10 +1723,14 @@ static void * jb_worker_loop(void * obj) {
 		// dispatch sending buffer
 		buffs_send(pb);
 
+		// ** buff return **
+
+		// return processed buffer - the reset (to empty) is done in java
+		(*jni_env)->CallStaticVoidMethod(jni_env, cl_buffer_pool, mtd_put_empty, obj_buff);
+
 		// ** tmp buff + local ref release **
 
-		//TODO ! check args + checking of return value
-
+		// JNI_ABORT releases the memory without copying the data back to java array
 		(*jni_env)->ReleaseByteArrayElements(jni_env, data_jarray, data, JNI_ABORT);
 		(*jni_env)->ReleaseIntArrayElements(jni_env, tag_pos_jarray, tag_pos, JNI_ABORT);
 
@@ -1735,11 +1739,6 @@ static void * jb_worker_loop(void * obj) {
 		(*jni_env)->DeleteLocalRef(jni_env, obj_tag_buffer);
 		(*jni_env)->DeleteLocalRef(jni_env, tag_objects_jarray);
 		(*jni_env)->DeleteLocalRef(jni_env, tag_pos_jarray);
-
-		// ** buff return **
-
-		// return processed buffer - the reset (to empty) is done in java
-		(*jni_env)->CallStaticVoidMethod(jni_env, cl_buffer_pool, mtd_put_empty, obj_buff);
 	}
 
 	// TODO ! free thread local memory and release thread local global jobject references
