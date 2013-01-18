@@ -1659,6 +1659,8 @@ static void jb_object_tagging(JNIEnv * jni_env, process_buffs * pb,
 
 			ot_tag_object(jni_env, pb->analysis_buff, pos, obj,
 					pb->command_buff);
+
+			(*jni_env)->DeleteLocalRef(jni_env, obj);
 		}
 
 	}
@@ -1721,12 +1723,18 @@ static void * jb_worker_loop(void * obj) {
 		// dispatch sending buffer
 		buffs_send(pb);
 
-		// ** tmp buff release **
+		// ** tmp buff + local ref release **
 
 		//TODO ! check args + checking of return value
 
 		(*jni_env)->ReleaseByteArrayElements(jni_env, data_jarray, data, JNI_ABORT);
 		(*jni_env)->ReleaseIntArrayElements(jni_env, tag_pos_jarray, tag_pos, JNI_ABORT);
+
+		(*jni_env)->DeleteLocalRef(jni_env, obj_buff);
+		(*jni_env)->DeleteLocalRef(jni_env, data_jarray);
+		(*jni_env)->DeleteLocalRef(jni_env, obj_tag_buffer);
+		(*jni_env)->DeleteLocalRef(jni_env, tag_objects_jarray);
+		(*jni_env)->DeleteLocalRef(jni_env, tag_pos_jarray);
 
 		// ** buff return **
 
