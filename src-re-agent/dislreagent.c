@@ -519,6 +519,20 @@ void analysis_start_buff(
 
 	check_error(ordering_id < 0, "Buffer id has negative value");
 
+	// flush normal buffers before each global buffering
+	if(tld->analysis_buff != NULL) {
+		// invalidate buffer pointers
+		tld->analysis_buff = NULL;
+		tld->command_buff = NULL;
+
+		// send buffers for object tagging
+		buffs_objtag(tld->pb);
+
+		// invalidate buffer pointer
+		tld->pb = NULL;
+	}
+
+	// allocate special local buffer for this buffering
 	if(tld->local_pb == NULL) {
 		// mark thread
 		if(tld->id == INVALID_THREAD_ID) {
@@ -699,14 +713,10 @@ static void analysis_end_buff(struct tldata * tld) {
 	exit_critical_section(jvmti_env, to_buff_lock);
 
 	// reset analysis and command buffers for normal buffering
-	if(tld->pb != NULL) {
-		tld->analysis_buff = tld->pb->analysis_buff;
-		tld->command_buff = tld->pb->command_buff;
-	}
-	else {
-		tld->analysis_buff = NULL;
-		tld->command_buff = NULL;
-	}
+	// set to NULL, because we've send the buffers at the beginning of
+	// global buffer buffering
+	tld->analysis_buff = NULL;
+	tld->command_buff = NULL;
 
 	// invalidate buffer id
 	tld->to_buff_id = INVALID_BUFF_ID;
