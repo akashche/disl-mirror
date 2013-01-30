@@ -4,6 +4,7 @@ import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
 import ch.usi.dag.dislreserver.shadow.ShadowClass;
 import ch.usi.dag.dislreserver.shadow.ShadowObject;
 import ch.usi.dag.dislreserver.shadow.ShadowString;
+import ch.usi.dag.dislreserver.shadow.ShadowThread;
 
 // NOTE that this class is not static anymore
 public class CodeExecuted extends RemoteAnalysis {
@@ -50,27 +51,43 @@ public class CodeExecuted extends RemoteAnalysis {
 		}
 	}
 	
-	public static void testingAdvanced(ShadowString s, ShadowObject o, ShadowClass c) {
+	public static void testingAdvanced(ShadowObject s, ShadowObject o, ShadowObject c, ShadowObject t) {
 
 		if(! s.toString().equals("Corect transfer of String")) {
 			throw new RuntimeException("Incorect transfer of String");
 		}
 
-		long objId = ((ShadowObject)o).getId();
+		if(! (s instanceof ShadowObject)) {
+			throw new RuntimeException("This string should be transfered as string");
+		}
 		
 		// object id should be non 0
-		if(! (o instanceof ShadowObject) || objId == 0) {
-			throw new RuntimeException("Incorect transfer of Object");
+		if(o.getId() == 0) {
+			throw new RuntimeException("Object id should not be null");
 		}
 		
-		System.out.println("Received object id: " + objId);
+		System.out.println("Received object id: " + o.getId());
+		
+		if(o instanceof ShadowString) {
+			throw new RuntimeException("This string should be transfered as object");
+		}
+		
+		if(! (c instanceof ShadowClass)) {
+			throw new RuntimeException("This class should be transfered as class");
+		}
 		
 		// class id should be non 0
-		if(! (c instanceof ShadowClass) || c.getClassId() == 0) {
-			throw new RuntimeException("Incorect transfer of Class");
+		if(((ShadowClass) c).getClassId() == 0) {
+			throw new RuntimeException("Class id should not be null");
 		}
 		
-		System.out.println("Received class id: " + c.getClassId());
+		System.out.println("Received class id: " + ((ShadowClass) c).getClassId());
+		
+		if(! (t instanceof ShadowThread)) {
+			throw new RuntimeException("This thread should be transfered as thread");
+		}
+		
+		System.out.println("Received thread: " + ((ShadowThread) t).getName() + " is deamon " + ((ShadowThread) t).isDaemon());
 	}
 	
 	public static void printClassInfo(ShadowClass sc) {
@@ -88,16 +105,16 @@ public class CodeExecuted extends RemoteAnalysis {
 			ShadowClass class2, ShadowClass class3, ShadowClass class4) {
 
 		System.out.println("* o1 class *");
-		printClassInfo(((ShadowObject)o1).getShadowClass());
+		printClassInfo(o1.getShadowClass());
 		
 		System.out.println("* o2 class *");
 		printClassInfo(o2.getShadowClass());
 		
 		System.out.println("* o3 class *");
-		printClassInfo(((ShadowObject)o3).getShadowClass());
+		printClassInfo(o3.getShadowClass());
 		
 		System.out.println("* o4 class *");
-		printClassInfo(((ShadowObject)o4).getShadowClass());
+		printClassInfo(o4.getShadowClass());
 		
 		System.out.println("* class 1 *");
 		printClassInfo(class1);

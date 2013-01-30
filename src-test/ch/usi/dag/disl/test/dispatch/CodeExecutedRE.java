@@ -52,21 +52,21 @@ public class CodeExecutedRE {
 	}
 	
 	public static void testingAdvanced(String s, Object o, Class<?> c,
-			int classID) {
+			Thread t) {
 		
 		REDispatch.analysisStart(taId);
 		
-		REDispatch.sendString(s);
+		REDispatch.sendObjectPlusData(s);
 		REDispatch.sendObject(o);
-		REDispatch.sendClass(c);
-		// class_id ignored
+		REDispatch.sendObject(c);
+		REDispatch.sendObjectPlusData(t);
 		
 		REDispatch.analysisEnd();
 	}
 
 	public static void testingAdvanced2(Object o1, Object o2, Object o3,
-			Object o4, Class<?> class1, int cid1, Class<?> class2, int cid2,
-			Class<?> class3, int cid3, Class<?> class4, int cid4) {
+			Object o4, Class<?> class1, Class<?> class2, 
+			Class<?> class3, Class<?> class4) {
 
 		REDispatch.analysisStart(ta2Id);
 		
@@ -74,14 +74,10 @@ public class CodeExecutedRE {
 		REDispatch.sendObject(o2);
 		REDispatch.sendObject(o3);
 		REDispatch.sendObject(o4);
-		REDispatch.sendClass(class1);
-		// class_id ignored
-		REDispatch.sendClass(class2);
-		// class_id ignored
-		REDispatch.sendClass(class3);
-		// class_id ignored
-		REDispatch.sendClass(class4);
-		// class_id ignored
+		REDispatch.sendObject(class1);
+		REDispatch.sendObject(class2);
+		REDispatch.sendObject(class3);
+		REDispatch.sendObject(class4);
 		
 		REDispatch.analysisEnd();		
 	}
@@ -90,9 +86,9 @@ public class CodeExecutedRE {
 		
 		REDispatch.analysisStart(tnId);
 		
-		REDispatch.sendString(s);
+		REDispatch.sendObjectPlusData(s);
 		REDispatch.sendObject(o);
-		REDispatch.sendClass(c);
+		REDispatch.sendObject(c);
 		
 		REDispatch.analysisEnd();
 	}

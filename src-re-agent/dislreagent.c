@@ -46,12 +46,6 @@ static int jvm_started = FALSE;
 static volatile int no_tagging_work = FALSE;
 static volatile int no_sending_work = FALSE;
 
-// *** Accessed only by sending thread ***
-
-// communication connection socket descriptor
-// access must be protected by monitor
-static int connection = 0;
-
 // *** Sync queues ***
 
 // !!! There should be enough buffers for initial class loading
@@ -79,8 +73,7 @@ typedef struct {
 static process_buffs pb_list[BQ_BUFFERS];
 
 #define OT_OBJECT 1
-#define OT_STRING 2
-#define OT_CLASS 3
+#define OT_DATA_OBJECT 2
 
 typedef struct {
 	unsigned char obj_type;
@@ -394,38 +387,14 @@ static void _fill_ot_rec(JNIEnv * jni_env, buffer * cmd_buff,
 }
 
 static void pack_object(JNIEnv * jni_env, buffer * buff, buffer * cmd_buff,
-		jobject to_send) {
+		jobject to_send, unsigned char object_type) {
 
 	// create entry for object tagging thread that will replace the null ref
 	if(to_send != NULL) {
-		_fill_ot_rec(jni_env, cmd_buff, OT_OBJECT, buff, to_send);
+		_fill_ot_rec(jni_env, cmd_buff, object_type, buff, to_send);
 	}
 
 	// pack null net reference
-	pack_long(buff, NULL_NET_REF);
-}
-
-static void pack_string_java(JNIEnv * jni_env, buffer * buff, buffer * cmd_buff,
-		jstring to_send) {
-
-	// create entry for object tagging thread that will replace the null ref
-	if(to_send != NULL) {
-		_fill_ot_rec(jni_env, cmd_buff, OT_STRING, buff, to_send);
-	}
-
-	// pack null net reference
-	pack_long(buff, NULL_NET_REF);
-}
-
-static void pack_class(JNIEnv * jni_env, buffer * buff, buffer * cmd_buff,
-		jclass to_send) {
-
-	// create entry for object tagging thread that will replace the null ref
-	if(to_send != NULL) {
-		_fill_ot_rec(jni_env, cmd_buff, OT_CLASS, buff, to_send);
-	}
-
-	// pack null class id
 	pack_long(buff, NULL_NET_REF);
 }
 
@@ -489,8 +458,9 @@ static jshort register_method(
 	// new id for analysis method
 	pack_short(buff, new_analysis_id);
 	// method descriptor
-	// uses string case and additional message for string - bit unoptimized
-	pack_string_java(jni_env, buff, buffs->command_buff, analysis_method_desc);
+	// sends string as object with additional data - bit unoptimized but works
+	pack_object(jni_env, buff, buffs->command_buff, analysis_method_desc,
+			OT_DATA_OBJECT);
 
 	// send message
 	buffs_objtag(buffs);
@@ -791,7 +761,10 @@ static void analysis_end(struct tldata * tld) {
 
 // TODO add cache - ??
 
-static void ot_pack_string_cache(JNIEnv * jni_env, buffer * buff,
+static jclass THREAD_CLASS = NULL;
+static jclass STRING_CLASS = NULL;
+
+static void ot_pack_string_data(JNIEnv * jni_env, buffer * buff,
 		jstring to_send, jlong str_net_ref) {
 
 	// get string length
@@ -818,45 +791,79 @@ static void ot_pack_string_cache(JNIEnv * jni_env, buffer * buff,
 	(*jni_env)->ReleaseStringUTFChars(jni_env, to_send, str);
 }
 
-static void ot_tag_object(JNIEnv * jni_env, buffer * buff, size_t buff_pos,
-		jobject to_send, buffer * new_objs_buff) {
+static void ot_pack_thread_data(JNIEnv * jni_env, buffer * buff,
+		jstring to_send, jlong thr_net_ref) {
 
-	// get net reference and put it on proper position
-	buff_put_long(buff, buff_pos,
-			get_net_reference(jni_env, jvmti_env, new_objs_buff, to_send));
+	jvmtiThreadInfo info;
+	jvmtiError error = (*jvmti_env)->GetThreadInfo(jvmti_env, to_send, &info);
+	check_error(error != JVMTI_ERROR_NONE, "Cannot get tread info");
+
+	// pack thread info message
+
+	// msg id
+	pack_byte(buff, MSG_THREAD_INFO);
+
+	// thread object id
+	pack_long(buff, thr_net_ref);
+
+	// thread name
+	pack_string_utf8(buff, info.name, strlen(info.name));
+
+	// is daemon thread
+	pack_boolean(buff, info.is_daemon);
 }
 
-// NOTE: this tagging uses cache
-static void ot_tag_string(JNIEnv * jni_env, buffer * buff, size_t buff_pos,
-		jobject to_send, buffer * new_objs_buff) {
+static void update_send_status(jobject to_send, jlong * net_ref) {
 
-	jlong net_ref =
-			get_net_reference(jni_env, jvmti_env, new_objs_buff, to_send);
+	net_ref_set_spec(net_ref, TRUE);
+	update_net_reference(jvmti_env, to_send, *net_ref);
+}
 
-	// test if the string was already sent to the server
-	// NOTE: we don't use lock here, so it is possible that multiple threads
-	//       will send it, but this will not hurt (only performance)
-	if(net_ref_get_spec(net_ref) == FALSE) {
+static void ot_pack_aditional_data(JNIEnv * jni_env, jlong * net_ref,
+		jobject to_send, unsigned char obj_type, buffer * new_objs_buff) {
 
-		// update the send status
-		net_ref_set_spec(&net_ref, TRUE);
-		update_net_reference(jvmti_env, to_send, net_ref);
+	// NOTE: we don't use lock for updating send status, so it is possible
+	// that multiple threads will send it, but this will hurt only performance
 
-		// add cached string to the buffer
-		ot_pack_string_cache(jni_env, new_objs_buff, to_send, net_ref);
+	// test if the data was already sent to the server
+	if(net_ref_get_spec(*net_ref) == TRUE) {
+		return;
 	}
 
-	buff_put_long(buff, buff_pos, net_ref);
+	// NOTE: Tests for class types could be done by buffering threads.
+	//       It depends, where we want to have the load.
+
+	// String - pack data
+	if((*jni_env)->IsInstanceOf(jni_env, to_send, STRING_CLASS)) {
+
+		update_send_status(to_send, net_ref);
+		ot_pack_string_data(jni_env, new_objs_buff, to_send, *net_ref);
+	}
+
+	// Thread - pack data
+	if((*jni_env)->IsInstanceOf(jni_env, to_send, THREAD_CLASS)) {
+
+		update_send_status(to_send, net_ref);
+		ot_pack_thread_data(jni_env, new_objs_buff, to_send, *net_ref);
+	}
 }
 
-static void ot_tag_class(JNIEnv * jni_env, buffer * buff, size_t buff_pos,
-		jobject to_send, buffer * new_objs_buff) {
+static void ot_tag_record(JNIEnv * jni_env, buffer * buff, size_t buff_pos,
+		jobject to_send, unsigned char obj_type, buffer * new_objs_buff) {
 
-	// get class net reference...
+	// get net reference
 	jlong net_ref =
 			get_net_reference(jni_env, jvmti_env, new_objs_buff, to_send);
 
-	// ... and put it on proper position
+	// send additional data
+	if(obj_type == OT_DATA_OBJECT) {
+
+		// NOTE: can update net reference (net_ref)
+		ot_pack_aditional_data(jni_env, &net_ref, to_send, obj_type,
+				new_objs_buff);
+	}
+
+	// update the net reference
 	buff_put_long(buff, buff_pos, net_ref);
 }
 
@@ -874,26 +881,8 @@ static void ot_tag_buff(JNIEnv * jni_env, buffer * anl_buff, buffer * cmd_buff,
 		buffer_read(cmd_buff, read, &ot_rec, sizeof(ot_rec));
 		read += sizeof(ot_rec);
 
-		// tag
-		switch(ot_rec.obj_type) {
-		case OT_OBJECT: {
-			ot_tag_object(jni_env, anl_buff, ot_rec.buff_pos, ot_rec.obj_to_tag,
-					new_objs_buff);
-			break;
-		}
-		case OT_STRING: {
-			ot_tag_string(jni_env, anl_buff, ot_rec.buff_pos, ot_rec.obj_to_tag,
-					new_objs_buff);
-			break;
-		}
-		case OT_CLASS: {
-			ot_tag_class(jni_env, anl_buff, ot_rec.buff_pos, ot_rec.obj_to_tag,
-					new_objs_buff);
-			break;
-		}
-		default:
-			check_error(TRUE, "Undefined type to pack.");
-		}
+		ot_tag_record(jni_env, anl_buff, ot_rec.buff_pos, ot_rec.obj_to_tag,
+				ot_rec.obj_type, new_objs_buff);
 
 		// free global reference
 		(*jni_env)->DeleteGlobalRef(jni_env, ot_rec.obj_to_tag);
@@ -911,6 +900,14 @@ static void * objtag_thread_loop(void * obj) {
 	// one spare buffer for new objects
 	buffer * new_obj_buff = malloc(sizeof(buffer));
 	buffer_alloc(new_obj_buff);
+
+	// retrieve java types
+
+	STRING_CLASS = (*jni_env)->FindClass(jni_env, "java/lang/String");
+	check_error(STRING_CLASS == NULL, "String class not found");
+
+	THREAD_CLASS = (*jni_env)->FindClass(jni_env, "java/lang/Thread");
+	check_error(STRING_CLASS == NULL, "Thread class not found");
 
 	// exit when the jvm is terminated and there are no msg to process
 	while(! (no_tagging_work && bq_length(&objtag_q) == 0) ) {
@@ -958,7 +955,7 @@ static void * objtag_thread_loop(void * obj) {
 
 // ******************* Sending thread *******************
 
-static void _send_buffer(buffer * b) {
+static void _send_buffer(int connection, buffer * b) {
 
 	// send data
 	// NOTE: normally access the buffer using methods
@@ -998,7 +995,7 @@ static void close_connection(int conn, jlong thread_id) {
 	pack_byte(buff, MSG_CLOSE);
 
 	// send buffer directly
-	_send_buffer(buff);
+	_send_buffer(conn, buff);
 
 	// release buffer
 	_buffs_release(buffs);
@@ -1017,7 +1014,7 @@ static void attach_current_thread_to_jvm () {
 }
 
 static void * send_thread_loop(void * obj) {
-	connection = open_connection();
+	int connection = open_connection();
 	attach_current_thread_to_jvm ();
 
 	// exit when the jvm is terminated and there are no msg to process
@@ -1034,9 +1031,9 @@ static void * send_thread_loop(void * obj) {
 #endif
 
 		// first send command buffer - contains new class or object ids,...
-		_send_buffer(pb->command_buff);
+		_send_buffer(connection, pb->command_buff);
 		// send analysis buffer
-		_send_buffer(pb->analysis_buff);
+		_send_buffer(connection, pb->analysis_buff);
 
 		// release buffer
 		_buffs_release(pb);
@@ -1468,7 +1465,6 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 			&to_buff_lock);
 	check_jvmti_error(jvmti_env, error, "Cannot create raw monitor");
 
-
 	// read options (port/hostname)
 	parse_agent_options(options);
 
@@ -1580,23 +1576,18 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong
 	pack_long(tld_get()->analysis_buff, to_send);
 }
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendString
-(JNIEnv * jni_env, jclass this_class, jstring to_send) {
-
-	struct tldata * tld = tld_get ();
-	pack_string_java(jni_env, tld->analysis_buff, tld->command_buff, to_send);
-}
-
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
 (JNIEnv * jni_env, jclass this_class, jobject to_send) {
 
 	struct tldata * tld = tld_get ();
-	pack_object(jni_env, tld->analysis_buff, tld->command_buff, to_send);
+	pack_object(jni_env, tld->analysis_buff, tld->command_buff, to_send,
+			OT_OBJECT);
 }
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendClass
-(JNIEnv * jni_env, jclass this_class, jclass to_send) {
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObjectPlusData
+(JNIEnv * jni_env, jclass this_class, jobject to_send) {
 
 	struct tldata * tld = tld_get ();
-	pack_class(jni_env, tld->analysis_buff, tld->command_buff, to_send);
+	pack_object(jni_env, tld->analysis_buff, tld->command_buff, to_send,
+			OT_DATA_OBJECT);
 }

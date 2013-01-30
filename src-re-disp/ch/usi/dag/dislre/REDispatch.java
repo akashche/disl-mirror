@@ -42,9 +42,8 @@ public class REDispatch {
 	public static native void sendLong(long longToSend);
 	public static native void sendFloatAsInt(int floatAsIntToSend);
 	public static native void sendDoubleAsLong(long doubleAsLongToSend);
-	public static native void sendString(String stringToSend);
 	public static native void sendObject(Object objToSend);
-	public static native void sendClass(Class<?> classToSend);
+	public static native void sendObjectPlusData(Object objToSend);
 	
 	// helper methods for sending float and double
 	// for proper conversion, we would still need to call ...Bits methods

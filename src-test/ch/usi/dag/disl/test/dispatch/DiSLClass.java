@@ -20,12 +20,12 @@ public class DiSLClass {
 		CodeExecutedRE.testingBasic(true, (byte) 125, 's', (short) 50000,
 				100000, 10000000000L, 1.5F, 2.5);
 		
-		CodeExecutedRE.testingAdvanced("Corect transfer of String", new Object(), Object.class, 0);
+		CodeExecutedRE.testingAdvanced("Corect transfer of String", "test", Object.class, Thread.currentThread());
 
 		CodeExecutedRE.testingAdvanced2(new LinkedList<String>(),
 				new LinkedList<Integer>(), new LinkedList[0], new int[0],
-				int[].class, 0, int.class, 0, LinkedList.class, 0,
-				LinkedList.class.getClass(), 0);
+				int[].class, int.class, LinkedList.class,
+				LinkedList.class.getClass());
 		
 		CodeExecutedRE.testingNull(null, null, null);
 	}

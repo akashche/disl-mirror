@@ -22,9 +22,13 @@ static volatile jint avail_class_id;
 
 // should be in sync with NetReference on the server
 
-// format of net reference looks like this
-// HIGHEST (1 bit spec, 23 bits class id, 40 bits object id)
+// format of net reference looks like this (from HIGHEST)
+// 1 bit data trans., 1 bit class instance, 23 bits class id, 40 bits object id
 // bit field not used because there is no guarantee of alignment
+
+// TODO rename SPEC
+// SPEC flag is used to indicate if some additional data for this object where
+// transfered to the server
 
 static const uint8_t OBJECT_ID_POS = 0;
 static const uint8_t CLASS_ID_POS = 40;
@@ -141,15 +145,6 @@ static int _object_is_class(jvmtiEnv * jvmti_env,  jobject obj) {
 	return TRUE;
 }
 
-static jvmtiError _try_get_threadinfo(jvmtiEnv * jvmti_env, jobject obj,
-		jvmtiThreadInfo *info_ptr) {
-
-	// TODO isn't there better way?
-
-	jvmtiError error = (*jvmti_env)->GetThreadInfo(jvmti_env, obj, info_ptr);
-	return error;
-}
-
 // does not increment any counter - just sets the values
 static jlong _set_net_reference(jvmtiEnv * jvmti_env, jobject obj,
 		jlong object_id, jint class_id, unsigned char spec, unsigned char cbit) {
@@ -190,24 +185,6 @@ static void _pack_class_info(buffer * buff, jlong class_net_ref,
 	pack_long(buff, class_loader_net_ref);
 	// super class id
 	pack_long(buff, super_class_net_ref);
-
-}
-
-static void _pack_thread_info(buffer * buff, jlong net_ref, const char *name,
-		jboolean isDaemon) {
-
-	// pack thread info message
-
-	// msg id
-	pack_byte(buff, MSG_THREAD_INFO);
-
-	// object id
-	pack_long(buff, net_ref);
-
-	// thread name
-	pack_string_utf8(buff, name, strlen(name));
-	// is daemon thread
-	pack_boolean(buff, isDaemon);
 
 }
 
@@ -310,14 +287,6 @@ static jlong _set_net_reference_for_object(JNIEnv * jni_env,
 	// assign new net reference
 	jlong net_ref =
 			_set_net_reference(jvmti_env, obj, avail_object_id, class_id, 0, 0);
-
-	jvmtiThreadInfo info;
-	jvmtiError error;
-
-	if ((error = _try_get_threadinfo(jvmti_env, obj, &info))
-			== JVMTI_ERROR_NONE) {
-		_pack_thread_info(buff, net_ref, info.name, info.is_daemon);
-	}
 
 	// increment object id counter
 	++avail_object_id;
