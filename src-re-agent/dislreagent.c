@@ -1258,6 +1258,8 @@ void JNICALL jvmti_callback_vm_death_hook(
 
 	// TODO ! suspend all *other* marked threads (they should no be in native code)
 	// and send their buffers
+	// you can stop them one by one using linux pid
+	//   - pid id used instead of avail_thread_id as a thread id
 	// resume threads after the sending thread is finished
 
 	//jthread thread_obj;
