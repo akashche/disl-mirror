@@ -20,4 +20,16 @@ public class ShadowThread extends ShadowObject {
 		return isDaemon;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof ShadowThread) {
+			ShadowThread t = (ShadowThread) obj;
+
+			return name.equals(t.name) && (isDaemon == t.isDaemon)
+					&& super.equals(obj);
+		}
+
+		return false;
+	}
+
 }

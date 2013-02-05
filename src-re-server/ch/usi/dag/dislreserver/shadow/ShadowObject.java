@@ -33,16 +33,19 @@ public class ShadowObject implements Formattable {
 		return shadowId;
 	}
 
-    
-    public ShadowClass getShadowClass () {
-    	
-    	if (shadowClass != null) {
-    		return shadowClass;
-    	} else {
-    		return ShadowClassTable.JAVA_LANG_CLASS;
-    	}
-	}
+	public ShadowClass getShadowClass() {
 
+		if (shadowClass != null) {
+			return shadowClass;
+		} else {
+
+			if (equals(ShadowClassTable.BOOTSTRAP_CLASSLOADER)) {
+				throw new NullPointerException();
+			}
+
+			return ShadowClassTable.JAVA_LANG_CLASS;
+		}
+	}
 
     public synchronized Object getState () {
         return shadowState;
@@ -67,6 +70,24 @@ public class ShadowObject implements Formattable {
 		}
 
 		return retVal;
+	}
+	
+	// only object id considered
+	// TODO consider also the class ID
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (int) (shadowId ^ (shadowId >>> 32));
+		return result;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof ShadowObject) {
+			return shadowId == ((ShadowObject) obj).shadowId;
+		}
+
+		return false;
 	}
 
     //

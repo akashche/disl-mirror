@@ -1,10 +1,7 @@
 package ch.usi.dag.dislreserver.shadow;
 
-import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
@@ -21,17 +18,7 @@ public class ShadowClassTable {
 	static {
 
 		BOOTSTRAP_CLASSLOADER = new ShadowObject(0, null);
-
-		try {
-			ClassReader cr = new ClassReader("java.lang.Class");
-			ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS
-					| ClassWriter.COMPUTE_FRAMES);
-			cr.accept(cw, ClassReader.SKIP_DEBUG | ClassReader.EXPAND_FRAMES);
-			JAVA_LANG_CLASS = new ShadowCommonClass(0, "Ljava/lang/Class;",
-					BOOTSTRAP_CLASSLOADER, null, cw.toByteArray());
-		} catch (IOException e) {
-			JAVA_LANG_CLASS = null;
-		}
+		JAVA_LANG_CLASS = null;
 
 		classLoaderMap = new ConcurrentHashMap<ShadowObject, ConcurrentHashMap<String, byte[]>>();
 		shadowClasses = new ConcurrentHashMap<Integer, ShadowClass>();
@@ -41,7 +28,7 @@ public class ShadowClassTable {
 	}
 
 	public static void load(ShadowObject loader, String className,
-			byte[] classCode) {
+			byte[] classCode, boolean debug) {
 
 		ConcurrentHashMap<String, byte[]> classNameMap;
 
@@ -62,12 +49,16 @@ public class ShadowClassTable {
 		}
 
 		if (classNameMap.putIfAbsent(className.replace('/', '.'), classCode) != null) {
-			System.err.println("Reloading/Redefining class " + className);
+			if (debug) {
+				System.out.println("DiSL-RE: Reloading/Redefining class "
+						+ className);
+			}
 		}
 	}
 
 	public static ShadowClass newInstance(long net_ref, ShadowClass superClass,
-			ShadowObject loader, String classSignature, String classGenericStr) {
+			ShadowObject loader, String classSignature, String classGenericStr,
+			boolean debug) {
 
 		if (!NetReferenceHelper.isClassInstance(net_ref)) {
 			throw new DiSLREServerFatalException("Unknown class instance");
@@ -77,6 +68,7 @@ public class ShadowClassTable {
 		Type t = Type.getType(classSignature);
 
 		if (t.getSort() == Type.ARRAY) {
+			// TODO unknown array component type
 			klass = new ShadowArrayClass(net_ref, loader, superClass, null, t);
 		} else if (t.getSort() == Type.OBJECT) {
 
@@ -111,9 +103,14 @@ public class ShadowClassTable {
 		ShadowClass exist = shadowClasses.putIfAbsent(classID, klass);
 
 		if (exist == null) {
-			ShadowObjectTable.register(klass);
+			ShadowObjectTable.register(klass, debug);
 		} else if (!exist.equals(klass)) {
 			throw new DiSLREServerFatalException("Duplicated class ID");
+		}
+
+		if (JAVA_LANG_CLASS == null
+				&& "Ljava/lang/Class;".equals(classSignature)) {
+			JAVA_LANG_CLASS = klass;
 		}
 
 		return klass;

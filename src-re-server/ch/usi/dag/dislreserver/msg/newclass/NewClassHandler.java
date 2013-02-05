@@ -24,7 +24,7 @@ public class NewClassHandler implements RequestHandler {
 			byte[] classCode = new byte[classCodeLength];
 			is.readFully(classCode);
 
-			ShadowClassTable.load(classLoader, className, classCode);
+			ShadowClassTable.load(classLoader, className, classCode, debug);
 		} catch (IOException e) {
 			throw new DiSLREServerException(e);
 		}

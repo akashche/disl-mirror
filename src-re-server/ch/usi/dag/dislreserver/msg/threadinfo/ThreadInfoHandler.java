@@ -21,7 +21,7 @@ public class ThreadInfoHandler implements RequestHandler {
 			boolean isDaemon = is.readBoolean();
 
 			ShadowThread sThread = new ShadowThread(net_ref, name, isDaemon);
-			ShadowObjectTable.register(sThread);
+			ShadowObjectTable.register(sThread, debug);
 		} catch (IOException e) {
 			throw new DiSLREServerException(e);
 		}

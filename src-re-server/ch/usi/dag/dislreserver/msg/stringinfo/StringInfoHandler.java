@@ -20,7 +20,7 @@ public class StringInfoHandler implements RequestHandler {
 			String str = is.readUTF();
 
 			ShadowString sString = new ShadowString(net_ref, str);
-			ShadowObjectTable.register(sString);
+			ShadowObjectTable.register(sString, debug);
 		} catch (IOException e) {
 			throw new DiSLREServerException(e);
 		}

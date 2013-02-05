@@ -23,9 +23,10 @@ public class ClassInfoHandler implements RequestHandler {
 			String classGenericStr = is.readUTF();
 			ShadowObject classLoader = ShadowObjectTable.get(is.readLong());
 
-			ShadowClass superClass = (ShadowClass) ShadowObjectTable.get(is.readLong());
+			ShadowClass superClass = (ShadowClass) ShadowObjectTable.get(is
+					.readLong());
 			ShadowClassTable.newInstance(net_ref, superClass, classLoader,
-					classSignature, classGenericStr);
+					classSignature, classGenericStr, debug);
 		} catch (IOException e) {
 			throw new DiSLREServerException(e);
 		}

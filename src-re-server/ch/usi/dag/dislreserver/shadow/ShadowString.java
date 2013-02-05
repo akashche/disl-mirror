@@ -14,4 +14,15 @@ public class ShadowString extends ShadowObject {
 		return value;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+
+		if (obj instanceof ShadowString) {
+			return value.equals(((ShadowString) obj).value)
+					&& super.equals(obj);
+		}
+
+		return false;
+	}
+
 }

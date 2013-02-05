@@ -23,6 +23,7 @@ public class ObjectFreeHandler implements RequestHandler {
 
 			Set<RemoteAnalysis> raSet = AnalysisResolver.getAllAnalyses();
 
+			// TODO ! free events should be sent to analysis that sees the shadow object
 			for (RemoteAnalysis ra : raSet) {
 				ra.objectFree(obj);
 			}

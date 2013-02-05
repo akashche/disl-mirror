@@ -14,7 +14,7 @@ public class ShadowObjectTable {
 		shadowObjects = new ConcurrentHashMap<Long, ShadowObject>();
 	}
 
-	public static void register(ShadowObject obj) {
+	public static void register(ShadowObject obj, boolean debug) {
 
 		if (obj == null) {
 			throw new DiSLREServerFatalException(
@@ -26,7 +26,9 @@ public class ShadowObjectTable {
 
 		if (exist != null) {
 			if (exist.equals(obj)) {
-				System.err.println("Re-register a shadow object.");
+				if (debug) {
+					System.out.println("Re-register a shadow object.");
+				}
 			} else {
 				throw new DiSLREServerFatalException("Duplicated net reference");
 			}
