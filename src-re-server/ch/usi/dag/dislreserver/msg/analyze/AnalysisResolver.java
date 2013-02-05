@@ -76,7 +76,6 @@ public final class AnalysisResolver {
 
 			// resolve analysis method
 			final Method raMethod = __getAnalysisMethod (raInst, methodName);
-			// TODO re - check that method has after each Class<?> arg, int arg
 
 			return new AnalysisMethodHolder(raInst, raMethod);
 		}

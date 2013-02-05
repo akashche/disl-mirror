@@ -1,4 +1,4 @@
-package ch.usi.dag.dislreserver.msg.newstring;
+package ch.usi.dag.dislreserver.msg.stringinfo;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -9,7 +9,7 @@ import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
 import ch.usi.dag.dislreserver.shadow.ShadowString;
 
-public class NewStringHandler implements RequestHandler {
+public class StringInfoHandler implements RequestHandler {
 
 	public void handle(DataInputStream is, DataOutputStream os, boolean debug)
 			throws DiSLREServerException {

@@ -791,7 +791,7 @@ static void ot_pack_string_data(JNIEnv * jni_env, buffer * buff,
 	// add message to the buffer
 
 	// msg id
-	pack_byte(buff, MSG_NEW_STRING);
+	pack_byte(buff, MSG_STRING_INFO);
 	// send string net reference
 	pack_long(buff, str_net_ref);
 	// send string

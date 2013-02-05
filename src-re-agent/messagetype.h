@@ -15,7 +15,7 @@ static const jbyte MSG_NEW_CLASS = 3;
 // sending class info
 static const jbyte MSG_CLASS_INFO = 4;
 // sending new string
-static const jbyte MSG_NEW_STRING = 5;
+static const jbyte MSG_STRING_INFO = 5;
 // sending registration for analysis method
 static const jbyte MSG_REG_ANALYSIS = 6;
 // sending thread info
