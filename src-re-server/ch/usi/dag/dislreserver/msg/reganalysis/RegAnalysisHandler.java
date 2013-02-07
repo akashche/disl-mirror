@@ -7,8 +7,6 @@ import java.io.IOException;
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
-import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
-import ch.usi.dag.dislreserver.shadow.ShadowString;
 
 public final class RegAnalysisHandler implements RequestHandler {
 
@@ -16,8 +14,7 @@ public final class RegAnalysisHandler implements RequestHandler {
 			final boolean debug) throws DiSLREServerException {
 		try {
 			final short methodId = is.readShort();
-			final long methodStringID = is.readLong();
-			ShadowString methodString = (ShadowString) ShadowObjectTable.get(methodStringID);
+			String methodString = is.readUTF();
 
 			// register method
 			AnalysisResolver.registerMethodId(methodId, methodString);

@@ -11,7 +11,6 @@ import java.util.Set;
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
-import ch.usi.dag.dislreserver.shadow.ShadowString;
 
 public final class AnalysisResolver {
 	private static final String METHOD_DELIM = ".";
@@ -50,11 +49,9 @@ public final class AnalysisResolver {
 
 	//
 
-	private static AnalysisMethodHolder resolveMethod (
-		ShadowString methodString
+	private static AnalysisMethodHolder resolveMethod (String methodStr
 	) throws DiSLREServerException {
 		try {
-			String methodStr = methodString.toString();
 			int classNameEnd = methodStr.lastIndexOf (METHOD_DELIM);
 
 			// without METHOD_DELIM
@@ -134,7 +131,7 @@ public final class AnalysisResolver {
 
 
 	public static void registerMethodId (
-		final short methodId, ShadowString methodString
+		final short methodId, String methodString
 	) throws DiSLREServerException {
 		methodMap.put(methodId, resolveMethod(methodString));
 	}

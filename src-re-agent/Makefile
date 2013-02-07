@@ -38,6 +38,10 @@ ifneq ($(DEBUG),)
 CFLAGS += -DDEBUG -g3
 endif
 
+ifneq ($(DEBUGFULL),)
+CFLAGS += -DDEBUG -DDEBUGANL -g3
+endif
+
 build: $(LIBRARY)
 	cp $(LIBRARY) $(BUILDDIR)
 
@@ -51,5 +55,8 @@ clean:
 
 debug:
 	$(MAKE) DEBUG=TRUE
+
+debugfull:
+	$(MAKE) DEBUGFULL=TRUE
 
 all: build

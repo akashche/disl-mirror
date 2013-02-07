@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.test.dispatchmp;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
 import ch.usi.dag.dislreserver.shadow.ShadowObject;
 
@@ -8,9 +10,9 @@ public class CodeExecuted extends RemoteAnalysis {
 
 	long startTime = 0;
 	
-	long totalIntEvents = 0;
-	long totalObjEvents = 0;
-	long totalFreeEvents = 0;
+	AtomicLong totalIntEvents = new AtomicLong();
+	AtomicLong totalObjEvents = new AtomicLong();
+	AtomicLong totalFreeEvents = new AtomicLong();
 	
 	public void intEvent(int number) {
 		
@@ -18,9 +20,7 @@ public class CodeExecuted extends RemoteAnalysis {
 			startTime = System.nanoTime();
 		}
 		
-		++totalIntEvents;
-		
-		if(totalIntEvents % 1000000 == 0) {
+		if(totalIntEvents.incrementAndGet() % 1000000 == 0) {
 			System.out.println("So far received "
 					+ totalIntEvents + " events...");
 		}
@@ -28,11 +28,11 @@ public class CodeExecuted extends RemoteAnalysis {
 	
 	public void objectEvent(ShadowObject o) {
 
-		++totalObjEvents;
+		totalObjEvents.incrementAndGet();
 	}
 	
 	public void objectFree(ShadowObject netRef) {
-		++totalFreeEvents;
+		totalFreeEvents.incrementAndGet();
 	}
 	
 	public void atExit() {

@@ -15,6 +15,7 @@ shift
 
 # start server
 java $* \
+     -Xms1G -Xmx2G \
      -cp ${INSTR_LIB}:${DISL_LIB_P}/dislre-server.jar \
      ch.usi.dag.dislreserver.DiSLREServer \
      &

@@ -17,6 +17,7 @@ import ch.usi.dag.dislreserver.msg.newclass.NewClassHandler;
 import ch.usi.dag.dislreserver.msg.objfree.ObjectFreeHandler;
 import ch.usi.dag.dislreserver.msg.reganalysis.RegAnalysisHandler;
 import ch.usi.dag.dislreserver.msg.stringinfo.StringInfoHandler;
+import ch.usi.dag.dislreserver.msg.threadend.ThreadEndHandler;
 import ch.usi.dag.dislreserver.msg.threadinfo.ThreadInfoHandler;
 
 
@@ -35,6 +36,7 @@ public final class RequestDispatcher {
 	private static final byte __REQUEST_ID_STRING_INFO__ = 5;
 	private static final byte __REQUEST_ID_REGISTER_ANALYSIS__ = 6;
 	private static final byte __REQUEST_ID_THREAD_INFO__ = 7;
+	private static final byte __REQUEST_ID_THREAD_END__ = 8;
 
 	//
 
@@ -50,6 +52,7 @@ public final class RequestDispatcher {
 		//
 		final Map <Byte, RequestHandler> requestMap = new HashMap <Byte, RequestHandler> ();
 		requestMap.put (__REQUEST_ID_CLOSE__, new CloseHandler ());
+		AnalysisHandler anlHndl = new AnalysisHandler ();
 		requestMap.put (__REQUEST_ID_INVOKE_ANALYSIS__, new AnalysisHandler ());
 		requestMap.put (__REQUEST_ID_OBJECT_FREE__, new ObjectFreeHandler ());
 		requestMap.put (__REQUEST_ID_NEW_CLASS__, new NewClassHandler ());
@@ -57,6 +60,7 @@ public final class RequestDispatcher {
 		requestMap.put (__REQUEST_ID_STRING_INFO__, new StringInfoHandler ());
 		requestMap.put (__REQUEST_ID_REGISTER_ANALYSIS__, new RegAnalysisHandler ());
 		requestMap.put (__REQUEST_ID_THREAD_INFO__, new ThreadInfoHandler());
+		requestMap.put (__REQUEST_ID_THREAD_END__,  new ThreadEndHandler(anlHndl));
 
 		__handlers = Collections.unmodifiableCollection (requestMap.values ());
 		__dispatchTable = __createDispatchTable (requestMap);

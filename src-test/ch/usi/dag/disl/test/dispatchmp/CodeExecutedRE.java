@@ -10,10 +10,10 @@ import ch.usi.dag.dislre.REDispatch;
 public class CodeExecutedRE {
 
 	private static short ieId = REDispatch.registerMethod(
-			"ch.usi.dag.disl.test.dispatch2.CodeExecuted.intEvent");
+			"ch.usi.dag.disl.test.dispatchmp.CodeExecuted.intEvent");
 	
 	private static short oeId = REDispatch.registerMethod(
-			"ch.usi.dag.disl.test.dispatch2.CodeExecuted.objectEvent");
+			"ch.usi.dag.disl.test.dispatchmp.CodeExecuted.objectEvent");
 	
 	public static void intEvent(int num) {
 		

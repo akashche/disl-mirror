@@ -18,17 +18,23 @@ public class ObjectFreeHandler implements RequestHandler {
 			throws DiSLREServerException {
 
 		try {
-			long net_ref = is.readLong();
-			ShadowObject obj = ShadowObjectTable.get(net_ref);
+			
+			int freeCount = is.readInt();
+			
+			for(int i = 0; i < freeCount; ++i) {
+				
+				long net_ref = is.readLong();
+				ShadowObject obj = ShadowObjectTable.get(net_ref);
+	
+				Set<RemoteAnalysis> raSet = AnalysisResolver.getAllAnalyses();
 
-			Set<RemoteAnalysis> raSet = AnalysisResolver.getAllAnalyses();
-
-			// TODO ! free events should be sent to analysis that sees the shadow object
-			for (RemoteAnalysis ra : raSet) {
-				ra.objectFree(obj);
+				// TODO ! free events should be sent to analysis that sees the shadow object
+				for (RemoteAnalysis ra : raSet) {
+					ra.objectFree(obj);
+				}
+	
+				ShadowObjectTable.freeShadowObject(net_ref, obj);
 			}
-
-			ShadowObjectTable.freeShadowObject(net_ref, obj);
 
 		} catch (IOException e) {
 			throw new DiSLREServerException(e);

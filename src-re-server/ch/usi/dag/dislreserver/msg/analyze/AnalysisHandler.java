@@ -189,6 +189,9 @@ public final class AnalysisHandler implements RequestHandler {
 		));
 	}
 
+	public void threadEnded(long threadId) {
+		// TODO !
+	}
 
 	public void awaitProcessing () {
 		dispatcher.awaitProcessing ();
