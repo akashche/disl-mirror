@@ -1,7 +1,6 @@
 package ch.usi.dag.dislreserver.msg.analyze.mtdispatch;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -40,10 +39,9 @@ class ATEManager {
 	/**
 	 * Retrieves all live executors 
 	 */
-	public Collection<AnalysisTaskExecutor> getAllLiveExecutors() {
+	public Iterable<AnalysisTaskExecutor> getAllLiveExecutors() {
 		
-		// return copy
-		return new ArrayList<AnalysisTaskExecutor>(liveExecutors.values());
+		return Collections.unmodifiableCollection(liveExecutors.values());
 	}
 	
 	/**
