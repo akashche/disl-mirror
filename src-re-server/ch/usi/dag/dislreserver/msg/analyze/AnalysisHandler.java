@@ -9,6 +9,7 @@ import java.util.List;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver.AnalysisMethodHolder;
+import ch.usi.dag.dislreserver.msg.analyze.mtdispatch.AnalysisDispatcher;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 import ch.usi.dag.dislreserver.shadow.ShadowObject;
 import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
@@ -18,6 +19,9 @@ public final class AnalysisHandler implements RequestHandler {
 
 	private AnalysisDispatcher dispatcher = new AnalysisDispatcher ();
 
+	public AnalysisDispatcher getDispatcher() {
+		return dispatcher;
+	}
 
 	public void handle (
 		final DataInputStream is, final DataOutputStream os, final boolean debug
@@ -190,16 +194,14 @@ public final class AnalysisHandler implements RequestHandler {
 	}
 
 	public void threadEnded(long threadId) {
-		// TODO !
+		dispatcher.threadEndedEvent(threadId);
 	}
-
-	public void awaitProcessing () {
-		dispatcher.awaitProcessing ();
+	
+	public void objectsFreed(long[] objFreeIDs) {
+		dispatcher.objectsFreedEvent(objFreeIDs);
 	}
-
-
-	public void exit () {
-		dispatcher.exit ();
+	
+	public void exit() {
+		dispatcher.exit();
 	}
-
 }

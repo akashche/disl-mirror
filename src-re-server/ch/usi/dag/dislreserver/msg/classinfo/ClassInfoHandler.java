@@ -32,10 +32,6 @@ public class ClassInfoHandler implements RequestHandler {
 		}
 	}
 
-	public void awaitProcessing() {
-
-	}
-
 	public void exit() {
 
 	}

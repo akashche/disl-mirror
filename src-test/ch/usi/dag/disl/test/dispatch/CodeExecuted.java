@@ -68,8 +68,12 @@ public class CodeExecuted extends RemoteAnalysis {
 		
 		System.out.println("Received object id: " + o.getId());
 		
-		if(o instanceof ShadowString) {
-			throw new RuntimeException("This string should be transfered as object");
+		if(! (o instanceof ShadowString)) {
+			throw new RuntimeException("This string should be transfered as string");
+		}
+		
+		if(((ShadowString)o).toString() != null) {
+			throw new RuntimeException("This string should be transfered without data");
 		}
 		
 		if(! (c instanceof ShadowClass)) {

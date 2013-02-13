@@ -3,17 +3,19 @@ package ch.usi.dag.dislreserver.msg.objfree;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.Set;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
-import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver;
-import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
+import ch.usi.dag.dislreserver.msg.analyze.AnalysisHandler;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
-import ch.usi.dag.dislreserver.shadow.ShadowObject;
-import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
 
 public class ObjectFreeHandler implements RequestHandler {
 
+final AnalysisHandler analysisHandler;
+	
+	public ObjectFreeHandler(AnalysisHandler anlHndl) {
+		analysisHandler = anlHndl;
+	}
+	
 	public void handle(DataInputStream is, DataOutputStream os, boolean debug)
 			throws DiSLREServerException {
 
@@ -21,28 +23,20 @@ public class ObjectFreeHandler implements RequestHandler {
 			
 			int freeCount = is.readInt();
 			
+			long[] objFreeIDs = new long[freeCount];
+			
 			for(int i = 0; i < freeCount; ++i) {
 				
-				long net_ref = is.readLong();
-				ShadowObject obj = ShadowObjectTable.get(net_ref);
-	
-				Set<RemoteAnalysis> raSet = AnalysisResolver.getAllAnalyses();
-
-				// TODO ! free events should be sent to analysis that sees the shadow object
-				for (RemoteAnalysis ra : raSet) {
-					ra.objectFree(obj);
-				}
-	
-				ShadowObjectTable.freeShadowObject(net_ref, obj);
+				long netref = is.readLong();
+				
+				objFreeIDs[i] = netref;
 			}
+			
+			analysisHandler.objectsFreed(objFreeIDs);
 
 		} catch (IOException e) {
 			throw new DiSLREServerException(e);
 		}
-	}
-
-	public void awaitProcessing() {
-
 	}
 
 	public void exit() {

@@ -30,10 +30,6 @@ public class NewClassHandler implements RequestHandler {
 		}
 	}
 
-	public void awaitProcessing() {
-
-	}
-
 	public void exit() {
 
 	}

@@ -54,7 +54,7 @@ public final class RequestDispatcher {
 		requestMap.put (__REQUEST_ID_CLOSE__, new CloseHandler ());
 		AnalysisHandler anlHndl = new AnalysisHandler ();
 		requestMap.put (__REQUEST_ID_INVOKE_ANALYSIS__, new AnalysisHandler ());
-		requestMap.put (__REQUEST_ID_OBJECT_FREE__, new ObjectFreeHandler ());
+		requestMap.put (__REQUEST_ID_OBJECT_FREE__, new ObjectFreeHandler (anlHndl));
 		requestMap.put (__REQUEST_ID_NEW_CLASS__, new NewClassHandler ());
 		requestMap.put (__REQUEST_ID_CLASS_INFO__, new ClassInfoHandler ());
 		requestMap.put (__REQUEST_ID_STRING_INFO__, new StringInfoHandler ());

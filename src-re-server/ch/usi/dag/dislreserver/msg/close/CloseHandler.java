@@ -25,12 +25,6 @@ public final class CloseHandler implements RequestHandler {
 		}
 	}
 
-	//
-
-	public void awaitProcessing () {
-
-	}
-
 	public void exit () {
 
 	}

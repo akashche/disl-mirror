@@ -132,10 +132,10 @@ public class ShadowClassTable {
 		return klass;
 	}
 
-	public static void freeShadowObject(long net_ref, ShadowObject obj) {
+	public static void freeShadowObject(ShadowObject obj) {
 
-		if (NetReferenceHelper.isClassInstance(net_ref)) {
-			int classID = NetReferenceHelper.get_class_id(net_ref);
+		if (NetReferenceHelper.isClassInstance(obj.getNetRef())) {
+			int classID = NetReferenceHelper.get_class_id(obj.getNetRef());
 			shadowClasses.remove(classID);
 		} else if (classLoaderMap.keySet().contains(obj)) {
 			classLoaderMap.remove(obj);

@@ -31,10 +31,6 @@ public class StringInfoHandler implements RequestHandler {
 		}
 	}
 
-	public void awaitProcessing() {
-
-	}
-
 	public void exit() {
 
 	}

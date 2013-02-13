@@ -88,9 +88,9 @@ public class ShadowObjectTable {
 		}
 	}
 
-	public static void freeShadowObject(long net_ref, ShadowObject obj) {
-		ShadowClassTable.freeShadowObject(net_ref, obj);
+	public static void freeShadowObject(ShadowObject obj) {
 		shadowObjects.remove(obj.getId());
+		ShadowClassTable.freeShadowObject(obj);
 	}
 
 	//TODO: find a more elegant way to allow users to traverse the shadow object table

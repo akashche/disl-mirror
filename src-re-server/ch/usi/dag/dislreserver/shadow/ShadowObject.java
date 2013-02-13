@@ -5,6 +5,7 @@ import java.util.Formatter;
 
 public class ShadowObject implements Formattable {
 
+	final private long netRef;
 	final private long shadowId;
 	final private ShadowClass shadowClass;
 
@@ -14,12 +15,17 @@ public class ShadowObject implements Formattable {
 
 
     ShadowObject (final long netReference, final ShadowClass shadowClass) {
-        this.shadowId = NetReferenceHelper.get_object_id (netReference);
+        this.netRef = netReference;
+    	this.shadowId = NetReferenceHelper.get_object_id (netReference);
         this.shadowClass = shadowClass;
         this.shadowState = null;
     }
 
     //
+    
+    public long getNetRef () {
+		return netRef;
+	}
     
     public long getId () {
 		return shadowId;
