@@ -6,6 +6,9 @@ import java.io.IOException;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerException;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
+import ch.usi.dag.dislreserver.shadow.NetReferenceHelper;
+import ch.usi.dag.dislreserver.shadow.ShadowClass;
+import ch.usi.dag.dislreserver.shadow.ShadowClassTable;
 import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
 import ch.usi.dag.dislreserver.shadow.ShadowThread;
 
@@ -20,7 +23,11 @@ public class ThreadInfoHandler implements RequestHandler {
 			String name = is.readUTF();
 			boolean isDaemon = is.readBoolean();
 
-			ShadowThread sThread = new ShadowThread(net_ref, name, isDaemon);
+			ShadowClass klass = ShadowClassTable.get(NetReferenceHelper
+					.get_class_id(net_ref));
+
+			ShadowThread sThread = new ShadowThread(net_ref, name, isDaemon,
+					klass);
 			ShadowObjectTable.register(sThread, debug);
 		} catch (IOException e) {
 			throw new DiSLREServerException(e);

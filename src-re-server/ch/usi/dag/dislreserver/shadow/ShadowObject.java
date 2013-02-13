@@ -12,14 +12,6 @@ public class ShadowObject implements Formattable {
 
 	//
 
-    ShadowObject (final long netReference) {
-        this (
-            netReference, ShadowClassTable.get (
-                NetReferenceHelper.get_class_id (netReference)
-            )
-        );
-    }
-
 
     ShadowObject (final long netReference, final ShadowClass shadowClass) {
         this.shadowId = NetReferenceHelper.get_object_id (netReference);

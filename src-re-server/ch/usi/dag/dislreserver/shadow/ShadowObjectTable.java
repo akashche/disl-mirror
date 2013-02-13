@@ -35,6 +35,20 @@ public class ShadowObjectTable {
 		}
 	}
 
+	private static boolean isAssignableFromThread(ShadowClass klass) {
+
+		while ("java.lang.Object".equals(klass.getName())) {
+
+			if ("java.lang.Thread".equals(klass.getName())) {
+				return true;
+			}
+
+			klass = klass.getSuperclass();
+		}
+
+		return false;
+	}
+
 	public static ShadowObject get(long net_ref) {
 
 		long objID = NetReferenceHelper.get_object_id(net_ref);
@@ -54,7 +68,17 @@ public class ShadowObjectTable {
 			throw new DiSLREServerFatalException("Unknown class instance");
 		} else {
 			// Only common shadow object will be generated here
-			ShadowObject tmp = new ShadowObject(net_ref);
+			ShadowClass klass = ShadowClassTable.get(NetReferenceHelper
+					.get_class_id(net_ref));
+			ShadowObject tmp = null;
+
+			if ("java.lang.String".equals(klass.getName())) {
+				tmp = new ShadowString(net_ref, null, klass);
+			} else if (isAssignableFromThread(klass)) {
+				tmp = new ShadowThread(net_ref, null, false, klass);
+			} else {
+				tmp = new ShadowObject(net_ref, klass);
+			}
 
 			if ((retVal = shadowObjects.putIfAbsent(objID, tmp)) == null) {
 				retVal = tmp;
