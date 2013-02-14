@@ -61,6 +61,8 @@ public abstract class DiSLREServer {
 		if (debug) {
 			System.out.println ("DiSL-RE: shutting down analysis server...");
 		}
+		
+		System.exit(0); // to kill other threads
 	}
 
 
