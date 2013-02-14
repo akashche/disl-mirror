@@ -2,6 +2,7 @@ package ch.usi.dag.dislreserver.msg.analyze.mtdispatch;
 
 import java.util.List;
 
+import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisInvocation;
 
 // Each thread has dedicated queue where new tasks are submitted.
@@ -82,7 +83,22 @@ public class AnalysisDispatcher {
 		// NOTE: we are not updating the executor is ending state because
 		// whole shadow vm is ending
 		
-		// wait for ending
+		// wait for analysis threads
 		ateManager.waitForAllToEnd();
+		
+		// wait for free thread
+		try {
+			
+			// signal end
+			oftExec.addTask(new ObjectFreeTask());
+			
+			// wait for end
+			oftExec.join();
+			
+		} catch (InterruptedException e) {
+			throw new DiSLREServerFatalException(
+					"Interrupted while waiting on obj free thread to finish",
+					e);
+		}
 	}
 }

@@ -1,9 +1,9 @@
 package ch.usi.dag.dislreserver.msg.analyze.mtdispatch;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
@@ -13,8 +13,9 @@ import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
  */
 class ATEManager {
 
-	protected final Map<Long, AnalysisTaskExecutor> liveExecutors =
-			new HashMap<Long, AnalysisTaskExecutor>();
+	// we need concurrent for waitForAllToProcessEpoch method
+	protected final ConcurrentMap<Long, AnalysisTaskExecutor> liveExecutors =
+			new ConcurrentHashMap<Long, AnalysisTaskExecutor>();
 	
 	protected final BlockingQueue<AnalysisTaskExecutor> endingExecutors =
 			new LinkedBlockingQueue<AnalysisTaskExecutor>();
