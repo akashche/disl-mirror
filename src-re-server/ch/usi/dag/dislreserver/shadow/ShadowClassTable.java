@@ -8,6 +8,8 @@ import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 
 public class ShadowClassTable {
 
+	private static final int INITIAL_TABLE_SIZE = 10000;
+	
 	final static ShadowObject BOOTSTRAP_CLASSLOADER;
 
 	static ShadowClass JAVA_LANG_CLASS;
@@ -20,8 +22,8 @@ public class ShadowClassTable {
 		BOOTSTRAP_CLASSLOADER = new ShadowObject(0, null);
 		JAVA_LANG_CLASS = null;
 
-		classLoaderMap = new ConcurrentHashMap<ShadowObject, ConcurrentHashMap<String, byte[]>>();
-		shadowClasses = new ConcurrentHashMap<Integer, ShadowClass>();
+		classLoaderMap = new ConcurrentHashMap<ShadowObject, ConcurrentHashMap<String, byte[]>>(INITIAL_TABLE_SIZE);
+		shadowClasses = new ConcurrentHashMap<Integer, ShadowClass>(INITIAL_TABLE_SIZE);
 
 		classLoaderMap.put(BOOTSTRAP_CLASSLOADER,
 				new ConcurrentHashMap<String, byte[]>());

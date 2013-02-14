@@ -8,10 +8,11 @@ import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
 
 public class ShadowObjectTable {
 
+	private static final int INITIAL_TABLE_SIZE = 10000000;
 	private static ConcurrentHashMap<Long, ShadowObject> shadowObjects;
 
 	static {
-		shadowObjects = new ConcurrentHashMap<Long, ShadowObject>();
+		shadowObjects = new ConcurrentHashMap<Long, ShadowObject>(INITIAL_TABLE_SIZE);
 	}
 
 	public static void register(ShadowObject obj, boolean debug) {
