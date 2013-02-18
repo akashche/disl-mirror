@@ -16,6 +16,10 @@ public class ShadowString extends ShadowObject {
 		return value;
 	}
 
+	public void setValue(String value) {
+		this.value = value;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 
@@ -23,11 +27,8 @@ public class ShadowString extends ShadowObject {
 
 			if (obj instanceof ShadowString) {
 
-				if (value == null) {
-					value = ((ShadowString) obj).value;
+				if (value != null && value.equals(((ShadowString) obj).value)) {
 					return true;
-				} else {
-					return value.equals(((ShadowString) obj).value);
 				}
 			}
 		}

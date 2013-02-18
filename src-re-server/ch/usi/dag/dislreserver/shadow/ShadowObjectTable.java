@@ -15,24 +15,59 @@ public class ShadowObjectTable {
 		shadowObjects = new ConcurrentHashMap<Long, ShadowObject>(INITIAL_TABLE_SIZE);
 	}
 
-	public static void register(ShadowObject obj, boolean debug) {
+	public static void register(ShadowObject newObj, boolean debug) {
 
-		if (obj == null) {
+		if (newObj == null) {
 			throw new DiSLREServerFatalException(
 					"Attempting to register a null as a shadow object");
 		}
 
-		long objID = obj.getId();
-		ShadowObject exist = shadowObjects.putIfAbsent(objID, obj);
+		long objID = newObj.getId();
+		ShadowObject exist = shadowObjects.putIfAbsent(objID, newObj);
 
 		if (exist != null) {
-			if (exist.equals(obj)) {
+
+			if (newObj.getId() == exist.getId()) {
 				if (debug) {
 					System.out.println("Re-register a shadow object.");
 				}
-			} else {
-				throw new DiSLREServerFatalException("Duplicated net reference");
+
+				if (newObj.equals(exist)) {
+					return;
+				}
+
+				if (newObj instanceof ShadowString) {
+
+					if (exist instanceof ShadowString) {
+
+						ShadowString existShadowString = (ShadowString) exist;
+						ShadowString newShadowString = (ShadowString) newObj;
+
+						if (existShadowString.toString() == null) {
+							existShadowString.setValue(newShadowString
+									.toString());
+							return;
+						}
+					}
+				} else if (newObj instanceof ShadowThread) {
+
+					if (exist instanceof ShadowThread) {
+
+						ShadowThread existShadowThread = (ShadowThread) exist;
+						ShadowThread newShadowThread = (ShadowThread) newObj;
+
+						if (existShadowThread.getName() == null) {
+							existShadowThread
+									.setName(newShadowThread.getName());
+							existShadowThread.setDaemon(newShadowThread
+									.isDaemon());
+							return;
+						}
+					}
+				}
 			}
+
+			throw new DiSLREServerFatalException("Duplicated net reference");
 		}
 	}
 

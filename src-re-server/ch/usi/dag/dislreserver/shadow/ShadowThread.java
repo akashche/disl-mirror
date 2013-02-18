@@ -23,6 +23,14 @@ public class ShadowThread extends ShadowObject {
 		return isDaemon;
 	}
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setDaemon(boolean isDaemon) {
+		this.isDaemon = isDaemon;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 
@@ -32,13 +40,9 @@ public class ShadowThread extends ShadowObject {
 
 				ShadowThread t = (ShadowThread) obj;
 
-				if (name == null) {
-					name = t.name;
-					isDaemon = t.isDaemon;
+				if (name != null && name.equals(t.name)
+						&& (isDaemon == t.isDaemon)) {
 					return true;
-				} else {
-					return name.equals(t.name) && (isDaemon == t.isDaemon)
-							&& super.equals(obj);
 				}
 			}
 		}
