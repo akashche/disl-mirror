@@ -73,7 +73,7 @@ public class ShadowObjectTable {
 
 	private static boolean isAssignableFromThread(ShadowClass klass) {
 
-		while ("java.lang.Object".equals(klass.getName())) {
+		while (! "java.lang.Object".equals(klass.getName())) {
 
 			if ("java.lang.Thread".equals(klass.getName())) {
 				return true;
