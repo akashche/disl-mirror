@@ -24,6 +24,9 @@ public abstract class DiSLServer {
 
 	private static final String PROP_CONT = "dislserver.continuous";
 	private static final boolean continuous = Boolean.getBoolean(PROP_CONT);
+	
+	private static final String PROP_BYPASS = "dislserver.disablebypass";
+	private static final boolean bypass = ! Boolean.getBoolean(PROP_BYPASS);
 
 	private static final AtomicInteger aliveWorkers = new AtomicInteger();
 	private static final AtomicLong instrumentationTime = new AtomicLong();
@@ -36,7 +39,7 @@ public abstract class DiSLServer {
 	public static void main (final String [] args) {
 		try {
 			// use dynamic bypass
-			disl = new DiSL (true);
+			disl = new DiSL (bypass);
 
 			if (debug) {
 				System.out.println ("DiSL: starting instrumentation server...");
