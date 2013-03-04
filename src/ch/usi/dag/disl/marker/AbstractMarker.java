@@ -15,7 +15,6 @@ import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.util.AsmHelper;
 
 /**
  * AbstractMarker eases the effort to implement new marker by providing mark
@@ -129,25 +128,8 @@ public abstract class AbstractMarker implements Marker {
 		 */
 		public WeavingRegion computeDefaultWeavingRegion(MethodNode methodNode) {
 
-			// skip branch instruction at the end
-
 			AbstractInsnNode wstart = start;
-			// can be null - see WeavingRegion for details
-			List<AbstractInsnNode> wends = null;
-
-			if (!ends.contains(wstart)) {
-
-				wends = new LinkedList<AbstractInsnNode>();
-
-				for (AbstractInsnNode instr : ends) {
-
-					if (AsmHelper.isBranch(instr)) {
-						wends.add(instr.getPrevious());
-					} else {
-						wends.add(instr);
-					}
-				}
-			}
+			// wends is set to null - see WeavingRegion for details
 			
 			// compute after throwing region
 			
@@ -185,7 +167,7 @@ public abstract class AbstractMarker implements Marker {
 				}
 			}
 			
-			return new WeavingRegion(wstart, wends, afterThrowStart,
+			return new WeavingRegion(wstart, null, afterThrowStart,
 					afterThrowEnd);
 		}
 	}
