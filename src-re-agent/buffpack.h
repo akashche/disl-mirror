@@ -15,9 +15,28 @@
 #include <endian.h>
 #endif
 
+// GCC has known bug where it does not work always correctly
+#ifndef __STDC_IEC_559__
+#error "Requires IEEE 754 floating point!"
+#endif
+
 #include "../src-agent-c/jvmtihelper.h"
 
 #include "buffer.h"
+
+// interpret bytes differently
+union float_jint {
+
+	float f;
+	jint i;
+};
+
+// interpret bytes differently
+union double_jlong {
+
+	double d;
+	jlong l;
+};
 
 void pack_boolean(buffer * buff, jboolean to_send) {
 	buffer_fill(buff, &to_send, sizeof(jboolean));
@@ -45,6 +64,22 @@ void pack_int(buffer * buff, jint to_send) {
 void pack_long(buffer * buff, jlong to_send) {
 	jlong nts = htobe64(to_send);
 	buffer_fill(buff, &nts, sizeof(jlong));
+}
+
+void pack_float(buffer * buff, jfloat to_send) {
+	// macro ensures that the formating of the float is correct
+	// so make "int" from it and send it
+	union float_jint convert;
+	convert.f = to_send;
+	pack_int(buff, convert.i);
+}
+
+void pack_double(buffer * buff, jdouble to_send) {
+	// macro ensures that the formating of the double is correct
+	// so make "long" from it and send it
+	union double_jlong convert;
+	convert.d = to_send;
+	pack_long(buff, convert.l);
 }
 
 void pack_string_utf8(buffer * buff, const void * string_utf8,

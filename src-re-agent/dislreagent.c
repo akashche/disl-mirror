@@ -1793,16 +1793,16 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendLong
 	pack_long(tld_get()->analysis_buff, to_send);
 }
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloatAsInt
-(JNIEnv * jni_env, jclass this_class, jint to_send) {
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloat
+(JNIEnv * jni_env, jclass this_class, jfloat to_send) {
 
-	pack_int(tld_get()->analysis_buff, to_send);
+	pack_float(tld_get()->analysis_buff, to_send);
 }
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong
-(JNIEnv * jni_env, jclass this_class, jlong to_send) {
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDouble
+(JNIEnv * jni_env, jclass this_class, jdouble to_send) {
 
-	pack_long(tld_get()->analysis_buff, to_send);
+	pack_double(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject

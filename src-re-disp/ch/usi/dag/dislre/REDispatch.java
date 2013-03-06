@@ -40,27 +40,17 @@ public class REDispatch {
 	public static native void sendShort(short shortToSend);
 	public static native void sendInt(int intToSend);
 	public static native void sendLong(long longToSend);
-	public static native void sendFloatAsInt(int floatAsIntToSend);
-	public static native void sendDoubleAsLong(long doubleAsLongToSend);
 	public static native void sendObject(Object objToSend);
 	public static native void sendObjectPlusData(Object objToSend);
 	
-	// helper methods for sending float and double
-	// for proper conversion, we would still need to call ...Bits methods
-	// it is faster to call them here then call it from native code
-	// faster would be to do it native code all - be my guest :)
-	
-	public static void sendFloat(float floatToSend) {
-
-		sendFloatAsInt(Float.floatToIntBits(floatToSend));
-	}
-	
-	// helper method for sending double
-	public static void sendDouble(double doubleToSend) {
-		
-		sendDoubleAsLong(Double.doubleToLongBits(doubleToSend));
-	}
+	// Methods use similar logic as Float.floatToIntBits() and
+	// Double.doubleToLongBits() but implemented in the native code
+	// to avoid perturbation
+	public static native void sendFloat(float floatToSend);
+	public static native void sendDouble(double doubleToSend);
 	
 	// TODO re - basic type array support
-	//  - send length + all values in for cycle
+	//  - send length + all values in for cycle - all in native code
+	//  PROBLEM: somebody can change the values from the outside
+	//   - for example different thread
 }
