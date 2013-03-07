@@ -11,7 +11,7 @@ fi
 SERVER_FILE=.server.pid
 export SERVER_FILE
 
-RE_SERVER_FILE=re_server.pid
+RE_SERVER_FILE=.re_server.pid
 export RE_SERVER_FILE
 
 # kill running server
