@@ -26,6 +26,7 @@ shift
 #	-Ddislserver.port="portNum" \
 #	-Ddislserver.timestat=true \
 #	-Ddislserver.continuous=true \
+#	-Ddislserver.disablebypass=true \
 ${JAVA_HOME:+$JAVA_HOME/jre/bin/}java \
 	-cp ${INSTR_LIB}:${DISL_LIB_P}/disl-server.jar \
 	ch.usi.dag.dislserver.DiSLServer \
