@@ -1,59 +1,61 @@
-# /bin/sh
+#!/bin/bash
+TARGET_BASE="ch.usi.dag.disl.test"
+TARGET_MAIN="TargetClass"
 
-EXPECTED_ARGS=1
-
-if [ $# -lt $EXPECTED_ARGS ]
-then
-    echo "Usage: `basename $0` test-case"
-    exit
-fi
-
-SERVER_FILE=.server.pid
-export SERVER_FILE
-
-RE_SERVER_FILE=.re_server.pid
-export RE_SERVER_FILE
-
-# kill running server
-if [ -e ${SERVER_FILE} ]
-then
-    kill -KILL `cat ${SERVER_FILE}`
-    rm ${SERVER_FILE}
-fi
-
-# kill running server
-if [ -e ${RE_SERVER_FILE} ]
-then
-    kill -KILL `cat ${RE_SERVER_FILE}`
-    rm ${RE_SERVER_FILE}
+if [ $# -lt 1 ]; then
+	echo "Usage: `basename $0` <test-name>"
+	echo "<test-name> is a package under $TARGET_BASE containing $TARGET_MAIN"
+	exit 1
 fi
 
 
-# represents the observed program
-TARGET_CLASS="ch.usi.dag.disl.test.$1.TargetClass"
+kill_server () {
+	if [ -f "$1" ]; then
+		local PID=$(< "$1")
+		[ -n "$PID" ] && kill -KILL $PID 2> /dev/null
+		rm -f "$1"
+	fi
+}
 
-# compile the test package - suppress output
-ant package-test -Dtest.name=$1 > /dev/null
 
+#
+# Compile the test package to make sure we have up-to-date jars.
+# Bail out now if the compilation fails.
+#
+ant package-test -Dtest.name=$1 > /dev/null || exit 2
+
+
+#
+# Configure server PID files and mop-up any leftover
+# instrumentation or remote/analysis servers.
+#
+export SERVER_FILE=.server.pid
+kill_server $SERVER_FILE
+
+export RE_SERVER_FILE=.re_server.pid
+kill_server $RE_SERVER_FILE
+
+
+#
+# Launch the instrumentation and analysis servers and give them time to start.
+# Then run the client with the class representing the observed program.
+#
+# Include the library containing the instrumentation in their class path.
+#
 INSTR_LIB=build/disl-instr.jar
 
-# start server and take pid
 ./runServer.sh ${INSTR_LIB}
-
-# start reserver and take pid
 ./runREServer.sh ${INSTR_LIB}
 
-# wait for server startup
 sleep 3
 
-# run client
-./runClient.sh ${INSTR_LIB} -cp bin/ ${TARGET_CLASS}
+./runClient.sh ${INSTR_LIB} -cp bin/ "$TARGET_BASE.$1.$TARGET_MAIN"
 
-# wait for server shutdown
+
+#
+# Give the servers some time to shut down themselves, before mopping up.
+#
 sleep 1
 
-# kill server
-kill -KILL `cat ${SERVER_FILE}` 2> /dev/null
-rm ${SERVER_FILE}
-kill -KILL `cat ${RE_SERVER_FILE}` 2> /dev/null
-rm ${RE_SERVER_FILE}
+kill_server $SERVER_FILE
+kill_server $RE_SERVER_FILE

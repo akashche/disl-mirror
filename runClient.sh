@@ -6,14 +6,12 @@ if [ -z "${DISL_LIB_P}" ]; then
 fi
 
 # test number of arguments
-EXPECTED_ARGS=2
-if [ $# -lt $EXPECTED_ARGS ]
-then
+if [ $# -lt 2 ]; then
 	echo "Usage: `basename $0` instr-lib java-params"
-	exit
+	exit 1
 fi
 
-# set proper lib depending on OS
+# determine libs depending on the OS
 OS=`uname`
 if [ "${OS}" = "Darwin" ]; then
 	C_AGENT="${DISL_LIB_P}/libdislagent.jnilib"
@@ -27,9 +25,9 @@ fi
 INSTR_LIB=$1
 shift
 
-# start client
-java -agentpath:${C_AGENT} \
-     -agentpath:${RE_AGENT} \
-     -javaagent:${DISL_LIB_P}/disl-agent.jar \
-     -Xbootclasspath/a:${DISL_LIB_P}/disl-agent.jar:${INSTR_LIB}:${DISL_LIB_P}/dislre-dispatch.jar \
-      $*
+# start the client
+${JAVA_HOME:+$JAVA_HOME/jre/bin/}java \
+	-agentpath:${C_AGENT} -agentpath:${RE_AGENT} \
+	-javaagent:${DISL_LIB_P}/disl-agent.jar \
+	-Xbootclasspath/a:${DISL_LIB_P}/disl-agent.jar:${INSTR_LIB}:${DISL_LIB_P}/dislre-dispatch.jar \
+	"$@"
