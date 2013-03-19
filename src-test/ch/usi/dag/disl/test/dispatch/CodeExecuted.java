@@ -53,14 +53,14 @@ public class CodeExecuted extends RemoteAnalysis {
 	
 	public static void testingAdvanced(ShadowObject s, ShadowObject o, ShadowObject c, ShadowObject t) {
 
+		if(! (s instanceof ShadowString)) {
+			throw new RuntimeException("This string should be transfered as string");
+		}
+		
 		if(! s.toString().equals("Corect transfer of String")) {
 			throw new RuntimeException("Incorect transfer of String");
 		}
 
-		if(! (s instanceof ShadowObject)) {
-			throw new RuntimeException("This string should be transfered as string");
-		}
-		
 		// object id should be non 0
 		if(o.getId() == 0) {
 			throw new RuntimeException("Object id should not be null");
