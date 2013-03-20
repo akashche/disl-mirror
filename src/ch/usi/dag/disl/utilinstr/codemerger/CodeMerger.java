@@ -14,16 +14,15 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import ch.usi.dag.disl.dynamicbypass.DynamicBypassCheck;
+import ch.usi.dag.disl.dynamicbypass.BypassCheck;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
 
 public abstract class CodeMerger {
 
-	private static final String DBCHECK_CLASS = Type.getInternalName(
-			DynamicBypassCheck.class);
-	private static final String DBCHECK_METHOD = "executeUninstrumented";
-	private static final String DBCHECK_DESC = "()Z";
+	private static final String BPC_CLASS = Type.getInternalName (BypassCheck.class);
+	private static final String BPC_METHOD = "executeUninstrumented";
+	private static final String BPC_DESC = "()Z";
 	
 	private static final int ALLOWED_SIZE = 64 * 1024; // 64KB limit
 
@@ -90,7 +89,7 @@ public abstract class CodeMerger {
 			// then jump to original code
 			ilist.insert(new JumpInsnNode(Opcodes.IFNE, origCodeL));
 			ilist.insert(new MethodInsnNode(Opcodes.INVOKESTATIC,
-					DBCHECK_CLASS, DBCHECK_METHOD, DBCHECK_DESC));
+					BPC_CLASS, BPC_METHOD, BPC_DESC));
 			
 			// calculate the code size and if it is larger then allowed size,
 			// skip it

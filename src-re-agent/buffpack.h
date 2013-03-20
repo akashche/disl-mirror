@@ -20,7 +20,7 @@
 #error "Requires IEEE 754 floating point!"
 #endif
 
-#include "../src-agent-c/jvmtihelper.h"
+#include "jvmtihelper.h"
 
 #include "buffer.h"
 

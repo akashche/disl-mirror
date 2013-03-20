@@ -14,10 +14,10 @@ fi
 # determine libs depending on the OS
 OS=`uname`
 if [ "${OS}" = "Darwin" ]; then
-	C_AGENT="${DISL_LIB_P}/libdislagent.jnilib"
+	AGENT="${DISL_LIB_P}/libdislagent.jnilib"
 	RE_AGENT="${DISL_LIB_P}/libdislreagent.jnilib"
 else
-	C_AGENT="${DISL_LIB_P}/libdislagent.so"
+	AGENT="${DISL_LIB_P}/libdislagent.so"
 	RE_AGENT="${DISL_LIB_P}/libdislreagent.so"
 fi
 
@@ -26,8 +26,13 @@ INSTR_LIB=$1
 shift
 
 # start the client
+# options available:
+#	-Ddisl.bypass=never \
+#	-Ddisl.bypass=bootstrap \
+#	-Ddisl.bypass=dynamic \
+#	-Ddisl.splitmethods=false \
+#	-Ddisl.excepthandler=true \
 ${JAVA_HOME:+$JAVA_HOME/jre/bin/}java \
-	-agentpath:${C_AGENT} -agentpath:${RE_AGENT} \
-	-javaagent:${DISL_LIB_P}/disl-agent.jar \
-	-Xbootclasspath/a:${DISL_LIB_P}/disl-agent.jar:${INSTR_LIB}:${DISL_LIB_P}/dislre-dispatch.jar \
+	-agentpath:${AGENT} -agentpath:${RE_AGENT} \
+	-Xbootclasspath/a:${INSTR_LIB}:${DISL_LIB_P}/dislre-dispatch.jar \
 	"$@"

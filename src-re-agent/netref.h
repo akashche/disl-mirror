@@ -6,7 +6,7 @@
 #include <jvmti.h>
 #include <jni.h>
 
-#include "../src-agent-c/jvmtihelper.h"
+#include "jvmtihelper.h"
 
 #include "buffer.h"
 #include "buffpack.h"

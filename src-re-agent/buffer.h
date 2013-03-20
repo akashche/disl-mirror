@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../src-agent-c/jvmtihelper.h"
+#include "jvmtihelper.h"
 
 // initial buffer size
 static const size_t INIT_BUFF_SIZE = 512;

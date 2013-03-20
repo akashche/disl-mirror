@@ -10,6 +10,7 @@ import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLInMethodException;
 
+
 public abstract class DiSLServer {
 
 	public static final String PROP_DEBUG = "debug";
@@ -24,7 +25,7 @@ public abstract class DiSLServer {
 
 	private static final String PROP_CONT = "dislserver.continuous";
 	private static final boolean continuous = Boolean.getBoolean(PROP_CONT);
-	
+
 	private static final String PROP_BYPASS = "dislserver.disablebypass";
 	private static final boolean bypass = ! Boolean.getBoolean(PROP_BYPASS);
 
@@ -48,25 +49,25 @@ public abstract class DiSLServer {
 			listenSocket = new ServerSocket (port);
 			if (debug) {
 				System.out.printf (
-					"DiSL: listening at %s:%d\n",
+					"DiSL: listening on %s:%d\n",
 					listenSocket.getInetAddress ().getHostAddress (),
 					listenSocket.getLocalPort ()
 				);
 			}
 
 			while (true) {
-				final Socket newClient = listenSocket.accept ();
+				final Socket clientSocket = listenSocket.accept ();
 				if (debug) {
 					System.out.printf (
 						"DiSL: accepting connection from %s:%d\n",
-						newClient.getInetAddress ().getHostAddress (),
-						newClient.getPort ()
+						clientSocket.getInetAddress ().getHostAddress (),
+						clientSocket.getPort ()
 					);
 				}
 
-				NetMessageReader sc = new NetMessageReader (newClient);
+				MessageChannel mc = new MessageChannel (clientSocket);
 				aliveWorkers.incrementAndGet ();
-				new Worker (sc, disl).start ();
+				new Worker (mc, disl).start ();
 			}
 
 		} catch (final IOException ioe) {
@@ -152,4 +153,5 @@ public abstract class DiSLServer {
 			}
 		}
 	}
+
 }

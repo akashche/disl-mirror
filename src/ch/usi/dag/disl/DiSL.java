@@ -4,6 +4,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -593,7 +595,84 @@ public class DiSL {
 	}
 
 	//
-	
+
+	/**
+	 * Options for code transformations performed by DiSL.  
+	 */
+	public enum CodeOption {
+
+	    /**
+	     * Create a copy of the original code and check whether to execute
+	     * instrumented or uninstrumented version of the code upon method
+	     * entry.
+	     */
+		CREATE_BYPASS (Flag.CREATE_BYPASS),
+		
+		/**
+		 * Insert code for dynamic bypass control. Enable bypass when entering 
+		 * instrumentation code and disable it when leaving it.
+		 */
+		DYNAMIC_BYPASS (Flag.DYNAMIC_BYPASS),
+		
+		/**
+		 * Split methods exceeding the class file limit.
+		 */
+		SPLIT_METHODS (Flag.SPLIT_METHODS),
+		
+		/**
+		 * Wrap snippets in exception handlers to catch exceptions.
+		 */
+		CATCH_EXCEPTIONS (Flag.CATCH_EXCEPTIONS);
+
+
+		/**
+		 * Flags corresponding to individual code options. The flags are
+		 * used when communicating with DiSL agent.
+		 */
+		public interface Flag {
+			static final int CREATE_BYPASS = 1 << 0;
+			static final int DYNAMIC_BYPASS = 1 << 1;
+			static final int SPLIT_METHODS = 1 << 2;
+			static final int CATCH_EXCEPTIONS = 1 << 3;
+		}
+
+		//
+
+		private final int __flag;
+
+		private CodeOption (final int flag) {
+			__flag = flag;
+		}
+
+		//
+
+		/**
+		 * Creates a set of code options from an array of options.
+		 */
+		public static Set <CodeOption> setOf (final CodeOption... options) {
+			final EnumSet <CodeOption> result = EnumSet.noneOf (CodeOption.class);
+			result.addAll (Arrays.asList (options));
+			return result;
+		}
+
+
+		/**
+		 * Creates a set of code options from flags in an integer.
+		 */
+		public static Set <CodeOption> setOf (final int flags) {
+			final EnumSet <CodeOption> result = EnumSet.noneOf (CodeOption.class);
+			for (final CodeOption option : CodeOption.values ()) {
+				if ((flags & option.__flag) != 0) {
+					result.add (option);
+				}
+			}
+
+			return result;
+		}
+	}
+
+	//
+
 	private void __debug (final String format, final Object ... args) {
 		if (debug) {
 			System.out.printf (format, args);
@@ -605,4 +684,5 @@ public class DiSL {
 			System.out.printf (format, args);
 		}
 	}
+
 }
