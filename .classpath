@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="testcase/fia/test-ia-sapi/src"/>
 	<classpathentry kind="src" path="src-re-disp"/>
 	<classpathentry kind="src" path="src-re-server"/>
 	<classpathentry kind="src" path="src-test"/>
