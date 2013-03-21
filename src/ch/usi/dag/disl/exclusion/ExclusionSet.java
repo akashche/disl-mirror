@@ -51,24 +51,13 @@ public abstract class ExclusionSet {
 		
 		Set<Scope> exclSet = new HashSet<Scope>();
 		
-		// DiSL agent classes
+		// DiSL classes
 		exclSet.add(new ScopeImpl(
-				"ch.usi.dag.dislagent" + EXCLUDE_CLASSES));
-		
-		// dynamic bypass classes
-		exclSet.add(new ScopeImpl(
-				"ch.usi.dag.disl.dynamicbypass" + EXCLUDE_CLASSES));
+				"ch.usi.dag.disl" + EXCLUDE_CLASSES));
 		
 		// DiSLRE classes
 		exclSet.add(new ScopeImpl(
 				"ch.usi.dag.dislre" + EXCLUDE_CLASSES));
-		
-		// java instrument classes could cause troubles if instrumented
-		exclSet.add(new ScopeImpl(
-				"sun.instrument" + EXCLUDE_CLASSES));
-		
-		// finalize method in java.lang.Object can cause problems 
-		exclSet.add(new ScopeImpl("java.lang.Object.finalize"));
 		
 		return exclSet;
 	}
