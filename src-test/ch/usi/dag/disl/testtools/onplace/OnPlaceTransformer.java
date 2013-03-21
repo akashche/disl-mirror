@@ -12,6 +12,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import ch.usi.dag.disl.DiSL;
+import ch.usi.dag.disl.DiSL.CodeOption;
 
 public class OnPlaceTransformer {
 	
@@ -48,7 +49,9 @@ public class OnPlaceTransformer {
 				new TraceClassVisitor(new PrintWriter(System.out))), 0);
 		
 		// instrument class
-		byte[] instrCode = disl.instrument(origCode);
+		byte[] instrCode = disl.instrument(
+		    origCode, CodeOption.setOf (/* TODO Set options */)
+	    );
 		
 		if(instrCode != null) {
 		

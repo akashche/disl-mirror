@@ -6,10 +6,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import ch.usi.dag.disl.DiSL;
+import ch.usi.dag.disl.DiSL.CodeOption;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.util.Constants;
 
@@ -71,7 +73,8 @@ public class Worker extends Thread {
     
     				instrClass = instrument (
     				    new String (request.getControl ()),
-                        request.getClassCode ()
+                        request.getClassCode (),
+                        CodeOption.setOf (request.getFlags ())
                     );
     				
                     instrumentationTime.addAndGet (System.nanoTime () - startTime);
@@ -121,7 +124,7 @@ public class Worker extends Thread {
 
 
     private byte [] instrument (
-        String className, byte [] origCode
+        String className, byte [] origCode, Set <CodeOption> options
     ) throws DiSLServerException, DiSLException {
 	    
 		// backup for empty class name
@@ -135,7 +138,7 @@ public class Worker extends Thread {
         }
 
 		// instrument the bytecode according to given options
-        byte [] instrCode = disl.instrument (origCode);
+        byte [] instrCode = disl.instrument (origCode, options);
 
 		// dump instrumented byte code
         if (instrPath != null && instrCode != null) {

@@ -1,5 +1,7 @@
 package ch.usi.dag.disl;
 
+import static ch.usi.dag.disl.DiSL.CodeOption.CREATE_BYPASS;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -212,7 +214,7 @@ public class DiSL {
 	 *     {@code true} if the methods was changed, {@code false} otherwise.
 	 */
 	private boolean instrumentMethod (
-		final ClassNode classNode, final MethodNode methodNode
+		final ClassNode classNode, final MethodNode methodNode 
 	) throws ReflectionException, StaticContextGenException,
 		ProcessorException, DynamicContextException, MarkerException {
 
@@ -406,8 +408,9 @@ public class DiSL {
 	 * @param classNode class node to instrument
 	 * @return instrumented class
 	 */
-	private InstrumentedClass instrumentClass(ClassNode classNode)
-			throws DiSLException {
+	private InstrumentedClass instrumentClass(
+	    ClassNode classNode, final Set <CodeOption> codeOptions
+    ) throws DiSLException {
 
 		// NOTE that class can be changed without changing any method
 		// - adding thread local fields
@@ -481,7 +484,7 @@ public class DiSL {
 	/**
 	 * Instruments array of bytes representing a class
 	 * 
-	 * @param classAsBytes class as array of bytes
+	 * @param originalCode class as array of bytes
 	 * @return instrumented class as array of bytes
 	 */
 	// TODO ! current static context interface does not allow to have nice
@@ -489,17 +492,17 @@ public class DiSL {
 	// also invokes the required method and returns result - if this method
 	// (and static context class itself) will be synchronized, it should work
 	public synchronized byte [] instrument (
-		byte [] classAsBytes
+		byte [] originalCode, final Set <CodeOption> codeOptions
 	) throws DiSLException {
 		// keep the currently processed class around in case of errors
 		if (debug) {
-			__dumpClassToFile (classAsBytes, "err.class");
+			__dumpClassToFile (originalCode, "err.class");
 		}
 		
 		// apply transformer first
 		if (transformer != null) {
 			try {
-				classAsBytes = transformer.transform(classAsBytes);
+				originalCode = transformer.transform(originalCode);
 			}
 			catch (Exception e) {
 				throw new TransformerException("Transformer error", e); 
@@ -507,7 +510,7 @@ public class DiSL {
 		}
 		
 		// create class reader
-		ClassReader classReader = new ClassReader(classAsBytes);
+		ClassReader classReader = new ClassReader(originalCode);
 		
 		// AfterInitBodyMarker uses AdviceAdapter
 		//  - classNode with API param is required by ASM 4.0 guidelines
@@ -515,14 +518,14 @@ public class DiSL {
 
 		classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
 		
-		InstrumentedClass instrClass = instrumentClass(classNode);
+		InstrumentedClass instrClass = instrumentClass(classNode, codeOptions);
 		
 		if(instrClass == null) {
 			
 			// propagate uninstrumented classes
 			// useful, when transformer is doing some job on all classes
 			if(transPropagateUninstr) {
-				return classAsBytes;
+				return originalCode;
 			}
 			
 			return null;
@@ -530,10 +533,10 @@ public class DiSL {
 		
 		ClassNode instrCN = instrClass.getClassNode();
 		
-		// if dynamic bypass is enabled use code merger
-		if(useDynamicBypass) {
+		// if bypass is desired, merge original and instrumented method code
+		if(codeOptions.contains (CREATE_BYPASS)) {
 			
-			ClassReader origCR = new ClassReader(classAsBytes);
+			ClassReader origCR = new ClassReader(originalCode);
 			ClassNode origCN = new ClassNode();
 
 			origCR.accept(origCN, ClassReader.EXPAND_FRAMES);
