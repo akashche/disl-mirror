@@ -51,9 +51,9 @@ public abstract class ExclusionSet {
 		
 		Set<Scope> exclSet = new HashSet<Scope>();
 		
-		// DiSL classes
+		// DiSL dynamic bypass classes
 		exclSet.add(new ScopeImpl(
-				"ch.usi.dag.disl" + EXCLUDE_CLASSES));
+				"ch.usi.dag.disl.dynamicbypass" + EXCLUDE_CLASSES));
 		
 		// DiSLRE classes
 		exclSet.add(new ScopeImpl(
