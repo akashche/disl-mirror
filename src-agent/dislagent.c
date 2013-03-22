@@ -155,16 +155,16 @@ __instrument_class (
 		.control = (unsigned char *) class_name,
 		.classcode = class_def->class_bytes,
 	};
-	
+
 	//
-	
+
 	struct connection * conn = network_acquire_connection ();
 	message_send (conn, &request);
-	
+
 	struct message response;
 	message_recv (conn, &response);
 	network_release_connection (conn);
-	
+
 	//
 	// Check if error occurred on the server.
 	// The control field of the response contains the error message.
@@ -178,11 +178,11 @@ __instrument_class (
 
 		exit (ERROR_SERVER);
 	}
-	
+
 	//
-	// Update the class definition and signal modified class if 
-	// any class code has been returned. If not, the class has
-	// not been modified.
+	// Update the class definition and signal that the class has been
+	// modified if non-empty class code has been returned. Otherwise,
+	// signal that the class has not been modified.
 	//
 	if (response.classcode_size > 0) {
 		class_def->class_byte_count = response.classcode_size;
@@ -432,9 +432,9 @@ Agent_OnLoad (JavaVM * jvm, char * options, void * reserved) {
 		.can_redefine_any_class = 1,
 		.can_generate_all_class_hook_events = 1,
 	};
-	
+
 	jvmtiError error = (*jvmti)->AddCapabilities (jvmti, &caps);
-	check_jvmti_error (jvmti, error, "failed to add required JVMTI capabilities.");
+	check_jvmti_error (jvmti, error, "failed to add capabilities");
 
 
 	// configure agent and init connections
@@ -453,7 +453,7 @@ Agent_OnLoad (JavaVM * jvm, char * options, void * reserved) {
 	};
 
 	error = (*jvmti)->SetEventCallbacks (jvmti, &callbacks, (jint) sizeof (callbacks));
-	check_jvmti_error (jvmti, error, "failed to register JVMTI event callbacks");
+	check_jvmti_error (jvmti, error, "failed to register event callbacks");
 
 
 	// enable event notification

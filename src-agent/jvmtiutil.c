@@ -58,7 +58,7 @@ jvmti_redefine_class (
 	}
 
 	//
-	
+
 	jvmtiClassDefinition new_classdef = {
 		.klass = class,
 		.class_byte_count = class_def->class_byte_count,
