@@ -47,6 +47,8 @@ public abstract class DiSLServer {
 			}
 
 			listenSocket = new ServerSocket (port);
+			listenSocket.setReuseAddress (true);
+
 			if (debug) {
 				System.out.printf (
 					"DiSL: listening on %s:%d\n",
