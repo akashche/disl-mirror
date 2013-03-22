@@ -429,7 +429,6 @@ Agent_OnLoad (JavaVM * jvm, char * options, void * reserved) {
 	// add capabilities
 	jvmtiCapabilities caps = { 
 		.can_redefine_classes = 1,
-		.can_redefine_any_class = 1,
 		.can_generate_all_class_hook_events = 1,
 	};
 
