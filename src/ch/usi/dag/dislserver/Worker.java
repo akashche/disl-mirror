@@ -69,13 +69,27 @@ public class Worker extends Thread {
                 byte [] instrClass;
     
     			try {
-    				long startTime = System.nanoTime();
+				final String className = new String (request.getControl ());
+				final byte [] classCode = request.getClassCode ();
+				final Set <CodeOption> options = CodeOption.setOf (request.getFlags ());
+				
+				if (debug) {
+					System.out.printf (
+						"DiSL-Server: instrumenting class %s [%d bytes",
+						className.isEmpty () ? "<unknown>" : className,
+						classCode.length
+					);
+
+					for (final CodeOption option : options) {
+						System.out.printf (", %s", option);
+					}
+
+					System.out.println ("]");
+				}
+
+    				final long startTime = System.nanoTime ();
     
-    				instrClass = instrument (
-    				    new String (request.getControl ()),
-                        request.getClassCode (),
-                        CodeOption.setOf (request.getFlags ())
-                    );
+    				instrClass = instrument (className, classCode, options);
     				
                     instrumentationTime.addAndGet (System.nanoTime () - startTime);
     				

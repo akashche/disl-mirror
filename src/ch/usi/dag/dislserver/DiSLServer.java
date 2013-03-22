@@ -43,7 +43,7 @@ public abstract class DiSLServer {
 			disl = new DiSL (bypass);
 
 			if (debug) {
-				System.out.println ("DiSL: starting instrumentation server...");
+				System.out.println ("DiSL-Server: starting...");
 			}
 
 			listenSocket = new ServerSocket (port);
@@ -51,7 +51,7 @@ public abstract class DiSLServer {
 
 			if (debug) {
 				System.out.printf (
-					"DiSL: listening on %s:%d\n",
+					"DiSL-Server: listening on %s:%d\n",
 					listenSocket.getInetAddress ().getHostAddress (),
 					listenSocket.getLocalPort ()
 				);
@@ -61,7 +61,7 @@ public abstract class DiSLServer {
 				final Socket clientSocket = listenSocket.accept ();
 				if (debug) {
 					System.out.printf (
-						"DiSL: accepting connection from %s:%d\n",
+						"DiSL-Server: accepting connection from %s:%d\n",
 						clientSocket.getInetAddress ().getHostAddress (),
 						clientSocket.getPort ()
 					);
@@ -91,7 +91,7 @@ public abstract class DiSLServer {
 
 	public static void reportError (Throwable throwable) {
 		if (throwable instanceof DiSLException) {
-			System.err.print ("DiSL: error");
+			System.err.print ("DiSL-Server: error");
 
 			// report during which method it happened
 			if (throwable instanceof DiSLInMethodException) {
@@ -110,7 +110,7 @@ public abstract class DiSLServer {
 			}
 
 		} else if (throwable instanceof DiSLServerException) {
-			System.err.print ("DiSL: server error");
+			System.err.print ("DiSL-Server: error");
 
 			reportOptionalMessage (throwable);
 			reportInnerError (throwable);
@@ -120,7 +120,7 @@ public abstract class DiSLServer {
 
 		} else {
 			// some other exception
-			System.err.print ("DiSL: fatal error: ");
+			System.err.print ("DiSL-Server: fatal error: ");
 			throwable.printStackTrace ();
 		}
 	}
@@ -138,7 +138,7 @@ public abstract class DiSLServer {
 		if (aliveWorkers.decrementAndGet () == 0) {
 			if (timeStat) {
 				System.out.printf (
-					"DiSL: instrumentation took %d milliseconds\n",
+					"DiSL-Server: instrumentation took %d milliseconds\n",
 					instrumentationTime.get () / 1000000
 				);
 			}
@@ -148,7 +148,7 @@ public abstract class DiSLServer {
 				disl.terminate ();
 
 				if (debug) {
-					System.out.println ("DiSL: shutting down instrumentation server...");
+					System.out.println ("DiSL-Server: shutting down...");
 				}
 
 				System.exit(0);
