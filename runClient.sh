@@ -34,5 +34,5 @@ shift
 #	-Ddisl.excepthandler=true \
 ${JAVA_HOME:+$JAVA_HOME/jre/bin/}java \
 	-agentpath:${AGENT} -agentpath:${RE_AGENT} \
-	-Xbootclasspath/a:${INSTR_LIB}:${DISL_LIB_P}/dislre-dispatch.jar \
+	-Xbootclasspath/a:${DISL_LIB_P}/disl-bypass.jar:${INSTR_LIB}:${DISL_LIB_P}/dislre-dispatch.jar \
 	"$@"

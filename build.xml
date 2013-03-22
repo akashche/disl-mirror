@@ -69,7 +69,7 @@
 		</javac>
 	</target>
 
-	<target name="compile" depends="compile-disl,compile-agent,compile-test,compile-reserver,compile-redispatch" />
+	<target name="compile" depends="compile-disl,compile-agent,compile-test,compile-reserver,compile-reagent,compile-redispatch" />
 
 	<target name="package-dislserver" depends="compile-disl">
 		<jar basedir="${bin}" destfile="${build}/disl-server.jar"
@@ -101,7 +101,15 @@
 		</jar>
 	</target>
 
-	<target name="package" depends="package-dislserver,package-reserver,package-redispatch,compile-agent,compile-reagent" />
+	<target name="package-dynamicbypass" depends="compile-dynamicbypass">
+		<jar basedir="${bin}" destfile="${build}/disl-bypass.jar" includes="ch/usi/dag/disl/dynamicbypass/**">
+			<manifest>
+				<attribute name="DiSL-Version" value="${disl.version}" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="package" depends="package-dislserver,package-dynamicbypass,package-reserver,package-redispatch,compile-agent,compile-reagent" />
 
 	<target name="eclipse-agent" description="creates simple agent jar file for eclipse">
 		<mkdir dir="build" />
