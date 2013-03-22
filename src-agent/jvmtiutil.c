@@ -18,6 +18,24 @@
 
 
 /**
+ * Allocates JVM memory for the given buffer and copies the buffer
+ * into JVM memory.
+ */
+unsigned char *
+jvmti_alloc_copy (jvmtiEnv * jvmti, const void * src, size_t size) {
+	assert (jvmti != NULL);
+	assert (src != NULL);
+
+	unsigned char * jvm_dst;
+	jvmtiError error = (*jvmti)->Allocate (jvmti, (jlong) size, &jvm_dst);
+	check_jvmti_error (jvmti, error, "failed create a JVM copy of a buffer");
+
+	memcpy (jvm_dst, src, size);
+	return jvm_dst;
+}
+
+
+/**
  * Redefines a class given name and (partial) class definition.
  * The class to be redefined is first looked up using JNI to
  * complete the class definition information. Returns true
@@ -40,9 +58,14 @@ jvmti_redefine_class (
 	}
 
 	//
-
-	jvmtiClassDefinition new_classdef = * class_def;
-	new_classdef.klass = class;
+	
+	jvmtiClassDefinition new_classdef = {
+		.klass = class,
+		.class_byte_count = class_def->class_byte_count,
+		.class_bytes = jvmti_alloc_copy (
+			jvmti, class_def->class_bytes, class_def->class_byte_count
+		),
+	};
 
 	jvmtiError error = (*jvmti)->RedefineClasses (jvmti, 1, &new_classdef);
 	check_jvmti_error (jvmti, error, "failed to redefine class");

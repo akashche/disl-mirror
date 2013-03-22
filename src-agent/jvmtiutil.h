@@ -8,6 +8,8 @@
 
 void report_jvmti_error (jvmtiEnv * jvmti, jvmtiError error, const char * message);
 
+unsigned char * jvmti_alloc_copy (jvmtiEnv * jvmti, const void * src, size_t size);
+
 bool jvmti_redefine_class (
 	jvmtiEnv * jvmti, JNIEnv * jni,
 	const char * name, const jvmtiClassDefinition * definition

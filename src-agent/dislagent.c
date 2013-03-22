@@ -238,18 +238,10 @@ jvmti_callback_class_file_load (
 	);
 
 	if (class_changed) {
-		unsigned char * jvm_class_bytes;
-		jvmtiError error = (*jvmti)->Allocate (
-			jvmti, (jlong) class_def.class_byte_count, &jvm_class_bytes
-		);
-		check_jvmti_error (
-			jvmti, error,
-			"failed to allocate memory for the instrumented class"
+		unsigned char * jvm_class_bytes = jvmti_alloc_copy (
+			jvmti, class_def.class_bytes, class_def.class_byte_count
 		);
 
-		//
-
-		memcpy (jvm_class_bytes, class_def.class_bytes, class_def.class_byte_count);
 		free ((void *) class_def.class_bytes);
 
 		*new_class_byte_count = class_def.class_byte_count;
@@ -270,7 +262,7 @@ jvmti_callback_class_file_load (
 
 
 // ****************************************************************************
-// JVMTI EVENT: VM START
+// JVMTI EVENT: VM INIT
 // ****************************************************************************
 
 static void JNICALL
