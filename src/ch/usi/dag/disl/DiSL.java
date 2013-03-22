@@ -534,7 +534,7 @@ public class DiSL {
 		ClassNode instrCN = instrClass.getClassNode();
 		
 		// if bypass is desired, merge original and instrumented method code
-		if(codeOptions.contains (CREATE_BYPASS)) {
+		if(useDynamicBypass || codeOptions.contains (CREATE_BYPASS)) {
 			
 			ClassReader origCR = new ClassReader(originalCode);
 			ClassNode origCN = new ClassNode();
