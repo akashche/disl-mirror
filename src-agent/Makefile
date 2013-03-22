@@ -35,7 +35,7 @@ LINK_SHARED=$(LINK.c) -shared -o $@
 COMMON_FLAGS=-fPIC -std=gnu99
 
 # Options that help find errors
-COMMON_FLAGS+= -W -Wall -Wextra -Wno-unused-parameter
+COMMON_FLAGS+= -W -Wall -Wextra -Wno-unused-parameter -lpthread
 
 CFLAGS += $(COMMON_FLAGS)
 
@@ -44,7 +44,7 @@ CFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
 
 # add debugging output
 ifneq ($(DEBUG),)
-CFLAGS += -DDEBUG
+CFLAGS += -DDEBUG -g
 else
 CFLAGS += -DNDEBUG -O3
 endif

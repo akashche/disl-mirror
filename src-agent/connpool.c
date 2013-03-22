@@ -15,8 +15,8 @@ connection_pool_init (struct connection_pool * cp, struct addrinfo * endpoint) {
 	assert (endpoint != NULL);
 
 	cp->connections_count = 0;
-	list_init (& cp->free_connections);
-	list_init (& cp->busy_connections);
+	list_init (&cp->free_connections);
+	list_init (&cp->busy_connections);
 
 	cp->endpoint = endpoint;
 	cp->after_open_hook = NULL;
@@ -52,9 +52,9 @@ connection_pool_get_connection (struct connection_pool * cp) {
 	// Grab the first available connection and return. If there is no connection
 	// available, create a new one and add it to the busy connection list.
 	//
-	if (!list_is_empty (& cp->free_connections)) {
-		struct list * item = list_remove_after (& cp->free_connections);
-		list_insert_after (item, & cp->busy_connections);
+	if (!list_is_empty (&cp->free_connections)) {
+		struct list * item = list_remove_after (&cp->free_connections);
+		list_insert_after (item, &cp->busy_connections);
 		return list_item (item, struct connection, cp_link);
 
 	} else {
@@ -63,8 +63,11 @@ connection_pool_get_connection (struct connection_pool * cp) {
 			cp->after_open_hook (connection);
 		}
 
-		list_insert_after (& connection->cp_link, & cp->busy_connections);
+		list_insert_after (&connection->cp_link, &cp->busy_connections);
 		cp->connections_count++;
+#ifdef DEBUG
+		printf ("[new connection, %d in total] ", cp->connections_count);
+#endif
 		return connection;
 	}
 }
@@ -85,8 +88,8 @@ connection_pool_put_connection (
 	// Move the connection from the list of busy connections to
 	// the list of available connections.
 	//
-	struct list * item = list_remove (& connection->cp_link);
-	list_insert_after (item, & cp->free_connections);
+	struct list * item = list_remove (&connection->cp_link);
+	list_insert_after (item, &cp->free_connections);
 }
 
 //
@@ -114,15 +117,15 @@ connection_pool_close (struct connection_pool * cp) {
 	assert (cp != NULL);
 
 #ifdef DEBUG
-	fprintf (
-		stderr, "connection pool %s: max connections %d\n",
+	printf (
+		"debug: connection pool for %s: max connections %d\n",
 		cp->endpoint->ai_canonname, cp->connections_count
 	);
-#endif /* DEBUG */
+#endif
 
-	list_destroy (& cp->free_connections, __connection_destructor, (void *) cp);
-	if (!list_is_empty (& cp->busy_connections)) {
+	list_destroy (&cp->free_connections, __connection_destructor, (void *) cp);
+	if (!list_is_empty (&cp->busy_connections)) {
 		fprintf (stderr, "warning: closing %d active connections", cp->connections_count);
-		list_destroy (& cp->busy_connections, __connection_destructor, (void *) cp);
+		list_destroy (&cp->busy_connections, __connection_destructor, (void *) cp);
 	}
 }

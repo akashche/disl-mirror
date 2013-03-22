@@ -15,15 +15,7 @@ struct message {
 };
 
 
-struct message create_message (
-	jint message_flags,
-	const unsigned char * control, jint control_size,
-	const unsigned char * classcode, jint classcode_size
-);
-
-void free_message(struct message * msg);
-
-void send_message (struct connection * conn, struct message * msg);
-struct message recv_message (struct connection * conn);
+void message_send (struct connection * conn, struct message * msg);
+void message_recv (struct connection * conn, struct message * msg);
 
 #endif /* _MSGCHANNEL_H_ */

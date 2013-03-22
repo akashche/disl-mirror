@@ -10,7 +10,7 @@
 #define ERROR_STD 10002
 #define ERROR_JVMTI 10003
 
-#define ERROR_PREFIX "DiSL agent error: "
+#define ERROR_PREFIX "DiSL-agent error: "
 
 
 void report_error (const char * message);
@@ -25,8 +25,8 @@ void report_std_error (const char * message);
 
 
 /**
- * Checks for a general error by testing the results of an error condition.
- * Reports a general error and terminates the program if the condition is true.
+ * Reports a general error and terminates the program if the provided
+ * error condition is true.
  */
 inline static void
 check_error (bool error, const char * message) {
@@ -37,13 +37,12 @@ check_error (bool error, const char * message) {
 
 
 /**
- * Checks the return value of a standard library call for error. Reports a standard
- * library error and terminates the program if the the returned value matches the
- * specified error value.
+ * Reports a standard library error and terminates the program if the provided
+ * error condition is true.
  */
 inline static void
-check_std_error (int retval, int errorval, const char * message) {
-	if (retval == errorval) {
+check_std_error (bool error, const char * message) {
+	if (error) {
 		report_std_error (message);
 	}
 }

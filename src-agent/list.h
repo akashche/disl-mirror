@@ -39,8 +39,8 @@ typedef int (* list_match_fn) (struct list * item, void * data);
  */
 #define LIST_INIT(name)							\
 {									\
-	.prev	= & (name), 						\
-	.next	= & (name)						\
+	.prev	= &(name), 						\
+	.next	= &(name)						\
 }
 
 
@@ -341,7 +341,7 @@ list_remove_before (struct list * item)
 	assert ((head) != NULL);						\
 	for (									\
 		curr = list_item ((head)->next, typeof (* curr), member);	\
-		(& curr->member) != (head);					\
+		(&curr->member) != (head);					\
 		curr = list_item (curr->member.next, typeof (* curr), member)	\
 	)
 
@@ -360,7 +360,7 @@ list_remove_before (struct list * item)
 	assert ((head) != NULL);						\
 	for (									\
 		curr = list_item ((head)->prev, typeof (* curr), member);	\
-		(& curr->member) != (head);					\
+		(&curr->member) != (head);					\
 		curr = list_item (curr->member.prev, typeof (* curr), member)	\
 	)
 

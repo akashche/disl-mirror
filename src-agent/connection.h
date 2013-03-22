@@ -28,9 +28,10 @@ struct connection {
 struct connection * connection_open (struct addrinfo * addr);
 void connection_close (struct connection * connection);
 
-void connection_send (struct connection * connection, const void * buf, const ssize_t len);
-void connection_send_iov (struct connection * connection, const struct iovec * iov, int iovcnt);
-void connection_recv (struct connection * connection, void * buf, const ssize_t len);
-void connection_recv_iov (struct connection * connection, const struct iovec * iov, int iovcnt);
+ssize_t connection_send (struct connection * connection, const void * buf, const ssize_t len);
+ssize_t connection_send_iov (struct connection * connection, const struct iovec * iov, int iovcnt);
+
+ssize_t connection_recv (struct connection * connection, void * buf, const ssize_t len);
+ssize_t connection_recv_iov (struct connection * connection, const struct iovec * iov, int iovcnt);
 
 #endif /* _CONNECTION_H_ */

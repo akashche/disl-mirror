@@ -6,9 +6,9 @@
 
 
 /**
- * Reports an actual general error. This function implements the slow path of
- * check_error(). It prints the given error message and exits with an error code
- * indicating a general error.
+ * Reports an error and terminates the program. This function implements the
+ * slow path of check_error(). It prints the given error message and exits with
+ * an error code indicating a general error.
  */
 void
 report_error (const char * message) {
@@ -18,17 +18,15 @@ report_error (const char * message) {
 
 
 /**
- * Reports an actual standard library error. This function implements the slow path
- * of check_std_error(). It prints the given error message along with the error
- * message provided by the standard library, and exits with an error code indicating
- * failure in standard library call.
+ * Reports a standard library error and terminates the program. This function
+ * implements the slow path of check_std_error(). It prints the given error
+ * message along with the error message provided by the standard library and
+ * exits with an error code indicating failure in standard library call.
  */
 void
 report_std_error (const char * message) {
-	char msgbuf [1024];
-
-	snprintf (msgbuf, sizeof (msgbuf), "%s%s", ERROR_PREFIX, message);
-	perror (msgbuf);
+	fprintf (stderr, "%s%s\n", ERROR_PREFIX, message);
+	perror ("cause");
 	exit (ERROR_STD);
 }
 

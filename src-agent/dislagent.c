@@ -8,8 +8,8 @@
 
 #include <pthread.h>
 
-#include <jvmti.h>
 #include <jni.h>
+#include <jvmti.h>
 
 #include "common.h"
 #include "jvmtiutil.h"
@@ -27,8 +27,11 @@
 // AGENT CONFIG
 // ****************************************************************************
 
-#define DISL_HOST_DEFAULT "localhost"
-#define DISL_PORT_DEFAULT "11217"
+#define DISLSERVER_HOST "dislserver.host"
+#define DISLSERVER_HOST_DEFAULT "localhost"
+
+#define DISLSERVER_PORT "dislserver.port"
+#define DISLSERVER_PORT_DEFAULT "11217"
 
 #define DISL_BYPASS "disl.bypass"
 #define DISL_BYPASS_DEFAULT "dynamic"
@@ -130,34 +133,65 @@ __calc_code_flags (struct config * config, bool jvm_is_booting) {
 
 
 /**
- * Sends the given class to the remote server for instrumentation. Returns
- * the response from the server that contains the instrumented class.
+ * Sends the given class to the remote server for instrumentation. If the
+ * server modified the class, updates the provided class definition structure
+ * and returns true. Otherwise, the structure is left unmodified and false
+ * is returned.
  */
-static struct message
+static bool
 __instrument_class (
-	jint request_flags, const char * classname,
-	const unsigned char * classcode, jint classcode_size
+	jint request_flags, const char * class_name,
+	jvmtiClassDefinition * class_def
 ) {
 	//
-	// Acquire a connection, put the class data into the message and
-	// send it to the server, wait for the response, and release the
+	// Put the class data into a request message, acquire a connection and
+	// send the it to the server. Receive the response and release the
 	// connection again.
 	//
+	struct message request = {
+		.message_flags = request_flags,
+		.control_size = (class_name != NULL) ? strlen (class_name) : 0,
+		.classcode_size = class_def->class_byte_count,
+		.control = (unsigned char *) class_name,
+		.classcode = class_def->class_bytes,
+	};
+	
+	//
+	
 	struct connection * conn = network_acquire_connection ();
-
-	// TODO: This would do just with a thread-local message
-	struct message request = create_message (
-		request_flags,
-		(const unsigned char *) classname, strlen (classname),
-		classcode, classcode_size
-	);
-
-	send_message (conn, &request);
-
-	struct message result = recv_message (conn);
-
+	message_send (conn, &request);
+	
+	struct message response;
+	message_recv (conn, &response);
 	network_release_connection (conn);
-	return result;
+	
+	//
+	// Check if error occurred on the server.
+	// The control field of the response contains the error message.
+	//
+	if (response.control_size > 0) {
+		fprintf (
+			stderr,
+			"%sinstrumentation server error:\n%s\n",
+			ERROR_PREFIX, response.control
+		);
+
+		exit (ERROR_SERVER);
+	}
+	
+	//
+	// Update the class definition and signal modified class if 
+	// any class code has been returned. If not, the class has
+	// not been modified.
+	//
+	if (response.classcode_size > 0) {
+		class_def->class_byte_count = response.classcode_size;
+		class_def->class_bytes = response.classcode;
+		return true;
+
+	} else {
+		return false;
+	}
 }
 
 
@@ -166,60 +200,71 @@ jvmti_callback_class_file_load (
 	jvmtiEnv * jvmti, JNIEnv * jni,
 	jclass class_being_redefined, jobject loader,
 	const char * class_name, jobject protection_domain,
-	jint class_data_len, const unsigned char * class_data,
-	jint * new_class_data_len, unsigned char ** new_class_data
+	jint class_byte_count, const unsigned char * class_bytes,
+	jint * new_class_byte_count, unsigned char ** new_class_bytes
 ) {
+	assert (jvmti != NULL);
+
 #ifdef DEBUG
-	if (class_name != NULL) {
-		printf ("Instrumenting class %s\n", class_name);
-	} else {
-		printf ("Instrumenting unknown class\n");
-	}
+	printf (
+		"debug: instrumenting class %s, %d bytes at %p\n", 
+		(class_name != NULL) ? class_name : "<unknown>",
+		class_byte_count, class_bytes
+	);
 #endif
 
-	// skip instrumentation of the bypass check class
-	if (strcmp (class_name, BPC_CLASS_NAME) == 0) {
+	//
+	// Avoid instrumenting the bypass check class.
+	//
+	if (class_name != NULL && (strcmp (class_name, BPC_CLASS_NAME) == 0)) {
 #ifdef DEBUG
-		printf ("Skipping class %s\n", class_name);
+		printf ("debug: skipping bypass check class (%s)\n", class_name);
 #endif
 		return;
 	}
 
 
-	// ask the server to instrument the class
-	struct message instrclass = __instrument_class (
-		agent_code_flags, class_name, class_data, class_data_len
+	//
+	// Instrument the class and if changed by the server, provide the
+	// code to the JVM in its own memory.
+	//
+	jvmtiClassDefinition class_def = {
+		.class_byte_count = class_byte_count,
+		.class_bytes = class_bytes,
+	};
+
+	bool class_changed = __instrument_class (
+		agent_code_flags, class_name, &class_def
 	);
 
-	// error on the server
-	if (instrclass.control_size > 0) {
-		// classname contains the error message
-		fprintf(stderr, "%sError occurred in the remote instrumentation server\n", ERROR_PREFIX);
-		fprintf(stderr, "   Reason: %s\n", instrclass.control);
-		exit (ERROR_SERVER);
-	}
+	if (class_changed) {
+		unsigned char * jvm_class_bytes;
+		jvmtiError error = (*jvmti)->Allocate (
+			jvmti, (jlong) class_def.class_byte_count, &jvm_class_bytes
+		);
+		check_jvmti_error (
+			jvmti, error,
+			"failed to allocate memory for the instrumented class"
+		);
 
-	// instrumented class received (0 - means no instrumentation done)
-	if(instrclass.classcode_size > 0) {
-		// give to JVM the instrumented class
-		unsigned char * new_class_space;
+		//
 
-		// let JVMTI to allocate the mem for the new class
-		jvmtiError err = (*jvmti)->Allocate (jvmti, (jlong) instrclass.classcode_size, & new_class_space);
-		check_jvmti_error (jvmti, err, "Cannot allocate memory for the instrumented class");
+		memcpy (jvm_class_bytes, class_def.class_bytes, class_def.class_byte_count);
+		free ((void *) class_def.class_bytes);
 
-		memcpy (new_class_space, instrclass.classcode, instrclass.classcode_size);
+		*new_class_byte_count = class_def.class_byte_count;
+		*new_class_bytes = jvm_class_bytes;
 
-		// set the newly instrumented class + len
-		*(new_class_data_len) = instrclass.classcode_size;
-		*(new_class_data) = new_class_space;
-
-		// free memory
-		free_message (&instrclass);
+#ifdef DEBUG
+		printf (
+			"debug: class redefined, %d bytes at %p\n",
+			class_def.class_byte_count, jvm_class_bytes
+		);
+#endif
 	}
 
 #ifdef DEBUG
-	printf("Instrumentation done\n");
+	printf ("debug: instrumentation done\n");
 #endif
 }
 
@@ -230,10 +275,14 @@ jvmti_callback_class_file_load (
 
 static void JNICALL
 jvmti_callback_vm_init (jvmtiEnv * jvmti, JNIEnv * jni, jthread thread) {
+#ifdef DEBUG
+	printf ("debug: the VM has been initialized\n");
+#endif
+
 	//
 	// Update code flags to reflect that the VM has stopped booting.
 	//
-	agent_code_flags = __calc_code_flags (& agent_config, false);
+	agent_code_flags = __calc_code_flags (&agent_config, false);
 
 	//
 	// Redefine the bypass check class. If dynamic bypass is required, use
@@ -243,14 +292,14 @@ jvmti_callback_vm_init (jvmtiEnv * jvmti, JNIEnv * jni, jthread thread) {
 	jvmtiClassDefinition * bpc_classdef;
 	if (agent_config.bypass_mode == BYPASS_MODE_DYNAMIC) {
 #ifdef DEBUG
-			fprintf (stderr, "vm_init: redefining BypassCheck for dynamic bypass\n");
+			printf ("debug: redefining BypassCheck for dynamic bypass\n");
 #endif
-			bpc_classdef = & bpc_dynamic_classdef;
+			bpc_classdef = &bpc_dynamic_classdef;
 	} else {
 #ifdef DEBUG
-			fprintf (stderr, "vm_init: redefining BypassCheck to disable bypass\n");
+			printf ("debug: redefining BypassCheck to disable bypass\n");
 #endif
-			bpc_classdef = & bpc_never_classdef;
+			bpc_classdef = &bpc_never_classdef;
 	}
 
 	jvmti_redefine_class (jvmti, jni, BPC_CLASS_NAME, bpc_classdef);
@@ -263,6 +312,9 @@ jvmti_callback_vm_init (jvmtiEnv * jvmti, JNIEnv * jni, jthread thread) {
 
 static void JNICALL
 jvmti_callback_vm_death (jvmtiEnv * jvmti, JNIEnv * jni) {
+#ifdef DEBUG
+	printf ("debug: the VM is shutting down\n");
+#endif
 	//
 	// Just close all the connections.
 	//
@@ -290,6 +342,9 @@ __configure_from_properties (jvmtiEnv * jvmti, struct config * config) {
 	config->bypass_mode = bypass_index;
 	free (bypass);
 
+#ifdef DEBUG
+	printf ("debug: bypass mode: %s\n", values [bypass_index]);
+#endif
 
 	//
 	// Get boolean values from system properties
@@ -315,8 +370,8 @@ __configure_from_options (const char * options, struct config * config) {
 	// if there are no agent options.
 	//
 	if (options == NULL) {
-		config->host_name = strdup (DISL_HOST_DEFAULT);
-		config->port_number = strdup (DISL_PORT_DEFAULT);
+		config->host_name = strdup (DISLSERVER_HOST_DEFAULT);
+		config->port_number = strdup (DISLSERVER_PORT_DEFAULT);
 		return;
 	}
 
@@ -344,7 +399,7 @@ __configure_from_options (const char * options, struct config * config) {
 
 
 static jvmtiEnv *
-__acquire_jvmti (JavaVM * jvm) {
+__get_jvmti (JavaVM * jvm) {
 	jvmtiEnv * jvmti = NULL;
 
 	jint result = (*jvm)->GetEnv (jvm, (void **) &jvmti, JVMTI_VERSION_1_0);
@@ -377,26 +432,33 @@ __acquire_jvmti (JavaVM * jvm) {
 
 JNIEXPORT jint JNICALL VISIBLE
 Agent_OnLoad (JavaVM * jvm, char * options, void * reserved) {
-	jvmtiEnv * jvmti = __acquire_jvmti (jvm);
+	jvmtiEnv * jvmti = __get_jvmti (jvm);
 
 	// add capabilities
-	jvmtiCapabilities cap;
-	memset (&cap, 0, sizeof (cap));
-	cap.can_redefine_classes = 1;
-	cap.can_redefine_any_class = 1;
-	cap.can_generate_all_class_hook_events = 1;
+	jvmtiCapabilities caps = { 
+		.can_redefine_classes = 1,
+		.can_redefine_any_class = 1,
+		.can_generate_all_class_hook_events = 1,
+	};
+	
+	jvmtiError error = (*jvmti)->AddCapabilities (jvmti, &caps);
+	check_jvmti_error (jvmti, error, "failed to add required JVMTI capabilities.");
 
-	jvmtiError error = (*jvmti)->AddCapabilities (jvmti, &cap);
-	check_jvmti_error (jvmti, error, "Unable to get necessary JVMTI capabilities.");
+
+	// configure agent and init connections
+	__configure_from_options (options, &agent_config);
+	__configure_from_properties (jvmti, &agent_config);
+
+	agent_code_flags = __calc_code_flags (&agent_config, true);
+	network_init (agent_config.host_name, agent_config.port_number);
 
 
 	// register callbacks
-	jvmtiEventCallbacks callbacks;
-	(void) memset (&callbacks, 0, sizeof (callbacks));
-
-	callbacks.VMInit = &jvmti_callback_vm_init;
-	callbacks.VMDeath = &jvmti_callback_vm_death;
-	callbacks.ClassFileLoadHook = &jvmti_callback_class_file_load;
+	jvmtiEventCallbacks callbacks = {
+		.VMInit = &jvmti_callback_vm_init,
+		.VMDeath = &jvmti_callback_vm_death,
+		.ClassFileLoadHook = &jvmti_callback_class_file_load,
+	};
 
 	error = (*jvmti)->SetEventCallbacks (jvmti, &callbacks, (jint) sizeof (callbacks));
 	check_jvmti_error (jvmti, error, "failed to register JVMTI event callbacks");
@@ -411,14 +473,6 @@ Agent_OnLoad (JavaVM * jvm, char * options, void * reserved) {
 
 	error = (*jvmti)->SetEventNotificationMode (jvmti, JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
 	check_jvmti_error (jvmti, error, "failed to enable CLASS FILE LOAD event");
-
-
-	// configure agent and init connections
-	__configure_from_options (options, & agent_config);
-	__configure_from_properties (jvmti, & agent_config);
-
-	agent_code_flags = __calc_code_flags (& agent_config, true);
-	network_init (agent_config.host_name, agent_config.port_number);
 
 	return 0;
 }

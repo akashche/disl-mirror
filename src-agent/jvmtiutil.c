@@ -17,18 +17,24 @@
 #endif
 
 
-
+/**
+ * Redefines a class given name and (partial) class definition.
+ * The class to be redefined is first looked up using JNI to
+ * complete the class definition information. Returns true
+ * if the redefinition was complete, false if the class could
+ * not be found.
+ */
 bool
 jvmti_redefine_class (
-	jvmtiEnv * jvmti_env, JNIEnv * jni_env,
+	jvmtiEnv * jvmti, JNIEnv * jni,
 	const char * class_name, const jvmtiClassDefinition * class_def
 ) {
-	assert (jni_env != NULL);
-	assert (jvmti_env != NULL);
+	assert (jvmti != NULL);
+	assert (jni != NULL);
 	assert (class_name != NULL);
 	assert (class_def != NULL);
 
-	jclass class = (* jni_env)->FindClass (jni_env, class_name);
+	jclass class = (* jni)->FindClass (jni, class_name);
 	if (class == NULL) {
 		return false;
 	}
@@ -38,8 +44,8 @@ jvmti_redefine_class (
 	jvmtiClassDefinition new_classdef = * class_def;
 	new_classdef.klass = class;
 
-	jvmtiError error = (*jvmti_env)->RedefineClasses (jvmti_env, 1, &new_classdef);
-	check_jvmti_error (jvmti_env, error, "failed to redefine class");
+	jvmtiError error = (*jvmti)->RedefineClasses (jvmti, 1, &new_classdef);
+	check_jvmti_error (jvmti, error, "failed to redefine class");
 
 	return true;
 }
@@ -55,7 +61,7 @@ __get_system_property (jvmtiEnv * jvmti, const char * name) {
 	// assert that could not happen.
 	//
 	char * value = NULL;
-	(*jvmti)->GetSystemProperty (jvmti, name, & value);
+	(*jvmti)->GetSystemProperty (jvmti, name, &value);
 
 	if (value == NULL) {
 		return NULL;
@@ -73,7 +79,6 @@ __get_system_property (jvmtiEnv * jvmti, const char * name) {
 }
 
 
-
 static bool
 __parse_bool (const char * strval) {
 	static const char * trues [] = { "true", "yes", "on", "1" };
@@ -81,6 +86,10 @@ __parse_bool (const char * strval) {
 }
 
 
+/**
+ * Returns the boolean value of a system property, or the default
+ * value if it not defined.
+ */
 bool
 jvmti_get_system_property_bool (
 	jvmtiEnv * jvmti, const char * name, bool dflval
@@ -101,6 +110,12 @@ jvmti_get_system_property_bool (
 }
 
 
+/**
+ * Returns the string value of a system property, or the default
+ * value if the property is not defined. The memory for the returned
+ * value is always allocated (even for the default value) and the 
+ * caller is responsible for releasing it.
+ */
 char *
 jvmti_get_system_property_string (
 	jvmtiEnv * jvmti, const char * name, const char * dflval
@@ -118,7 +133,7 @@ jvmti_get_system_property_string (
 		// the returned value and can release it using free().
 		//
 		char * result = strdup (dflval);
-		check_error (result == NULL, "failed to duplicate property value");
+		check_error (result == NULL, "failed to duplicate default value");
 		return result;
 
 	} else {
@@ -128,9 +143,10 @@ jvmti_get_system_property_string (
 
 
 /**
- * Reports an actual JVMTI error. This function implements the slow path of
- * check_jvmti_error() and prints the given error message along with a JVMTI error
- * name obtained using the GetErrorName() JVMTI interface.
+ * Reports a JVMTI error and terminates the program. This function implements
+ * the slow path of check_jvmti_error() and prints the given error message
+ * along with a JVMTI error name obtained using the GetErrorName() JVMTI
+ * interface.
  */
 void
 report_jvmti_error (jvmtiEnv *jvmti, jvmtiError errnum, const char *str) {
