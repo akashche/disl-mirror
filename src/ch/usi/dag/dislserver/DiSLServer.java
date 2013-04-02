@@ -10,7 +10,6 @@ import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLInMethodException;
 
-
 public abstract class DiSLServer {
 
 	public static final String PROP_DEBUG = "debug";
@@ -25,7 +24,7 @@ public abstract class DiSLServer {
 
 	private static final String PROP_CONT = "dislserver.continuous";
 	private static final boolean continuous = Boolean.getBoolean(PROP_CONT);
-
+	
 	private static final String PROP_BYPASS = "dislserver.disablebypass";
 	private static final boolean bypass = ! Boolean.getBoolean(PROP_BYPASS);
 
@@ -43,33 +42,31 @@ public abstract class DiSLServer {
 			disl = new DiSL (bypass);
 
 			if (debug) {
-				System.out.println ("DiSL-Server: starting...");
+				System.out.println ("DiSL: starting instrumentation server...");
 			}
 
 			listenSocket = new ServerSocket (port);
-			listenSocket.setReuseAddress (true);
-
 			if (debug) {
 				System.out.printf (
-					"DiSL-Server: listening on %s:%d\n",
+					"DiSL: listening at %s:%d\n",
 					listenSocket.getInetAddress ().getHostAddress (),
 					listenSocket.getLocalPort ()
 				);
 			}
 
 			while (true) {
-				final Socket clientSocket = listenSocket.accept ();
+				final Socket newClient = listenSocket.accept ();
 				if (debug) {
 					System.out.printf (
-						"DiSL-Server: accepting connection from %s:%d\n",
-						clientSocket.getInetAddress ().getHostAddress (),
-						clientSocket.getPort ()
+						"DiSL: accepting connection from %s:%d\n",
+						newClient.getInetAddress ().getHostAddress (),
+						newClient.getPort ()
 					);
 				}
 
-				MessageChannel mc = new MessageChannel (clientSocket);
+				NetMessageReader sc = new NetMessageReader (newClient);
 				aliveWorkers.incrementAndGet ();
-				new Worker (mc, disl).start ();
+				new Worker (sc, disl).start ();
 			}
 
 		} catch (final IOException ioe) {
@@ -91,7 +88,7 @@ public abstract class DiSLServer {
 
 	public static void reportError (Throwable throwable) {
 		if (throwable instanceof DiSLException) {
-			System.err.print ("DiSL-Server: error");
+			System.err.print ("DiSL: error");
 
 			// report during which method it happened
 			if (throwable instanceof DiSLInMethodException) {
@@ -110,7 +107,7 @@ public abstract class DiSLServer {
 			}
 
 		} else if (throwable instanceof DiSLServerException) {
-			System.err.print ("DiSL-Server: error");
+			System.err.print ("DiSL: server error");
 
 			reportOptionalMessage (throwable);
 			reportInnerError (throwable);
@@ -120,7 +117,7 @@ public abstract class DiSLServer {
 
 		} else {
 			// some other exception
-			System.err.print ("DiSL-Server: fatal error: ");
+			System.err.print ("DiSL: fatal error: ");
 			throwable.printStackTrace ();
 		}
 	}
@@ -138,7 +135,7 @@ public abstract class DiSLServer {
 		if (aliveWorkers.decrementAndGet () == 0) {
 			if (timeStat) {
 				System.out.printf (
-					"DiSL-Server: instrumentation took %d milliseconds\n",
+					"DiSL: instrumentation took %d milliseconds\n",
 					instrumentationTime.get () / 1000000
 				);
 			}
@@ -148,12 +145,11 @@ public abstract class DiSLServer {
 				disl.terminate ();
 
 				if (debug) {
-					System.out.println ("DiSL-Server: shutting down...");
+					System.out.println ("DiSL: shutting down instrumentation server...");
 				}
 
 				System.exit(0);
 			}
 		}
 	}
-
 }

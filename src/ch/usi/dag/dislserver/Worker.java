@@ -6,158 +6,145 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import ch.usi.dag.disl.DiSL;
-import ch.usi.dag.disl.DiSL.CodeOption;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.util.Constants;
 
 public class Worker extends Thread {
 
-	private static final boolean debug = Boolean .getBoolean(DiSLServer.PROP_DEBUG);
+	private static final boolean debug = Boolean
+			.getBoolean(DiSLServer.PROP_DEBUG);
 
 	private static final String PROP_UNINSTR = "dislserver.uninstrumented";
-	private static final String uninstrPath = System.getProperty(PROP_UNINSTR, null);
+	private static final String uninstrPath = 
+			System.getProperty(PROP_UNINSTR, null);
 
 	private static final String PROP_INSTR = "dislserver.instrumented";
-	private static final String instrPath = System.getProperty(PROP_INSTR, null);
+	private static final String instrPath = 
+			System.getProperty(PROP_INSTR, null);
 
-	// used for replies
-    private static final byte [] emptyByteArray = new byte [0];
-
-	//
+	// used for replays
+	private static final byte[] emptyByteArray = new byte[0];
 	
-	private final MessageChannel messageChannel;
+	private final NetMessageReader sc;
+	private final DiSL disl;
 	
-    private final DiSL disl;
-    
 	private final AtomicLong instrumentationTime = new AtomicLong();
 
-	//
-	
-    Worker (final MessageChannel messageChannel, final DiSL disl) {
-		this.messageChannel = messageChannel;
-        this.disl = disl;
+	Worker(NetMessageReader sc, DiSL disl) {
+		this.sc = sc;
+		this.disl = disl;
 	}
 
 	public void run() {
-        try {
-            instrumentationLoop ();
-            
-        } catch (Throwable e) {
-            DiSLServer.reportError (e);
-            
-        } finally {
-            messageChannel.close ();
-            DiSLServer.workerDone (instrumentationTime.get ());
-        }
+
+		try {
+
+			instrumentationLoop();
+
+			sc.close();
+		}
+		catch (Throwable e) {
+			DiSLServer.reportError(e);
+		}
+		finally {
+			DiSLServer.workerDone(instrumentationTime.get());
+		}
 	}
 
 	private void instrumentationLoop() throws Exception {
+
 		try {
-    		while (true) {
-                final Message request = messageChannel.recvMessage ();
-    
-    			// communication closed by the client
-    			if (request.isShutdown ()) {
-    				return;
-    			}
-    
-                byte [] instrClass;
-    
-    			try {
-				final String className = new String (request.getControl ());
-				final byte [] classCode = request.getClassCode ();
-				final Set <CodeOption> options = CodeOption.setOf (request.getFlags ());
+		
+		while (true) {
+
+			NetMessage nm = sc.readMessage();
+
+			// communication closed by the client
+			if (nm.getControl().length == 0 && nm.getClassCode().length == 0) {
+				return;
+			}
+
+			byte[] instrClass;
+
+			try {
 				
-				if (debug) {
-					System.out.printf (
-						"DiSL-Server: instrumenting class %s [%d bytes",
-						className.isEmpty () ? "<unknown>" : className,
-						classCode.length
-					);
+				long startTime = System.nanoTime();
+				
+				instrClass = instrument(new String(nm.getControl()),
+						nm.getClassCode());
+				
+				instrumentationTime.addAndGet(System.nanoTime() - startTime);
+			}
+			catch (Exception e) {
 
-					for (final CodeOption option : options) {
-						System.out.printf (", %s", option);
-					}
+				// instrumentation error
+				// send the client a description of the server-side error
 
-					System.out.println ("]");
+				String errToReport = e.getMessage();
+				
+				// during debug send the whole message
+				if(debug) {
+					StringWriter sw = new StringWriter();
+					e.printStackTrace(new PrintWriter(sw));
+					errToReport = sw.toString();
 				}
 
-    				final long startTime = System.nanoTime ();
-    
-    				instrClass = instrument (className, classCode, options);
-    				
-                    instrumentationTime.addAndGet (System.nanoTime () - startTime);
-    				
-    			} catch (Exception e) {
-    				// instrumentation error
-    				// send the client a description of the server-side error
-    
-                    String errToReport = e.getMessage ();
-    				
-    				// during debug send the whole message
-                    if (debug) {
-    					StringWriter sw = new StringWriter();
-    					e.printStackTrace(new PrintWriter(sw));
-    					errToReport = sw.toString();
-    				}
-    
-    				// error protocol:
-    				// control contains the description of the server-side error
-    				// class code is an array of size zero
-    				String errMsg = "Instrumentation error for class "
-    						+ new String(request.getControl()) + ": " + errToReport;
-    
-    				messageChannel.sendMessage (
-    				    new Message (-1, errMsg.getBytes (), emptyByteArray)
-    			    );
-    
-    				throw e;
-    			}
-    
-    			Message reply = null;
-    			if(instrClass != null) {
-    				// class was modified - send modified data
-    				reply = new Message(0, emptyByteArray, instrClass);
-    			} else {
-    				// zero length means no modification
-    				reply = new Message(0, emptyByteArray, emptyByteArray);
-    			}
-    			
-                messageChannel.sendMessage (reply);
-    		}
+				// error protocol:
+				// control contains the description of the server-side error
+				// class code is an array of size zero
+				String errMsg = "Instrumentation error for class "
+						+ new String(nm.getControl()) + ": " + errToReport;
+
+				sc.sendMessage(new NetMessage(errMsg.getBytes(),
+						emptyByteArray));
+
+				throw e;
+			}
+
+			NetMessage replyData = null;
+			
+			if(instrClass != null) {
+				// class was modified - send modified data
+				replyData = new NetMessage(emptyByteArray, instrClass);
+			}
+			else {
+				// zero length means no modification
+				replyData = new NetMessage(emptyByteArray, emptyByteArray);
+			}
+			
+			sc.sendMessage(replyData);
+		}
 		
-        } catch (IOException e) {
-            throw new DiSLServerException (e);
-        }
+		}
+		catch (IOException e) {
+			throw new DiSLServerException(e);
+		}
 	}
-
-
-    private byte [] instrument (
-        String className, byte [] origCode, Set <CodeOption> options
-    ) throws DiSLServerException, DiSLException {
-	    
-		// backup for empty class name
-        if (className == null || className.isEmpty ()) {
-            className = UUID.randomUUID ().toString ();
-        }
+	
+	private byte[] instrument(String className, byte[] origCode)
+			throws DiSLServerException, DiSLException {
 		
-		// dump uninstrumented byte code
-        if (uninstrPath != null) {
-            dump (className, origCode, uninstrPath);
-        }
+		// backup for empty class name
+		if(className == null || className.isEmpty()) {
+			className = UUID.randomUUID().toString();
+		}
+		
+		// dump uninstrumented
+		if (uninstrPath != null) {
+			dump(className, origCode, uninstrPath);
+		}
 
-		// instrument the bytecode according to given options
-        byte [] instrCode = disl.instrument (origCode, options);
+		// instrument
+		byte[] instrCode = disl.instrument(origCode);
 
-		// dump instrumented byte code
-        if (instrPath != null && instrCode != null) {
-            dump (className, instrCode, instrPath);
-        }
+		// dump instrumented
+		if (instrPath != null && instrCode != null) {
+			dump(className, instrCode, instrPath);
+		}
 
 		return instrCode;
 	}

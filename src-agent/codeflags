@@ -1,4 +1,0 @@
-#!/bin/bash
-${JAVA_HOME:+$JAVA_HOME/bin/}javah \
-	-cp ../bin -o codeflags.h \
-	ch.usi.dag.disl.DiSL.CodeOption.Flag

@@ -8,7 +8,7 @@
 #include <jvmti.h>
 #include <jni.h>
 
-#include "jvmtihelper.h"
+#include "../src-agent-c/jvmtihelper.h"
 
 typedef struct {
 

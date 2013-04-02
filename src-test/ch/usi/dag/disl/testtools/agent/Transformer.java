@@ -5,7 +5,6 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 
 import ch.usi.dag.disl.DiSL;
-import ch.usi.dag.disl.DiSL.CodeOption;
 
 public class Transformer implements ClassFileTransformer {
 
@@ -28,9 +27,7 @@ public class Transformer implements ClassFileTransformer {
     			disl = new DiSL(false);
     		}
     		
-			instrumentedClass = disl.instrument(
-			    classfileBuffer, CodeOption.setOf (/* TODO Set options */)
-		    );
+			instrumentedClass = disl.instrument(classfileBuffer);
 			
 			if(instrumentedClass != null) {
 			

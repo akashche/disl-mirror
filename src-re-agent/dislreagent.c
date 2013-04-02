@@ -14,8 +14,8 @@
 // has to be defined for jvmtihelper.h
 #define ERR_PREFIX "DiSL-RE agent error: "
 
-#include "jvmtihelper.h"
-#include "comm.h"
+#include "../src-agent-c/jvmtihelper.h"
+#include "../src-agent-c/comm.h"
 
 #include "messagetype.h"
 #include "buffer.h"

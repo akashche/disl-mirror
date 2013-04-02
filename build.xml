@@ -41,10 +41,14 @@
 		</javac>
 	</target>
 
-	<target name="compile-agent">
-		<exec executable="make" dir="${src.agent}">
-			<arg value="whole" />
-		</exec>
+	<target name="compile-agent-java" depends="compile-dynamicbypass">
+		<javac srcdir="${src.agent.java}" destdir="${bin}" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
+	</target>
+
+	<target name="compile-agent-c">
+		<exec executable="make" dir="${src.agent.c}" />
 	</target>
 
 	<target name="compile-reserver">
@@ -69,7 +73,7 @@
 		</javac>
 	</target>
 
-	<target name="compile" depends="compile-disl,compile-agent,compile-test,compile-reserver,compile-reagent,compile-redispatch" />
+	<target name="compile" depends="compile-disl,compile-agent-java,compile-agent-c,compile-test,compile-reserver,compile-redispatch" />
 
 	<target name="package-dislserver" depends="compile-disl">
 		<jar basedir="${bin}" destfile="${build}/disl-server.jar"
@@ -82,6 +86,36 @@
 				<attribute name="DiSL-Version" value="${disl.version}" />
 			</manifest>
 		</jar>
+	</target>
+
+	<target name="compile-dynamicbypass-afterbootstrap">
+		<mkdir dir="${build.afterbootstrap}" />
+		<javac srcdir="${src.dynbypass.act}" destdir="${build.afterbootstrap}" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
+	</target>
+
+	<target name="package-dislagent-java" depends="compile-agent-java,compile-dynamicbypass,compile-dynamicbypass-afterbootstrap">
+
+		<!-- rename after bootstrap class -->
+		<move file="${build.afterbootstrap}/ch/usi/dag/disl/dynamicbypass/DynamicBypassCheck.class"
+			tofile="${build.afterbootstrap}/DynamicBypassCheck-AfterBootstrap.class" />
+
+		<jar basedir="${bin}" destfile="${build}/disl-agent.jar"
+			includes="ch/usi/dag/dislagent/**,ch/usi/dag/disl/dynamicbypass/**">
+
+			<manifest>
+				<attribute name="Premain-Class" value="ch.usi.dag.dislagent.DiSLAgent" />
+				<attribute name="Can-Redefine-Classes" value="true" />
+				<attribute name="DiSL-Version" value="${disl.version}" />
+			</manifest>
+
+			<!-- include after bootstrap class -->
+			<fileset file="${build.afterbootstrap}/DynamicBypassCheck-AfterBootstrap.class" />
+		</jar>
+
+		<!-- delete dir with after bootstrap class -->
+		<delete dir="${build.afterbootstrap}" />
 	</target>
 
 	<target name="package-reserver" depends="compile-reserver">
@@ -101,15 +135,7 @@
 		</jar>
 	</target>
 
-	<target name="package-dynamicbypass" depends="compile-dynamicbypass">
-		<jar basedir="${bin}" destfile="${build}/disl-bypass.jar" includes="ch/usi/dag/disl/dynamicbypass/**">
-			<manifest>
-				<attribute name="DiSL-Version" value="${disl.version}" />
-			</manifest>
-		</jar>
-	</target>
-
-	<target name="package" depends="package-dislserver,package-dynamicbypass,package-reserver,package-redispatch,compile-agent,compile-reagent" />
+	<target name="package" depends="package-dislserver,package-dislagent-java,package-reserver,package-redispatch,compile-agent-c,compile-reagent" />
 
 	<target name="eclipse-agent" description="creates simple agent jar file for eclipse">
 		<mkdir dir="build" />
@@ -139,7 +165,8 @@
 		<delete dir="${bin}" />
 		<delete dir="${build}" />
 		<delete dir="${build.thread}" />
-		<exec executable="make" dir="${src.agent}">
+		<delete dir="${build.afterbootstrap}" />
+		<exec executable="make" dir="${src.agent.c}">
 			<arg value="clean" />
 		</exec>
 		<exec executable="make" dir="${src.reagent}">

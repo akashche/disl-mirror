@@ -1,13 +1,9 @@
 package ch.usi.dag.disl;
 
-import static ch.usi.dag.disl.DiSL.CodeOption.CREATE_BYPASS;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -214,7 +210,7 @@ public class DiSL {
 	 *     {@code true} if the methods was changed, {@code false} otherwise.
 	 */
 	private boolean instrumentMethod (
-		final ClassNode classNode, final MethodNode methodNode 
+		final ClassNode classNode, final MethodNode methodNode
 	) throws ReflectionException, StaticContextGenException,
 		ProcessorException, DynamicContextException, MarkerException {
 
@@ -408,9 +404,8 @@ public class DiSL {
 	 * @param classNode class node to instrument
 	 * @return instrumented class
 	 */
-	private InstrumentedClass instrumentClass(
-	    ClassNode classNode, final Set <CodeOption> codeOptions
-    ) throws DiSLException {
+	private InstrumentedClass instrumentClass(ClassNode classNode)
+			throws DiSLException {
 
 		// NOTE that class can be changed without changing any method
 		// - adding thread local fields
@@ -484,7 +479,7 @@ public class DiSL {
 	/**
 	 * Instruments array of bytes representing a class
 	 * 
-	 * @param originalCode class as array of bytes
+	 * @param classAsBytes class as array of bytes
 	 * @return instrumented class as array of bytes
 	 */
 	// TODO ! current static context interface does not allow to have nice
@@ -492,17 +487,17 @@ public class DiSL {
 	// also invokes the required method and returns result - if this method
 	// (and static context class itself) will be synchronized, it should work
 	public synchronized byte [] instrument (
-		byte [] originalCode, final Set <CodeOption> codeOptions
+		byte [] classAsBytes
 	) throws DiSLException {
 		// keep the currently processed class around in case of errors
 		if (debug) {
-			__dumpClassToFile (originalCode, "err.class");
+			__dumpClassToFile (classAsBytes, "err.class");
 		}
 		
 		// apply transformer first
 		if (transformer != null) {
 			try {
-				originalCode = transformer.transform(originalCode);
+				classAsBytes = transformer.transform(classAsBytes);
 			}
 			catch (Exception e) {
 				throw new TransformerException("Transformer error", e); 
@@ -510,7 +505,7 @@ public class DiSL {
 		}
 		
 		// create class reader
-		ClassReader classReader = new ClassReader(originalCode);
+		ClassReader classReader = new ClassReader(classAsBytes);
 		
 		// AfterInitBodyMarker uses AdviceAdapter
 		//  - classNode with API param is required by ASM 4.0 guidelines
@@ -518,14 +513,14 @@ public class DiSL {
 
 		classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
 		
-		InstrumentedClass instrClass = instrumentClass(classNode, codeOptions);
+		InstrumentedClass instrClass = instrumentClass(classNode);
 		
 		if(instrClass == null) {
 			
 			// propagate uninstrumented classes
 			// useful, when transformer is doing some job on all classes
 			if(transPropagateUninstr) {
-				return originalCode;
+				return classAsBytes;
 			}
 			
 			return null;
@@ -533,10 +528,10 @@ public class DiSL {
 		
 		ClassNode instrCN = instrClass.getClassNode();
 		
-		// if bypass is desired, merge original and instrumented method code
-		if(useDynamicBypass || codeOptions.contains (CREATE_BYPASS)) {
+		// if dynamic bypass is enabled use code merger
+		if(useDynamicBypass) {
 			
-			ClassReader origCR = new ClassReader(originalCode);
+			ClassReader origCR = new ClassReader(classAsBytes);
 			ClassNode origCN = new ClassNode();
 
 			origCR.accept(origCN, ClassReader.EXPAND_FRAMES);
@@ -598,84 +593,7 @@ public class DiSL {
 	}
 
 	//
-
-	/**
-	 * Options for code transformations performed by DiSL.  
-	 */
-	public enum CodeOption {
-
-	    /**
-	     * Create a copy of the original code and check whether to execute
-	     * instrumented or uninstrumented version of the code upon method
-	     * entry.
-	     */
-		CREATE_BYPASS (Flag.CREATE_BYPASS),
-		
-		/**
-		 * Insert code for dynamic bypass control. Enable bypass when entering 
-		 * instrumentation code and disable it when leaving it.
-		 */
-		DYNAMIC_BYPASS (Flag.DYNAMIC_BYPASS),
-		
-		/**
-		 * Split methods exceeding the class file limit.
-		 */
-		SPLIT_METHODS (Flag.SPLIT_METHODS),
-		
-		/**
-		 * Wrap snippets in exception handlers to catch exceptions.
-		 */
-		CATCH_EXCEPTIONS (Flag.CATCH_EXCEPTIONS);
-
-
-		/**
-		 * Flags corresponding to individual code options. The flags are
-		 * used when communicating with DiSL agent.
-		 */
-		public interface Flag {
-			static final int CREATE_BYPASS = 1 << 0;
-			static final int DYNAMIC_BYPASS = 1 << 1;
-			static final int SPLIT_METHODS = 1 << 2;
-			static final int CATCH_EXCEPTIONS = 1 << 3;
-		}
-
-		//
-
-		private final int __flag;
-
-		private CodeOption (final int flag) {
-			__flag = flag;
-		}
-
-		//
-
-		/**
-		 * Creates a set of code options from an array of options.
-		 */
-		public static Set <CodeOption> setOf (final CodeOption... options) {
-			final EnumSet <CodeOption> result = EnumSet.noneOf (CodeOption.class);
-			result.addAll (Arrays.asList (options));
-			return result;
-		}
-
-
-		/**
-		 * Creates a set of code options from flags in an integer.
-		 */
-		public static Set <CodeOption> setOf (final int flags) {
-			final EnumSet <CodeOption> result = EnumSet.noneOf (CodeOption.class);
-			for (final CodeOption option : CodeOption.values ()) {
-				if ((flags & option.__flag) != 0) {
-					result.add (option);
-				}
-			}
-
-			return result;
-		}
-	}
-
-	//
-
+	
 	private void __debug (final String format, final Object ... args) {
 		if (debug) {
 			System.out.printf (format, args);
@@ -687,5 +605,4 @@ public class DiSL {
 			System.out.printf (format, args);
 		}
 	}
-
 }
