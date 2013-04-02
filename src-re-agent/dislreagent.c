@@ -1192,6 +1192,117 @@ static void * send_thread_loop(void * obj) {
 	return NULL;
 }
 
+
+// ******************* REDispatch methods *******************
+
+JNIEXPORT jshort JNICALL Java_ch_usi_dag_dislre_REDispatch_registerMethod
+(JNIEnv * jni_env, jclass this_class, jstring analysis_method_desc) {
+
+	return register_method(jni_env, analysis_method_desc, tld_get()->id);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__S
+(JNIEnv * jni_env, jclass this_class, jshort analysis_method_id) {
+
+	analysis_start(jni_env, analysis_method_id, tld_get());
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__SB
+(JNIEnv * jni_env, jclass this_class, jshort analysis_method_id,
+		jbyte ordering_id) {
+
+	analysis_start_buff(jni_env, analysis_method_id, ordering_id, tld_get());
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
+(JNIEnv * jni_env, jclass this_class) {
+
+	analysis_end(tld_get());
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean
+(JNIEnv * jni_env, jclass this_class, jboolean to_send) {
+
+	pack_boolean(tld_get()->analysis_buff, to_send);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendByte
+(JNIEnv * jni_env, jclass this_class, jbyte to_send) {
+
+	pack_byte(tld_get()->analysis_buff, to_send);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendChar
+(JNIEnv * jni_env, jclass this_class, jchar to_send) {
+
+	pack_char(tld_get()->analysis_buff, to_send);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendShort
+(JNIEnv * jni_env, jclass this_class, jshort to_send) {
+
+	pack_short(tld_get()->analysis_buff, to_send);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendInt
+(JNIEnv * jni_env, jclass this_class, jint to_send) {
+
+	pack_int(tld_get()->analysis_buff, to_send);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendLong
+(JNIEnv * jni_env, jclass this_class, jlong to_send) {
+
+	pack_long(tld_get()->analysis_buff, to_send);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloatAsInt
+(JNIEnv * jni_env, jclass this_class, jint to_send) {
+
+	pack_int(tld_get()->analysis_buff, to_send);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong
+(JNIEnv * jni_env, jclass this_class, jlong to_send) {
+
+	pack_long(tld_get()->analysis_buff, to_send);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
+(JNIEnv * jni_env, jclass this_class, jobject to_send) {
+
+	struct tldata * tld = tld_get ();
+	pack_object(jni_env, tld->analysis_buff, tld->command_buff, to_send,
+			OT_OBJECT);
+}
+
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObjectPlusData
+(JNIEnv * jni_env, jclass this_class, jobject to_send) {
+
+	struct tldata * tld = tld_get ();
+	pack_object(jni_env, tld->analysis_buff, tld->command_buff, to_send,
+			OT_DATA_OBJECT);
+}
+
+
+static JNINativeMethod redispatchMethods[] = {
+    {"registerMethod",     "(Ljava/lang/String;)S", (void *)&Java_ch_usi_dag_dislre_REDispatch_registerMethod},
+    {"analysisStart",      "(S)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_analysisStart__S},
+    {"analysisStart",      "(SB)V",                 (void *)&Java_ch_usi_dag_dislre_REDispatch_analysisStart__SB},
+    {"analysisEnd",        "()V",                   (void *)&Java_ch_usi_dag_dislre_REDispatch_analysisEnd},
+    {"sendBoolean",        "(Z)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendBoolean},
+    {"sendByte",           "(B)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendByte},
+    {"sendChar",           "(C)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendChar},
+    {"sendShort",          "(S)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendShort},
+    {"sendInt",            "(I)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendInt},
+    {"sendLong",           "(J)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendLong},
+    {"sendObject",         "(Ljava/lang/Object;)V", (void *)&Java_ch_usi_dag_dislre_REDispatch_sendObject},
+    {"sendObjectPlusData", "(Ljava/lang/Object;)V", (void *)&Java_ch_usi_dag_dislre_REDispatch_sendObjectPlusData},
+};
+
+    //{"sendFloatAsInt",     "(I)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendFloatAsInt},
+    //{"sendDoubleAsLong",   "(J)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong},
+
 // ******************* CLASS LOAD callback *******************
 
 void JNICALL jvmti_callback_class_file_load_hook(
@@ -1250,6 +1361,40 @@ void JNICALL jvmti_callback_class_file_load_hook(
 #ifdef DEBUG
 	printf("New class sent (thread %ld)\n", tld_get()->id);
 #endif
+}
+
+
+// ******************* CLASS prepare callback *******************
+void JNICALL jvmti_callback_class_prepare_hook(jvmtiEnv *jvmti_env,
+		JNIEnv* jni_env, jthread thread, jclass klass) {
+
+	static long registedFlag = 0;
+	jvmtiError error;
+
+	if (registedFlag) {
+
+		// might fail due to phase problem
+		(*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_DISABLE,
+				JVMTI_EVENT_CLASS_PREPARE, NULL );
+		return;
+	}
+
+	char * class_sig;
+
+	error = (*jvmti_env)->GetClassSignature(jvmti_env, klass, &class_sig,
+			NULL );
+	check_jvmti_error(jvmti_env, error, "Cannot get class signature");
+
+	if (strcmp(class_sig, "Lch/usi/dag/dislre/REDispatch;") == 0) {
+
+		(*jni_env)->RegisterNatives(jni_env, klass, redispatchMethods,
+				sizeof(redispatchMethods) / sizeof(redispatchMethods[0]));
+		registedFlag = 1;
+	}
+
+	// deallocate memory
+	error = (*jvmti_env)->Deallocate(jvmti_env, (unsigned char *) class_sig);
+	check_jvmti_error(jvmti_env, error, "Cannot deallocate memory");
 }
 
 
@@ -1630,6 +1775,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	memset(&callbacks, 0, sizeof(callbacks));
 
 	callbacks.ClassFileLoadHook = &jvmti_callback_class_file_load_hook;
+	callbacks.ClassPrepare = &jvmti_callback_class_prepare_hook;
 	callbacks.ObjectFree = &jvmti_callback_object_free_hook;
 	callbacks.VMStart = &jvmti_callback_vm_start_hook;
 	callbacks.VMInit = &jvmti_callback_vm_init_hook;
@@ -1645,6 +1791,10 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE,
 			JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
 	check_jvmti_error(jvmti_env, error, "Cannot set class load hook");
+
+	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE,
+			JVMTI_EVENT_CLASS_PREPARE, NULL);
+	check_jvmti_error(jvmti_env, error, "Cannot set class prepare hook");
 
 	error = (*jvmti_env)->SetEventNotificationMode(jvmti_env, JVMTI_ENABLE,
 			JVMTI_EVENT_OBJECT_FREE, NULL);
@@ -1728,95 +1878,4 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 
 
 	return 0;
-}
-
-// ******************* REDispatch methods *******************
-
-JNIEXPORT jshort JNICALL Java_ch_usi_dag_dislre_REDispatch_registerMethod
-(JNIEnv * jni_env, jclass this_class, jstring analysis_method_desc) {
-
-	return register_method(jni_env, analysis_method_desc, tld_get()->id);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__S
-(JNIEnv * jni_env, jclass this_class, jshort analysis_method_id) {
-
-	analysis_start(jni_env, analysis_method_id, tld_get());
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisStart__SB
-(JNIEnv * jni_env, jclass this_class, jshort analysis_method_id,
-		jbyte ordering_id) {
-
-	analysis_start_buff(jni_env, analysis_method_id, ordering_id, tld_get());
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_analysisEnd
-(JNIEnv * jni_env, jclass this_class) {
-
-	analysis_end(tld_get());
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendBoolean
-(JNIEnv * jni_env, jclass this_class, jboolean to_send) {
-
-	pack_boolean(tld_get()->analysis_buff, to_send);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendByte
-(JNIEnv * jni_env, jclass this_class, jbyte to_send) {
-
-	pack_byte(tld_get()->analysis_buff, to_send);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendChar
-(JNIEnv * jni_env, jclass this_class, jchar to_send) {
-
-	pack_char(tld_get()->analysis_buff, to_send);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendShort
-(JNIEnv * jni_env, jclass this_class, jshort to_send) {
-
-	pack_short(tld_get()->analysis_buff, to_send);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendInt
-(JNIEnv * jni_env, jclass this_class, jint to_send) {
-
-	pack_int(tld_get()->analysis_buff, to_send);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendLong
-(JNIEnv * jni_env, jclass this_class, jlong to_send) {
-
-	pack_long(tld_get()->analysis_buff, to_send);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloat
-(JNIEnv * jni_env, jclass this_class, jfloat to_send) {
-
-	pack_float(tld_get()->analysis_buff, to_send);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDouble
-(JNIEnv * jni_env, jclass this_class, jdouble to_send) {
-
-	pack_double(tld_get()->analysis_buff, to_send);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
-(JNIEnv * jni_env, jclass this_class, jobject to_send) {
-
-	struct tldata * tld = tld_get ();
-	pack_object(jni_env, tld->analysis_buff, tld->command_buff, to_send,
-			OT_OBJECT);
-}
-
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObjectPlusData
-(JNIEnv * jni_env, jclass this_class, jobject to_send) {
-
-	struct tldata * tld = tld_get ();
-	pack_object(jni_env, tld->analysis_buff, tld->command_buff, to_send,
-			OT_DATA_OBJECT);
 }
