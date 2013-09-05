@@ -312,7 +312,7 @@ public abstract class AsmHelper {
 	}
 
 
-	public static InsnNode loadNull () {
+	public static InsnNode loadDefault () {
 		return loadDefault (Type.getType (Object.class));
 	}
 

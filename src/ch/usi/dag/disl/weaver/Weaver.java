@@ -78,7 +78,7 @@ public class Weaver {
 				if (type.getSort () != Type.ARRAY) {
 					instructions.insertBefore (first, AsmHelper.loadDefault (type));
 				} else {
-					instructions.insertBefore (first, AsmHelper.loadNull ());
+					instructions.insertBefore (first, AsmHelper.loadDefault ());
 					instructions.insertBefore (first, AsmHelper.checkCast (type));
 				}
 
