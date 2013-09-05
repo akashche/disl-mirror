@@ -287,11 +287,6 @@ public class Weaver {
 			if (snippet.getAnnotationClass().equals(AfterThrowing.class)
 					|| snippet.getAnnotationClass().equals(After.class)) {
 
-				if (Type.getInternalName(Object.class).equals(classNode.name)
-						&& methodNode.name.endsWith("init>")) {
-					continue;
-				}
-
 				for (Shadow shadow : shadows) {
 					
 					WeavingRegion region = shadow.getWeavingRegion();

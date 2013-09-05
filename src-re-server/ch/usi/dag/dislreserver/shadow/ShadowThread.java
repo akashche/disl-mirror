@@ -1,5 +1,7 @@
 package ch.usi.dag.dislreserver.shadow;
 
+// TODO ShadowTrhead should better handle if String data are not send
+//     over network - throw a runtime exception ??
 public class ShadowThread extends ShadowObject {
 
 	private String name;

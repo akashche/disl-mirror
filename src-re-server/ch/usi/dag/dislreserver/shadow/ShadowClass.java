@@ -16,9 +16,11 @@ public abstract class ShadowClass extends ShadowObject {
         this.classLoader = classLoader;
     }
 
-    //
+	//
 
-	public final int getClassId() {
+	// No need to expose the interface to user
+	// getId() should be sufficient
+	protected final int getClassId() {
 		return classId;
 	}
 

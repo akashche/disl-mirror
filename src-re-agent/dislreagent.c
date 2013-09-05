@@ -1365,6 +1365,8 @@ void JNICALL jvmti_callback_class_file_load_hook(
 
 
 // ******************* CLASS prepare callback *******************
+
+// registers all native methods so they can be used during VM init phase
 void JNICALL jvmti_callback_class_prepare_hook(jvmtiEnv *jvmti_env,
 		JNIEnv* jni_env, jthread thread, jclass klass) {
 

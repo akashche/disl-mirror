@@ -80,13 +80,6 @@ public class CodeExecuted extends RemoteAnalysis {
 			throw new RuntimeException("This class should be transfered as class");
 		}
 		
-		// class id should be non 0
-		if(((ShadowClass) c).getClassId() == 0) {
-			throw new RuntimeException("Class id should not be null");
-		}
-		
-		System.out.println("Received class id: " + ((ShadowClass) c).getClassId());
-		
 		if(! (t instanceof ShadowThread)) {
 			throw new RuntimeException("This thread should be transfered as thread");
 		}
