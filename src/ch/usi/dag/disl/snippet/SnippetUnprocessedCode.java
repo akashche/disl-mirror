@@ -32,9 +32,6 @@ import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.util.AsmHelper;
 
-/**
- * Contains unprocessed code of the Snippet.
- */
 public class SnippetUnprocessedCode extends UnprocessedCode {
 
 	private String className;
@@ -42,9 +39,6 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 	private boolean dynamicBypass;
 	private boolean usesProcessorContext;
 
-	/**
-	 * Creates unprocessed code structure.
-	 */
 	public SnippetUnprocessedCode(String className, String methodName,
 			InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
 			Set<String> declaredStaticContexts, boolean usesDynamicContext,
@@ -59,9 +53,6 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
 		this.usesProcessorContext = usesProcessorContext;
 	}
 
-	/**
-	 * Processes the stored data and creates snippet code structure.
-	 */
 	public SnippetCode process(LocalVars allLVs, Map<Type, Proc> processors,
 			Marker marker, boolean exceptHandler, boolean useDynamicBypass)
 			throws StaticContextGenException, ReflectionException,

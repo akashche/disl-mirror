@@ -109,7 +109,7 @@ public class PartialEvaluator {
 
 		for (BasicBlock bb : cfg.getNodes()) {
 
-			AbstractInsnNode instr = AsmHelper.skipVirtualInsns(bb.getExit(),
+			AbstractInsnNode instr = AsmHelper.skipVirualInsns(bb.getExit(),
 					false);
 			int opcode = instr.getOpcode();
 			Frame<ConstValue> frame = frames.get(instr);
@@ -633,7 +633,7 @@ public class PartialEvaluator {
 					continue;
 				}
 
-				if (AsmHelper.skipVirtualInsns(((JumpInsnNode) instr).label,
+				if (AsmHelper.skipVirualInsns(((JumpInsnNode) instr).label,
 						false) != instr) {
 					continue;
 				}
@@ -653,14 +653,14 @@ public class PartialEvaluator {
 				boolean flag = false;
 
 				for (LabelNode label : lsin.labels) {
-					if (AsmHelper.skipVirtualInsns(label, false) != instr) {
+					if (AsmHelper.skipVirualInsns(label, false) != instr) {
 						flag = true;
 						continue;
 					}
 				}
 
 				if (flag
-						|| AsmHelper.skipVirtualInsns(lsin.dflt, false) != instr) {
+						|| AsmHelper.skipVirualInsns(lsin.dflt, false) != instr) {
 					continue;
 				}
 
@@ -677,14 +677,14 @@ public class PartialEvaluator {
 				boolean flag = false;
 
 				for (LabelNode label : tsin.labels) {
-					if (AsmHelper.skipVirtualInsns(label, false) != instr) {
+					if (AsmHelper.skipVirualInsns(label, false) != instr) {
 						flag = true;
 						continue;
 					}
 				}
 
 				if (flag
-						|| AsmHelper.skipVirtualInsns(tsin.dflt, false) != instr) {
+						|| AsmHelper.skipVirualInsns(tsin.dflt, false) != instr) {
 					continue;
 				}
 
@@ -708,8 +708,8 @@ public class PartialEvaluator {
 		boolean isOptimized = false;
 
 		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
-			if (AsmHelper.skipVirtualInsns(tcb.start, true) == AsmHelper
-					.skipVirtualInsns(tcb.end, true)) {
+			if (AsmHelper.skipVirualInsns(tcb.start, true) == AsmHelper
+					.skipVirualInsns(tcb.end, true)) {
 				method.tryCatchBlocks.remove(tcb);
 				isOptimized |= removeUnusedBB(cfg);
 			}

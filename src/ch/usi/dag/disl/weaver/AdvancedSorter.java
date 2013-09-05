@@ -27,13 +27,13 @@ public class AdvancedSorter extends TryCatchBlockSorter {
 
 		for (int i = 0; i < tcbs.length; i++) {
 
-			int istart = instructions.indexOf(AsmHelper.skipVirtualInsns(
+			int istart = instructions.indexOf(AsmHelper.skipVirualInsns(
 					tcbs[i].start, true));
 			int iend = instructions.indexOf(tcbs[i].end);
 
 			for (int j = i; j < tcbs.length; j++) {
 
-				int jstart = instructions.indexOf(AsmHelper.skipVirtualInsns(
+				int jstart = instructions.indexOf(AsmHelper.skipVirualInsns(
 						tcbs[j].start, true));
 				int jend = instructions.indexOf(tcbs[j].end);
 				
@@ -61,7 +61,7 @@ public class AdvancedSorter extends TryCatchBlockSorter {
 			}
 
 			private int blockLength(TryCatchBlockNode block) {
-				int startidx = instructions.indexOf(AsmHelper.skipVirtualInsns(
+				int startidx = instructions.indexOf(AsmHelper.skipVirualInsns(
 						block.start, true));
 				int endidx = instructions.indexOf(block.end);
 				return endidx - startidx;

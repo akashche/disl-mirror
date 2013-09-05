@@ -18,7 +18,7 @@ then
     rm .server.pid
 fi
 
-# represents the observed program
+DISL_CLASS="./bin/ch/usi/dag/disl/test/$1/DiSLClass.class"
 TARGET_CLASS="ch.usi.dag.disl.test.$1.TargetClass"
 
 # start server and take pid

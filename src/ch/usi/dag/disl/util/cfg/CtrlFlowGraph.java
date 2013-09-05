@@ -60,7 +60,7 @@ public class CtrlFlowGraph {
 				end = end.getPrevious();
 			}
 
-			end = AsmHelper.skipVirtualInsns(end, false);
+			end = AsmHelper.skipVirualInsns(end, false);
 			nodes.add(new BasicBlock(i, start, end));
 		}
 	}
@@ -91,7 +91,7 @@ public class CtrlFlowGraph {
 	// If not found, return null.
 	public BasicBlock getBB(AbstractInsnNode instr) {
 
-		instr = AsmHelper.skipVirtualInsns(instr, true);
+		instr = AsmHelper.skipVirualInsns(instr, true);
 
 		while (instr != null) {
 

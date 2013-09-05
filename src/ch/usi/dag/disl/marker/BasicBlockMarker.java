@@ -20,7 +20,7 @@ public class BasicBlockMarker extends AbstractDWRMarker {
 		List<AbstractInsnNode> seperators = BasicBlockCalc.getAll(
 				methodNode.instructions, methodNode.tryCatchBlocks, isPrecise);
 
-		AbstractInsnNode last = AsmHelper.skipVirtualInsns(
+		AbstractInsnNode last = AsmHelper.skipVirualInsns(
 				methodNode.instructions.getLast(), false);
 
 		seperators.add(last);
@@ -34,7 +34,7 @@ public class BasicBlockMarker extends AbstractDWRMarker {
 				end = end.getPrevious();
 			}
 
-			regions.add(new MarkedRegion(start, AsmHelper.skipVirtualInsns(end,
+			regions.add(new MarkedRegion(start, AsmHelper.skipVirualInsns(end,
 					false)));
 		}
 

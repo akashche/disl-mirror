@@ -24,7 +24,7 @@ public class ExceptionHandlerMarker extends AbstractDWRMarker {
 		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
 
 			List<AbstractInsnNode> exits = cfg.visit(tcb.handler);
-			regions.add(new MarkedRegion(AsmHelper.skipVirtualInsns(tcb.handler,
+			regions.add(new MarkedRegion(AsmHelper.skipVirualInsns(tcb.handler,
 					true), exits));
 		}
 

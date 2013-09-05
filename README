@@ -4,10 +4,5 @@ The DiSL framework will load the jar, parse the instrumentation specification, a
 
 The examples of simple instrumentation are in src-test directory.
 The test can be invoked using runTest.sh script in the root directory.
-For user defined instrumentation, it is recommended to mimic the start and build script as they are provided for the tests.
+For user defined instrumentation, it is recommended to mimic the start and build script as they are provided for test.
 We are working on better setup scripts to ease the setup effort for developer.
-
-The supported platform is Linux with installed Java and GCC.
-
-To compile DiSL please run the "ant" command in the root directory and "make" in the src-agent-c directory.
-If the make is complaining about missing java headers, modify the Makefile.local.tmpl accordingly.

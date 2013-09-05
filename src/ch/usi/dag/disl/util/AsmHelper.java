@@ -148,7 +148,7 @@ public abstract class AsmHelper {
 		}
 	}
 
-	public static AbstractInsnNode loadDefault(Type type) {
+	public static AbstractInsnNode loadNull(Type type) {
 
 		switch (type.getSort()) {
 		case Type.BOOLEAN:
@@ -368,7 +368,7 @@ public abstract class AsmHelper {
 		return dst;
 	}
 
-	public static AbstractInsnNode skipVirtualInsns(AbstractInsnNode instr,
+	public static AbstractInsnNode skipVirualInsns(AbstractInsnNode instr,
 			boolean isForward) {
 		
 		while (instr != null && isVirtualInstr(instr)) {
