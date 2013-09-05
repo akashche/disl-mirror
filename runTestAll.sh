@@ -1,7 +1,9 @@
 #!/bin/sh
-TEST_PATH=src-test/ch/usi/dag/disl/test
 
-ls -1 $TEST_PATH | sort | while read TEST; do
+TESTS=`ls src-test/ch/usi/dag/disl/test/`
+
+for TEST in ${TESTS}
+do
 	echo "*** Starting test ${TEST} ***" | tee -a run-all.log
-	./runTest.sh ${TEST} pkg |& tee -a run-all.log
+	./runTest.sh ${TEST} pkg 2>&1 | tee -a run-all.log
 done
