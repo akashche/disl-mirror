@@ -10,6 +10,13 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 
+/**
+ * Marks whole method body.
+ * <br>
+ * <br>
+ * Sets the start at the beginning of a method and the end at the end of a
+ * method.
+ */
 public class BodyMarker extends AbstractMarker {
 
 	@Override

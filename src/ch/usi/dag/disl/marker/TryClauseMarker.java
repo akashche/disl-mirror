@@ -9,6 +9,13 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.util.AsmHelper;
 
+/**
+ * Marks try block.
+ * <br>
+ * <br>
+ * Sets the start at the beginning of a try block and the end at the end of a
+ * try block.
+ */
 public class TryClauseMarker extends AbstractDWRMarker {
 
 	@Override

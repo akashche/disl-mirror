@@ -9,6 +9,14 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
+/**
+ * Marks basic block.
+ * <br>
+ * <br>
+ * Sets the start at the beginning of a basic block and the end at the end of a
+ * basic block. Considers only jump instructions, lookup switch and table
+ * switch.
+ */
 public class BasicBlockMarker extends AbstractDWRMarker {
 
 	protected boolean isPrecise = false;

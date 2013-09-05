@@ -12,9 +12,9 @@ public class ReflectionHelper {
 	/**
 	 * Instantiates class using constructor with defined arguments.
 	 * 
-	 * @param classToInstantiate
-	 * @param args
-	 * @return
+	 * @param classToInstantiate class to instantiate
+	 * @param args arguments for the constructor
+	 * @return instantiated class
 	 */
 	public static <T> T createInstance(Class<T> classToInstantiate,
 			Object... args) throws ReflectionException {

@@ -10,6 +10,14 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 
+/**
+ * Marks whole method body.
+ * <br>
+ * <br>
+ * Sets the start at the beginning of a method and the end at the end of a
+ * method. If the method is a constructor, the start is inserted after the
+ * constructor invocation. 
+ */
 // FIXME LB: For empty constructors, the order of After and Before snippets is reversed.
 public class AfterInitBodyMarker extends AbstractMarker {
 	

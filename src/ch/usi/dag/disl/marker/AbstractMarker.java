@@ -37,49 +37,49 @@ public abstract class AbstractMarker implements Marker {
 		private WeavingRegion weavingRegion;
 
 		/**
-		 * Access region start
+		 * Access region start.
 		 */
 		public AbstractInsnNode getStart() {
 			return start;
 		}
 
 		/**
-		 * Set region start
+		 * Set region start.
 		 */
 		public void setStart(AbstractInsnNode start) {
 			this.start = start;
 		}
 		
 		/**
-		 * Access list of region ends
+		 * Access list of region ends.
 		 */
 		public List<AbstractInsnNode> getEnds() {
 			return ends;
 		}
 
 		/**
-		 * Add one region end to the list
+		 * Add one region end to the list.
 		 */
 		public void addEnd(AbstractInsnNode exitpoint) {
 			this.ends.add(exitpoint);
 		}
 		
 		/**
-		 * Access weaving region
+		 * Access weaving region.
 		 */
 		public WeavingRegion getWeavingRegion() {
 			return weavingRegion;
 		}
 
 		/**
-		 * Set weaving region
+		 * Set weaving region.
 		 */
 		public void setWeavingRegion(WeavingRegion weavingRegion) {
 			this.weavingRegion = weavingRegion;
 		}
 		
 		/**
-		 * Crate marked region with start
+		 * Crate marked region with start.
 		 */
 		public MarkedRegion(AbstractInsnNode start) {
 			this.start = start;
@@ -87,7 +87,7 @@ public abstract class AbstractMarker implements Marker {
 		}
 
 		/**
-		 * Create marked region with start and one end
+		 * Create marked region with start and one end.
 		 */
 		public MarkedRegion(AbstractInsnNode start, AbstractInsnNode end) {
 			this.start = start;
@@ -96,7 +96,7 @@ public abstract class AbstractMarker implements Marker {
 		}
 
 		/**
-		 * Create marked region with start and list of ends
+		 * Create marked region with start and list of ends.
 		 */
 		public MarkedRegion(AbstractInsnNode start,	List<AbstractInsnNode> ends) {
 			this.start = start;
@@ -104,7 +104,7 @@ public abstract class AbstractMarker implements Marker {
 		}
 		
 		/**
-		 * Create marked region with start, multiple ends and weaving region
+		 * Create marked region with start, multiple ends and weaving region.
 		 */
 		public MarkedRegion(AbstractInsnNode start,
 				List<AbstractInsnNode> ends, WeavingRegion weavingRegion) {
@@ -201,8 +201,8 @@ public abstract class AbstractMarker implements Marker {
 	 * Implementation of this method should return list of MarkedRegion with
 	 * start, ends end weaving region filled.
 	 * 
-	 * @param methodNode
-	 * @return
+	 * @param methodNode method node of the marked class
+	 * @return returns list of MarkedRegion
 	 */
 	public abstract List<MarkedRegion> mark(MethodNode methodNode);
 }

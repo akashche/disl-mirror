@@ -10,6 +10,13 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
+/**
+ * Marks exception handler.
+ * <br>
+ * <br>
+ * Sets the start at the beginning of an exception handler and the end at the
+ * end of an exception handler.
+ */
 public class ExceptionHandlerMarker extends AbstractDWRMarker {
 
 	@Override

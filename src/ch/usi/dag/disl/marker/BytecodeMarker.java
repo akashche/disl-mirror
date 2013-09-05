@@ -12,6 +12,14 @@ import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmOpcodes;
 
+/**
+ * Marks one java bytecode instruction.
+ * <br>
+ * <br>
+ * Sets the start before a bytecode instruction and the end after a bytecode
+ * instruction. If the bytecode instruction is (conditional) jump the end is
+ * also inserted before the instruction (preserves before-after semantics).
+ */
 public class BytecodeMarker extends AbstractDWRMarker {
 
 	protected static final String INSTR_DELIM = ",";

@@ -11,6 +11,12 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import ch.usi.dag.disl.util.cfg.BasicBlock;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
+/**
+ * <b>NOTE: This class is work in progress</b>
+ * <br>
+ * <br>
+ * Provides static context information about instrumented instruction.
+ */
 public class LoopStaticContext extends BasicBlockStaticContext {
 
 	private Map<BasicBlock, Set<BasicBlock>> dominatormapping;
@@ -75,6 +81,9 @@ public class LoopStaticContext extends BasicBlockStaticContext {
 		return cfg;
 	}
 
+	/**
+	 * Returns true if the instrumented instruction is start of a loop.
+	 */
 	public boolean isFirstOfLoop() {
 
 		BasicBlock entry = customData.getBB(staticContextData

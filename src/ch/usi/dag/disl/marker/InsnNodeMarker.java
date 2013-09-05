@@ -11,6 +11,12 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.util.AsmHelper;
 
+/**
+ * <b>NOTE: This class is work in progress</b>
+ * <br>
+ * <br>
+ * Marks instruction depending on ASM class type.
+ */
 public class InsnNodeMarker extends AbstractInsnMarker {
 
 	protected Set<Class<? extends AbstractInsnNode>> classes;

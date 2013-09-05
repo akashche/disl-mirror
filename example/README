@@ -17,7 +17,7 @@ follow the steps:
 
 1) compile application calling "ant" in the app directory
 2) compile instrumentation calling "ant" in the instrumentation directory
-3) run "runApp.sh ./runApp.sh instr/build/disl-instr.jar -jar app/build/example-app.jar"
+3) run "./runApp.sh instr/build/disl-instr.jar -jar app/build/example-app.jar"
 
 The last command starts the application together with DiSL. The output of the
 application and the applied instrumentation should be visible on command line.

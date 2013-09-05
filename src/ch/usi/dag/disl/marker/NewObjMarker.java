@@ -11,6 +11,16 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 
+/**
+ * <b>NOTE: This class is work in progress</b>
+ * <br>
+ * <br>
+ * Marks object creation.
+ * <br>
+ * <br>
+ * Sets the start before new instruction and the end after the constructor
+ * invocation.
+ */
 public class NewObjMarker extends AbstractDWRMarker {
 
 	// NOTE: does not work for arrays

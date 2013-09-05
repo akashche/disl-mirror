@@ -112,7 +112,7 @@ public class UnprocessedCode {
 	 * @param knownStAnClasses known StaticContext classes
 	 * @param instr instruction to analyze
 	 * @param knownMethods methods that are already known
-	 * @return 
+	 * @return @see StaticContextMethod
 	 * @throws StaticContextGenException
 	 * @throws ReflectionException
 	 */

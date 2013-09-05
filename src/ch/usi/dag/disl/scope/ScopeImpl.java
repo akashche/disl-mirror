@@ -10,34 +10,41 @@ import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.util.Constants;
 
 /**
- * Class filters methods based on class name, method name and method parameters.
- * 
- * Name of the method is specified as follows:
- * 
- * returnparam packagename.classname.methodname(parameters)
- *
- * returnparam is the returning parameter of the method. Specified with fully
- * qualified name of the class or basic type (defined as in java source code).
- * If the returnparam is missing, it matches all the return types.
- * 
- * packagename is the name of the package where the class containing the method
- * resides. The separator for inner packages is ".". Part of the package can be
- * substituted with "*" ("*" matches also "." in package name).
+ * Filters methods based on class name, method name and method parameters.
+ * <br>
+ * <br>
+ * Name of the filtered method is specified as follows:
+ * <br>
+ * <br>
+ * <b>returnparam packagename.classname.methodname(parameters)</b>
+ * <br>
+ * <br>
+ * <b>returnparam</b> is the returning parameter of the method. It is specified
+ * by fully qualified name of the class or basic type. If the returnparam is
+ * missing, it matches all the return types.
+ * <br>
+ * <br>
+ * <b>packagename</b> is the name of the package where the class containing the
+ * filtered method resides. The separator for sub-packages is ".". Part of the
+ * package can be substituted with "*" ("*" matches also "." in package name).
  * If the packagename is missing, the class is matched in all packages.
  * The default package can be matched with "[default]".
  * If the packagename is specified, class name has to be specified also.
- * 
- * classname is the name of the class where the matched method resides. Part of
- * the classname can be substituted with "*".
+ * <br>
+ * <br>
+ * <b>classname</b> is the name of the class where the filtered method resides.
+ * Part of the classname can be substituted with "*".
  * If the classname is missing also the packagename and the separating "."
  * should not be specified. The missing classname is matching every class in
  * every package.
- * 
- * methodname is mandatory part of the method name. Part of the methodname can
- * be substituted with "*".
- * 
- * parameters are specified as returnparam and separated by ",". Part of the
- * parameter can be substituted with "*".
+ * <br>
+ * <br>
+ * <b>methodname</b> is a mandatory part of the method name. Part of the
+ * methodname can be substituted with "*".
+ * <br>
+ * <br>
+ * <b>parameters</b> are specified same as <i>returnparam</i> and are separated
+ * by ",". Part of the parameter can be substituted with "*".
  * ".." can be supplied instead of last parameter specification and matches
  * all remaining method parameters.
  */

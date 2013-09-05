@@ -83,16 +83,16 @@ public interface DynamicContext {
 	 */
 	<T> T getLocalVariableValue (int slotIndex, Class <T> valueType);
 
+// TODO enable when properly implemented
+//	<T> T getStaticFieldValue (
+//		String ownerClass,
+//		String fieldName, String fieldDesc, Class<T> fieldType
+//	);
 
-	<T> T getStaticFieldValue (
-		String ownerClass,
-		String fieldName, String fieldDesc, Class<T> fieldType
-	);
 
-
-	<T> T getInstanceFieldValue (
-		Object instance, String ownerClass,
-		String fieldName, String fieldDesc, Class<T> fieldType
-	);
+//	<T> T getInstanceFieldValue (
+//		Object instance, String ownerClass,
+//		String fieldName, String fieldDesc, Class<T> fieldType
+//	);
 
 }

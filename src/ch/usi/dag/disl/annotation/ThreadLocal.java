@@ -2,13 +2,14 @@ package ch.usi.dag.disl.annotation;
 
 /**
  * Indicates, that field is used for data passing between several snippets
- * inlined. The field is translated into thread local variable. The thread local
+ * The field is translated into thread local variable. The thread local
  * variable is by default always initialized the default value of a
  * corresponding type. The default value can be inherited from a parent thread
  * using optional inheritable annotation parameter.
- * 
+ * <br>
+ * <br>
  * This annotation should be used with fields.
- * 
+ * <br>
  * Field should be declared as static, and if not shared between multiple DiSL
  * classes, also private.
  */

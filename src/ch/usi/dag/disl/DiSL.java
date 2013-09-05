@@ -54,7 +54,7 @@ import ch.usi.dag.disl.weaver.Weaver;
 // TODO javadoc comment all
 /**
  * Main DiSL class providing interface for an instrumentation framework
- * (normally DiSL Server)
+ * (normally DiSL Server).
  */
 public class DiSL {
 
@@ -85,7 +85,7 @@ public class DiSL {
 	private final List<Snippet> snippets;
 
 	/**
-	 * DiSL initialization 
+	 * DiSL initialization.
 	 * @param useDynamicBypass enable or disable dynamic bypass instrumentation
 	 */
 	// this method should be called only once
@@ -477,7 +477,7 @@ public class DiSL {
 	}
 
 	/**
-	 * Instruments array of bytes representing a class
+	 * Instruments array of bytes representing a class.
 	 * 
 	 * @param classAsBytes class as array of bytes
 	 * @return instrumented class as array of bytes
@@ -586,7 +586,7 @@ public class DiSL {
 
 
 	/**
-	 * Termination handler - should be invoked by the instrumentation framework
+	 * Termination handler - should be invoked by the instrumentation framework.
 	 */
 	public void terminate() {
 		
