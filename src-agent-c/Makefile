@@ -1,6 +1,6 @@
-# if there is Makefile.local file then include it
-ifneq (, $(wildcard Makefile.local))
-include Makefile.local
+# if there is JAVA_HOME var file then include it
+ifneq (, $(wildcard javahome/var))
+include javahome/var
 endif
 
 BUILDDIR=../build

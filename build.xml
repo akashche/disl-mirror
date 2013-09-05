@@ -48,6 +48,7 @@
 	</target>
 
 	<target name="compile-agent-c">
+		<exec executable="make" dir="${src.agent.c}/javahome" />
 		<exec executable="make" dir="${src.agent.c}" />
 	</target>
 
@@ -64,6 +65,7 @@
 	</target>
 
 	<target name="compile-reagent">
+		<exec executable="make" dir="${src.reagent}/javahome" />
 		<exec executable="make" dir="${src.reagent}" />
 	</target>
 
@@ -166,7 +168,14 @@
 		<delete dir="${build}" />
 		<delete dir="${build.thread}" />
 		<delete dir="${build.afterbootstrap}" />
+		<delete dir="${dist}" />
+		<exec executable="make" dir="${src.agent.c}/javahome">
+			<arg value="clean" />
+		</exec>
 		<exec executable="make" dir="${src.agent.c}">
+			<arg value="clean" />
+		</exec>
+		<exec executable="make" dir="${src.reagent}/javahome">
 			<arg value="clean" />
 		</exec>
 		<exec executable="make" dir="${src.reagent}">
@@ -179,7 +188,32 @@
 	<target name="javadoc" depends="package,eclipse">
 		<javadoc access="public" author="true" overview="doc/overview.html" classpath="build/eclipse-dynamicbypass.jar:${asm.path}" destdir="doc" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false" packagenames="ch.usi.dag.disl.guardcontext,ch.usi.dag.disl.staticcontext,ch.usi.dag.disl.dynamiccontext,ch.usi.dag.disl.classcontext,ch.usi.dag.disl.marker,ch.usi.dag.disl.transformer,ch.usi.dag.disl.processorcontext,ch.usi.dag.disl.annotation" source="1.7" sourcefiles="src/ch/usi/dag/disl/scope/Scope.java,src/ch/usi/dag/disl/scope/ScopeImpl.java,src/ch/usi/dag/disl/DiSL.java,src/ch/usi/dag/disl/snippet/Shadow.java" sourcepath="src-test:src-agent-java:src" splitindex="true" use="true" version="true"/>
 	</target>
+
+	<property name="dist.excludes" value="
+		.classpath,
+		.project,
+		${dist}/**,
+		bin/**,
+		build/**,
+		src-test/**,
+		run**" />
+
+	<target name="dist-tar">
+		<mkdir dir="${dist}" />
+		<tar
+			destfile="${dist}/disl-src-${disl.version}.tar"
+			basedir="."
+			excludes="${dist.excludes}" />
+	</target>
 	
+	<target name="dist-zip">
+		<mkdir dir="${dist}" />
+		<zip
+			destfile="${dist}/disl-src-${disl.version}.zip"
+			basedir="."
+			excludes="${dist.excludes}" />
+	</target>
+
 	<!-- *** test instrumentaion package *** -->
 
 	<target name="check-test-property">
