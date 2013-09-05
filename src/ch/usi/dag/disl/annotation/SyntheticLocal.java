@@ -6,18 +6,23 @@ package ch.usi.dag.disl.annotation;
  * a method. The local variable is by default always initialized to the assigned
  * value or the default value of a corresponding type. It is possible to disable
  * the  initialization using optional "initialize" annotation parameter.
- * 
+ * <br>
+ * <br>
  * NOTE: Initialization can be done only within field definition.
  * Java static { } construct for initialization is not supported and
  * could cause invalid instrumentation.
- * 
+ * <br>
+ * <br>
  * This annotation should be used with fields.
- * 
+ * <br>
  * Field should be declared as static, and if not shared between multiple DiSL
  * classes, also private.
  */
 public @interface SyntheticLocal {
 
+	/**
+	 * @see ch.usi.dag.disl.annotation.SyntheticLocal
+	 */
 	public enum Initialize {
 		ALWAYS, NEVER, BEST_EFFORT 
 	}

@@ -2,9 +2,8 @@ package ch.usi.dag.disl.guard;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Formatter;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
@@ -22,248 +21,247 @@ import ch.usi.dag.disl.util.ReflectionHelper;
 
 public abstract class GuardHelper {
 
-	public static Method findAndValidateGuardMethod(Class<?> guardClass,
-			Set<Class<?>> validArgs) throws GuardException {
-		
-		if(guardClass == null) {
+	public static Method findAndValidateGuardMethod (
+		Class <?> guardClass, Set <Class <?>> validArgs
+	) throws GuardException {
+		if (guardClass == null) {
 			return null;
 		}
-		
-		GuardMethod guardMethod = 
-				GuardResolver.getInstance().getGuardMethod(guardClass);
-		validateGuardMethod(guardMethod, validArgs);
-		return guardMethod.getMethod();
+
+		// TODO LB: Cache validated methods and don't validate them again?
+		GuardMethod guardMethod = GuardResolver.getInstance ().getGuardMethod (guardClass);
+		validateGuardMethod (guardMethod, validArgs);
+		return guardMethod.getMethod ();
 	}
-	
-	private static void validateGuardMethod(GuardMethod guardMethod,
-			Set<Class<?>> validArgs) throws GuardException {
-		
+
+
+	private static void validateGuardMethod (
+		GuardMethod guardMethod, Set <Class <?>> validArgs
+	) throws GuardException {
 		// quick validation
 		if(guardMethod.getArgTypes() != null) {
-			
-			// only valid argument types are in the method - ok 
-			if(validArgs.containsAll(guardMethod.getArgTypes())) {
+			// only valid argument types are in the method - ok
+			if (validArgs.containsAll (guardMethod.getArgTypes ())) {
 				return;
 			}
-			
-			// we have some additional argument types then only valid ones 
-			
-			// prepare invalid argument type set 
-			Set<Class<?>> invalidArgTypes = 
-					new HashSet<Class<?>>(guardMethod.getArgTypes());
-			invalidArgTypes.removeAll(validArgs);
-			
-			// construct the error massage
-			throw new GuardException("Guard "
-					+ guardMethod.getMethod().getDeclaringClass().getName()
-					+ " is using interface "
-					+ invalidArgTypes.iterator().next().getName()
-					+ " not allowed in this particular case (misused guard??)");
+
+			// we have some additional argument types then only valid ones
+
+			// prepare invalid argument type set
+			Set <Class <?>> invalidArgTypes =
+				new HashSet <Class <?>> (guardMethod.getArgTypes ());
+			invalidArgTypes.removeAll (validArgs);
+
+			// construct the error message
+			throw new GuardException (String.format (
+				"Guard %s is using interface %s not allowed in this "+
+				"particular case (misused guard?)",
+				guardMethod.getMethod().getDeclaringClass().getName(),
+				invalidArgTypes.iterator().next().getName()
+			));
 		}
-		
+
 		// validate properly
-		Method method = guardMethod.getMethod(); 
-		
-		String guardMethodName = method.getDeclaringClass().getName()
-				+ "." + method.getName();
-		
-		if(! method.getReturnType().equals(boolean.class)) {
-			throw new GuardException("Guard method " + guardMethodName
-					+ " should return boolean type");
+		Method method = guardMethod.getMethod();
+		String methodName = __fullMethodName (method);
+		if (!method.getReturnType ().equals (boolean.class)) {
+			throw new GuardException (
+				"Guard method "+ methodName +" MUST return boolean type");
 		}
-		
-		if(! Modifier.isStatic(method.getModifiers())) {
-			throw new GuardException("Guard method " + guardMethodName
-					+ " should be static");
+
+		if (!Modifier.isStatic (method.getModifiers ())) {
+			throw new GuardException(
+				"Guard method "+ methodName +" MUST be static");
 		}
-		
+
 		// remember argument types for quick validation
-		Set<Class<?>> argTypes = new HashSet<Class<?>>();
-		
-		// for all arguments
-		for(Class<?> argType : method.getParameterTypes()) {
-		
+		Set <Class <?>> argTypes = new HashSet <Class <?>> ();
+		for (Class <?> argType : method.getParameterTypes ()) {
 			// throws exception in the case of invalidity
-			argTypes.add(validateArgument(guardMethodName, argType, validArgs));
+			argTypes.add (validateArgument (methodName, argType, validArgs));
 		}
-		
-		// set argument types for quick validation
-		guardMethod.setArgTypes(argTypes);
+
+		guardMethod.setArgTypes (argTypes);
 	}
-	
-	private static Class<?> validateArgument(String guardMethodName,
-			Class<?> argClass, Set<Class<?>> validArgClasses)
-			throws GuardException {
-	
+
+
+	private static Class <?> validateArgument (
+		String guardMethodName, Class <?> argClass, Set <Class <?>> validArgClasses
+	) throws GuardException {
 		// validate that implements one of the allowed interfaces
-		for(Class<?> allowedInterface : validArgClasses) {
-
+		for (Class <?> allowedInterface : validArgClasses) {
 			// valid
-			if(argClass.equals(allowedInterface)) {
+			if (argClass.equals (allowedInterface)) {
 				return allowedInterface;
 			}
-			
-			// valid - note that static context has to be implemented
-			if(allowedInterface.equals(StaticContext.class) && ReflectionHelper
-					.implementsInterface(argClass, allowedInterface)) {
-				return allowedInterface;
-			}
-		}
-		
-		// construct the error massage
-		StringBuilder sb = new StringBuilder("Guard argument "
-				+ argClass.getName()
-				+ " in " + guardMethodName
-				+ " is not in the set of allowed interfaces"
-				+ " (misused guard??): ");
-		
-		for(Class<?> allowedInterface : validArgClasses) {
 
-			sb.append(allowedInterface.getName() + ", ");
+			// valid - note that static context has to be implemented
+			if (
+				allowedInterface.equals (StaticContext.class) &&
+				ReflectionHelper.implementsInterface (argClass, allowedInterface)
+			) {
+				return allowedInterface;
+			}
 		}
-		
-		throw new GuardException(sb.toString());
+
+		// invalid interface - construct the error message
+		@SuppressWarnings ("resource")
+		final Formatter message = new Formatter ().format (
+			"Guard argument %s in %s is not in the set of "+
+			"allowed interface (misused guard?): ",
+			argClass.getName(), guardMethodName
+		);
+
+		String comma = "";
+		for (Class <?> allowedInterface : validArgClasses) {
+			message.format ("%s%s", comma, allowedInterface.getName ());
+			comma = ", ";
+		}
+
+		throw new GuardException (message.toString ());
 	}
 
 	// *** Methods tight with processor or snippet guard ***
 
-	public static Set<Class<?>> snippetContextSet() {
+	public static Set <Class <?>> snippetContextSet () {
+		Set <Class <?>> allowedSet = new HashSet <Class <?>> ();
 
-		Set<Class<?>> allowedSet = new HashSet<Class<?>>();
-
-		allowedSet.add(GuardContext.class);
-		allowedSet.add(StaticContext.class);
+		allowedSet.add (GuardContext.class);
+		allowedSet.add (StaticContext.class);
 
 		return allowedSet;
 	}
-	
-	public static Set<Class<?>> processorContextSet() {
-		
-		Set<Class<?>> allowedSet = new HashSet<Class<?>>();
-		
-		allowedSet.add(GuardContext.class);
-		allowedSet.add(StaticContext.class);
-		allowedSet.add(ArgumentContext.class);
-		
+
+
+	public static Set <Class <?>> processorContextSet () {
+		Set <Class <?>> allowedSet = new HashSet <Class <?>> ();
+
+		allowedSet.add (GuardContext.class);
+		allowedSet.add (StaticContext.class);
+		allowedSet.add (ArgumentContext.class);
+
 		return allowedSet;
 	}
-	
+
+
 	// invoke guard method for snippet guard
-	public static boolean guardApplicable(Method guardMethod, Shadow shadow) {
-		
-		if(guardMethod == null) {
+	public static boolean guardApplicable (Method guardMethod, Shadow shadow) {
+		if (guardMethod == null) {
 			return true;
 		}
-		
+
 		// no method validation needed - already validated
-		return invokeGuardMethod(guardMethod, shadow, null);
+		return invokeGuardMethod (guardMethod, shadow, null);
 	}
-	
+
+
 	// invoke guard method for processor guard
-	public static boolean guardApplicable(Method guardMethod, Shadow shadow,
-			int position, String typeDescriptor, int totalCount) {
-		
+	public static boolean guardApplicable (
+		Method guardMethod, Shadow shadow,
+		int position, String typeDescriptor, int totalCount
+	) {
 		if(guardMethod == null) {
 			return true;
 		}
-		
+
 		// no method validation needed - already validated
-		return invokeGuardMethod(guardMethod, shadow, 
-				new ArgumentContextImpl(position, typeDescriptor, totalCount));
+		return invokeGuardMethod (
+			guardMethod, shadow,
+			new ArgumentContextImpl (position, typeDescriptor, totalCount)
+		);
 	}
+
 
 	// invoke guard for processor or snippet guard
 	// this is just helper method for GuardContextImpl - reduced visibility
-	static boolean invokeGuard(Class<?> guardClass, Shadow shadow,
-			ArgumentContext ac) throws GuardException {
-		
-		// find and validate method first
-		GuardMethod guardMethod = 
-				GuardResolver.getInstance().getGuardMethod(guardClass);
+	static boolean invokeGuard (
+		Class <?> guardClass, Shadow shadow, ArgumentContext ac
+	) throws GuardException {
+		//
+		// Find and validate the guard method first, then invoke it.
+		//
+		// The validation set depends on whether we are in a snippet (no
+		// processor context supplied) or in an argument processor.
+		//
+		GuardMethod guardMethod = GuardResolver.getInstance ().
+			getGuardMethod (guardClass);
 
-		Set<Class<?>> validationSet;
+		final Set <Class <?>> validationSet = (ac == null) ?
+			snippetContextSet () : processorContextSet ();
 
-		if (ac == null) {
-			// no argument context supplied -> snippet guard
-			validationSet = snippetContextSet();
-		} else {
-			// argument context supplied -> processor guard
-			validationSet = processorContextSet();
-		}
+		validateGuardMethod (guardMethod, validationSet);
 
-		validateGuardMethod(guardMethod, validationSet);
+		return invokeGuardMethod (guardMethod.getMethod (), shadow, ac);
 
-		// invoke method
-		return invokeGuardMethod(guardMethod.getMethod(), shadow, ac);
-		
 	}
-	
+
+
 	// invoke guard method for processor or snippet guard
 	// NOTE: all calling methods should guarantee using validation method,
 	// that if ArgumentContext is needed, it cannot be null
-	private static boolean invokeGuardMethod(Method guardMethod, Shadow shadow,
-			ArgumentContext ac) {
-		
-		List<Object> argumentInstances = new LinkedList<Object>();
-		
-		String guardMethodName = guardMethod.getDeclaringClass().getName()
-				+ "." + guardMethod.getName();
-		
-		for(Class<?> argType : guardMethod.getParameterTypes()) {
-			
-			// argument context
-			if(argType.equals(ArgumentContext.class)) {
-				
-				if(ac == null) {
-					throw new DiSLFatalException(
-							"Argument context is reguired but not supplied");
+	private static boolean invokeGuardMethod (
+		Method guardMethod, Shadow shadow, ArgumentContext ac
+	) {
+		final Class <?> [] paramTypes = guardMethod.getParameterTypes ();
+		final Object [] arguments = new Object [paramTypes.length];
+
+		for (int argIndex = 0; argIndex < arguments.length; argIndex++) {
+			final Class <?> parameterType = paramTypes [argIndex];
+
+			//
+			// Provide various types of context arguments required by a guard.
+			//
+			if (ArgumentContext.class.equals (parameterType)) {
+				if (ac == null) {
+					//
+					// Argument context is required, but none is provided.
+					//
+					throw new DiSLFatalException ("Missing argument context");
 				}
-				
-				argumentInstances.add(ac);
-				
-				continue;
-			}
-			
-			// guard context
-			if(argType.equals(GuardContext.class)) {
-				
-				argumentInstances.add(new GuardContextImpl(shadow, ac));
-				
-				continue;
-			}
-			
-			// static context
-			// if it passes validation it can be only static context here
-			try {
-				
-				// get static context
-				StaticContext scInst = SCResolver.getInstance()
-						.getStaticContextInstance(argType);
-				
-				// populate with data
-				scInst.staticContextData(shadow);
-				
-				argumentInstances.add(scInst);
-			} catch (ReflectionException e) {
-				throw new GuardRuntimeException(
-						"Static context initialization for guard "
-						+ guardMethodName
-						+ " failed", e);
+
+				arguments [argIndex] = ac;
+
+			} else if (GuardContext.class.equals (parameterType)) {
+				arguments [argIndex] = new GuardContextImpl (shadow, ac);
+
+			} else {
+				//
+				// The guard method passed validation, so here it can only
+				// require static context. Get a static context instance
+				// for the shadow location.
+				//
+				try {
+					arguments [argIndex] = SCResolver.getInstance ().
+						getStaticContextInstance (parameterType, shadow);
+
+				} catch (final ReflectionException re) {
+					final String message = String.format (
+						"Static context initialization for guard %s failed",
+						__fullMethodName (guardMethod)
+					);
+					throw new GuardRuntimeException (message, re);
+				}
 			}
 		}
-		
+
+		//
+		// Invoke the guard methods with context arguments.
+		//
 		try {
-			
-			// invoke guard method
-			
-			Object retVal = guardMethod.invoke(null,
-					argumentInstances.toArray());
-			
-			return (Boolean)retVal;
-			
+			return (Boolean) guardMethod.invoke (null, arguments);
+
 		} catch (Exception e) {
-			throw new GuardRuntimeException("Invocation of guard method"
-					+ guardMethodName + " failed", e);
+			final String message = String.format (
+				"Invocation of guard method %s failed",
+				__fullMethodName (guardMethod)
+			);
+			throw new GuardRuntimeException (message, e);
 		}
 	}
+
+
+	private static String __fullMethodName (final Method method) {
+		return method.getDeclaringClass ().getName () +"."+ method.getName ();
+	}
+
 }

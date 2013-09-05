@@ -1,48 +1,98 @@
 package ch.usi.dag.disl.dynamiccontext;
 
+
 /**
- * Dynamic context provides access to dynamic information of the snippet. 
+ * Provides access to dynamic information available at runtime at the location
+ * where the snippet is inlined.
  */
 public interface DynamicContext {
 
 	/**
-	 * Returns value on application stack at runtime.
-	 * 
-	 * @param distance position from the top of the stack.
-	 * 			0 returns top of the stack.
-	 * 			Doubles and longs are counted as distance difference 1.
-	 * @param valueType type of the accessed value
+	 * Returns {@code this} reference to snippets inlined in an instance method,
+	 * {@code null} for snippets inlined in a static method.
 	 */
-	public <T> T getStackValue(int distance, Class<T> valueType);
-	
-	/**
-	 * Returns value of local variable with given index at runtime.
-	 * 
-	 * @param index argument position.
-	 * 			You have to know the exact index of the accessed local variable.
-	 * 			Doubles and longs are counted as distance difference 2.
-	 * @param valueType type of the accessed argument
-	 */
-	public <T> T getLocalVariableValue(int index, Class<T> valueType);
-	
-	/**
-	 * Returns value of this object for dynamic method null for static method.
-	 */
-	public Object getThis();
-	
-	/**
-	 * Returns value of method argument at given position at runtime.
-	 * 
-	 * @param index argument position.
-	 * 			0 returns first argument.
-	 * 			Doubles and longs are counted as distance difference 1.
-	 * @param valueType type of the accessed argument
-	 */
-	public <T> T getMethodArgumentValue(int index, Class<T> valueType);
+	Object getThis ();
+
 
 	/**
-	 * Returns the exception reference when applying @After or @AfterThrowing,
-	 * null otherwise.
+	 * Returns the exception reference to snippets inlined in the @After or 
+	 * the @AfterThrowing context, {@code null} otherwise.
 	 */
-	public Throwable getException();
+	Throwable getException ();
+
+
+	/**
+	 * Returns the value of a particular item on the JVM operand stack.
+	 * <p>
+	 * <b>Note:</b> Each item index corresponds to one operand on the stack.
+	 * Both primitive and wide values are considered to be a single item, i.e.,
+	 * the index of the corresponding stack slot is determined automatically.
+	 *
+	 * @param itemIndex
+	 *     index of the item on the operand stack, must be positive and not
+	 *     exceed the number of items on the stack. Index {@code 0} refers to
+	 *     an item at the top of the stack.
+	 * @param valueType
+	 *     the expected type of the accessed value. Primitive types are boxed
+	 *     into corresponding reference types.
+	 * @return
+	 *     The value of the selected stack item. Primitive types are boxed
+	 *     into corresponding reference types.
+	 */
+	<T> T getStackValue (int itemIndex, Class <T> valueType);
+
+
+	/**
+	 * Returns the value of a particular method argument.
+	 * <p>
+	 * <b>Note:</b> Each argument index corresponds to one method argument, be
+	 * it primitive or wide, i.e., the index of the corresponding local variable
+	 * slot is determined automatically.
+	 *
+	 * @param argumentIndex
+	 *     index of the desired method argument, must be positive and not
+	 *     exceed the number of method arguments. Index {@code 0} refers to
+	 *     the first argument.
+	 * @param valueType
+	 *     the expected type of the accessed value.
+	 * @return
+	 *     The value of the selected method argument. Primitive types are boxed
+	 *     into corresponding reference types.
+	 */
+	<T> T getMethodArgumentValue (int argumentIndex, Class <T> valueType);
+
+
+	/**
+	 * Returns the value of a local variable occupying a particular local
+	 * variable slot (or two slots, in case of wide types such as long and
+	 * double).
+	 * <p>
+	 * <b>Note:</b> Each slot index corresponds to one local variable slot. The
+	 * value of wide values is obtained from two consecutive local variable
+	 * slots, starting with the given slot index.
+	 *
+	 * @param slotIndex
+	 *     index of the desired local variable slot, must be positive and not
+	 *     exceed the number of local variable slots. Index {@code 0} refers to
+	 *     the first local variable slot.
+	 * @param valueType
+	 *     the expected type of the accessed value.
+	 * @return
+	 *     The value of the selected local variable slot. Primitive types are
+	 *     boxed into corresponding reference types.
+	 */
+	<T> T getLocalVariableValue (int slotIndex, Class <T> valueType);
+
+// TODO enable when properly implemented
+//	<T> T getStaticFieldValue (
+//		String ownerClass,
+//		String fieldName, String fieldDesc, Class<T> fieldType
+//	);
+
+
+//	<T> T getInstanceFieldValue (
+//		Object instance, String ownerClass,
+//		String fieldName, String fieldDesc, Class<T> fieldType
+//	);
+
 }

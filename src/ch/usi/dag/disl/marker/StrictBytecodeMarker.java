@@ -11,11 +11,22 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.util.AsmOpcodes;
 
-public class NonskippingBytecodeMarker extends AbstractInsnMarker {
+/**
+ * Marks one java bytecode instruction.
+ * <br>
+ * <br>
+ * Sets the start before a bytecode instruction and the end after a bytecode
+ * instruction even if it is jump instruction.
+ * <br>
+ * <br>
+ * NOTE: Especially for jump instruction, this marker does NOT guarantee that if
+ * the before is invoked, consequently, the after will be invoked.
+ */
+public class StrictBytecodeMarker extends AbstractInsnMarker {
 
 	protected Set<Integer> searchedInstrNums = new HashSet<Integer>();
 
-	public NonskippingBytecodeMarker(Parameter param) throws MarkerException {
+	public StrictBytecodeMarker(Parameter param) throws MarkerException {
 
 		// translate all instructions to opcodes
 		for (String instr : param.getMultipleValues()) {

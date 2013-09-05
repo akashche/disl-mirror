@@ -6,8 +6,11 @@ import java.util.Map;
 
 import ch.usi.dag.disl.exception.GuardException;
 
+/**
+ * Note that all methods accessing and working with singleton has to be
+ * thread-safe.
+ */
 public class GuardResolver {
-
 
 	private static GuardResolver instance = null;
 	
@@ -53,7 +56,8 @@ public class GuardResolver {
 					+ guardClass.getName());
 		}
 		
-		// put into cache
+		// make the method accessible and put it into cache
+		guardMethod.getMethod ().setAccessible (true);
 		guardToMethod.put(guardClass, guardMethod);
 		
 		return guardMethod;

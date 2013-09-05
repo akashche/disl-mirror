@@ -3,19 +3,25 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
+BUILDDIR=../build
+
 # Source lists
 LIBNAME=dislagent
 SOURCES=dislagent.c
 
 # Object files needed to create library
 OBJECTS=$(SOURCES:%.c=%.o)
+
 # Library name and options needed to build it
 UNAME := $(shell uname)
 ifeq ($(UNAME), Linux)
 LIBRARY=lib$(LIBNAME).so
-endif
-ifeq ($(UNAME), Darwin)
+JNI_OS=linux
+else ifeq ($(UNAME), Darwin)
 LIBRARY=lib$(LIBNAME).jnilib
+JNI_OS=darwin
+else
+$(error error: unsupported operating system: $(UNAME))
 endif
 
 
@@ -29,14 +35,15 @@ COMMON_FLAGS+= -W -Wall -Wextra -O3 -Wno-unused-parameter
 
 CFLAGS += $(COMMON_FLAGS)
 
-CFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+CFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(JNI_OS)
 
 # add debugging output
 ifeq ($(DEBUG), TRUE)
 CFLAGS += -DDEBUG
 endif
 
-all: $(LIBRARY) 
+build: $(LIBRARY)
+	cp $(LIBRARY) $(BUILDDIR)
 
 # Build native library
 $(LIBRARY): $(OBJECTS)
@@ -48,3 +55,5 @@ clean:
 
 debug:
 	$(MAKE) DEBUG=TRUE
+
+all: build

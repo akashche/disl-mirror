@@ -15,12 +15,11 @@ import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.util.AsmHelper;
 
 /**
  * AbstractMarker eases the effort to implement new marker by providing mark
  * method returning MarkedRegion class instead of Shadow. The MarkedRegion
- * class itself supports automatic computation of weaving region based
+ * class itself supports automatic computation of weaving region based on
  * simplified region specification.
  */
 public abstract class AbstractMarker implements Marker {
@@ -38,49 +37,49 @@ public abstract class AbstractMarker implements Marker {
 		private WeavingRegion weavingRegion;
 
 		/**
-		 * Access region start
+		 * Access region start.
 		 */
 		public AbstractInsnNode getStart() {
 			return start;
 		}
 
 		/**
-		 * Set region start
+		 * Set region start.
 		 */
 		public void setStart(AbstractInsnNode start) {
 			this.start = start;
 		}
 		
 		/**
-		 * Access list of region ends
+		 * Access list of region ends.
 		 */
 		public List<AbstractInsnNode> getEnds() {
 			return ends;
 		}
 
 		/**
-		 * Add one region end to the list
+		 * Add one region end to the list.
 		 */
 		public void addEnd(AbstractInsnNode exitpoint) {
 			this.ends.add(exitpoint);
 		}
 		
 		/**
-		 * Access weaving region
+		 * Access weaving region.
 		 */
 		public WeavingRegion getWeavingRegion() {
 			return weavingRegion;
 		}
 
 		/**
-		 * Set weaving region
+		 * Set weaving region.
 		 */
 		public void setWeavingRegion(WeavingRegion weavingRegion) {
 			this.weavingRegion = weavingRegion;
 		}
 		
 		/**
-		 * Crate marked region with start
+		 * Crate marked region with start.
 		 */
 		public MarkedRegion(AbstractInsnNode start) {
 			this.start = start;
@@ -88,7 +87,7 @@ public abstract class AbstractMarker implements Marker {
 		}
 
 		/**
-		 * Create marked region with start and one end
+		 * Create marked region with start and one end.
 		 */
 		public MarkedRegion(AbstractInsnNode start, AbstractInsnNode end) {
 			this.start = start;
@@ -97,7 +96,7 @@ public abstract class AbstractMarker implements Marker {
 		}
 
 		/**
-		 * Create marked region with start and list of ends
+		 * Create marked region with start and list of ends.
 		 */
 		public MarkedRegion(AbstractInsnNode start,	List<AbstractInsnNode> ends) {
 			this.start = start;
@@ -105,7 +104,7 @@ public abstract class AbstractMarker implements Marker {
 		}
 		
 		/**
-		 * Create marked region with start, multiple ends and weaving region
+		 * Create marked region with start, multiple ends and weaving region.
 		 */
 		public MarkedRegion(AbstractInsnNode start,
 				List<AbstractInsnNode> ends, WeavingRegion weavingRegion) {
@@ -129,25 +128,8 @@ public abstract class AbstractMarker implements Marker {
 		 */
 		public WeavingRegion computeDefaultWeavingRegion(MethodNode methodNode) {
 
-			// skip branch instruction at the end
-
 			AbstractInsnNode wstart = start;
-			// can be null - see WeavingRegion for details
-			List<AbstractInsnNode> wends = null;
-
-			if (!ends.contains(wstart)) {
-
-				wends = new LinkedList<AbstractInsnNode>();
-
-				for (AbstractInsnNode instr : ends) {
-
-					if (AsmHelper.isBranch(instr)) {
-						wends.add(instr.getPrevious());
-					} else {
-						wends.add(instr);
-					}
-				}
-			}
+			// wends is set to null - see WeavingRegion for details
 			
 			// compute after throwing region
 			
@@ -185,7 +167,7 @@ public abstract class AbstractMarker implements Marker {
 				}
 			}
 			
-			return new WeavingRegion(wstart, wends, afterThrowStart,
+			return new WeavingRegion(wstart, null, afterThrowStart,
 					afterThrowEnd);
 		}
 	}
@@ -219,8 +201,8 @@ public abstract class AbstractMarker implements Marker {
 	 * Implementation of this method should return list of MarkedRegion with
 	 * start, ends end weaving region filled.
 	 * 
-	 * @param methodNode
-	 * @return
+	 * @param methodNode method node of the marked class
+	 * @return returns list of MarkedRegion
 	 */
 	public abstract List<MarkedRegion> mark(MethodNode methodNode);
 }

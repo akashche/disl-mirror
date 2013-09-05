@@ -5,6 +5,9 @@ public class WildCard {
     // thx: http://www.adarshr.com/papers/wildcard/
 	// modified version
 
+	public static final String WILDCARD_STR = "*";
+	private static final String WILDCARD_PATTERN = "\\*";
+
     /**
      * Performs a wildcard matching for the text and pattern 
      * provided.
@@ -17,10 +20,6 @@ public class WildCard {
      * @return <tt>true</tt> if a match is found, <tt>false</tt> 
      * otherwise.
      */
-
-	public static final String WILDCARD_STR = "*";
-	private static final String WILDCARD_PATTERN = "\\*";
-	
     public static boolean match(String text, String pattern) {
     	
     	// special cases

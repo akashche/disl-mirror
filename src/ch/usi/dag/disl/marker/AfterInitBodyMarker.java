@@ -10,30 +10,43 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 
+/**
+ * Marks whole method body.
+ * <br>
+ * <br>
+ * Sets the start at the beginning of a method and the end at the end of a
+ * method. If the method is a constructor, the start is inserted after the
+ * constructor invocation. 
+ */
+// FIXME LB: For empty constructors, the order of After and Before snippets is reversed.
 public class AfterInitBodyMarker extends AbstractMarker {
-
+	
 	@Override
-	public List<MarkedRegion> mark(MethodNode method) {
+	public List <MarkedRegion> mark (final MethodNode method) {
 
-		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
+		MarkedRegion region = new MarkedRegion (
+			AsmHelper.findFirstValidMark (method));
 
-		MarkedRegion region = new MarkedRegion(
-				AsmHelper.findFirstValidMark(method));
-
-		for (AbstractInsnNode instr : method.instructions.toArray()) {
-
-			int opcode = instr.getOpcode();
-
+		//
+		// Add all instructions preceding the RETURN instructions
+		// as marked region ends.
+		//
+		for (final AbstractInsnNode insn : AsmHelper.allInsnsFrom (method.instructions)) {
+			int opcode = insn.getOpcode ();
 			if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
-				region.addEnd(instr.getPrevious());
+				region.addEnd (insn.getPrevious ());
 			}
 		}
 
-		WeavingRegion wregion = region.computeDefaultWeavingRegion(method);
-		wregion.setAfterThrowEnd(method.instructions.getLast());
-		region.setWeavingRegion(wregion);
-		regions.add(region);
-		return regions;
+		WeavingRegion wr = region.computeDefaultWeavingRegion (method);
+		wr.setAfterThrowEnd (method.instructions.getLast ());
+		region.setWeavingRegion (wr);
+
+		//
+
+		final List <MarkedRegion> result = new LinkedList <MarkedRegion> ();
+		result.add (region);
+		return result;
 	}
 
 }

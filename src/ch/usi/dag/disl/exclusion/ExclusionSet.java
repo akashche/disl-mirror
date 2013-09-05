@@ -59,6 +59,10 @@ public abstract class ExclusionSet {
 		exclSet.add(new ScopeImpl(
 				"ch.usi.dag.disl.dynamicbypass" + EXCLUDE_CLASSES));
 		
+		// DiSLRE classes
+		exclSet.add(new ScopeImpl(
+				"ch.usi.dag.dislre" + EXCLUDE_CLASSES));
+		
 		// java instrument classes could cause troubles if instrumented
 		exclSet.add(new ScopeImpl(
 				"sun.instrument" + EXCLUDE_CLASSES));
@@ -128,7 +132,7 @@ public abstract class ExclusionSet {
 					exclSet.add(new ScopeImpl(classExcl));
 				}
 			}
-	
+			
 			jarFile.close();
 			
 			return exclSet;

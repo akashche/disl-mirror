@@ -1,7 +1,9 @@
 package ch.usi.dag.disl.scope;
 
 /**
- * Interface for matching snippet scope
+ * Interface for matching snippet scope.
+ * 
+ * Scope implementation has to be thread-safe.
  */
 public interface Scope {
 

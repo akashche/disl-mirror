@@ -5,12 +5,22 @@ import java.util.List;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 
+/**
+ * <b>NOTE: This class is work in progress</b>
+ * <br>
+ * <br>
+ * Marks object creation.
+ * <br>
+ * <br>
+ * Sets the start before new instruction and the end after the constructor
+ * invocation.
+ */
 public class NewObjMarker extends AbstractDWRMarker {
 
 	// NOTE: does not work for arrays
@@ -19,12 +29,10 @@ public class NewObjMarker extends AbstractDWRMarker {
 	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 
 		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		InsnList ilst = method.instructions;
-
 		int invokedNews = 0;
 
 		// find invocation of constructor after new instruction
-		for (AbstractInsnNode instruction : ilst.toArray()) {
+		for (AbstractInsnNode instruction : AsmHelper.allInsnsFrom (method.instructions)) {
 
 			// track new instruction
 			if (instruction.getOpcode() == Opcodes.NEW) {

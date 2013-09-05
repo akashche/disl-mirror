@@ -10,6 +10,12 @@ import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
+/**
+ * <b>NOTE: This class is work in progress</b>
+ * <br>
+ * <br>
+ * Provides static context information about instrumented basic block.
+ */
 public class BasicBlockStaticContext extends AbstractStaticContext {
 
 	private Map<String, CtrlFlowGraph> cache = new HashMap<String, CtrlFlowGraph>();
@@ -32,10 +38,16 @@ public class BasicBlockStaticContext extends AbstractStaticContext {
 		}
 	}
 	
+	/**
+	 * Returns total number of basic blocks in a method. 
+	 */
 	public int getTotBBs() {
 		return customData.getNodes().size();
 	}
 
+	/**
+	 * Returns size of the instrumented basic block. 
+	 */
 	public int getBBSize() {
 
 		int count = 1;
@@ -57,6 +69,9 @@ public class BasicBlockStaticContext extends AbstractStaticContext {
 		return count;
 	}
 
+	/**
+	 * Returns index of the instrumented basic block. 
+	 */
 	public int getBBindex() {
 		return customData.getIndex(staticContextData.getRegionStart());
 	}

@@ -13,7 +13,10 @@ public @interface ProcessAlso {
 	
 	// NOTE because of implementation of annotations in java the defaults
 	// are not retrieved from here but from class mentioned above
-	
+
+	/**
+	 * @see ch.usi.dag.disl.annotation.ProcessAlso
+	 */
 	public enum Type {
 		BOOLEAN,
 		BYTE,

@@ -6,15 +6,17 @@ import ch.usi.dag.disl.marker.Marker;
  * The After annotation instructs DiSL to insert the snippet body after the
  * marked region. The snippet will be invoked after a normal exit of the region
  * or after an exit caused by an exception.
- * 
+ * <br>
+ * <br>
  * NOTE: This is only general contract. It depends on particular marker how the
  * contract will be implemented.
- *
+ * <br>
+ * <br>
  * This annotation should be used with methods.
- *
+ * <br>
  * The method should be static, not return any values and not throw any
  * exceptions.
- * 
+ * <br>
  * Method argument can be StaticContext, DynamicContext, ClassContext and
  * ArgumentProcessorContext.
  */
@@ -33,44 +35,44 @@ public @interface After {
 	
 	/**
 	 * Argument for the marker (as string).
-	 * 
-	 * Default value: ""
+	 * <br>
+	 * <br>
+	 * Default value means none.
 	 */
 	String args() default ""; // cannot be null :(
 	
 	/**
 	 * Scope of the methods, where the snippet is applied.
-	 * 
-	 * @see ch.usi.dag.disl.scope package for more info about scoping language.
-	 * 
-	 * Default value: "*"
+	 * <br>
+	 * <br>
+	 * Default value means everything.
+	 * <br>
+	 * @see ch.usi.dag.disl.scope.ScopeImpl ScopeImpl for more info about
+	 * scoping language.
 	 */
 	String scope() default "*";
 	
 	/**
 	 * The guard class defining if the snippet will be inlined in particular
 	 * region or not.
-	 * 
-	 * Default value: Object.class - means none
+	 * <br>
+	 * <br>
+	 * Default value means none.
 	 */
 	Class<? extends Object> guard() default Object.class; // cannot be null :(
 	
 	/**
 	 * Defines ordering of the snippets. Smaller number indicates that snippet
 	 * will be inlined closer to the instrumented code.
-	 * 
-	 * Default value: 100
 	 */
 	int order() default 100;
 
 	/**
-	 * Advanced option. You can in general disable dynamic bypass on snippets,
-	 * that are not using any other class.
-	 * 
-	 * NOTE Usage of dynamic bypass is determined by the underlying
+	 * You can in general disable dynamic bypass on snippets, that are not using
+	 * any other class. (Advanced option)
+	 * <br>
+	 * NOTE: Usage of dynamic bypass is determined by the underlying
 	 * instrumentation framework.
-	 * 
-	 * Default value: true
 	 */
 	boolean dynamicBypass() default true;
 }

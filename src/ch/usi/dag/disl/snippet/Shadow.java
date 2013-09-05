@@ -6,7 +6,15 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-
+/**
+ * Holds information about a region where a snippet will be woven. The shadow
+ * contains two type of regions. Logical region, that is available directly in
+ * the shadow, is designed mainly for static analysis and represents a region
+ * which is logically captured. Weaving region is designed as a guidance for the
+ * weaver, and tells, where exactly should be the code woven. Note that normally
+ * are the regions equivalent but can differ in cases where specific
+ * instrumentation is required.
+ */
 public class Shadow {
 
 	protected ClassNode classNode;
@@ -18,6 +26,10 @@ public class Shadow {
 	
 	private WeavingRegion weavingRegion;
 	
+	/**
+	 * Holds exact information where the code will be woven. This structure is
+	 * a guiding source for the weaver.
+	 */
 	public static class WeavingRegion {
 
 		// NOTE: "ends" can be null. This means, that we have the special case
@@ -26,7 +38,7 @@ public class Shadow {
 		// This is for example case of putting snippets before and after
 		// region that includes only return instruction.
 		// In this case, after has to be generated also before the return
-		//  instruction otherwise is newer invoked.
+		// instruction otherwise is never invoked.
 		// "ends" containing null notifies the weaver about this situation.
 		
 		private AbstractInsnNode start;
@@ -103,26 +115,44 @@ public class Shadow {
 		this.weavingRegion = sa.weavingRegion;
 	}
 
+	/**
+	 * Returns class node of the class where the shadow is defined.
+	 */
 	public ClassNode getClassNode() {
 		return classNode;
 	}
 
+	/**
+	 * Returns method node of the method where the shadow is defined.
+	 */
 	public MethodNode getMethodNode() {
 		return methodNode;
 	}
 
+	/**
+	 * Returns snippet that will be woven.
+	 */
 	public Snippet getSnippet() {
 		return snippet;
 	}
 
+	/**
+	 * Returns region start (this region is designed for static analysis).
+	 */
 	public AbstractInsnNode getRegionStart() {
 		return regionStart;
 	}
 
+	/**
+	 * Returns region ends (this region is designed for static analysis).
+	 */
 	public List<AbstractInsnNode> getRegionEnds() {
 		return regionEnds;
 	}
 
+	/**
+	 * Returns weaving region (this region is designed for weaver).
+	 */
 	public WeavingRegion getWeavingRegion() {
 		return weavingRegion;
 	}

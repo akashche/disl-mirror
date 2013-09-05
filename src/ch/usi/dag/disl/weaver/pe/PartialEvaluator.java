@@ -109,7 +109,7 @@ public class PartialEvaluator {
 
 		for (BasicBlock bb : cfg.getNodes()) {
 
-			AbstractInsnNode instr = AsmHelper.skipVirualInsns(bb.getExit(),
+			AbstractInsnNode instr = AsmHelper.skipVirtualInsns(bb.getExit(),
 					false);
 			int opcode = instr.getOpcode();
 			Frame<ConstValue> frame = frames.get(instr);
@@ -304,6 +304,7 @@ public class PartialEvaluator {
 
 		boolean isOptimized = false;
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 
 			Frame<ConstValue> frame = frames.get(instr);
@@ -432,6 +433,7 @@ public class PartialEvaluator {
 		CtrlFlowGraph cfg = CtrlFlowGraph.build(method);
 		boolean isOptimized = false;
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 
 			switch (instr.getOpcode()) {
@@ -540,6 +542,7 @@ public class PartialEvaluator {
 			return;
 		}
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 			if (instr.getOpcode() == Opcodes.INVOKESPECIAL) {
 				Type[] args = Type
@@ -571,6 +574,7 @@ public class PartialEvaluator {
 
 		boolean isOptimized = false;
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 
 			int opcode = instr.getOpcode();
@@ -622,6 +626,7 @@ public class PartialEvaluator {
 
 		boolean isOptimized = false;
 
+		// TODO LB: iterate over a copy unless we are sure an iterator is OK
 		for (AbstractInsnNode instr : ilist.toArray()) {
 
 			int opcode = instr.getOpcode();
@@ -633,7 +638,7 @@ public class PartialEvaluator {
 					continue;
 				}
 
-				if (AsmHelper.skipVirualInsns(((JumpInsnNode) instr).label,
+				if (AsmHelper.skipVirtualInsns(((JumpInsnNode) instr).label,
 						false) != instr) {
 					continue;
 				}
@@ -653,14 +658,14 @@ public class PartialEvaluator {
 				boolean flag = false;
 
 				for (LabelNode label : lsin.labels) {
-					if (AsmHelper.skipVirualInsns(label, false) != instr) {
+					if (AsmHelper.skipVirtualInsns(label, false) != instr) {
 						flag = true;
 						continue;
 					}
 				}
 
 				if (flag
-						|| AsmHelper.skipVirualInsns(lsin.dflt, false) != instr) {
+						|| AsmHelper.skipVirtualInsns(lsin.dflt, false) != instr) {
 					continue;
 				}
 
@@ -677,14 +682,14 @@ public class PartialEvaluator {
 				boolean flag = false;
 
 				for (LabelNode label : tsin.labels) {
-					if (AsmHelper.skipVirualInsns(label, false) != instr) {
+					if (AsmHelper.skipVirtualInsns(label, false) != instr) {
 						flag = true;
 						continue;
 					}
 				}
 
 				if (flag
-						|| AsmHelper.skipVirualInsns(tsin.dflt, false) != instr) {
+						|| AsmHelper.skipVirtualInsns(tsin.dflt, false) != instr) {
 					continue;
 				}
 
@@ -708,8 +713,8 @@ public class PartialEvaluator {
 		boolean isOptimized = false;
 
 		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
-			if (AsmHelper.skipVirualInsns(tcb.start, true) == AsmHelper
-					.skipVirualInsns(tcb.end, true)) {
+			if (AsmHelper.skipVirtualInsns(tcb.start, true) == AsmHelper
+					.skipVirtualInsns(tcb.end, true)) {
 				method.tryCatchBlocks.remove(tcb);
 				isOptimized |= removeUnusedBB(cfg);
 			}
