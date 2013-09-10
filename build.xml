@@ -169,6 +169,7 @@
 		<delete dir="${build.thread}" />
 		<delete dir="${build.afterbootstrap}" />
 		<delete dir="${dist}" />
+		<delete dir="${test}" />
 		<exec executable="make" dir="${src.agent.c}/javahome">
 			<arg value="clean" />
 		</exec>
@@ -230,7 +231,18 @@
 
 	<target name="package-test" depends="report-missing-property,prepare-all" description="create instrumentation package for specified test">
 		<mkdir dir="${build}"/>
-		<jar jarfile="${build}/${instr.jar.name}"
+		<jar jarfile="${build}/${instr.jar.name}.jar"
+		     basedir="${bin}"
+		     includes="${test.path}/**"
+		     excludes="${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF"
+		     manifest="${src.test}/${test.path}/MANIFEST.MF">
+		</jar>
+	</target>
+
+	<!-- unsafe for missing dependencies -->
+	<target name="unsafe-package-test" description="create instrumentation package for specified test">
+		<mkdir dir="${build}"/>
+		<jar jarfile="${build}/disl-instr-${test.name}.jar"
 		     basedir="${bin}"
 		     includes="${test.path}/**"
 		     excludes="${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF"

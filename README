@@ -41,29 +41,27 @@ header files for your platform. On many systems, the JAVA_HOME environment
 variable points to the root of the JDK installation and you should be fine.
 
 If this is not the case, please enter the src-agent-c directory, copy the
-Makefile.local.tmpl file to Makefile.local and modify it to set the JAVA_HOME
-variable to point to the root of the JDK installation you want to use.
+javahome/var.local.tmp file to javahome/var.local and modify it to set the
+JAVA_HOME variable to point to the root of the JDK installation you want to
+use.
 
 Finally, to compile DiSL, run the "ant" command in the root directory.
 
 You can create javadoc documentation by running "ant javadoc".
 
 
-EXAMPLES
-========
+EXAMPLES ========
 
 For the basic instrumentation example, please look in the example directory.
 Also the src-test directory contains simple examples of DiSL features.
 
 
-DOCUMENTATION
-=============
+DOCUMENTATION =============
 
 Please look at http://disl.projects.ow2.org/xwiki/bin/view/Main/Doc.
 
 
-USER ERRORS
-===========
+USER ERRORS ===========
 
 If you get a Java error during instrumentation or running your application,
 please look at USERERRORS document describing most common problems.

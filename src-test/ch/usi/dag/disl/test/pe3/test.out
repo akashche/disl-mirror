@@ -1,0 +1,4 @@
+Inside TargetClass.private_method.
+write:ch/usi/dag/disl/test/pe3/TargetClass:public_method:()V
+read:ch/usi/dag/disl/test/pe3/TargetClass:public_method:()V
+1

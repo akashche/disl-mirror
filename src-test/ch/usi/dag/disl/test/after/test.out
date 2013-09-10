@@ -1,0 +1,10 @@
+app: call print(false)
+app: try-clause
+app: normal return
+app: finally-clause
+disl: after
+app: call print(true)
+app: try-clause
+app: finally-clause
+disl: after
+disl: afterThrowning

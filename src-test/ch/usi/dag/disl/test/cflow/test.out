@@ -1,0 +1,5 @@
+foo() called. will call goo()
+goo called
+hoo should not be in cflow of foo()
+now calling goo, should not be in cflow neither
+goo called

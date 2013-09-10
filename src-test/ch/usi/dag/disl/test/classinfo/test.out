@@ -1,0 +1,6 @@
+class ch.usi.dag.disl.test.classinfo.TargetClass
+This is the body of TargetClass.print
+not branched
+class ch.usi.dag.disl.test.classinfo.TargetClass
+This is the body of TargetClass.print
+branched
