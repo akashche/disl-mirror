@@ -9,34 +9,51 @@ The example contains simple user application that prints hello string on
 command line and instrumentation printing strings before and after application
 main.
 
-HOW TO RUN THE EXAMPLE
+
+HOW TO RUN THE EXAMPLE 
 ======================
 
 First be sure that you compiled DiSL (see README in the root directory). Then
 follow the steps:
 
-1) compile application calling "ant" in the app directory
-2) compile instrumentation calling "ant" in the instrumentation directory
-3) run "./runApp.sh instr/build/disl-instr.jar -jar app/build/example-app.jar"
+Easiest way to run the example is to execute "ant run".
 
-The last command starts the application together with DiSL. The output of the
-application and the applied instrumentation should be visible on command line.
+This command builds and packs the application and the instrumentation
+application. And then starts the instrumentation server and later on also the
+application
 
-NOTE: If you want to use "runApp.sh" to run your application, don't forget to set
-      "DISL_LIB_P" variable correctly. Also, you can modify DiSL setting in
-      "runServer.sh".
+The output of the application and the applied instrumentation should be visible
+on command line.
 
-NOTE: If you want to include use some library in your instrumentation you shlould
-      insert it directly to the instrumentation jar using jarjar.
-      http://code.google.com/p/jarjar/
+When compiled the example can be also run using "disl.py" script directly. This
+enables more detailed settings. To learn more about this run "./disl.py -h"
+
+
+NOTE 
+====
+
+If you want to use "disl.py" to run your application, don't forget to set
+"DISL_HOME" variable correctly or it can be specified to "disl.py" at command
+line or inside the script as a default value.
+
+
+NOTE
+====
+
+If you want to include use some library in your instrumentation you
+shlould insert it directly to the instrumentation jar using jarjar.
+http://code.google.com/p/jarjar/
+
 
 DIRECTORIES (FILES)
 ===================
 
-app          - contains sources of simple application
-instr        - contains sources of simple instrumentation
-runApp.sh    - bash script starting the application together with
-               DiSL (+ instrumentation)
-runServer.sh - starts instrumentation server
-runClient.sh - starts application vm with necessary agents
+app
+- contains sources of simple application 
+
+instr
+- contains sources of simple instrumentation 
+
+disl.py
+- python script starting the application together with DiSL (+instrumentation)
 

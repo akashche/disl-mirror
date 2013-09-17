@@ -4,8 +4,17 @@
 	<property file="disl.version" />
 
 	<path id="buildpath">
-		<pathelement location="${asm.path}" />
 		<pathelement location="${bin}" />
+		<pathelement location="${asm.path}" />
+		<pathelement location="${junit.core.path}" />
+		<pathelement location="${junit.hamcrest.path}" />
+	</path>
+
+	<path id="classpath">
+		<pathelement location="${bin}" />
+		<pathelement location="${asm.path}" />
+		<pathelement location="${junit.core.path}" />
+		<pathelement location="${junit.hamcrest.path}" />
 	</path>
 
 	<!-- it automatically compiles all other necessary stuff :) -->
@@ -166,10 +175,10 @@
 	<target name="clean">
 		<delete dir="${bin}" />
 		<delete dir="${build}" />
+		<delete dir="${build.test}" />
 		<delete dir="${build.thread}" />
 		<delete dir="${build.afterbootstrap}" />
 		<delete dir="${dist}" />
-		<delete dir="${test}" />
 		<exec executable="make" dir="${src.agent.c}/javahome">
 			<arg value="clean" />
 		</exec>
@@ -217,6 +226,116 @@
 
 	<!-- *** test instrumentaion package *** -->
 
+	<!-- iterates over files and runs targets on them, dir is passed as property -->
+	<!-- property passed in the targets must be used directly -->
+	<scriptdef name="package-test2-script" language="javascript">
+		<element name="dirset" type="dirset" />
+		<![CDATA[
+			dirsets = elements.get("dirset");
+			for (i = 0; i < dirsets.size(); ++i) {
+				var it = dirsets.get(i).iterator();
+				while (it.hasNext()) {
+					dir = it.next().getName();
+					self.project.setProperty( "tmp.test2.name", dir); 
+					self.project.executeTarget( "package-test2-app");
+					self.project.executeTarget( "package-test2-instr");
+				}
+			}
+		]]>
+	</scriptdef>
+	
+	<target name="package-test2-app">
+		<jar jarfile="${build.test}/disl-app-${tmp.test2.name}.jar"
+		     basedir="${bin}"
+		     includes="ch/usi/dag/disl/test2/suite/${tmp.test2.name}/app/**">
+			<manifest>
+				<attribute name="Main-Class" value="ch.usi.dag.disl.test2.suite.${tmp.test2.name}.app.TargetClass" />
+			</manifest>
+		</jar>
+	</target>
+	
+	<target name="package-test2-instr">
+		<jar jarfile="${build.test}/disl-instr-${tmp.test2.name}.jar"
+		     basedir="${bin}"
+		     includes="ch/usi/dag/disl/test2/suite/${tmp.test2.name}/instr/**"
+		     excludes="ch/usi/dag/disl/test2/suite/${tmp.test2.name}/instr/MANIFEST.MF">
+			<manifest>
+				<attribute name="DiSL-Classes" value="ch.usi.dag.disl.test2.suite.${tmp.test2.name}.instr.DiSLClass" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="package-test2">
+		<mkdir dir="${build.test}"/>
+		<package-test2-script>
+			<dirset dir="src-test/ch/usi/dag/disl/test2/suite/">
+				<include name="*" />
+			</dirset>
+		</package-test2-script>
+	</target>
+
+	<target name="copy-test2">
+		<copy todir="${bin}">
+			<fileset dir="${src.test}">
+				<include name="**/*.resource" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="prepare-test2" depends="prepare-all, copy-test2, package-test2" />
+
+	<target name="test2" depends="prepare-test2">
+		<junit 
+				haltonfailure="no"
+				haltonerror="no"
+				failureproperty="junit.failure">
+			<classpath refid="classpath" />
+			<formatter type="brief" usefile="false" />
+			<!-- allows properties starting with "-Ddisl." to be passed to tests -->
+			<syspropertyset>
+				<propertyref prefix="disl" />
+			</syspropertyset>
+			<batchtest fork="yes">
+				<fileset dir="${src.test}">
+					<include name="*ch/usi/dag/disl/test2/junit/*Test.java" />
+					<include name="*ch/usi/dag/disl/test2/suite/*/junit/*Test.java" />
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+	
+	<target
+			name="report-test2-name"
+			depends="check-test2-name"
+			unless="test2.name.set">
+		<fail message="Property test2.name is not set. Set it using -Dtest2.name=value" />
+	</target>
+	
+	<target name="check-test2-name">
+		<condition property="test2.name.set">
+			<isset property="test2.name"/>
+		</condition>
+	</target>
+	
+	<target name="suite-test2" depends="prepare-test2, report-test2-name">
+		<junit 
+				haltonfailure="no"
+				haltonerror="no"
+				failureproperty="junit.failure">
+			<classpath refid="classpath" />
+			<formatter type="brief" usefile="false" />
+			<!-- allows properties starting with "-Ddisl." to be passed to tests -->
+			<syspropertyset>
+				<propertyref prefix="disl" />
+			</syspropertyset>
+			<batchtest fork="yes">
+				<fileset dir="${src.test}">
+					<include name="*ch/usi/dag/disl/test2/suite/${test2.name}/junit/*Test.java" />
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+	
 	<target name="check-test-property">
 		<condition property="test.set">
 			<isset property="test.name"/>
@@ -233,7 +352,7 @@
 		<mkdir dir="${build}"/>
 		<jar jarfile="${build}/${instr.jar.name}.jar"
 		     basedir="${bin}"
-		     includes="${test.path}/**"
+		     includes="${test.gath}/**"
 		     excludes="${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF"
 		     manifest="${src.test}/${test.path}/MANIFEST.MF">
 		</jar>

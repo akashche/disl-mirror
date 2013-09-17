@@ -410,6 +410,15 @@ def run_client(args, parser):
 	client = Popen(c_cmd, stdout=c_out_f, stderr=c_err_f, shell=False)	
 	
 	client.wait()
+	
+	try:
+		with open(".server.pid", "r") as pid_file:
+			pid = pid_file.readline()
+			kill = Popen(["kill", pid], stdout=PIPE, shell=False)
+	except IOError:
+		pass
+
+	os.remove(".server.pid")
 
 	return
 

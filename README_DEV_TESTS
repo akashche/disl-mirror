@@ -1,0 +1,22 @@
+Overview
+========
+
+Tests are implemented using JUnit. There are classic unit tests that are
+located in the ch.usi.dag.disl.test2.junit package and complex tests in the
+ch.usi.dag.disl.test2.suite package that invoke all parts of the framework
+(client, server, ...) and verify computed results.
+
+All tests are performed calling
+- ant test2
+
+To use the for debuging purpose during development a single suite test (for
+example "after" test) can be invoked calling
+- ant suite-test2 -Dtest2.name=after
+
+Parameters can specified to ant at command line starting with "-Ddisl." are
+passed to the test. For example to show tests output specify 
+- -Ddisl.test.verbose=true
+
+When built with "ant prepare-test2" tests can be also run directly. They are
+packed in the "build-test" directory.
+
