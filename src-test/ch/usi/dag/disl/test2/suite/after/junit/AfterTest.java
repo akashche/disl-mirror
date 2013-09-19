@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.test2.suite.after.junit;
 
+import static org.junit.Assert.fail;
+
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,23 +16,20 @@ public class AfterTest {
 	
 	@Test
 	public void test() 
-			throws Exception {		
+			throws Exception {
+		// FIXME
+		fail("FIXME");
+		// see app TargetClass
+
 		r.start();			
 		r.waitFor();
-		r.assertIsNotRunning();
-		//r.flushClientOut();
-		//r.flushClientErr();
-		// FIXME
-		//r.assertIsFinished();
+		r.assertIsFinished();
+		if(Boolean.parseBoolean(System.getProperty("disl.test.verbose"))) { r.destroyIfRunningAndFlushOutputs(); }
+		//r.assertIsSuccessfull();
 		r.assertClientOut("client.out.resource");
-		// FIXME
 		//r.assertClientErrNull();
 		r.assertServerOutNull();
 		r.assertServerErrNull();
-
-		if(Boolean.parseBoolean(System.getProperty("disl.test.verbose"))) {
-			r.verbose();
-		}
 	}	
 	
 	@After

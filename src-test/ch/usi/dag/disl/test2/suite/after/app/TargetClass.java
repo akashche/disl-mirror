@@ -17,31 +17,27 @@ public class TargetClass {
 			System.out.println("app: TargetClass.print(..) - finally");
 		}
 	}
-
+	
 	// FIXME
-	//	this main would fail the test
-	//	could be fixed by adding app's code to the server's classpath	
-	//
-	//public static void main(String[] args) {
-	//	try {
-	//		TargetClass t = new TargetClass();
-	//		System.out.println("app: main - .print(false)");
-	//		t.print(false);
-	//		System.out.println("app: main - .print(true)");
-	//		t.print(true);
-	//	} catch (Throwable e) {
-	//		System.out.println("app: main - catch");
-	//	}
-	//}
+	// this main breaks the test on class not found exception of this class
+	/*
+	public static void main(String[] args) {
+		try {
+			TargetClass t = new TargetClass();
+			System.out.println("app: TargetClass.main(..) - .print(false)");
+			t.print(false);
+			System.out.println("app: TargetClass.main(..) - .print(true)");
+			t.print(true);
+		} catch (Throwable e) {
+			System.out.println("app: TargetClass.main(..) - catch");
+		}
+	}*/
 	
 	public static void main(String[] args) {
 		TargetClass t = new TargetClass();
-		System.out.println("app: TargetClass.main(..) - TargetClass.print(false)");
+		System.out.println("app: TargetClass.main(..) - .print(false)");
 		t.print(false);
-		System.out.println("app: TargetClass.main(..) - TargetClass.~print(false)");
-		System.out.println("app: TargetClass.main(..) - TargetClass.print(true)");
+		System.out.println("app: TargetClass.main(..) - .print(true)");
 		t.print(true);
-		System.out.println("app: TargetClass.main(..) - TargetClass.~print(true)");
-
 	}
 }

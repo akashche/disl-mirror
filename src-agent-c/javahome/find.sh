@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # use variable specified by the user
 if [ -f "var.local" ]; then

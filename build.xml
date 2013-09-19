@@ -235,10 +235,23 @@
 			for (i = 0; i < dirsets.size(); ++i) {
 				var it = dirsets.get(i).iterator();
 				while (it.hasNext()) {
-					dir = it.next().getName();
-					self.project.setProperty( "tmp.test2.name", dir); 
+					var name = it.next().getName();
+					var path = "ch/usi/dag/disl/test2/suite/" + name;
+					var pkg = "ch.usi.dag.disl.test2.suite." + name;
+					var manifest = self.project.getProperty("src.test") + "/" + path + "/instr/MANIFEST.MF";
+				
+					self.project.setProperty( "tmp.test2.name", name); 
+					self.project.setProperty( "tmp.test2.path", path); 
+					self.project.setProperty( "tmp.test2.pkg", pkg); 
+					self.project.setProperty( "tmp.test2.manifest", manifest); 
+
 					self.project.executeTarget( "package-test2-app");
-					self.project.executeTarget( "package-test2-instr");
+					
+					if (new java.io.File( manifest).exists()) {
+						self.project.executeTarget( "package-test2-instr-manifest");
+					} else {
+						self.project.executeTarget( "package-test2-instr-nomanifest");
+					}
 				}
 			}
 		]]>
@@ -246,22 +259,31 @@
 	
 	<target name="package-test2-app">
 		<jar jarfile="${build.test}/disl-app-${tmp.test2.name}.jar"
-		     basedir="${bin}"
-		     includes="ch/usi/dag/disl/test2/suite/${tmp.test2.name}/app/**">
+		    basedir="${bin}"
+		    includes="${tmp.test2.path}/app/**">
 			<manifest>
-				<attribute name="Main-Class" value="ch.usi.dag.disl.test2.suite.${tmp.test2.name}.app.TargetClass" />
+				<attribute name="Main-Class" value="${tmp.test2.pkg}.app.TargetClass" />
 			</manifest>
 		</jar>
 	</target>
 	
-	<target name="package-test2-instr">
+	<target name="package-test2-instr-nomanifest">
 		<jar jarfile="${build.test}/disl-instr-${tmp.test2.name}.jar"
-		     basedir="${bin}"
-		     includes="ch/usi/dag/disl/test2/suite/${tmp.test2.name}/instr/**"
-		     excludes="ch/usi/dag/disl/test2/suite/${tmp.test2.name}/instr/MANIFEST.MF">
+		    basedir="${bin}"
+		    includes="${tmp.test2.path}/instr/**"
+		    excludes="${tmp.test2.path}/instr/MANIFEST.MF">
 			<manifest>
-				<attribute name="DiSL-Classes" value="ch.usi.dag.disl.test2.suite.${tmp.test2.name}.instr.DiSLClass" />
+				<attribute name="DiSL-Classes" value="${tmp.test2.path}.instr.DiSLClass" />
 			</manifest>
+		</jar>
+	</target>
+	
+	<target name="package-test2-instr-manifest">
+		<jar jarfile="${build.test}/disl-instr-${tmp.test2.name}.jar"
+		    basedir="${bin}"
+		    includes="${tmp.test2.path}/instr/**"
+		    excludes="${tmp.test2.path}/instr/MANIFEST.MF"
+		    manifest="${tmp.test2.manifest}">
 		</jar>
 	</target>
 
@@ -286,9 +308,9 @@
 
 	<target name="test2" depends="prepare-test2">
 		<junit 
-				haltonfailure="no"
-				haltonerror="no"
-				failureproperty="junit.failure">
+		    haltonfailure="no"
+		    haltonerror="no"
+		    failureproperty="junit.failure">
 			<classpath refid="classpath" />
 			<formatter type="brief" usefile="false" />
 			<!-- allows properties starting with "-Ddisl." to be passed to tests -->
@@ -297,8 +319,8 @@
 			</syspropertyset>
 			<batchtest fork="yes">
 				<fileset dir="${src.test}">
-					<include name="*ch/usi/dag/disl/test2/junit/*Test.java" />
-					<include name="*ch/usi/dag/disl/test2/suite/*/junit/*Test.java" />
+					<include name="ch/usi/dag/disl/test2/junit/*Test.java" />
+					<include name="ch/usi/dag/disl/test2/suite/*/junit/*Test.java" />
 				</fileset>
 			</batchtest>
 		</junit>

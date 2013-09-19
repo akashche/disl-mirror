@@ -1,3 +1,4 @@
+UNAME := Unknown 
 ifeq ($(OS),Windows_NT)
 	UNAME := Windows
 
@@ -5,28 +6,53 @@ ifeq ($(OS),Windows_NT)
 		UNAME := Cygwin
 	endif
 else
-	UNAME := $(shell uname -s)
+	UNAME_KNOWN := $(shell uname -s)
+
+	ifeq ($(UNAME_KNOWN),Linux)
+		UNAME := Linux
+	endif
+	
+	ifeq ($(UNAME_KNOWN),Darwin)
+		UNAME := Darwin
+	endif
 endif
 
 
 .PHONY: all, clean
 
 
-all: $(UNAME)
+all: $(UNAME)-all
 
-Linux:
-	@./find.sh		
+Linux-all:
+	@./find.sh
 
-Darwin:
-	@echo "Darwin is supported"
+Darwin-all:
+	@./find.sh
 
-Windows:
-	@echo Windows not yet supported.
+Cygwin-all:
+	@./find.sh
 
-Cygwin:
-	@echo "Cygwin not yet supported."
+Windows-all:
+	@.\\find.bat
+
+Unknown-all:
+	$(error error: unsupported operating system $(UNAME))
 
 
-clean:
+clean: $(UNAME)-clean
+
+Linux-clean:
 	@rm -f var
+
+Darwin-clean:
+	@rm -f var
+
+Cygwin-clean:
+	@rm -f var
+
+Windows-clean:
+	@CMD /C IF EXIST var DEL /Q/F var
+
+Unknown-clean:
+	$(error error: unsupported operating system $(UNAME))
 

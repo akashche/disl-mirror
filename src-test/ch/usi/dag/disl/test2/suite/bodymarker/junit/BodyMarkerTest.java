@@ -17,18 +17,13 @@ public class BodyMarkerTest {
 			throws Exception {		
 		r.start();			
 		r.waitFor();
-		r.assertIsNotRunning();
-		//r.flushClientOut();
-		//r.flushClientErr();
 		r.assertIsFinished();
+		if(Boolean.parseBoolean(System.getProperty("disl.test.verbose"))) { r.destroyIfRunningAndFlushOutputs(); }
+		r.assertIsSuccessfull();
 		r.assertClientOut("client.out.resource");
 		r.assertClientErrNull();
 		r.assertServerOutNull();
 		r.assertServerErrNull();
-
-		if(Boolean.parseBoolean(System.getProperty("disl.test.verbose"))) {
-			r.verbose();
-		}
 	}	
 	
 	@After

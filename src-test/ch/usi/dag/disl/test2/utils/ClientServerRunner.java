@@ -68,15 +68,20 @@ public class ClientServerRunner {
 	public boolean waitFor() {
 		return waitFor(60000);
 	}
+	
+	public void assertIsStarted() {
+		assertTrue("client not started", client.isStarted());
+		assertTrue("server not started", server.isStarted());
+	}		
 		
-	public void assertIsNotRunning() {
-		assertFalse("client still running", client.isRunning());
-		assertFalse("server still running", server.isRunning());
-	}	
-			
 	public void assertIsFinished() {
 		assertTrue("client not finished", client.isFinished());
 		assertTrue("server not finished", server.isFinished());
+	}	
+			
+	public void assertIsSuccessfull() {
+		assertTrue("client not successfull", client.isSuccessfull());
+		assertTrue("server not successfull", server.isSuccessfull());
 	}	
 
 	public void writeFile(String filename, String str) 
@@ -86,35 +91,37 @@ public class ClientServerRunner {
 		}
 	}
 	
-	public void flushClientOut(String filename) 
-			throws FileNotFoundException, IOException {
-		writeFile(filename, client.getOutput());
+	public void destroyIfRunningAndFlushOutputs(
+			boolean cout, boolean cerr, boolean sout, boolean serr, boolean destroy) 
+					throws FileNotFoundException, IOException {
+		if (client != null) { 
+			if (client.isRunning() && destroy) {
+				client.destroy();
+			}
+			if (!client.isRunning() && cout) {
+				writeFile(String.format("tmp.%s.client.out.txt", getTestName()), client.getOutput());
+			}
+			if (!client.isRunning() && cerr) {
+				writeFile(String.format("tmp.%s.client.err.txt", getTestName()), client.getError());
+			}
+		}
+		if (server != null) { 
+			if (server.isRunning() && destroy) {
+				server.destroy();
+			}
+			if (!server.isRunning() && cout) {
+				writeFile(String.format("tmp.%s.server.out.txt", getTestName()), server.getOutput());
+			}
+			if (!server.isRunning() && cerr) {
+				writeFile(String.format("tmp.%s.server.err.txt", getTestName()), server.getError());
+			}
+		}
 	}
 	
-	public void flushClientOut() 
-			throws FileNotFoundException, IOException {
-		flushClientOut("tmp."+getTestName()+".out.txt");
+	public void destroyIfRunningAndFlushOutputs() 
+					throws FileNotFoundException, IOException {
+		destroyIfRunningAndFlushOutputs(true, true, true, true, true);
 	}
-	
-	public void flushClientErr(String filename) 
-			throws FileNotFoundException, IOException {
-		writeFile(filename, client.getError());
-	}
-	
-	public void flushClientErr() 
-			throws FileNotFoundException, IOException {
-		flushClientErr("tmp."+getTestName()+".err.txt");
-	}
-	
-	public void flushServerOut(String filename) 
-			throws FileNotFoundException, IOException {
-		writeFile(filename, server.getOutput());
-	}
-
-	public void flushServerErr(String filename) 
-			throws FileNotFoundException, IOException {
-		writeFile(filename, server.getError());
-	}	
 	
 	public String getResource(String filename) 
 			throws IOException {
@@ -182,7 +189,9 @@ public class ClientServerRunner {
 	}
 	
 	public void destroy() {
-		client.destroy();
-		server.destroy();
+		if (client !=null)
+			client.destroy();
+		if (server != null)
+			server.destroy();
 	}
 }

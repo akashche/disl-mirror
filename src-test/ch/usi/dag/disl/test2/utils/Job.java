@@ -151,7 +151,7 @@ public class Job {
      * 
      * @return
      */
-    public int getExitStatus() {
+    public int getReturnCode() {
         if (process == null) {
             return 0;
         }
@@ -200,6 +200,17 @@ public class Job {
             }
         }
     }
+    
+    /**
+     * Indicates job status.
+     * 
+     * @return
+     *         True - If job is already started
+     *         False - Otherwise.
+     */
+    public boolean isStarted() {
+    	return (process != null);
+    }
 
     /**
      * Indicates job status.
@@ -221,6 +232,17 @@ public class Job {
             return true;
         }
     }
+    
+    /**
+     * Indicates job status.
+     * 
+     * @return
+     *         True - If job is finished or never started.
+     *         False - Otherwise.
+     */
+    public boolean isFinished() {
+    	return !isRunning();
+    }
 
     /**
      * Indicates job status using process exit value.
@@ -229,7 +251,7 @@ public class Job {
      *         True - If job has successfully finished returning zero.
      *         False - If job has not finished yet or not successfully.
      */
-    public boolean isFinished() {
+    public boolean isSuccessfull() {
         if (process == null) {
             return false;
         }
