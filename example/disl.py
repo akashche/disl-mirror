@@ -11,10 +11,10 @@ from subprocess import *
 ######################################################################
 # CONSTANTS 
 ######################################################################
-# defualt disl_home value, relative to the script
-default_disl_home = "../"
+# default disl_home value, relative to the script
+DEFAULT_DISL_HOME = "../../"
 # string to be substituted by the actual value of DISL_HOME in paths
-variable_disl_home = "${DISL_HOME}"
+VARIABLE_DISL_HOME = "${DISL_HOME}"
 
 
 ######################################################################
@@ -25,7 +25,7 @@ variable_disl_home = "${DISL_HOME}"
 ######################################################################
 def disl_home():
 	if os.getenv("DISL_HOME") is None:
-		return default_disl_home
+		return DEFAULT_DISL_HOME
 	else:
 		return os.getenv("DISL_HOME")
 
@@ -93,17 +93,17 @@ def client_parser(parser):
 	
 	if platform.system() == "Darwin":	
 		group.add_argument("-c_cagent", 
-			default=variable_disl_home+"/build/libdislagent.jnilib",
+			default=VARIABLE_DISL_HOME+"/build/libdislagent.jnilib",
 			metavar="PATH",
 			help="path to c-agent library")
 	else:
 		group.add_argument("-c_cagent", 
-			default=variable_disl_home+"/build/libdislagent.so",
+			default=VARIABLE_DISL_HOME+"/build/libdislagent.so",
 			metavar="PATH",
 			help="path to c-agent library")	
 	
 	group.add_argument("-c_jagent", 
-		default=variable_disl_home+"/build/disl-agent.jar", 
+		default=VARIABLE_DISL_HOME+"/build/disl-agent.jar", 
 		metavar="PATH",
 		help="path to java-agent library")
 	
@@ -150,7 +150,7 @@ def server_parser(parser):
 		help="java options of the server")
 
 	group.add_argument('-s_jar',
-		default=variable_disl_home+"/build/disl-server.jar", 
+		default=VARIABLE_DISL_HOME+"/build/disl-server.jar", 
 		metavar="PATH",
 		help="path to disl server jar")
 
@@ -294,14 +294,14 @@ def parse_arguments(parser):
 	args = parser.parse_args()
 
 	# substite ${DISL_HOME}
-	if args.c_cagent.startswith(variable_disl_home):
-		args.c_cagent = args.c_cagent.replace(variable_disl_home, args.disl_home)
+	if args.c_cagent.startswith(VARIABLE_DISL_HOME):
+		args.c_cagent = args.c_cagent.replace(VARIABLE_DISL_HOME, args.disl_home)
 	
-	if args.c_jagent.startswith(variable_disl_home):
-		args.c_jagent = args.c_jagent.replace(variable_disl_home, args.disl_home)
+	if args.c_jagent.startswith(VARIABLE_DISL_HOME):
+		args.c_jagent = args.c_jagent.replace(VARIABLE_DISL_HOME, args.disl_home)
 	
-	if args.s_jar.startswith(variable_disl_home):
-		args.s_jar = args.s_jar.replace(variable_disl_home, args.disl_home)
+	if args.s_jar.startswith(VARIABLE_DISL_HOME):
+		args.s_jar = args.s_jar.replace(VARIABLE_DISL_HOME, args.disl_home)
 
 	args.c_opts = flatten_all(args.c_opts)
 	args.c_app = flatten_all(args.c_app)

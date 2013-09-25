@@ -1,11 +1,10 @@
 <project name="example-disl" default="package" basedir=".">
 
-	<property file="build.properties" />
+	<property file="../../build.properties" />
 
 	<path id="buildpath">
 		<pathelement location="${asm.path}" />
 		<pathelement location="${dislserver.path}" />
-		<pathelement location="${bin}" />
 	</path>
 
 	<target name="compile">

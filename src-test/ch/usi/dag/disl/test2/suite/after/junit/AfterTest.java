@@ -15,7 +15,7 @@ public class AfterTest {
     ClientServerRunner r = new ClientServerRunner(this.getClass());
 
     @Test
-    public void test(int i)
+    public void test()
             throws Exception {
         // FIXME
         fail("FIXME");
