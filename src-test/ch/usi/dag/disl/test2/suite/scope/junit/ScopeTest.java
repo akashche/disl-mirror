@@ -1,5 +1,7 @@
 package ch.usi.dag.disl.test2.suite.scope.junit;
 
+import static org.junit.Assert.fail;
+
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,7 +18,7 @@ public class ScopeTest {
     public void test()
             throws Exception {
         // FIXME
-        // fail("FIXME");
+        fail("FIXME");
         // jvm crash
 
         /*r.start();		

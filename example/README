@@ -1,7 +1,6 @@
 ================================================================================
 = DiSL SETUP EXAMPLE
 ================================================================================
-
 These simple examples illustrates a basic instrumentation setup. It shows, how
 the instrumentation should be packaged and contains a scripts that should ease
 running DiSL together with your program.
@@ -109,7 +108,6 @@ enables more detailed settings. To learn more about this run "./disl.py -h"
 ================================================================================
 = NOTE
 ================================================================================
-
 If you want to use "disl.py" to run your application, don't forget to set
 "DISL_HOME" variable correctly or it can be specified to "disl.py" at command
 line or inside the script as a default value.
@@ -118,12 +116,9 @@ line or inside the script as a default value.
 ================================================================================
 = NOTE
 ================================================================================
-
 If you want to include use some library in your instrumentation you should
 insert it directly to the instrumentation jar using jarjar.
 http://code.google.com/p/jarjar/
 
 Other option is to provide library's classpath to the "disl.py" utility.
-
-
 

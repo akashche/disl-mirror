@@ -85,7 +85,7 @@ public class ScopeTest {
     // classname tests
 
     /**
-     * BUG - FIXED
+     * FIXED
      * 
      * input:
      * java.lang.String main()
@@ -104,7 +104,7 @@ public class ScopeTest {
     }
 
     /**
-     * BUG - FIXED
+     * FIXED
      * 
      * input:
      * java.*.String main()
@@ -171,7 +171,7 @@ public class ScopeTest {
     }
 
     /**
-     * BUG - FIXED
+     * FIXED
      * 
      * details:
      * (int, int, int, ..) should not match (I)V

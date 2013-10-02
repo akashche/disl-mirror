@@ -1,7 +1,6 @@
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.marker.BodyMarker;
-import ch.usi.dag.disl.staticcontext.DumbLoopContext;
 import ch.usi.dag.disl.staticcontext.MethodStaticContext;
 
 public class DiSLClass {

@@ -1,7 +1,6 @@
 import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.Before;
-import ch.usi.dag.disl.marker.MethodInvocationMarker;
 
 public class DiSLClass {
 

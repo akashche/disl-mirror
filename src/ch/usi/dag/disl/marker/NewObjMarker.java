@@ -12,48 +12,49 @@ import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 
 /**
- * <b>NOTE: This class is work in progress</b>
- * <br>
- * <br>
+ * <p>
+ * <b>note:</b> This class is work in progress
+ * 
+ * <p>
  * Marks object creation.
- * <br>
- * <br>
+ * 
+ * <p>
  * Sets the start before new instruction and the end after the constructor
  * invocation.
  */
 public class NewObjMarker extends AbstractDWRMarker {
 
-	// NOTE: does not work for arrays
+    // NOTE: does not work for arrays
 
-	@Override
-	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
+    @Override
+    public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 
-		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-		int invokedNews = 0;
+        List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
+        int invokedNews = 0;
 
-		// find invocation of constructor after new instruction
-		for (AbstractInsnNode instruction : AsmHelper.allInsnsFrom (method.instructions)) {
+        // find invocation of constructor after new instruction
+        for (AbstractInsnNode instruction : AsmHelper.allInsnsFrom(method.instructions)) {
 
-			// track new instruction
-			if (instruction.getOpcode() == Opcodes.NEW) {
+            // track new instruction
+            if (instruction.getOpcode() == Opcodes.NEW) {
 
-				++invokedNews;
-			}
+                ++invokedNews;
+            }
 
-			// if it is invoke special and there are new pending
-			if (instruction.getOpcode() == Opcodes.INVOKESPECIAL
-					&& invokedNews > 0) {
+            // if it is invoke special and there are new pending
+            if (instruction.getOpcode() == Opcodes.INVOKESPECIAL
+                    && invokedNews > 0) {
 
-				MethodInsnNode min = (MethodInsnNode) instruction;
+                MethodInsnNode min = (MethodInsnNode) instruction;
 
-				if (min.name.equals(Constants.CONSTRUCTOR_NAME)) {
+                if (min.name.equals(Constants.CONSTRUCTOR_NAME)) {
 
-					regions.add(new MarkedRegion(instruction, instruction));
-				}
-			}
-		}
+                    regions.add(new MarkedRegion(instruction, instruction));
+                }
+            }
+        }
 
-		return regions;
-	}
+        return regions;
+    }
 
 }

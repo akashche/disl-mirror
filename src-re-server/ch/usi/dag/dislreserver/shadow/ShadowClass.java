@@ -2,143 +2,147 @@ package ch.usi.dag.dislreserver.shadow;
 
 public abstract class ShadowClass extends ShadowObject {
 
-	private final int classId;
-	private final ShadowObject classLoader;
+    private final int          classId;
+    private final ShadowObject classLoader;
 
-	//
-	
-    protected ShadowClass (
-        final long netReference, final ShadowObject classLoader
-    ) {
-        super (netReference, null);
+    //
 
-        this.classId = NetReferenceHelper.get_class_id (netReference);
+    protected ShadowClass(
+            final long netReference, final ShadowObject classLoader) {
+        super(netReference, null);
+
+        this.classId = NetReferenceHelper.get_class_id(netReference);
         this.classLoader = classLoader;
     }
 
-	//
+    //
 
-	// No need to expose the interface to user
-	// getId() should be sufficient
-	protected final int getClassId() {
-		return classId;
-	}
+    // No need to expose the interface to user
+    // getId() should be sufficient
+    protected final int getClassId() {
+        return classId;
+    }
 
-	public final ShadowObject getShadowClassLoader() {
-		return classLoader;
-	}
+    public final ShadowObject getShadowClassLoader() {
+        return classLoader;
+    }
 
-	public abstract boolean isArray();
+    public abstract boolean isArray();
 
-	public abstract ShadowClass getComponentType();
+    public abstract ShadowClass getComponentType();
 
-	public abstract boolean isInstance(ShadowObject obj);
+    public abstract boolean isInstance(ShadowObject obj);
 
-	public abstract boolean isAssignableFrom(ShadowClass klass);
+    public abstract boolean isAssignableFrom(ShadowClass klass);
 
-	public abstract boolean isInterface();
+    public abstract boolean isInterface();
 
-	public abstract boolean isPrimitive();
+    public abstract boolean isPrimitive();
 
-	public abstract boolean isAnnotation();
+    public abstract boolean isAnnotation();
 
-	public abstract boolean isSynthetic();
+    public abstract boolean isSynthetic();
 
-	public abstract boolean isEnum();
+    public abstract boolean isEnum();
 
-	public abstract String getName();
+    public abstract String getName();
 
-	public abstract String getCanonicalName();
+    public abstract String getCanonicalName();
 
-	public abstract String[] getInterfaces();
+    public abstract String[] getInterfaces();
 
-	public abstract String getPackage();
+    public abstract String getPackage();
 
-	public abstract ShadowClass getSuperclass();
+    public abstract ShadowClass getSuperclass();
 
-	@Override
-	public boolean equals(Object obj) {
+    @Override
+    public boolean equals(Object obj) {
 
-		if (!(obj instanceof ShadowClass)) {
-			return false;
-		}
+        if (!(obj instanceof ShadowClass)) {
+            return false;
+        }
 
-		ShadowClass sClass = (ShadowClass) obj;
+        ShadowClass sClass = (ShadowClass) obj;
 
-		if (getName().equals(sClass.getName())
-				&& getShadowClassLoader().equals(sClass.getShadowClassLoader())) {
-			return true;
-		}
+        if (getName().equals(sClass.getName())
+                && getShadowClassLoader().equals(sClass.getShadowClassLoader())) {
+            return true;
+        }
 
-		return false;
-	}
-	
-	public abstract FieldInfo[] getFields();
+        return false;
+    }
 
-	public abstract FieldInfo getField(String fieldName)
-			throws NoSuchFieldException;
+    @Override
+    public int hashCode() {
+        throw new UnsupportedOperationException("overriden equals, not overriden hashCode");
+    }
 
-	public abstract MethodInfo[] getMethods();
+    public abstract FieldInfo[] getFields();
 
-	public abstract MethodInfo getMethod(String methodName,
-			String[] argumentNames) throws NoSuchMethodException;
+    public abstract FieldInfo getField(String fieldName)
+            throws NoSuchFieldException;
 
-	public abstract String[] getDeclaredClasses();
+    public abstract MethodInfo[] getMethods();
 
-	public abstract FieldInfo[] getDeclaredFields();
+    public abstract MethodInfo getMethod(String methodName,
+            String[] argumentNames) throws NoSuchMethodException;
 
-	public abstract FieldInfo getDeclaredField(String fieldName)
-			throws NoSuchFieldException;
+    public abstract String[] getDeclaredClasses();
 
-	public abstract MethodInfo[] getDeclaredMethods();
+    public abstract FieldInfo[] getDeclaredFields();
 
-	public abstract MethodInfo getDeclaredMethod(String methodName,
-			String[] argumentNames) throws NoSuchMethodException;
+    public abstract FieldInfo getDeclaredField(String fieldName)
+            throws NoSuchFieldException;
 
-	public MethodInfo getMethod(String methodName, ShadowClass[] arguments)
-			throws NoSuchMethodException {
-		return getMethod(methodName, classesToStrings(arguments));
-	}
+    public abstract MethodInfo[] getDeclaredMethods();
 
-	public MethodInfo getDeclaredMethod(String methodName,
-			ShadowClass[] arguments) throws NoSuchMethodException {
-		return getDeclaredMethod(methodName, classesToStrings(arguments));
-	}
+    public abstract MethodInfo getDeclaredMethod(String methodName,
+            String[] argumentNames) throws NoSuchMethodException;
 
-	protected static String[] classesToStrings(ShadowClass[] arguments) {
+    public MethodInfo getMethod(String methodName, ShadowClass[] arguments)
+            throws NoSuchMethodException {
+        return getMethod(methodName, classesToStrings(arguments));
+    }
 
-		if (arguments == null) {
-			return new String[0];
-		}
+    public MethodInfo getDeclaredMethod(String methodName,
+            ShadowClass[] arguments) throws NoSuchMethodException {
+        return getDeclaredMethod(methodName, classesToStrings(arguments));
+    }
 
-		int size = arguments.length;
-		String[] argumentNames = new String[size];
+    protected static String[] classesToStrings(ShadowClass[] arguments) {
 
-		for (int i = 0; i < size; i++) {
-			argumentNames[i] = arguments[i].getName();
-		}
+        if (arguments == null) {
+            return new String[0];
+        }
 
-		return argumentNames;
-	}
+        int size = arguments.length;
+        String[] argumentNames = new String[size];
 
-	protected static String argumentNamesToString(String[] argumentNames) {
-		StringBuilder buf = new StringBuilder();
-		buf.append("(");
+        for (int i = 0; i < size; i++) {
+            argumentNames[i] = arguments[i].getName();
+        }
 
-		if (argumentNames != null) {
+        return argumentNames;
+    }
 
-			for (int i = 0; i < argumentNames.length; i++) {
+    protected static String argumentNamesToString(String[] argumentNames) {
+        StringBuilder buf = new StringBuilder();
+        buf.append("(");
 
-				if (i > 0) {
-					buf.append(", ");
-				}
+        if (argumentNames != null) {
 
-				buf.append(argumentNames[i]);
-			}
-		}
+            for (int i = 0; i < argumentNames.length; i++) {
 
-		buf.append(")");
-		return buf.toString();
-	}
+                if (i > 0) {
+                    buf.append(", ");
+                }
+
+                buf.append(argumentNames[i]);
+            }
+        }
+
+        buf.append(")");
+        return buf.toString();
+    }
 
 }

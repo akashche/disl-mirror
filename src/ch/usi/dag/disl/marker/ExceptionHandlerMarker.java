@@ -11,31 +11,32 @@ import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
 /**
+ * <p>
  * Marks exception handler.
- * <br>
- * <br>
+ * 
+ * <p>
  * Sets the start at the beginning of an exception handler and the end at the
  * end of an exception handler.
  */
 public class ExceptionHandlerMarker extends AbstractDWRMarker {
 
-	@Override
-	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
+    @Override
+    public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 
-		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
+        List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 
-		CtrlFlowGraph cfg = new CtrlFlowGraph(method);
+        CtrlFlowGraph cfg = new CtrlFlowGraph(method);
 
-		cfg.visit(method.instructions.getFirst());
+        cfg.visit(method.instructions.getFirst());
 
-		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
+        for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
 
-			List<AbstractInsnNode> exits = cfg.visit(tcb.handler);
-			regions.add(new MarkedRegion(AsmHelper.skipVirtualInsns(tcb.handler,
-					true), exits));
-		}
+            List<AbstractInsnNode> exits = cfg.visit(tcb.handler);
+            regions.add(new MarkedRegion(AsmHelper.skipVirtualInsns(tcb.handler,
+                    true), exits));
+        }
 
-		return regions;
-	}
+        return regions;
+    }
 
 }

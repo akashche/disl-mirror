@@ -10,27 +10,28 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import ch.usi.dag.disl.util.AsmHelper;
 
 /**
+ * <p>
  * Marks try block.
- * <br>
- * <br>
+ * 
+ * <p>
  * Sets the start at the beginning of a try block and the end at the end of a
  * try block.
  */
 public class TryClauseMarker extends AbstractDWRMarker {
 
-	@Override
-	public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
+    @Override
+    public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 
-		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
+        List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
 
-		for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
+        for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
 
-			AbstractInsnNode start = AsmHelper.skipVirtualInsns(tcb.start, true);
-			AbstractInsnNode end = AsmHelper.skipVirtualInsns(tcb.end, false);
-			regions.add(new MarkedRegion(start, end));
-		}
+            AbstractInsnNode start = AsmHelper.skipVirtualInsns(tcb.start, true);
+            AbstractInsnNode end = AsmHelper.skipVirtualInsns(tcb.end, false);
+            regions.add(new MarkedRegion(start, end));
+        }
 
-		return regions;
-	}
+        return regions;
+    }
 
 }

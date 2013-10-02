@@ -172,7 +172,7 @@ import ch.usi.dag.disl.util.Constants;
  * matches:
  * <li>(int, int)</li>
  * <li>(int, int, int)</li>
- * <li>every other</li>
+ * <li>every other starting with two ints</li>
  * </ul>
  * 
  * <li>(java.lang.String, java.lang.String[])</li>

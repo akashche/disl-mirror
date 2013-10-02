@@ -12,60 +12,61 @@ import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.util.AsmHelper;
 
 /**
- * <b>NOTE: This class is work in progress</b>
- * <br>
- * <br>
+ * <p>
+ * <b>note:</b> This class is work in progress
+ * 
+ * <p>
  * Marks instruction depending on ASM class type.
  */
 public class InsnNodeMarker extends AbstractInsnMarker {
 
-	protected Set<Class<? extends AbstractInsnNode>> classes;
+    protected Set<Class<? extends AbstractInsnNode>> classes;
 
-	public InsnNodeMarker(Parameter param)
-			throws MarkerException {
+    public InsnNodeMarker(Parameter param)
+            throws MarkerException {
 
-		classes = new HashSet<Class<? extends AbstractInsnNode>>();
+        classes = new HashSet<Class<? extends AbstractInsnNode>>();
 
-		// translate all instructions to opcodes
-		for (String className : param.getMultipleValues()) {
+        // translate all instructions to opcodes
+        for (String className : param.getMultipleValues()) {
 
-			try {
+            try {
 
-				Class<?> clazz = Class.forName(className);
-				classes.add(clazz.asSubclass(AbstractInsnNode.class));
-			} catch (ClassNotFoundException e) {
+                Class<?> clazz = Class.forName(className);
+                classes.add(clazz.asSubclass(AbstractInsnNode.class));
+            } catch (ClassNotFoundException e) {
 
-				throw new MarkerException("Instruction Node Class \""
-						+ className + "\" cannot be found.");
-			} catch (ClassCastException e) {
+                throw new MarkerException("Instruction Node Class \""
+                        + className + "\" cannot be found.");
+            } catch (ClassCastException e) {
 
-				throw new MarkerException("Class \"" + className
-						+ "\" is not an instruction node class.");
-			}
-		}
+                throw new MarkerException("Class \"" + className
+                        + "\" is not an instruction node class.");
+            }
+        }
 
-		if (classes.isEmpty()) {
-			throw new MarkerException(
-					"Instruction node class should be passed as a parameter.");
-		}
-	}
+        if (classes.isEmpty()) {
+            throw new MarkerException(
+                    "Instruction node class should be passed as a parameter.");
+        }
+    }
 
-	@Override
-	public List<AbstractInsnNode> markInstruction(MethodNode methodNode) {
+    @Override
+    public List<AbstractInsnNode> markInstruction(MethodNode methodNode) {
 
-		List<AbstractInsnNode> seleted = new LinkedList<AbstractInsnNode>();
+        List<AbstractInsnNode> seleted = new LinkedList<AbstractInsnNode>();
 
-		for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (methodNode.instructions)) {
+        for (AbstractInsnNode instr : AsmHelper.allInsnsFrom(methodNode.instructions)) {
 
-			for (Class<? extends AbstractInsnNode> clazz : classes) {
+            for (Class<? extends AbstractInsnNode> clazz : classes) {
 
-				if (clazz.isInstance(instr)) {
-					seleted.add(instr);
-				}
-			}
-		}
+                if (clazz.isInstance(instr)) {
+                    seleted.add(instr);
+                }
+            }
+        }
 
-		return seleted;
-	}
+        return seleted;
+    }
 
 }
