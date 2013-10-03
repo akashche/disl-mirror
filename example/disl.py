@@ -117,16 +117,6 @@ def client_parser(parser):
 		metavar="PATH",
 		help="file to save client stderr to")
 	
-	group.add_argument("-c_noexcepthandler", 
-		action="store_true",
-		default=False,	
-		help="")
-
-	group.add_argument("-c_exclusionlist", 
-		default=None,	
-		metavar="PATH",
-		help="")
-	
 	return
 
 
@@ -164,12 +154,22 @@ def server_parser(parser):
 	group.add_argument("-s_instrumented", 
 		default=None,	
 		metavar="PATH",
-		help="")
+		help="dumps instrumented classes into specified directory")
 	
 	group.add_argument("-s_uninstrumented", 
 		default=None,	
 		metavar="PATH",
-		help="")
+		help="dumps uninstrumented classes into specified directory")
+
+	group.add_argument("-s_noexcepthandler", 
+		action="store_true",
+		default=False,
+		help="does not instrument exception handler (improves performance but does not protect from errors within instrumentation)")
+
+	group.add_argument("-s_exclusionlist", 
+		default=None,
+		metavar="PATH",
+		help="path to exclusion list")
 
 	return
 	
