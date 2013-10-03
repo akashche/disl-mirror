@@ -176,6 +176,11 @@ def server_parser(parser):
 		metavar="PATH",
 		help="dumps uninstrumented classes into specified directory")
 
+	group.add_argument("-s_port", 
+		default=None,	
+		metavar="PORT",
+		help="listening network port")
+
 	return
 	
 
@@ -209,6 +214,11 @@ def evaluation_parser(parser):
 		action="store_true",
 		default=False,
 		help="enable debug output")
+
+	group.add_argument("-e_port", 
+		default=None,	
+		metavar="PORT",
+		help="listening network port")
 
 	return
 
