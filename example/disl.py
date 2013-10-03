@@ -150,16 +150,11 @@ def server_parser(parser):
 		metavar="A",
 		nargs="+",
 		help="arguments to the server application")
-	
-	group.add_argument("-s_instrumented", 
-		default=None,	
-		metavar="PATH",
-		help="dumps instrumented classes into specified directory")
-	
-	group.add_argument("-s_uninstrumented", 
-		default=None,	
-		metavar="PATH",
-		help="dumps uninstrumented classes into specified directory")
+
+	group.add_argument("-s_debug", 
+		action="store_true",
+		default=False,
+		help="enable debug output")
 
 	group.add_argument("-s_noexcepthandler", 
 		action="store_true",
@@ -170,6 +165,16 @@ def server_parser(parser):
 		default=None,
 		metavar="PATH",
 		help="path to exclusion list")
+
+	group.add_argument("-s_instrumented", 
+		default=None,	
+		metavar="PATH",
+		help="dumps instrumented classes into specified directory")
+	
+	group.add_argument("-s_uninstrumented", 
+		default=None,	
+		metavar="PATH",
+		help="dumps uninstrumented classes into specified directory")
 
 	return
 	
@@ -199,7 +204,12 @@ def evaluation_parser(parser):
 		nargs="+",
 		metavar="A", 
 		help="arguments to the evaluation server application")
-	
+
+	group.add_argument("-e_debug", 
+		action="store_true",
+		default=False,
+		help="enable debug output")
+
 	return
 
 
@@ -306,20 +316,28 @@ def parse_arguments(parser):
 	args.c_opts = flatten_all(args.c_opts)
 	args.c_app = flatten_all(args.c_app)
 	args.app = flatten_all(args.app)
-	if args.c_noexcepthandler is True:
-		args.c_opts+= ["-Ddisl.noexcepthandler"]
-	if args.c_exclusionlist is not None:
-		args.c_opts+= ["-Ddisl.exclusionList="+args.c_exclusionlist]
 
 	args.s_opts = flatten_all(args.s_opts)
 	args.s_args = flatten_all(args.s_args)
+	if args.s_debug is True:
+		args.s_opts+= ["-Ddebug=true"]
+	if args.s_port is not None:
+		args.s_opts+= ["-Ddislserver.port="+args.s_port]
+	if args.s_noexcepthandler is True:
+		args.s_opts+= ["-Ddisl.noexcepthandler"]
+	if args.s_exclusionlist is not None:
+		args.s_opts+= ["-Ddisl.exclusionList="+args.s_exclusionlist]
 	if args.s_instrumented is not None:
-		args.c_opts+= ["-Ddislserver.instrumented="+args.s_instrumented]
+		args.s_opts+= ["-Ddislserver.instrumented="+args.s_instrumented]
 	if args.s_uninstrumented is not None:
-		args.c_opts+= ["-Ddislserver.uninstrumented="+args.s_uninstrumented]
+		args.s_opts+= ["-Ddislserver.uninstrumented="+args.s_uninstrumented]
 
 	args.e_opts = flatten_all(args.e_opts)
 	args.e_args = flatten_all(args.e_args)
+	if args.e_debug is True:
+		args.e_opts+= ["-Ddebug=true"]
+	if args.e_port is not None:
+		args.e_opts+= ["-Ddislreserver.port="+args.e_port]
 
 	# supply instrumentation from positional instr if set
 	if args.instrumentation is not None and args.instr is not None:
