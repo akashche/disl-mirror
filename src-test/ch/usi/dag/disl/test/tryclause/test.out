@@ -1,8 +1,0 @@
-+++call print(false)+++
-@Before
-Without exception
-@AfterReturning
-+++call print(true)+++
-@Before
-@AfterThrowing
-Exception handler

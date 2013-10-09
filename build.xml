@@ -387,30 +387,4 @@
 			</batchtest>
 		</junit>
 	</target>
-
-	<target name="check-test-property">
-		<condition property="test.set">
-			<isset property="test.name" />
-		</condition>
-	</target>
-
-	<target name="report-missing-property" depends="check-test-property" unless="test.set">
-		<fail message="Property test.name is not set. Set it using -Dtest.name=value" />
-	</target>
-
-	<property name="test.path" value="ch/usi/dag/disl/test/${test.name}" />
-
-	<target name="package-test" depends="report-missing-property,prepare-all" description="create instrumentation package for specified test">
-		<mkdir dir="${build}" />
-		<jar jarfile="${build}/${instr.jar.name}" basedir="${bin}" includes="${test.path}/**" excludes="${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF" manifest="${src.test}/${test.path}/MANIFEST.MF">
-		</jar>
-	</target>
-
-	<!-- unsafe for missing dependencies -->
-	<target name="unsafe-package-test" description="create instrumentation package for specified test">
-		<mkdir dir="${build}" />
-		<jar jarfile="${build}/disl-instr-${test.name}.jar" basedir="${bin}" includes="${test.path}/**" excludes="${test.path}/TargetClass*.class ${test.path}/MANIFEST.MF" manifest="${src.test}/${test.path}/MANIFEST.MF">
-		</jar>
-	</target>
-
 </project>

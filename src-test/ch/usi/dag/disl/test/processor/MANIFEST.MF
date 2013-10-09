@@ -1,2 +1,0 @@
-Manifest-Version: 1.0
-DiSL-Classes: ch.usi.dag.disl.test.processor.DiSLClass:ch.usi.dag.disl.test.processor.ProcessorTest:ch.usi.dag.disl.test.processor.ProcessorTest2

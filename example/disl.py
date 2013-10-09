@@ -371,9 +371,10 @@ def parse_arguments(parser):
 ######################################################################
 def try_kill(pid_file_name):
 	try:
-		with open(pid_file_name, "r") as pid_file:
-			pid = pid_file.readline()
-			kill = Popen(["kill", pid], stdout=PIPE, shell=False)
+		with open(os.devnull, "w") as devnull:
+			with open(pid_file_name, "r") as pid_file:
+				pid = pid_file.readline()
+				kill = Popen(["kill", pid], stdout=devnull, stderr=devnull, shell=False)
 	except IOError:
 		pass
 
@@ -493,6 +494,9 @@ def run_client(args, parser):
 
 	client = run(c_cmd, args.c_out, args.c_err)	
 	client.wait()
+
+	# let server and evaluation finish
+	time.sleep(1)
 	
 	try_kill(".server.pid")
 	try_kill(".evaluation.pid")
