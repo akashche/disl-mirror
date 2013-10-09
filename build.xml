@@ -222,26 +222,26 @@
 	<!-- *** test instrumentaion package *** -->
 
 	<!-- package suite test application -->
-	<target name="package-test2-app">
-		<jar jarfile="${build.test}/disl-app-${tmp.test2.name}.jar" basedir="${bin}" includes="${tmp.test2.path}/app/**">
+	<target name="package-test-app">
+		<jar jarfile="${build.test}/disl-app-${tmp.test.name}.jar" basedir="${bin}" includes="${tmp.test.path}/app/**">
 			<manifest>
-				<attribute name="Main-Class" value="${tmp.test2.pkg}.app.TargetClass" />
+				<attribute name="Main-Class" value="${tmp.test.pkg}.app.TargetClass" />
 			</manifest>
 		</jar>
 	</target>
 
 	<!-- package suite test instrumentaton with default DiSLClass -->
-	<target name="package-test2-instr-nomanifest">
-		<jar jarfile="${build.test}/disl-instr-${tmp.test2.name}.jar" basedir="${bin}" includes="${tmp.test2.path}/instr/**" excludes="${tmp.test2.path}/instr/MANIFEST.MF">
+	<target name="package-test-instr-nomanifest">
+		<jar jarfile="${build.test}/disl-instr-${tmp.test.name}.jar" basedir="${bin}" includes="${tmp.test.path}/instr/**" excludes="${tmp.test.path}/instr/MANIFEST.MF">
 			<manifest>
-				<attribute name="DiSL-Classes" value="${tmp.test2.path}.instr.DiSLClass" />
+				<attribute name="DiSL-Classes" value="${tmp.test.path}.instr.DiSLClass" />
 			</manifest>
 		</jar>
 	</target>
 
 	<!-- package suite test instrumentaton with manifest file -->
-	<target name="package-test2-instr-manifest">
-		<jar jarfile="${build.test}/disl-instr-${tmp.test2.name}.jar" basedir="${bin}" includes="${tmp.test2.path}/instr/**" excludes="${tmp.test2.path}/instr/MANIFEST.MF" manifest="${tmp.test2.manifest}">
+	<target name="package-test-instr-manifest">
+		<jar jarfile="${build.test}/disl-instr-${tmp.test.name}.jar" basedir="${bin}" includes="${tmp.test.path}/instr/**" excludes="${tmp.test.path}/instr/MANIFEST.MF" manifest="${tmp.test.manifest}">
 		</jar>
 	</target>
 
@@ -251,7 +251,7 @@
 		currently used ant-contrib instead
 		javascript requires js.jar and bsf.jar in lower versions of jdk and ant
 				
-	<scriptdef name="package-test2-script" language="javascript">
+	<scriptdef name="package-test-script" language="javascript">
 		<element name="dirset" type="dirset" />
 		<![CDATA[
 			dirsets = elements.get("dirset");
@@ -259,53 +259,53 @@
 				var it = dirsets.get(i).iterator();
 				while (it.hasNext()) {
 					var name = it.next().getName();
-					var path = "ch/usi/dag/disl/test2/suite/" + name;
-					var pkg = "ch.usi.dag.disl.test2.suite." + name;
+					var path = "ch/usi/dag/disl/test/suite/" + name;
+					var pkg = "ch.usi.dag.disl.test.suite." + name;
 					var manifest = self.project.getProperty("src.test") + "/" + path + "/instr/MANIFEST.MF";
 				
-					self.project.setProperty( "tmp.test2.name", name); 
-					self.project.setProperty( "tmp.test2.path", path); 
-					self.project.setProperty( "tmp.test2.pkg", pkg); 
-					self.project.setProperty( "tmp.test2.manifest", manifest); 
+					self.project.setProperty( "tmp.test.name", name); 
+					self.project.setProperty( "tmp.test.path", path); 
+					self.project.setProperty( "tmp.test.pkg", pkg); 
+					self.project.setProperty( "tmp.test.manifest", manifest); 
 
-					self.project.executeTarget( "package-test2-app");
+					self.project.executeTarget( "package-test-app");
 					
 					if (new java.io.File( manifest).exists()) {
-						self.project.executeTarget( "package-test2-instr-manifest");
+						self.project.executeTarget( "package-test-instr-manifest");
 					} else {
-						self.project.executeTarget( "package-test2-instr-nomanifest");
+						self.project.executeTarget( "package-test-instr-nomanifest");
 					}
 				}
 			}
 		]]>
 	</scriptdef> 
 	
-	<target name="package-test2">
+	<target name="package-test">
 		<mkdir dir="${build.test}"/>
-		<package-test2-script>
-			<dirset dir="src-test/ch/usi/dag/disl/test2/suite/">
+		<package-test-script>
+			<dirset dir="src-test/ch/usi/dag/disl/test/suite/">
 				<include name="*" />
 			</dirset>
-		</package-test2-script>
+		</package-test-script>
 	</target>
 	-->
 
 	<!-- build single suite test -->
-	<target name="package-test2-single">
-		<antcall target="package-test2-app" />
+	<target name="package-test-single">
+		<antcall target="package-test-app" />
 		<if>
-			<available file="${tmp.test2.manifest}" />
+			<available file="${tmp.test.manifest}" />
 			<then>
-				<antcall target="package-test2-instr-manifest" />
+				<antcall target="package-test-instr-manifest" />
 			</then>
 			<else>
-				<antcall target="package-test2-instr-nomanifest" />
+				<antcall target="package-test-instr-nomanifest" />
 			</else>
 		</if>
 	</target>
 
 	<!-- build jars for every directory in suite tests -->
-	<target name="package-test2">
+	<target name="package-test">
 		<taskdef resource="${ant-contrib.resource}">
 			<classpath>
 				<pathelement location="${ant-contrib.path}" />
@@ -316,24 +316,24 @@
 
 		<for param="file">
 			<path>
-				<dirset dir="src-test/ch/usi/dag/disl/test2/suite/">
+				<dirset dir="src-test/ch/usi/dag/disl/test/suite/">
 					<include name="*" />
 				</dirset>
 			</path>
 			<sequential>
 				<propertyregex override="yes" property="basename" input="@{file}" regexp="(.*)/(.*)" replace="\2" />
-				<antcall target="package-test2-single">
-					<param name="tmp.test2.name" value="${basename}" />
-					<param name="tmp.test2.path" value="ch/usi/dag/disl/test2/suite/${basename}" />
-					<param name="tmp.test2.pkg" value="ch.usi.dag.disl.test2.suite.${basename}" />
-					<param name="tmp.test2.manifest" value="${src.test}/ch/usi/dag/disl/test2/suite/${basename}/instr/MANIFEST.MF" />
+				<antcall target="package-test-single">
+					<param name="tmp.test.name" value="${basename}" />
+					<param name="tmp.test.path" value="ch/usi/dag/disl/test/suite/${basename}" />
+					<param name="tmp.test.pkg" value="ch.usi.dag.disl.test.suite.${basename}" />
+					<param name="tmp.test.manifest" value="${src.test}/ch/usi/dag/disl/test/suite/${basename}/instr/MANIFEST.MF" />
 				</antcall>
 			</sequential>
 		</for>
 	</target>
 
 	<!-- copy resource files needed to run the tests from source to bin directory -->
-	<target name="copy-test2-resource">
+	<target name="copy-test-resource">
 		<copy todir="${bin}">
 			<fileset dir="${src.test}">
 				<include name="**/*.resource" />
@@ -341,10 +341,10 @@
 		</copy>
 	</target>
 
-	<target name="prepare-test2" depends="prepare-all, copy-test2-resource, package-test2" />
+	<target name="prepare-test" depends="prepare-all, copy-test-resource, package-test" />
 
 	<!-- run all junit and junit wrapped suite tests -->
-	<target name="test2" depends="prepare-test2">
+	<target name="test" depends="prepare-test">
 		<junit haltonfailure="no" haltonerror="no" failureproperty="junit.failure">
 			<classpath refid="classpath" />
 			<formatter type="brief" usefile="false" />
@@ -354,25 +354,25 @@
 			</syspropertyset>
 			<batchtest fork="yes">
 				<fileset dir="${src.test}">
-					<include name="ch/usi/dag/disl/test2/junit/*Test.java" />
-					<include name="ch/usi/dag/disl/test2/suite/*/junit/*Test.java" />
+					<include name="ch/usi/dag/disl/test/junit/*Test.java" />
+					<include name="ch/usi/dag/disl/test/suite/*/junit/*Test.java" />
 				</fileset>
 			</batchtest>
 		</junit>
 	</target>
 
-	<target name="report-test2-name" depends="check-test2-name" unless="test2.name.set">
-		<fail message="Property test2.name is not set. Set it using -Dtest2.name=value" />
+	<target name="report-test-name" depends="check-test-name" unless="test.name.set">
+		<fail message="Property test.name is not set. Set it using -Dtest.name=value" />
 	</target>
 
-	<target name="check-test2-name">
-		<condition property="test2.name.set">
-			<isset property="test2.name" />
+	<target name="check-test-name">
+		<condition property="test.name.set">
+			<isset property="test.name" />
 		</condition>
 	</target>
 
 	<!-- run single suite test -->
-	<target name="suite-test2" depends="prepare-test2, report-test2-name">
+	<target name="suite-test" depends="prepare-test, report-test-name">
 		<junit haltonfailure="no" haltonerror="no" failureproperty="junit.failure">
 			<classpath refid="classpath" />
 			<formatter type="brief" usefile="false" />
@@ -382,7 +382,7 @@
 			</syspropertyset>
 			<batchtest fork="yes">
 				<fileset dir="${src.test}">
-					<include name="*ch/usi/dag/disl/test2/suite/${test2.name}/junit/*Test.java" />
+					<include name="*ch/usi/dag/disl/test/suite/${test.name}/junit/*Test.java" />
 				</fileset>
 			</batchtest>
 		</junit>
