@@ -2,22 +2,22 @@ Overview
 ========
 
 Tests are implemented using JUnit. There are classic unit tests that are
-located in the ch.usi.dag.disl.test2.junit package and complex tests in the
-ch.usi.dag.disl.test2.suite package that invoke all parts of the framework
+located in the ch.usi.dag.disl.test.junit package and complex tests in the
+ch.usi.dag.disl.test.suite package that invoke all parts of the framework
 (client, server, ...) and verify computed results.
 
 All tests are performed calling
-- ant test2
+- ant test
 
 To use the for debuging purpose during development a single suite test (for
 example "after" test) can be invoked calling
-- ant suite-test2 -Dtest2.name=after
+- ant suite-test -Dtest.name=after
 
 Parameters specified to ant at command line starting with "-Ddisl." are passed
 to the test. For example to show tests output specify 
 - -Ddisl.test.verbose=true
 
-When built with "ant prepare-test2" tests can be also run directly. They are
+When built with "ant prepare-test" tests can be also run directly. They are
 packed in the "build-test" directory.
 
 
@@ -27,7 +27,7 @@ Implementation
 Implementation is a bit tricky in few aspects. 
 
 Firstly, building of suite test apps and instrumentations is handled by a
-scripted target that lists all directories in a "ch.usi.dag.disl.test2.suite"
+scripted target that lists all directories in a "ch.usi.dag.disl.test.suite"
 package and one by one "app" and "instr" package are jared.
 
 Secondly, when running the instances of client and server using Process API
