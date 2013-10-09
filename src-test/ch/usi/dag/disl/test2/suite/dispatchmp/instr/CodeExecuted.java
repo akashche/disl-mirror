@@ -9,43 +9,45 @@ import ch.usi.dag.dislreserver.shadow.ShadowObject;
 public class CodeExecuted extends RemoteAnalysis {
 
 	long startTime = 0;
-	
+
 	AtomicLong totalIntEvents = new AtomicLong();
 	AtomicLong totalObjEvents = new AtomicLong();
 	AtomicLong totalFreeEvents = new AtomicLong();
-	
-	public void intEvent(int number) {
-		
+
+	public void intEvent(final int number) {
+
 		if(startTime == 0) {
 			startTime = System.nanoTime();
 		}
-		
+
 		if(totalIntEvents.incrementAndGet() % 1000000 == 0) {
 			System.out.println("So far received "
 					+ totalIntEvents + " events...");
 		}
 	}
-	
-	public void objectEvent(ShadowObject o) {
+
+	public void objectEvent(final ShadowObject o) {
 
 		totalObjEvents.incrementAndGet();
 	}
-	
-	public void objectFree(ShadowObject netRef) {
+
+	@Override
+    public void objectFree(final ShadowObject netRef) {
 		totalFreeEvents.incrementAndGet();
 	}
-	
-	public void atExit() {
-		
-		System.out.println("Total transport time is "
-				+ ((System.nanoTime() - startTime) / 1000000) + " ms");
-		
+
+	@Override
+    public void atExit() {
+
+		//System.out.println("Total transport time is "
+		//		+ ((System.nanoTime() - startTime) / 1000000) + " ms");
+
 		System.out.println("Total number of int events: "
 				+ totalIntEvents);
-		
+
 		System.out.println("Total number of object events: "
 				+ totalObjEvents);
-		
+
 		System.out.println("Total number of free events: "
 				+ totalFreeEvents);
 	}

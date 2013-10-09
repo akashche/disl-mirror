@@ -84,6 +84,14 @@ values of local variables, object instance in member methods, method arguments
 or current exceptions.
 
 
+--------------------------------------------------------------------------------
+-- dispatch
+--------------------------------------------------------------------------------
+This example shows how to evaluate instrumented code on evaluation jvm. For
+more details try running this example directly using disl.py and supplying
+'c_out' and 'e_out' options.
+
+
 ================================================================================
 = HOW TO RUN THE EXAMPLE
 ================================================================================

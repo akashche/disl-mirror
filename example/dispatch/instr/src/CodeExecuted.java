@@ -1,5 +1,3 @@
-package ch.usi.dag.disl.test2.suite.dispatch.instr;
-
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
 import ch.usi.dag.dislreserver.shadow.ShadowClass;
 import ch.usi.dag.dislreserver.shadow.ShadowObject;

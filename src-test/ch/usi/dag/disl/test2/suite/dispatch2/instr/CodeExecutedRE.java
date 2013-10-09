@@ -10,26 +10,26 @@ import ch.usi.dag.dislre.REDispatch;
 public class CodeExecutedRE {
 
 	private static short ieId = REDispatch.registerMethod(
-			"ch.usi.dag.disl.test.dispatch2.CodeExecuted.intEvent");
-	
+			"ch.usi.dag.disl.test2.suite.dispatch2.instr.CodeExecuted.intEvent");
+
 	private static short oeId = REDispatch.registerMethod(
-			"ch.usi.dag.disl.test.dispatch2.CodeExecuted.objectEvent");
-	
-	public static void intEvent(int num) {
-		
+			"ch.usi.dag.disl.test2.suite.dispatch2.instr.CodeExecuted.objectEvent");
+
+	public static void intEvent(final int num) {
+
 		REDispatch.analysisStart(ieId);
-		
+
 		REDispatch.sendInt(num);
-		
+
 		REDispatch.analysisEnd();
 	}
-	
-	public static void objectEvent(Object o) {
-		
+
+	public static void objectEvent(final Object o) {
+
 		REDispatch.analysisStart(oeId);
-		
+
 		REDispatch.sendObject(o);
-		
+
 		REDispatch.analysisEnd();
 	}
 }

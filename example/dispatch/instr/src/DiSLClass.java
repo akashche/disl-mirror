@@ -1,5 +1,3 @@
-package ch.usi.dag.disl.test2.suite.dispatch.instr;
-
 import java.util.LinkedList;
 
 import ch.usi.dag.disl.annotation.After;
@@ -8,20 +6,16 @@ import ch.usi.dag.disl.marker.BodyMarker;
 
 public class DiSLClass {
 
-	@After(marker = BasicBlockMarker.class, scope = "TargetClass.*")
+	@After(marker = BasicBlockMarker.class, scope = "Main.*")
 	public static void invokedInstr(final CodeLengthSC clsc) {
 
 		CodeExecutedRE.bytecodesExecuted(clsc.codeSize());
 	}
 
-	@After(marker = BodyMarker.class, scope = "TargetClass.main")
+	@After(marker = BodyMarker.class, scope = "Main.main")
 	public static void testing() {
 
         CodeExecutedRE.testingBasic(true, (byte) 125, 's', (short) 50000, 100000, 10000000000L);
-
-        // FIXME
-		//CodeExecutedRE.testingBasic(true, (byte) 125, 's', (short) 50000,
-		//		100000, 10000000000L, 1.5F, 2.5);
 
 		CodeExecutedRE.testingAdvanced("Corect transfer of String", "test", Object.class, Thread.currentThread());
 

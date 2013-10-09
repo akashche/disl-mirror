@@ -1,5 +1,6 @@
 <project name="disl-example" default="run" basedir=".">
 	<target name="clean">
+		<ant antfile="dispatch/build.xml" target="clean" useNativeBasedir="true" />
 		<ant antfile="dynamic/build.xml" target="clean" useNativeBasedir="true" />
 		<ant antfile="guard/build.xml" target="clean" useNativeBasedir="true" />
 		<ant antfile="marker/build.xml" target="clean" useNativeBasedir="true" />
@@ -9,6 +10,7 @@
 	</target>
 	
 	<target name="run">
+		<ant antfile="dispatch/build.xml" target="run" useNativeBasedir="true" />
 		<ant antfile="dynamic/build.xml" target="run" useNativeBasedir="true" />
 		<ant antfile="guard/build.xml" target="run" useNativeBasedir="true" />
 		<ant antfile="marker/build.xml" target="run" useNativeBasedir="true" />
