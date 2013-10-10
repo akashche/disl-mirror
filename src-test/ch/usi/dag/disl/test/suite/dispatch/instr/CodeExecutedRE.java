@@ -34,11 +34,8 @@ public class CodeExecutedRE {
 		REDispatch.analysisEnd();
 	}
 
-    // FIXME
-	//public static void testingBasic(final boolean b, final byte by, final char c, final short s, final int i,
-	//		final long l, final float f, final double d) {
 	public static void testingBasic(final boolean b, final byte by, final char c, final short s, final int i,
-          final long l) {
+			final long l, final float f, final double d) {
 		REDispatch.analysisStart(tbId);
 
 		REDispatch.sendBoolean(b);
@@ -47,10 +44,8 @@ public class CodeExecutedRE {
 		REDispatch.sendShort(s);
 		REDispatch.sendInt(i);
 		REDispatch.sendLong(l);
-	    // FIXME
-		//REDispatch.sendFloat(f);
-	    // FIXME
-		//REDispatch.sendDouble(d);
+		REDispatch.sendFloat(f);
+		REDispatch.sendDouble(d);
 
 		REDispatch.analysisEnd();
 	}

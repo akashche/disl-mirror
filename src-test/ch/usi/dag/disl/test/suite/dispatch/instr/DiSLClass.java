@@ -17,11 +17,8 @@ public class DiSLClass {
 	@After(marker = BodyMarker.class, scope = "TargetClass.main")
 	public static void testing() {
 
-        CodeExecutedRE.testingBasic(true, (byte) 125, 's', (short) 50000, 100000, 10000000000L);
-
-        // FIXME
-		//CodeExecutedRE.testingBasic(true, (byte) 125, 's', (short) 50000,
-		//		100000, 10000000000L, 1.5F, 2.5);
+		CodeExecutedRE.testingBasic(true, (byte) 125, 's', (short) 50000,
+				100000, 10000000000L, 1.5F, 2.5);
 
 		CodeExecutedRE.testingAdvanced("Corect transfer of String", "test", Object.class, Thread.currentThread());
 

@@ -1,7 +1,5 @@
 package ch.usi.dag.disl.test.suite.after.junit;
 
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,9 +15,6 @@ public class AfterTest {
     @Test
     public void test()
             throws Exception {
-        // FIXME
-        fail("FIXME");
-        // see app TargetClass
 
         r.start();
         r.waitFor();

@@ -8,3 +8,4 @@ app: TargetClass.print(..) - try:begin
 app: TargetClass.print(..) - finally
 disl: after
 disl: afterThrowning
+app: TargetClass.main(..) - catch

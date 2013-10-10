@@ -1256,16 +1256,17 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendLong
 	pack_long(tld_get()->analysis_buff, to_send);
 }
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloatAsInt
-(JNIEnv * jni_env, jclass this_class, jint to_send) {
 
-	pack_int(tld_get()->analysis_buff, to_send);
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendFloat
+(JNIEnv * jni_env, jclass this_class, jfloat to_send) {
+
+	pack_float(tld_get()->analysis_buff, to_send);
 }
 
-JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong
-(JNIEnv * jni_env, jclass this_class, jlong to_send) {
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendDouble
+(JNIEnv * jni_env, jclass this_class, jdouble to_send) {
 
-	pack_long(tld_get()->analysis_buff, to_send);
+	pack_double(tld_get()->analysis_buff, to_send);
 }
 
 JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObject
@@ -1296,12 +1297,11 @@ static JNINativeMethod redispatchMethods[] = {
     {"sendShort",          "(S)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendShort},
     {"sendInt",            "(I)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendInt},
     {"sendLong",           "(J)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendLong},
+    {"sendFloat",          "(F)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendFloat},
+    {"sendDouble",         "(D)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendDouble},
     {"sendObject",         "(Ljava/lang/Object;)V", (void *)&Java_ch_usi_dag_dislre_REDispatch_sendObject},
     {"sendObjectPlusData", "(Ljava/lang/Object;)V", (void *)&Java_ch_usi_dag_dislre_REDispatch_sendObjectPlusData},
 };
-
-    //{"sendFloatAsInt",     "(I)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendFloatAsInt},
-    //{"sendDoubleAsLong",   "(J)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendDoubleAsLong},
 
 // ******************* CLASS LOAD callback *******************
 

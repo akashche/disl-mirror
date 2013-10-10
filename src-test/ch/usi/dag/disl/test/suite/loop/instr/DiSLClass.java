@@ -7,8 +7,8 @@ import ch.usi.dag.disl.staticcontext.LoopStaticContext;
 public class DiSLClass {
 
 	@Before(marker = BasicBlockMarker.class, scope = "TargetClass.print()", order = 0)
-	public static void precondition(LoopStaticContext lsc) {
-		System.out.println("disl: enter basic block ! index: " + lsc.getBBindex()
-				+ " loopstart? " + (lsc.isFirstOfLoop() ? "true" : "false"));
+	public static void precondition(final LoopStaticContext lsc) {
+		System.out.println("disl: Entering basic block."
+				+ " Is this a loopstart? " + (lsc.isFirstOfLoop() ? "true" : "false"));
 	}
 }

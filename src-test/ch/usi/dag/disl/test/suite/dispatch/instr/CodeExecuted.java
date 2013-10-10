@@ -15,10 +15,8 @@ public class CodeExecuted extends RemoteAnalysis {
 		totalExecutedBytecodes += count;
 	}
 
-	// FIXME
-	//public void testingBasic(final boolean b, final byte by, final char c, final short s, final int i, final long l,
-	//		final float f, final double d) {
-	public void testingBasic(final boolean b, final byte by, final char c, final short s, final int i, final long l) {
+	public void testingBasic(final boolean b, final byte by, final char c, final short s, final int i, final long l,
+			final float f, final double d) {
 		if(b != true) {
 			throw new RuntimeException("Incorect transfer of boolean");
 		}
@@ -43,15 +41,13 @@ public class CodeExecuted extends RemoteAnalysis {
 			throw new RuntimeException("Incorect transfer of long");
 		}
 
-	    // FIXME
-		//if(f != 1.5F) {
-		//	throw new RuntimeException("Incorect transfer of float");
-		//}
+		if(f != 1.5F) {
+			throw new RuntimeException("Incorect transfer of float");
+		}
 
-	    // FIXME
-		//if(d != 2.5) {
-		//	throw new RuntimeException("Incorect transfer of double");
-		//}
+		if(d != 2.5) {
+			throw new RuntimeException("Incorect transfer of double");
+		}
 	}
 
 	public static void testingAdvanced(final ShadowObject s, final ShadowObject o, final ShadowObject c, final ShadowObject t) {

@@ -1,7 +1,5 @@
 package ch.usi.dag.disl.test.suite.loop.junit;
 
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,11 +15,6 @@ public class LoopTest {
 	@Test
 	public void test()
 			throws Exception {
-		fail("FIXME - nondeterministic");
-		// FIXME
-		// see client.out.1.resource and client.out.2.resource
-		// test might nondeterministically result in both of them
-
 		r.start();
 		r.waitFor();
 		r.assertIsFinished();

@@ -1,7 +1,5 @@
 package ch.usi.dag.disl.test.suite.dispatch.junit;
 
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,9 +27,6 @@ public class DispatchTest {
         r.assertIsSuccessfull ();
         r.assertEvaluationOut ("evaluation.out.resource");
         r.assertRestOutErrNull ();
-
-        // FIXME
-        fail("FIXME - sendFloat is broken");
     }
 
 
