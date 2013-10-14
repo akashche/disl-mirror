@@ -7,30 +7,31 @@ import org.junit.runners.JUnit4;
 
 import ch.usi.dag.disl.test.utils.ClientServerRunner;
 
-@RunWith(JUnit4.class)
+
+@RunWith (JUnit4.class)
 public class AfterTest {
 
-    ClientServerRunner r = new ClientServerRunner(this.getClass());
+    ClientServerRunner r = new ClientServerRunner (this.getClass ());
+
 
     @Test
-    public void test()
-            throws Exception {
+    public void test ()
+    throws Exception {
 
-        r.start();
-        r.waitFor();
-        r.assertIsFinished();
-        if (Boolean.parseBoolean(System.getProperty("disl.test.verbose"))) {
-            r.destroyIfRunningAndFlushOutputs();
+        r.start ();
+        r.waitFor ();
+        r.assertIsFinished ();
+        if (Boolean.parseBoolean (System.getProperty ("disl.test.verbose"))) {
+            r.destroyIfRunningAndFlushOutputs ();
         }
-        // r.assertIsSuccessfull();
-        r.assertClientOut("client.out.resource");
-        // r.assertClientErrNull();
-        r.assertServerOutNull();
-        r.assertServerErrNull();
+        r.assertIsSuccessfull ();
+        r.assertClientOut ("client.out.resource");
+        r.assertRestOutErrNull ();
     }
 
+
     @After
-    public void cleanup() {
-        r.destroy();
+    public void cleanup () {
+        r.destroy ();
     }
 }

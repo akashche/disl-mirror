@@ -1,7 +1,5 @@
 package ch.usi.dag.disl.test.suite.scope.junit;
 
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,10 +17,6 @@ public class ScopeTest {
     @Test
     public void test ()
     throws Exception {
-        // FIXME
-        fail ("FIXME - Java 7 and later");
-        // jvm crash
-
         r.start ();
         r.waitFor ();
         r.assertIsFinished ();
@@ -30,7 +24,7 @@ public class ScopeTest {
             r.destroyIfRunningAndFlushOutputs ();
         }
         r.assertIsSuccessfull ();
-        // r.assertClientOut("client.out.resource");
+        r.assertClientOut("client.out.resource");
         r.assertRestOutErrNull ();
     }
 
