@@ -71,6 +71,10 @@ We describe the main features of DiSL by gradually developing the instrumentatio
 The same instrumentation is also available on the DiSL home page\footnote{\url{http://disl.ow2.org}} among the examples.
 For step-by-step instructions on how to run the examples, please refer to Appendix~\ref{sec:Setup}.
 
+While running DiSL, you can encounter issues like crashes or assertion violations in JVM.
+This is not directly problem of DiSL but rather limitation of JVM itself.
+For more information, please refer to Appendix~\ref{sec:Crashes}.
+
 
 \subsection{Method Execution Time Profiler}
 
@@ -591,10 +595,9 @@ The initial version of this tutorial has been based on a paper by Lukáš Marek,
 \section{Running DiSL}\label{sec:Setup}
 
 This appendix provides a step-by-step guide to download, compile, and run the DiSL framework.
-The current release of DiSL is tested with Java 1.6 and Linux, for which we provide scripts to compile and run the framework.
-Compatibility with other platforms will be added in future releases.
-To build DiSL and the examples, Java 1.6 JDK must be installed on the system,
-including rudimentary tools such as \code{ant}, \code{gcc}, and \code{make}.
+The current release of DiSL is tested with Java 7 and Linux, for which we provide scripts to compile and run the framework.
+To build DiSL and the examples, Java 7 JDK must be installed on the system,
+including rudimentary tools such as \code{ant}, \code{gcc}, \code{make} and \code{python}.
 
 % The section describes step-by-step guide how to invoke analysed (instrumented) application under DiSL.
 % The guide uses the basic example included directly with DiSL sources, but it is recommended to use similar structure and starting scripts in all DiSL projects.
@@ -604,15 +607,12 @@ In particular, DiSL releases are available at \url{http://forge.ow2.org/projects
 After downloading and extracting the latest release candidate of DiSL, the main directory contains a \code{README} file that describes how to compile the framework and access additional documentation.\footnote{\url{http://disl.projects.ow2.org/xwiki/bin/view/Main/Doc/}}
 
 \medskip
-A very simple example of a DiSL instrumentation can be found in the \code{example} directory.
-In this example the observed program (i.e., \code{example/app/src/Main.java}) prints a hello-world message, while the instrumentation (i.e., \code{example/instr/src/DiSLClass.java}) inlines the code to print a message at the beginning and at the end of the main method body.
+A very simple example of a DiSL instrumentation can be found in the \code{example/smoke} directory.
+In this example the observed program (i.e., \code{example/smoke/app/src/Main.java}) prints a hello-world message, while the instrumentation (i.e., \code{example/smoke/instr/src/DiSLClass.java}) inlines the code to print a message at the beginning and at the end of the main method body.
 
 Listing~\ref{lst:example-commands} shows the sequence of commands needed to compile the DiSL framework and to run the example.
 In line~\ref{src:compile1}, we compile the DiSL framework.
-Then, in lines~\ref{src:compile2} and~\ref{src:compile3} we compile the example by invoking \code{ant} from within the \code{example/app} and \code{example/instr} directories.
-Line~\ref{src:run1} runs the example program without instrumentation.
-To run the program with the instrumentation, we use the \code{runApp.sh} script in the \code{example} directory, as illustrated in lines~\ref{src:run2} and~\ref{src:run3}.
-The script accepts at least two parameters: the first is the instrumentation jar~file, while the others are the command line arguments that start the analysed Java application.
+Line~\ref{src:run} runs the example program.
 
 \begin{lstlisting}[
 caption={Compiling the framework and running the included DiSL example.},
@@ -620,14 +620,8 @@ label={lst:example-commands},
 language=c,numbers=left,escapeinside={@}{@},
 ]
 [disl]@\$@ ant @\label{src:compile1}@
-[disl]@\$@ cd example/app @\label{src:chdir1}@
-[disl/example/app]@\$@ ant @\label{src:compile2}@
-[disl/example/app]@\$@ cd ../instr @\label{src:chdir2}@
-[disl/example/instr]@\$@ ant @\label{src:compile3}@
-[disl/example/instr]@\$@ cd .. @\label{src:chdir3}@
-[disl/example]@\$@ java -jar app/build/example-app.jar @\label{src:run1}@
-[disl/example]@\$@ ./runApp.sh instr/build/disl-instr.jar \ @\label{src:run2}@
--jar app/build/example-app.jar @\label{src:run3}@
+[disl]@\$@ cd example/app/smoke @\label{src:chdir1}@
+[disl/example/app/smoke]@\$@ ant run @\label{src:run}@
 \end{lstlisting}
 
 
@@ -647,7 +641,7 @@ Instrumentation: After method main @\label{src:instr2}@
 
 
 \medskip
-It is possible to use the \code{runApp.sh} script with user-defined instrumentations, provided the following rules are adhered to:
+It is possible to use the \code{disl.py} script to invoke DiSL with user-defined instrumentations, provided the following rules are adhered to:
 \begin{itemize}
 \item All the instrumentation and the analysis classes must be packed into a single jar~file, including any external libraries used by the analysis.
 Such libraries can be added to the jar~file using, for example, the \code{jarjar}\footnote{\url{http://code.google.com/p/jarjar/}} tool.
@@ -655,6 +649,8 @@ Such libraries can be added to the jar~file using, for example, the \code{jarjar
 \item The \code{MANIFEST.MF} file in the \code{META-INF} directory of the jar~file must list all the DiSL classes used for the instrumentation; Listing~\ref{lst:example-manifest} shows the manifest file of the included example.
 In this case, the instrumentation consists of a single class (i.e., \code{DiSLClass}) that can be found in the default package.
 \end{itemize}
+
+Run \code{disl.py -h} for info how to use the script and to list all available parameters.
 
 \begin{lstlisting}[
 caption={Manifest file of the included DiSL example.},
@@ -679,5 +675,76 @@ language=bash,escapeinside={@}{@},
 [disl/examples]@\$@ ./runExample.sh \
 2.1-Method_Execution_Time_Profiler-Figure_1
 \end{lstlisting}
+
+\newpage
+
+\section{JVM Crashes}\label{sec:Crashes}
+
+DiSL is designed to instrument application together with whole Java Class Library.
+It uses custom java agent implemented in C to intercept loading of every class.
+A class is instrumented before it is loaded by the JVM, thus the application always uses instrumented version of the class.
+Thanks to such a mechanism, DiSL is able to instrument even core classes like java.lang.Object.
+This however has unfortunate consequences.
+
+Current versions of Oracle JVM are not able to handle bigger modifications to classes loaded during the initial stage of the JVM startup.
+Sadly, instead of producing some meaningful error message, the JVM crashes instantly.
+
+The solution is to ether modify the instrumentation or exclude from instrumentation a class (method) that caused the problem.
+As pointing to the specific class often requires a lot of effort, we recommend to exclude all the core classes during development and seek the solution during testing (deployment).
+
+Here, we describe possible solutions for the crashing problem.
+
+\subsection{Exclusion using scopes}
+
+First method is to instrument only a part of an application.
+This is possible using scope parameter of an annotation.
+
+\begin{lstlisting}[
+caption={Instrumenting only part of an application using scope},
+label={lst:cscope},
+language=java,escapeinside={@}{@},
+]
+@Before(marker=BodyMarker.class, scope="Main.*")
+\end{lstlisting}
+
+Scope in Listing~\ref{lst:cscope} restricts instrumentation only to all methods an a Main class (in any package).
+The Scope ensures that none of the bootstrap classes is instrumented which resolves the problem.
+
+\subsection{Exclusion using exclusion lists}
+
+
+Another option is to use exclusion list.
+Exclusion list contains set of classes excluded from instrumentation.
+Passing of exclusion list to the instrumentation is done via \code{-s\_exclusionlist} parameter of the \code{disl.py} startup script.
+
+Listing~\ref{lst:clist} enumerates all expression used to exclude most of the classes from Java class library.
+It is recommended, that during the development, the exclusion list should include classes that are not testing the core functionality and refine it to the level of exclusion of a particular methods during deployment.
+
+\begin{lstlisting}[
+caption={Exclusion list excluding most of the classes of Java Class Library},
+label={lst:clist},
+language=bash,escapeinside={@}{@},
+]
+# RECOMMENDED TO BE EXCLUDED
+sun.instrument.*.*
+java.lang.Object.*
+java.lang.Thread.*
+ch.usi.dag.disl.*.*
+
+# EXCLUDES MOST OF THE JDK CLASSES
+org.jcp.*
+org.omg.*
+org.xml.*
+org.ietf.*
+java.*.*
+javax.*.*
+com.sun.*
+com.apple.*
+sun.*.*
+sunx.*
+\end{lstlisting}
+
+Note that expressions in the exclusion list is using the same expression language as the Scope pattern.
+Precise description of the scoping language is present in Javadoc (see ScopeImpl class).
 
 \end{document}

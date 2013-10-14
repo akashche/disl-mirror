@@ -8,11 +8,11 @@ public class DiSLClass {
 	@Before(marker = BodyMarker.class, scope = "Main.main")
 	public static void beforemain() {
 
-		System.out.println("Before main()");
+		System.out.println("Instrumentation: Before method main");
 	}
 
 	@After(marker = BodyMarker.class, scope = "Main.main")
 	public static void aftermain() {
-		System.out.println("After main()");
+		System.out.println("Instrumentation: After method main");
 	}
 }
