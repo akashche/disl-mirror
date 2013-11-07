@@ -106,8 +106,16 @@ public class ClientServerRunner {
 
     private void writeFile (final String filename, final String str)
     throws FileNotFoundException {
-        try (PrintWriter out = new PrintWriter (filename)) {
+
+        PrintWriter out = null;
+        try {
+            out = new PrintWriter (filename);
             out.print (str);
+        }
+        finally {
+            if(out != null) {
+                out.close ();
+            }
         }
     }
 
@@ -156,8 +164,12 @@ public class ClientServerRunner {
 
     private String getResource (final String filename)
     throws IOException {
-        try (BufferedReader reader = new BufferedReader (
-            new InputStreamReader (this.c.getResourceAsStream (filename), "UTF-8"));) {
+
+        BufferedReader reader = null;
+        try {
+
+            reader = new BufferedReader (
+                new InputStreamReader (this.c.getResourceAsStream (filename), "UTF-8"));
 
             final StringBuffer buffer = new StringBuffer ();
             for (int c = reader.read (); c != -1; c = reader.read ()) {
@@ -165,6 +177,10 @@ public class ClientServerRunner {
             }
 
             return buffer.toString ();
+        } finally {
+            if(reader != null) {
+                reader.close ();
+            }
         }
     }
 
