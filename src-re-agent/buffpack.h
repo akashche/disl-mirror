@@ -15,10 +15,10 @@
 #include <endian.h>
 #endif
 
-// GCC has known bug where it does not work always correctly
-#ifndef __STDC_IEC_559__
-#error "Requires IEEE 754 floating point!"
-#endif
+// Disabled check to make it compile under OS X with clang/LLVM.
+//#ifndef __STDC_IEC_559__
+//#error "Requires IEEE 754 floating point!"
+//#endif
 
 #include "../src-agent-c/jvmtihelper.h"
 

@@ -11,13 +11,17 @@ SOURCES=dislreagent.c
 
 # Object files needed to create library
 OBJECTS=$(SOURCES:%.c=%.o)
+
 # Library name and options needed to build it
 UNAME := $(shell uname)
 ifeq ($(UNAME), Linux)
 LIBRARY=lib$(LIBNAME).so
-endif
-ifeq ($(UNAME), Darwin)
+JNI_OS=linux
+else ifeq ($(UNAME), Darwin)
 LIBRARY=lib$(LIBNAME).jnilib
+JNI_OS=darwin
+else
+$(error error: unsupported operating system: $(UNAME))
 endif
 
 
@@ -31,7 +35,7 @@ COMMON_FLAGS+= -W -Wall -Wextra -O3 -Wno-unused-parameter -lpthread
 
 CFLAGS += $(COMMON_FLAGS)
 
-CFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+CFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(JNI_OS)
 
 # add debugging output
 ifneq ($(DEBUG),)
