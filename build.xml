@@ -189,7 +189,8 @@
 
 	<property name="dist.executables" value="
 		**/find.sh,
-		**/find.bat" />
+		**/find.bat,
+		**/disl.py" />
 
 	<property name="dist.excludes" value="
 		${bin}/**,
