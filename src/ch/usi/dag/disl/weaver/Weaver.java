@@ -29,290 +29,290 @@ import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.AsmHelper;
 
-// The weaver instruments byte-codes into java class. 
+// The weaver instruments byte-codes into java class.
 public class Weaver {
 
-	/**
-	 * Transforms static fields to synthetic local variables.
-	 * <p>
-	 * <b>Note:</b> This methods automatically updates the
-	 * {@link MethodNode#maxLocals maxLocals} field in the given
-	 * {@link MethodNode}.
-	 */
-	private static void static2Local (
-		final MethodNode methodNode, 
-		final List<SyntheticLocalVar> syntheticLocalVars
-	) {
-		final InsnList instructions = methodNode.instructions;
-		final AbstractInsnNode first = instructions.getFirst ();
+    /**
+     * Transforms static fields to synthetic local variables.
+     * <p>
+     * <b>Note:</b> This methods automatically updates the
+     * {@link MethodNode#maxLocals maxLocals} field in the given
+     * {@link MethodNode}.
+     */
+    private static void static2Local (
+        final MethodNode methodNode,
+        final List<SyntheticLocalVar> syntheticLocalVars
+    ) {
+        final InsnList instructions = methodNode.instructions;
+        final AbstractInsnNode first = instructions.getFirst ();
 
-		//
-		// Insert code to initialize synthetic local variables (unless marked to
-		// be left uninitialized) at the beginning of a method.
-		//
-		// TODO Respect the BEST_EFFORT initialization type.
-		//
-		for (final SyntheticLocalVar var : syntheticLocalVars) {
-			if (var.getInitialize () == Initialize.NEVER) {
-				continue;
-			}
+        //
+        // Insert code to initialize synthetic local variables (unless marked to
+        // be left uninitialized) at the beginning of a method.
+        //
+        // TODO Respect the BEST_EFFORT initialization type.
+        //
+        for (final SyntheticLocalVar var : syntheticLocalVars) {
+            if (var.getInitialize () == Initialize.NEVER) {
+                continue;
+            }
 
-			//
-			// If the variable has initialization code, just copy it. It will
-			// still refer to the static variable, but that will be fixed in
-			// the next step.
-			//
-			if (var.hasInitCode ()) {
-				instructions.insertBefore (
-					first, AsmHelper.cloneInsnList (var.getInitCode ())
-				);
-				
-			} else {
-				//
-				// Otherwise, just initialize it with a default value depending
-				// on its type. The default value for arrays is null, like for
-				// objects, but they also need an additional CHECKCAST 
-				// instruction to make the verifier happy.
-				// 
-				final Type type = var.getType ();
-				if (type.getSort () != Type.ARRAY) {
-					instructions.insertBefore (first, AsmHelper.loadDefault (type));
-				} else {
-					instructions.insertBefore (first, AsmHelper.loadDefault ());
-					instructions.insertBefore (first, AsmHelper.checkCast (type));
-				}
+            //
+            // If the variable has initialization code, just copy it. It will
+            // still refer to the static variable, but that will be fixed in
+            // the next step.
+            //
+            if (var.hasInitCode ()) {
+                instructions.insertBefore (
+                    first, AsmHelper.cloneInsnList (var.getInitCode ())
+                );
 
-				//
-				// For now, just issue an instruction to store the value into 
-				// the original static field. The transformation to local 
-				// variable comes in the next step.
-				//
-				instructions.insertBefore (first, AsmHelper.putStatic (
-					var.getOwner (), var.getName (), type.getDescriptor ()
-				));
-			}
-		}
+            } else {
+                //
+                // Otherwise, just initialize it with a default value depending
+                // on its type. The default value for arrays is null, like for
+                // objects, but they also need an additional CHECKCAST
+                // instruction to make the verifier happy.
+                //
+                final Type type = var.getType ();
+                if (type.getSort () != Type.ARRAY) {
+                    instructions.insertBefore (first, AsmHelper.loadDefault (type));
+                } else {
+                    instructions.insertBefore (first, AsmHelper.loadDefault ());
+                    instructions.insertBefore (first, AsmHelper.checkCast (type));
+                }
 
-		
-		//
-		// Scan the method code for GETSTATIC/PUTSTATIC instructions accessing
-		// the static fields marked to be synthetic locals. Replace all the
-		// static accesses with local variables.
-		//
-		// TODO LB: iterate over a copy unless we are sure an iterator is OK
-		for (final AbstractInsnNode insn : instructions.toArray ()) {
-			final int opcode = insn.getOpcode ();
-			if (!AsmHelper.isStaticFieldAccess (opcode)) {
-				continue;
-			}
-			
-			final FieldInsnNode fieldInsn = (FieldInsnNode) insn;
-			final String varId = SyntheticLocalVar.fqFieldNameFor (fieldInsn.owner, fieldInsn.name);
-
-			//
-			// Try to find the static field being accessed among the synthetic
-			// local fields, and determine the local variable index and local 
-			// slot index while doing that.
-			//
-			int index = 0, count = 0;
-			for (final SyntheticLocalVar var : syntheticLocalVars) {
-				if (varId.equals (var.getID ())) {
-					break;
-				}
-
-				index += var.getType ().getSize ();
-				count++;
-			}
-
-			if (count == syntheticLocalVars.size ()) {
-				// Static field not found among the synthetic locals.
-				continue;
-			}
-			
-			//
-			// Replace the static field access with local variable access.
-			//
-			final Type type = Type.getType (fieldInsn.desc);
-			final int slot = methodNode.maxLocals + index;
-			
-			instructions.insertBefore (fieldInsn, 
-				(opcode == Opcodes.GETSTATIC) ?
-				AsmHelper.loadVar (type, slot) : AsmHelper.storeVar (type, slot)
-			);
-			
-			instructions.remove (fieldInsn);
-		}
-
-		//
-		// Adjust maxLocals allow for the new local variables.
-		//
-		methodNode.maxLocals += syntheticLocalVars.size ();
-	}
+                //
+                // For now, just issue an instruction to store the value into
+                // the original static field. The transformation to local
+                // variable comes in the next step.
+                //
+                instructions.insertBefore (first, AsmHelper.putStatic (
+                    var.getOwner (), var.getName (), type.getDescriptor ()
+                ));
+            }
+        }
 
 
-	// Return a successor label of weaving location corresponding to
-	// the input 'end'.
-	private static LabelNode getEndLabel(MethodNode methodNode,
-			AbstractInsnNode instr) {
+        //
+        // Scan the method code for GETSTATIC/PUTSTATIC instructions accessing
+        // the static fields marked to be synthetic locals. Replace all the
+        // static accesses with local variables.
+        //
+        // TODO LB: iterate over a copy unless we are sure an iterator is OK
+        for (final AbstractInsnNode insn : instructions.toArray ()) {
+            final int opcode = insn.getOpcode ();
+            if (!AsmHelper.isStaticFieldAccess (opcode)) {
+                continue;
+            }
 
-		if (instr.getNext() != null
-				&& AsmHelper.skipVirtualInsns(instr.getNext(), true) != null) {
+            final FieldInsnNode fieldInsn = (FieldInsnNode) insn;
+            final String varId = SyntheticLocalVar.fqFieldNameFor (fieldInsn.owner, fieldInsn.name);
 
-			LabelNode branch = new LabelNode();
-			methodNode.instructions.insert(instr, branch);
+            //
+            // Try to find the static field being accessed among the synthetic
+            // local fields, and determine the local variable index and local
+            // slot index while doing that.
+            //
+            int index = 0, count = 0;
+            for (final SyntheticLocalVar var : syntheticLocalVars) {
+                if (varId.equals (var.getID ())) {
+                    break;
+                }
 
-			JumpInsnNode jump = new JumpInsnNode(Opcodes.GOTO, branch);
-			methodNode.instructions.insert(instr, jump);
-			instr = jump;
-		}
+                index += var.getType ().getSize ();
+                count++;
+            }
 
-		// Create a label just after the 'GOTO' instruction.
-		LabelNode label = new LabelNode();
-		methodNode.instructions.insert(instr, label);
-		return label;
-	}
+            if (count == syntheticLocalVars.size ()) {
+                // Static field not found among the synthetic locals.
+                continue;
+            }
 
-	// generate a try catch block node given the scope of the handler
-	public static TryCatchBlockNode getTryCatchBlock(MethodNode methodNode,
-			AbstractInsnNode start, AbstractInsnNode end) {
+            //
+            // Replace the static field access with local variable access.
+            //
+            final Type type = Type.getType (fieldInsn.desc);
+            final int slot = methodNode.maxLocals + index;
 
-		InsnList ilst = methodNode.instructions;
+            instructions.insertBefore (fieldInsn,
+                (opcode == Opcodes.GETSTATIC) ?
+                AsmHelper.loadVar (type, slot) : AsmHelper.storeVar (type, slot)
+            );
 
-		int new_start_offset = ilst.indexOf(start);
-		int new_end_offset = ilst.indexOf(end);
+            instructions.remove (fieldInsn);
+        }
 
-		for (TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
+        //
+        // Adjust maxLocals allow for the new local variables.
+        //
+        methodNode.maxLocals += syntheticLocalVars.size ();
+    }
 
-			int start_offset = ilst.indexOf(tcb.start);
-			int end_offset = ilst.indexOf(tcb.end);
 
-			if (AsmHelper.offsetBefore(ilst, new_start_offset, start_offset)
-					&& AsmHelper.offsetBefore(ilst, start_offset,
-							new_end_offset)
-					&& AsmHelper.offsetBefore(ilst, new_end_offset, end_offset)) {
+    // Return a successor label of weaving location corresponding to
+    // the input 'end'.
+    private static LabelNode getEndLabel(MethodNode methodNode,
+            AbstractInsnNode instr) {
 
-				new_start_offset = start_offset;
-			} else if (AsmHelper.offsetBefore(ilst, start_offset,
-					new_start_offset)
-					&& AsmHelper.offsetBefore(ilst, new_start_offset,
-							end_offset)
-					&& AsmHelper.offsetBefore(ilst, end_offset, new_end_offset)) {
+        if (instr.getNext() != null
+                && AsmHelper.skipVirtualInsns(instr.getNext(), true) != null) {
 
-				new_start_offset = end_offset;
-			}
-		}
+            LabelNode branch = new LabelNode();
+            methodNode.instructions.insert(instr, branch);
 
-		start = ilst.get(new_start_offset);
-		end = ilst.get(new_end_offset);
+            JumpInsnNode jump = new JumpInsnNode(Opcodes.GOTO, branch);
+            methodNode.instructions.insert(instr, jump);
+            instr = jump;
+        }
 
-		LabelNode startLabel = (LabelNode) start;
-		LabelNode endLabel = getEndLabel(methodNode, end);
+        // Create a label just after the 'GOTO' instruction.
+        LabelNode label = new LabelNode();
+        methodNode.instructions.insert(instr, label);
+        return label;
+    }
 
-		return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
-	}
+    // generate a try catch block node given the scope of the handler
+    public static TryCatchBlockNode getTryCatchBlock(MethodNode methodNode,
+            AbstractInsnNode start, AbstractInsnNode end) {
 
-	private static void insert(MethodNode methodNode,
-			SCGenerator staticInfoHolder, PIResolver piResolver,
-			WeavingInfo info, Snippet snippet, SnippetCode code, Shadow shadow,
-			AbstractInsnNode loc) throws DynamicContextException {
-		
-		// exception handler will discard the stack and push the
-		// exception object. Thus, before entering this snippet,
-		// weaver must backup the stack and restore when exiting
-		if (code.containsHandledException() && info.stackNotEmpty(loc)) {
-			InsnList backup = info.backupStack (loc, methodNode.maxLocals);
-			InsnList restore = info.restoreStack (loc, methodNode.maxLocals);
+        InsnList ilst = methodNode.instructions;
 
-			methodNode.maxLocals += info.getStackHeight(loc);
+        int new_start_offset = ilst.indexOf(start);
+        int new_end_offset = ilst.indexOf(end);
 
-			methodNode.instructions.insertBefore(loc, backup);
-			methodNode.instructions.insert(loc, restore);
-		}
+        for (TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
 
-		WeavingCode wCode = new WeavingCode(info, methodNode,
-				code, snippet, shadow, loc);
-		wCode.transform(staticInfoHolder, piResolver, false);
+            int start_offset = ilst.indexOf(tcb.start);
+            int end_offset = ilst.indexOf(tcb.end);
 
-		methodNode.instructions.insert(loc, wCode.getiList());
-		methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
-	}
+            if (AsmHelper.offsetBefore(ilst, new_start_offset, start_offset)
+                    && AsmHelper.offsetBefore(ilst, start_offset,
+                            new_end_offset)
+                    && AsmHelper.offsetBefore(ilst, new_end_offset, end_offset)) {
 
-	public static void instrument(ClassNode classNode, MethodNode methodNode,
-			Map<Snippet, List<Shadow>> snippetMarkings,
-			List<SyntheticLocalVar> syntheticLocalVars,
-			SCGenerator staticInfoHolder, PIResolver piResolver)
-			throws DynamicContextException {
+                new_start_offset = start_offset;
+            } else if (AsmHelper.offsetBefore(ilst, start_offset,
+                    new_start_offset)
+                    && AsmHelper.offsetBefore(ilst, new_start_offset,
+                            end_offset)
+                    && AsmHelper.offsetBefore(ilst, end_offset, new_end_offset)) {
 
-		WeavingInfo info = new WeavingInfo(classNode, methodNode,
-				snippetMarkings);
+                new_start_offset = end_offset;
+            }
+        }
 
-		for (Snippet snippet : info.getSortedSnippets()) {
-			List<Shadow> shadows = snippetMarkings.get(snippet);
-			SnippetCode code = snippet.getCode();
+        start = ilst.get(new_start_offset);
+        end = ilst.get(new_end_offset);
 
-			// skip snippet with empty code
-			if (code == null) {
-				continue;
-			}
+        LabelNode startLabel = (LabelNode) start;
+        LabelNode endLabel = getEndLabel(methodNode, end);
 
-			// Instrument
-			// For @Before, instrument the snippet just before the
-			// entrance of a region.
-			if (snippet.getAnnotationClass().equals(Before.class)) {
-				for (Shadow shadow : shadows) {
+        return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
+    }
 
-					AbstractInsnNode loc = shadow.getWeavingRegion().getStart();
-					insert(methodNode, staticInfoHolder, piResolver, info,
-							snippet, code, shadow, loc);
-				}
-			}
+    private static void insert(MethodNode methodNode,
+            SCGenerator staticInfoHolder, PIResolver piResolver,
+            WeavingInfo info, Snippet snippet, SnippetCode code, Shadow shadow,
+            AbstractInsnNode loc) throws DynamicContextException {
 
-			// For normal after(after returning), instrument the snippet
-			// after each adjusted exit of a region.
-			if (snippet.getAnnotationClass().equals(AfterReturning.class)
-					|| snippet.getAnnotationClass().equals(After.class)) {
-				for (Shadow shadow : shadows) {
+        // exception handler will discard the stack and push the
+        // exception object. Thus, before entering this snippet,
+        // weaver must backup the stack and restore when exiting
+        if (code.containsHandledException() && info.stackNotEmpty(loc)) {
+            InsnList backup = info.backupStack (loc, methodNode.maxLocals);
+            InsnList restore = info.restoreStack (loc, methodNode.maxLocals);
 
-					for (AbstractInsnNode loc : shadow.getWeavingRegion().getEnds()) {
+            methodNode.maxLocals += info.getStackHeight(loc);
 
-						insert(methodNode, staticInfoHolder, piResolver, info,
-								snippet, code, shadow, loc);
-					}
-				}
-			}
+            methodNode.instructions.insertBefore(loc, backup);
+            methodNode.instructions.insert(loc, restore);
+        }
 
-			// For exceptional after(after throwing), wrap the region with
-			// a try-finally clause. And append the snippet as an exception
-			// handler.
-			if (snippet.getAnnotationClass().equals(AfterThrowing.class)
-					|| snippet.getAnnotationClass().equals(After.class)) {
+        WeavingCode wCode = new WeavingCode(info, methodNode,
+                code, snippet, shadow, loc);
+        wCode.transform(staticInfoHolder, piResolver, false);
 
-				for (Shadow shadow : shadows) {
-					
-					WeavingRegion region = shadow.getWeavingRegion();
-					// after-throwing inserts the snippet once, and marks
-					// the start and the very end as the scope
-					AbstractInsnNode loc = region.getAfterThrowEnd();
+        methodNode.instructions.insert(loc, wCode.getiList());
+        methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
+    }
 
-					WeavingCode wCode = new WeavingCode(info, methodNode, code,
-							snippet, shadow, loc);
-					wCode.transform(staticInfoHolder, piResolver, true);
+    public static void instrument(ClassNode classNode, MethodNode methodNode,
+            Map<Snippet, List<Shadow>> snippetMarkings,
+            List<SyntheticLocalVar> syntheticLocalVars,
+            SCGenerator staticInfoHolder, PIResolver piResolver)
+            throws DynamicContextException {
 
-					// Create a try-catch clause
-					TryCatchBlockNode tcb = getTryCatchBlock(methodNode,
-							region.getAfterThrowStart(), loc);
+        WeavingInfo info = new WeavingInfo(classNode, methodNode,
+                snippetMarkings);
 
-					methodNode.instructions.insert(tcb.handler,
-							wCode.getiList());
+        for (Snippet snippet : info.getSortedSnippets()) {
+            List<Shadow> shadows = snippetMarkings.get(snippet);
+            SnippetCode code = snippet.getCode();
 
-					methodNode.tryCatchBlocks.add(tcb);
-					methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
-				}
-			}
-		}
+            // skip snippet with empty code
+            if (code == null) {
+                continue;
+            }
 
-		static2Local(methodNode, syntheticLocalVars);
-		AdvancedSorter.sort(methodNode);
-	}
+            // Instrument
+            // For @Before, instrument the snippet just before the
+            // entrance of a region.
+            if (snippet.getAnnotationClass().equals(Before.class)) {
+                for (Shadow shadow : shadows) {
+
+                    AbstractInsnNode loc = shadow.getWeavingRegion().getStart();
+                    insert(methodNode, staticInfoHolder, piResolver, info,
+                            snippet, code, shadow, loc);
+                }
+            }
+
+            // For normal after(after returning), instrument the snippet
+            // after each adjusted exit of a region.
+            if (snippet.getAnnotationClass().equals(AfterReturning.class)
+                    || snippet.getAnnotationClass().equals(After.class)) {
+                for (Shadow shadow : shadows) {
+
+                    for (AbstractInsnNode loc : shadow.getWeavingRegion().getEnds()) {
+
+                        insert(methodNode, staticInfoHolder, piResolver, info,
+                                snippet, code, shadow, loc);
+                    }
+                }
+            }
+
+            // For exceptional after(after throwing), wrap the region with
+            // a try-finally clause. And append the snippet as an exception
+            // handler.
+            if (snippet.getAnnotationClass().equals(AfterThrowing.class)
+                    || snippet.getAnnotationClass().equals(After.class)) {
+
+                for (Shadow shadow : shadows) {
+
+                    WeavingRegion region = shadow.getWeavingRegion();
+                    // after-throwing inserts the snippet once, and marks
+                    // the start and the very end as the scope
+                    AbstractInsnNode loc = region.getAfterThrowEnd();
+
+                    WeavingCode wCode = new WeavingCode(info, methodNode, code,
+                            snippet, shadow, loc);
+                    wCode.transform(staticInfoHolder, piResolver, true);
+
+                    // Create a try-catch clause
+                    TryCatchBlockNode tcb = getTryCatchBlock(methodNode,
+                            region.getAfterThrowStart(), loc);
+
+                    methodNode.instructions.insert(tcb.handler,
+                            wCode.getiList());
+
+                    methodNode.tryCatchBlocks.add(tcb);
+                    methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
+                }
+            }
+        }
+
+        static2Local(methodNode, syntheticLocalVars);
+        AdvancedSorter.sort(methodNode);
+    }
 
 }

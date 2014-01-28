@@ -9,88 +9,88 @@ import ch.usi.dag.disl.exception.ReflectionException;
 
 public class ReflectionHelper {
 
-	/**
-	 * Instantiates class using constructor with defined arguments.
-	 * 
-	 * @param classToInstantiate class to instantiate
-	 * @param args arguments for the constructor
-	 * @return instantiated class
-	 */
-	public static <T> T createInstance(Class<T> classToInstantiate,
-			Object... args) throws ReflectionException {
+    /**
+     * Instantiates class using constructor with defined arguments.
+     *
+     * @param classToInstantiate class to instantiate
+     * @param args arguments for the constructor
+     * @return instantiated class
+     */
+    public static <T> T createInstance(Class<T> classToInstantiate,
+            Object... args) throws ReflectionException {
 
-		try {
+        try {
 
-			// resolve constructor argument types
-			Class<?>[] argTypes = new Class<?>[args.length];
-			for (int i = 0; i < args.length; ++i) {
-				argTypes[i] = args[i].getClass();
-			}
+            // resolve constructor argument types
+            Class<?>[] argTypes = new Class<?>[args.length];
+            for (int i = 0; i < args.length; ++i) {
+                argTypes[i] = args[i].getClass();
+            }
 
-			// resolve constructor
-			Constructor<?> constructor = classToInstantiate
-					.getConstructor(argTypes);
+            // resolve constructor
+            Constructor<?> constructor = classToInstantiate
+                    .getConstructor(argTypes);
 
-			// make the constructor accessible and invoke it
-			constructor.setAccessible (true);
-			return classToInstantiate.cast(constructor.newInstance(args));
+            // make the constructor accessible and invoke it
+            constructor.setAccessible (true);
+            return classToInstantiate.cast(constructor.newInstance(args));
 
-		} catch (Exception e) {
-			throw new ReflectionException("Class "
-					+ classToInstantiate.getName() + " cannot be instantiated",
-					e);
-		}
-	}
+        } catch (Exception e) {
+            throw new ReflectionException("Class "
+                    + classToInstantiate.getName() + " cannot be instantiated",
+                    e);
+        }
+    }
 
-	private static String asmNameToJavaName(String asmClassName) {
-		return asmClassName.replace('/', '.');
-	}
-	
-	public static Class<?> resolveClass(Type asmType)
-			throws ReflectionException {
-		try {
-			return Class.forName(asmNameToJavaName(asmType.getInternalName()));
-		} catch (ClassNotFoundException e) {
-			throw new ReflectionException("Class " + asmType.getClassName()
-					+ " cannot be resolved", e);
-		}
-	}
+    private static String asmNameToJavaName(String asmClassName) {
+        return asmClassName.replace('/', '.');
+    }
 
-	public static Method resolveMethod(Class<?> methodOwner, String methodName)
-			throws ReflectionException {
+    public static Class<?> resolveClass(Type asmType)
+            throws ReflectionException {
+        try {
+            return Class.forName(asmNameToJavaName(asmType.getInternalName()));
+        } catch (ClassNotFoundException e) {
+            throw new ReflectionException("Class " + asmType.getClassName()
+                    + " cannot be resolved", e);
+        }
+    }
 
-		try {
-			return methodOwner.getMethod(methodName);
-		} catch (NoSuchMethodException e) {
-			throw new ReflectionException("Method " + methodName + " in class "
-					+ methodOwner.getName() + " cannot be found."
-					+ " Snippet was probably compiled against a modified"
-					+ " (different) class");
-		}
-	}
-	
-	/**
-	 * Searches for interfaceToImplement interface. Searches through whole class
-	 * hierarchy.
-	 */
-	public static boolean implementsInterface(Class<?> classToSearch,
-			Class<?> interfaceToImplement) {
+    public static Method resolveMethod(Class<?> methodOwner, String methodName)
+            throws ReflectionException {
 
-		// through whole hierarchy...
-		while (classToSearch != null) {
+        try {
+            return methodOwner.getMethod(methodName);
+        } catch (NoSuchMethodException e) {
+            throw new ReflectionException("Method " + methodName + " in class "
+                    + methodOwner.getName() + " cannot be found."
+                    + " Snippet was probably compiled against a modified"
+                    + " (different) class");
+        }
+    }
 
-			// ...through all interfaces...
-			for (Class<?> iface : classToSearch.getInterfaces()) {
+    /**
+     * Searches for interfaceToImplement interface. Searches through whole class
+     * hierarchy.
+     */
+    public static boolean implementsInterface(Class<?> classToSearch,
+            Class<?> interfaceToImplement) {
 
-				// ...search for StaticContext interface
-				if (iface.equals(interfaceToImplement)) {
-					return true;
-				}
-			}
+        // through whole hierarchy...
+        while (classToSearch != null) {
 
-			classToSearch = classToSearch.getSuperclass();
-		}
+            // ...through all interfaces...
+            for (Class<?> iface : classToSearch.getInterfaces()) {
 
-		return false;
-	}
+                // ...search for StaticContext interface
+                if (iface.equals(interfaceToImplement)) {
+                    return true;
+                }
+            }
+
+            classToSearch = classToSearch.getSuperclass();
+        }
+
+        return false;
+    }
 }

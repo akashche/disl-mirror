@@ -256,7 +256,7 @@ public abstract class AsmHelper {
     /**
      * Returns {@code true} if the given instruction loads a type constant
      * (i.e. a class literal) on the stack, {@code false} otherwise.
-     * 
+     *
      * @param insn
      *            the instruction to check
      * @return
@@ -386,7 +386,7 @@ public abstract class AsmHelper {
      * Adds a label to the end of the given instruction list and replaces all
      * types of RETURN instructions in the list with a GOTO instruction to jump
      * to the label at the end of the instruction list.
-     * 
+     *
      * @param insnList
      *            list of instructions to perform the replacement on
      */
@@ -451,10 +451,10 @@ public abstract class AsmHelper {
 
     /**
      * Returns a clone of the given instruction list.
-     * 
+     *
      * @param insnList
      *            instruction list to clone.
-     * 
+     *
      * @return
      *         A cloned instruction list.
      */
@@ -535,10 +535,10 @@ public abstract class AsmHelper {
 
     /**
      * Returns the first non-virtual instruction preceding a given instruction.
-     * 
+     *
      * @param startInsn
      *            the starting instruction
-     * 
+     *
      * @return
      *         The first non-virtual instruction preceding the given
      *         instruction,
@@ -559,10 +559,10 @@ public abstract class AsmHelper {
 
     /**
      * Returns the first non-virtual instruction following a given instruction.
-     * 
+     *
      * @param startInsn
      *            the starting instruction
-     * 
+     *
      * @return
      *         The first non-virtual instruction following the given
      *         instruction,
@@ -704,7 +704,7 @@ public abstract class AsmHelper {
     /**
      * Returns instruction that will call the method to box the instruction
      * residing on the stack
-     * 
+     *
      * @param valueType
      *            type to be boxed
      */
@@ -790,7 +790,7 @@ public abstract class AsmHelper {
      * Returns an {@link Iterable} for a list of instructions. The
      * {@link InsnList} in ASM unfortunately does not implement the
      * {@link Iterable} interface, even though it provides an iterator.
-     * 
+     *
      * @param list
      *            the instruction list to create the iterable for.
      * @return

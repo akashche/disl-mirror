@@ -4,7 +4,7 @@ package ch.usi.dag.disl.dynamiccontext;
  * <p>
  * Provides access to dynamic information available at runtime at the location
  * where the snippet is inlined.
- * 
+ *
  * <p>
  * <ul>
  * <li>{@link #getThis()}</li>
@@ -33,12 +33,12 @@ public interface DynamicContext {
     /**
      * <p>
      * Returns the value of a particular item on the JVM operand stack.
-     * 
+     *
      * <p>
      * <b>Note:</b> Each item index corresponds to one operand on the stack.
      * Both primitive and wide values are considered to be a single item, i.e.,
      * the index of the corresponding stack slot is determined automatically.
-     * 
+     *
      * @param itemIndex
      *            <p>
      *            index of the item on the operand stack, must be positive and
@@ -58,12 +58,12 @@ public interface DynamicContext {
     /**
      * <p>
      * Returns the value of a particular method argument.
-     * 
+     *
      * <p>
      * <b>Note:</b> Each argument index corresponds to one method argument, be
      * it primitive or wide, i.e., the index of the corresponding local variable
      * slot is determined automatically.
-     * 
+     *
      * @param argumentIndex
      *            <p>
      *            index of the desired method argument, must be positive and not
@@ -84,12 +84,12 @@ public interface DynamicContext {
      * Returns the value of a local variable occupying a particular local
      * variable slot (or two slots, in case of wide types such as long and
      * double).
-     * 
+     *
      * <p>
      * <b>Note:</b> Each slot index corresponds to one local variable slot. The
      * value of wide values is obtained from two consecutive local variable
      * slots, starting with the given slot index.
-     * 
+     *
      * @param slotIndex
      *            <p>
      *            index of the desired local variable slot, must be positive and

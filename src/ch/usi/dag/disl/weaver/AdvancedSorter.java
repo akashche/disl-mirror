@@ -12,68 +12,68 @@ import ch.usi.dag.disl.util.AsmHelper;
 
 public class AdvancedSorter extends TryCatchBlockSorter {
 
-	public AdvancedSorter(MethodNode method) {
-		super(null, method.access, method.name, method.desc, method.signature,
-				null);
+    public AdvancedSorter(MethodNode method) {
+        super(null, method.access, method.name, method.desc, method.signature,
+                null);
 
-		this.instructions = method.instructions;
-		this.tryCatchBlocks = method.tryCatchBlocks;
-	}
+        this.instructions = method.instructions;
+        this.tryCatchBlocks = method.tryCatchBlocks;
+    }
 
-	public void validate() {
+    public void validate() {
 
-		TryCatchBlockNode[] tcbs = new TryCatchBlockNode[tryCatchBlocks.size()];
-		tcbs = tryCatchBlocks.toArray(tcbs);
+        TryCatchBlockNode[] tcbs = new TryCatchBlockNode[tryCatchBlocks.size()];
+        tcbs = tryCatchBlocks.toArray(tcbs);
 
-		for (int i = 0; i < tcbs.length; i++) {
+        for (int i = 0; i < tcbs.length; i++) {
 
-			int istart = instructions.indexOf(AsmHelper.skipVirtualInsns(
-					tcbs[i].start, true));
-			int iend = instructions.indexOf(tcbs[i].end);
+            int istart = instructions.indexOf(AsmHelper.skipVirtualInsns(
+                    tcbs[i].start, true));
+            int iend = instructions.indexOf(tcbs[i].end);
 
-			for (int j = i; j < tcbs.length; j++) {
+            for (int j = i; j < tcbs.length; j++) {
 
-				int jstart = instructions.indexOf(AsmHelper.skipVirtualInsns(
-						tcbs[j].start, true));
-				int jend = instructions.indexOf(tcbs[j].end);
-				
-				if ((AsmHelper.offsetBefore(instructions, istart, jstart)
-						&& AsmHelper.offsetBefore(instructions, jstart, iend) 
-						&& AsmHelper.offsetBefore(instructions, iend, jend)) ||
-						(AsmHelper.offsetBefore(instructions, jstart, istart)
-						&& AsmHelper.offsetBefore(instructions, istart, jend) 
-						&& AsmHelper.offsetBefore(instructions, jend, iend))) {
-					
-					throw new DiSLFatalException("Crossing exception handler.");
-				}
-			}
-		}
-	}
+                int jstart = instructions.indexOf(AsmHelper.skipVirtualInsns(
+                        tcbs[j].start, true));
+                int jend = instructions.indexOf(tcbs[j].end);
 
-	public void visitEnd() {
-		// Compares TryCatchBlockNodes by the length of their "try" block.
-		Comparator<TryCatchBlockNode> comp = new Comparator<TryCatchBlockNode>() {
+                if ((AsmHelper.offsetBefore(instructions, istart, jstart)
+                        && AsmHelper.offsetBefore(instructions, jstart, iend)
+                        && AsmHelper.offsetBefore(instructions, iend, jend)) ||
+                        (AsmHelper.offsetBefore(instructions, jstart, istart)
+                        && AsmHelper.offsetBefore(instructions, istart, jend)
+                        && AsmHelper.offsetBefore(instructions, jend, iend))) {
 
-			public int compare(TryCatchBlockNode t1, TryCatchBlockNode t2) {
-				int len1 = blockLength(t1);
-				int len2 = blockLength(t2);
-				return len1 - len2;
-			}
+                    throw new DiSLFatalException("Crossing exception handler.");
+                }
+            }
+        }
+    }
 
-			private int blockLength(TryCatchBlockNode block) {
-				int startidx = instructions.indexOf(AsmHelper.skipVirtualInsns(
-						block.start, true));
-				int endidx = instructions.indexOf(block.end);
-				return endidx - startidx;
-			}
-		};
+    public void visitEnd() {
+        // Compares TryCatchBlockNodes by the length of their "try" block.
+        Comparator<TryCatchBlockNode> comp = new Comparator<TryCatchBlockNode>() {
 
-		Collections.sort(tryCatchBlocks, comp);
-	}
+            public int compare(TryCatchBlockNode t1, TryCatchBlockNode t2) {
+                int len1 = blockLength(t1);
+                int len2 = blockLength(t2);
+                return len1 - len2;
+            }
 
-	public static void sort(MethodNode method) {
-		AdvancedSorter sorter = new AdvancedSorter(method);
-		sorter.visitEnd();
-		sorter.validate();
-	}
+            private int blockLength(TryCatchBlockNode block) {
+                int startidx = instructions.indexOf(AsmHelper.skipVirtualInsns(
+                        block.start, true));
+                int endidx = instructions.indexOf(block.end);
+                return endidx - startidx;
+            }
+        };
+
+        Collections.sort(tryCatchBlocks, comp);
+    }
+
+    public static void sort(MethodNode method) {
+        AdvancedSorter sorter = new AdvancedSorter(method);
+        sorter.visitEnd();
+        sorter.validate();
+    }
 }
