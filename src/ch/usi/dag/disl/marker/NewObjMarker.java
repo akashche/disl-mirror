@@ -14,10 +14,10 @@ import ch.usi.dag.disl.util.Constants;
 /**
  * <p>
  * <b>note:</b> This class is work in progress
- * 
+ *
  * <p>
  * Marks object creation.
- * 
+ *
  * <p>
  * Sets the start before new instruction and the end after the constructor
  * invocation.

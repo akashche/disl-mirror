@@ -12,7 +12,7 @@ import ch.usi.dag.disl.util.BasicBlockCalc;
 /**
  * <p>
  * Marks basic block.
- * 
+ *
  * <p>
  * Sets the start at the beginning of a basic block and the end at the end of a
  * basic block. Considers only jump instructions, lookup switch and table

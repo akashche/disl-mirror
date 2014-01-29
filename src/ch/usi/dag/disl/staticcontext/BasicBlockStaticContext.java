@@ -18,65 +18,65 @@ import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
  */
 public class BasicBlockStaticContext extends AbstractStaticContext {
 
-	private Map<String, CtrlFlowGraph> cache = new HashMap<String, CtrlFlowGraph>();
-	protected CtrlFlowGraph customData;
-	
-	public void staticContextData(Shadow sa) {
+    private Map<String, CtrlFlowGraph> cache = new HashMap<String, CtrlFlowGraph>();
+    protected CtrlFlowGraph customData;
 
-		super.staticContextData(sa);
-		
-		String key = staticContextData.getClassNode().name
-				+ staticContextData.getMethodNode().name
-				+ staticContextData.getMethodNode().desc;
-		
-		customData = cache.get(key);
+    public void staticContextData(Shadow sa) {
 
-		if (customData == null) {
+        super.staticContextData(sa);
 
-			customData = produceCustomData();
-			cache.put(key, customData);
-		}
-	}
-	
-	/**
-	 * Returns total number of basic blocks in a method. 
-	 */
-	public int getTotBBs() {
-		return customData.getNodes().size();
-	}
+        String key = staticContextData.getClassNode().name
+                + staticContextData.getMethodNode().name
+                + staticContextData.getMethodNode().desc;
 
-	/**
-	 * Returns size of the instrumented basic block. 
-	 */
-	public int getBBSize() {
+        customData = cache.get(key);
 
-		int count = 1;
-		AbstractInsnNode start;
-		List<AbstractInsnNode> ends;
+        if (customData == null) {
 
-		start = staticContextData.getRegionStart();
-		ends = staticContextData.getRegionEnds();
+            customData = produceCustomData();
+            cache.put(key, customData);
+        }
+    }
 
-		while (!ends.contains(start)) {
+    /**
+     * Returns total number of basic blocks in a method.
+     */
+    public int getTotBBs() {
+        return customData.getNodes().size();
+    }
 
-			if (! AsmHelper.isVirtualInstr(start)) {
-				count++;
-			}
+    /**
+     * Returns size of the instrumented basic block.
+     */
+    public int getBBSize() {
 
-			start = start.getNext();
-		}
+        int count = 1;
+        AbstractInsnNode start;
+        List<AbstractInsnNode> ends;
 
-		return count;
-	}
+        start = staticContextData.getRegionStart();
+        ends = staticContextData.getRegionEnds();
 
-	/**
-	 * Returns index of the instrumented basic block. 
-	 */
-	public int getBBindex() {
-		return customData.getIndex(staticContextData.getRegionStart());
-	}
+        while (!ends.contains(start)) {
 
-	protected CtrlFlowGraph produceCustomData() {
-		return new CtrlFlowGraph(staticContextData.getMethodNode());
-	}
+            if (! AsmHelper.isVirtualInstr(start)) {
+                count++;
+            }
+
+            start = start.getNext();
+        }
+
+        return count;
+    }
+
+    /**
+     * Returns index of the instrumented basic block.
+     */
+    public int getBBindex() {
+        return customData.getIndex(staticContextData.getRegionStart());
+    }
+
+    protected CtrlFlowGraph produceCustomData() {
+        return new CtrlFlowGraph(staticContextData.getMethodNode());
+    }
 }

@@ -13,7 +13,7 @@ import ch.usi.dag.disl.util.AsmHelper;
 /**
  * <p>
  * Marks whole method body.
- * 
+ *
  * <p>
  * Sets the start at the beginning of a method and the end at the end of a
  * method.

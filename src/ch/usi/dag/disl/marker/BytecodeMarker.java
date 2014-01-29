@@ -15,7 +15,7 @@ import ch.usi.dag.disl.util.AsmOpcodes;
 /**
  * <p>
  * Marks one java bytecode instruction.
- * 
+ *
  * <p>
  * Sets the start before a bytecode instruction and the end after a bytecode
  * instruction. If the bytecode instruction is (conditional) jump the end is

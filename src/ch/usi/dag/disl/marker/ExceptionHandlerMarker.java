@@ -13,7 +13,7 @@ import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 /**
  * <p>
  * Marks exception handler.
- * 
+ *
  * <p>
  * Sets the start at the beginning of an exception handler and the end at the
  * end of an exception handler.

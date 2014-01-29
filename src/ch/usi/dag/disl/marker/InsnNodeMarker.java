@@ -14,7 +14,7 @@ import ch.usi.dag.disl.util.AsmHelper;
 /**
  * <p>
  * <b>note:</b> This class is work in progress
- * 
+ *
  * <p>
  * Marks instruction depending on ASM class type.
  */

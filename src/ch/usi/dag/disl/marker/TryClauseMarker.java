@@ -12,7 +12,7 @@ import ch.usi.dag.disl.util.AsmHelper;
 /**
  * <p>
  * Marks try block.
- * 
+ *
  * <p>
  * Sets the start at the beginning of a try block and the end at the end of a
  * try block.

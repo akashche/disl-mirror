@@ -37,311 +37,311 @@ import ch.usi.dag.disl.util.AsmHelper;
  */
 public class SnippetUnprocessedCode extends UnprocessedCode {
 
-	private String className;
-	private String methodName;
-	private boolean dynamicBypass;
-	private boolean usesProcessorContext;
+    private String className;
+    private String methodName;
+    private boolean dynamicBypass;
+    private boolean usesProcessorContext;
 
-	/**
-	 * Creates unprocessed code structure.
-	 */
-	public SnippetUnprocessedCode(String className, String methodName,
-			InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
-			Set<String> declaredStaticContexts, boolean usesDynamicContext,
-			boolean dynamicBypass, boolean usesClassContext,
-			boolean usesProcessorContext) {
-		
-		super(instructions, tryCatchBlocks, declaredStaticContexts,
-				usesDynamicContext, usesClassContext);
-		this.className = className;
-		this.methodName = methodName;
-		this.dynamicBypass = dynamicBypass;
-		this.usesProcessorContext = usesProcessorContext;
-	}
+    /**
+     * Creates unprocessed code structure.
+     */
+    public SnippetUnprocessedCode(String className, String methodName,
+            InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
+            Set<String> declaredStaticContexts, boolean usesDynamicContext,
+            boolean dynamicBypass, boolean usesClassContext,
+            boolean usesProcessorContext) {
 
-	/**
-	 * Processes the stored data and creates snippet code structure.
-	 */
-	public SnippetCode process(LocalVars allLVs, Map<Type, Proc> processors,
-			Marker marker, boolean exceptHandler, boolean useDynamicBypass)
-			throws StaticContextGenException, ReflectionException,
-			ProcessorException {
+        super(instructions, tryCatchBlocks, declaredStaticContexts,
+                usesDynamicContext, usesClassContext);
+        this.className = className;
+        this.methodName = methodName;
+        this.dynamicBypass = dynamicBypass;
+        this.usesProcessorContext = usesProcessorContext;
+    }
 
-		// process code
-		Code code = super.process(allLVs);
+    /**
+     * Processes the stored data and creates snippet code structure.
+     */
+    public SnippetCode process(LocalVars allLVs, Map<Type, Proc> processors,
+            Marker marker, boolean exceptHandler, boolean useDynamicBypass)
+            throws StaticContextGenException, ReflectionException,
+            ProcessorException {
 
-		// process snippet code
-		
-		InsnList instructions = code.getInstructions();
-		List<TryCatchBlockNode> tryCatchBlocks = code.getTryCatchBlocks();
-		
-		// *** CODE PROCESSING ***
-		// !NOTE ! : Code processing has to be done before "processors in use"
-		// analysis otherwise the instruction reference produced by this
-		// analysis may be wrong
-		// NOTE: methods are modifying arguments
+        // process code
+        Code code = super.process(allLVs);
 
-		if (useDynamicBypass && dynamicBypass) {
-			insertDynamicBypass(instructions);
-		}
-		
-		if (exceptHandler) {
-			// catch all exceptions
-			// it is forbidden to throw an exception in a snippet
-			insertExceptionHandler(instructions, tryCatchBlocks);
-		}
+        // process snippet code
 
-		// *** CODE ANALYSIS ***
+        InsnList instructions = code.getInstructions();
+        List<TryCatchBlockNode> tryCatchBlocks = code.getTryCatchBlocks();
 
-		Map<Integer, ProcInvocation> invokedProcessors = 
-			new HashMap<Integer, ProcInvocation>();
+        // *** CODE PROCESSING ***
+        // !NOTE ! : Code processing has to be done before "processors in use"
+        // analysis otherwise the instruction reference produced by this
+        // analysis may be wrong
+        // NOTE: methods are modifying arguments
 
-		int insnIndex = 0;
-		for (AbstractInsnNode insn : AsmHelper.allInsnsFrom (instructions)) {
-			// *** Parse processors in use ***
-			// no other modifications to the code should be done before weaving
-			// otherwise, produced instruction reference can be invalid
+        if (useDynamicBypass && dynamicBypass) {
+            insertDynamicBypass(instructions);
+        }
 
-			ProcessorInfo processor = insnInvokesProcessor (
-				insn, insnIndex, processors, marker
-			);
+        if (exceptHandler) {
+            // catch all exceptions
+            // it is forbidden to throw an exception in a snippet
+            insertExceptionHandler(instructions, tryCatchBlocks);
+        }
 
-			if (processor != null) {
-				invokedProcessors.put (
-					processor.getInstrPos (),
-					processor.getProcInvoke ()
-				);
-			}
+        // *** CODE ANALYSIS ***
 
-			insnIndex++;
-		}
+        Map<Integer, ProcInvocation> invokedProcessors =
+            new HashMap<Integer, ProcInvocation>();
 
-		return new SnippetCode(
-			instructions, tryCatchBlocks, code.getReferencedSLVs(),
-			code.getReferencedTLVs(), code.containsHandledException(),
-			code.getStaticContexts(), code.usesDynamicContext(),
-			code.usesClassContext(), usesProcessorContext,
-			invokedProcessors
-		);
-	}
+        int insnIndex = 0;
+        for (AbstractInsnNode insn : AsmHelper.allInsnsFrom (instructions)) {
+            // *** Parse processors in use ***
+            // no other modifications to the code should be done before weaving
+            // otherwise, produced instruction reference can be invalid
 
-	private static class ProcessorInfo {
+            ProcessorInfo processor = insnInvokesProcessor (
+                insn, insnIndex, processors, marker
+            );
 
-		private Integer instrPos;
-		private ProcInvocation procInvoke;
+            if (processor != null) {
+                invokedProcessors.put (
+                    processor.getInstrPos (),
+                    processor.getProcInvoke ()
+                );
+            }
 
-		public ProcessorInfo(Integer instrPos, ProcInvocation procInvoke) {
-			super();
-			this.instrPos = instrPos;
-			this.procInvoke = procInvoke;
-		}
+            insnIndex++;
+        }
 
-		public Integer getInstrPos() {
-			return instrPos;
-		}
+        return new SnippetCode(
+            instructions, tryCatchBlocks, code.getReferencedSLVs(),
+            code.getReferencedTLVs(), code.containsHandledException(),
+            code.getStaticContexts(), code.usesDynamicContext(),
+            code.usesClassContext(), usesProcessorContext,
+            invokedProcessors
+        );
+    }
 
-		public ProcInvocation getProcInvoke() {
-			return procInvoke;
-		}
-	}
+    private static class ProcessorInfo {
 
-	private ProcessorInfo insnInvokesProcessor(AbstractInsnNode instr, int i,
-			Map<Type, Proc> processors, Marker marker)
-			throws ProcessorException, ReflectionException {
+        private Integer instrPos;
+        private ProcInvocation procInvoke;
 
-		final String APPLY_METHOD = "apply";
+        public ProcessorInfo(Integer instrPos, ProcInvocation procInvoke) {
+            super();
+            this.instrPos = instrPos;
+            this.procInvoke = procInvoke;
+        }
 
-		// check method invocation
-		if (!(instr instanceof MethodInsnNode)) {
-			return null;
-		}
+        public Integer getInstrPos() {
+            return instrPos;
+        }
 
-		MethodInsnNode min = (MethodInsnNode) instr;
+        public ProcInvocation getProcInvoke() {
+            return procInvoke;
+        }
+    }
 
-		// check if the invocation is processor invocation
-		if (!(min.owner.equals(Type.getInternalName(ArgumentProcessorContext.class))
-				&& min.name.equals(APPLY_METHOD))) {
-			return null;
-		}
+    private ProcessorInfo insnInvokesProcessor(AbstractInsnNode instr, int i,
+            Map<Type, Proc> processors, Marker marker)
+            throws ProcessorException, ReflectionException {
 
-		// resolve load parameter instruction
-		AbstractInsnNode secondParam = instr.getPrevious();
-		AbstractInsnNode firstParam = secondParam.getPrevious();
+        final String APPLY_METHOD = "apply";
 
-		// NOTE: object parameter is ignored - will be removed by weaver
-		
-		// first parameter has to be loaded by LDC
-		if (firstParam == null || firstParam.getOpcode() != Opcodes.LDC) {
-			throw new ProcessorException("In snippet " + className + "."
-					+ methodName + " - pass the first (class)"
-					+ " argument of a ProcMethod.apply method direcltly."
-					+ " ex: ProcMethod.apply(ProcMethod.class,"
-					+ " ArgumentProcessorMode.METHOD_ARGS)");
-		}
+        // check method invocation
+        if (!(instr instanceof MethodInsnNode)) {
+            return null;
+        }
 
-		// second parameter has to be loaded by GETSTATIC
-		if (secondParam == null || secondParam.getOpcode() != Opcodes.GETSTATIC) {
-			throw new ProcessorException("In snippet " + className + "."
-					+ methodName + " - pass the second (type)"
-					+ " argument of a ProcMethod.apply method direcltly."
-					+ " ex: ProcMethod.apply(ProcMethod.class,"
-					+ " ArgumentProcessorMode.METHOD_ARGS)");
-		}
+        MethodInsnNode min = (MethodInsnNode) instr;
 
-		Object asmType = ((LdcInsnNode) firstParam).cst;
+        // check if the invocation is processor invocation
+        if (!(min.owner.equals(Type.getInternalName(ArgumentProcessorContext.class))
+                && min.name.equals(APPLY_METHOD))) {
+            return null;
+        }
 
-		if (!(asmType instanceof Type)) {
-			throw new ProcessorException("In snippet " + className + "."
-					+ methodName + " - unsupported processor type "
-					+ asmType.getClass().toString());
-		}
+        // resolve load parameter instruction
+        AbstractInsnNode secondParam = instr.getPrevious();
+        AbstractInsnNode firstParam = secondParam.getPrevious();
 
-		Type processorType = (Type) asmType;
-		
-		ArgumentProcessorMode procApplyType = ArgumentProcessorMode
-				.valueOf(((FieldInsnNode) secondParam).name);
-		
-		// if the processor apply type is CALLSITE_ARGS
-		// the only allowed marker is BytecodeMarker
-		if(ArgumentProcessorMode.CALLSITE_ARGS.equals(procApplyType)
-				&& marker.getClass() != BytecodeMarker.class) {
-			throw new ProcessorException(
-					"ArgumentProcessor applied in mode CALLSITE_ARGS in method "
-					+ className + "." + methodName
-					+ " can be used only with BytecodeMarker");
-		}
+        // NOTE: object parameter is ignored - will be removed by weaver
 
-		Proc processor = processors.get(processorType);
+        // first parameter has to be loaded by LDC
+        if (firstParam == null || firstParam.getOpcode() != Opcodes.LDC) {
+            throw new ProcessorException("In snippet " + className + "."
+                    + methodName + " - pass the first (class)"
+                    + " argument of a ProcMethod.apply method direcltly."
+                    + " ex: ProcMethod.apply(ProcMethod.class,"
+                    + " ArgumentProcessorMode.METHOD_ARGS)");
+        }
 
-		if (processor == null) {
-			throw new ProcessorException("In snippet " + className + "."
-					+ methodName + " - unknow processor used: "
-					+ processorType.getClassName());
-		}
+        // second parameter has to be loaded by GETSTATIC
+        if (secondParam == null || secondParam.getOpcode() != Opcodes.GETSTATIC) {
+            throw new ProcessorException("In snippet " + className + "."
+                    + methodName + " - pass the second (type)"
+                    + " argument of a ProcMethod.apply method direcltly."
+                    + " ex: ProcMethod.apply(ProcMethod.class,"
+                    + " ArgumentProcessorMode.METHOD_ARGS)");
+        }
 
-		ProcInvocation prcInv = new ProcInvocation(processor, procApplyType);
+        Object asmType = ((LdcInsnNode) firstParam).cst;
 
-		// get instruction index
+        if (!(asmType instanceof Type)) {
+            throw new ProcessorException("In snippet " + className + "."
+                    + methodName + " - unsupported processor type "
+                    + asmType.getClass().toString());
+        }
 
-		return new ProcessorInfo(i, prcInv);
-	}
+        Type processorType = (Type) asmType;
 
-	private void insertExceptionHandler(InsnList instructions,
-			List<TryCatchBlockNode> tryCatchBlocks) {
-		
-		// NOTE: snippet should not throw an exception
-		// this method inserts try-finally for each snippet and fails
-		// immediately in the case of exception produced by snippet
-		
-		// inserts
-		// try {
-		// ... original code
-		// } finally {
-		//   System.err.println("...");
-		//   e.printStackTrace(); // possible here :)
-		//   System.exit(...);
-		// }
+        ArgumentProcessorMode procApplyType = ArgumentProcessorMode
+                .valueOf(((FieldInsnNode) secondParam).name);
 
-		// resolve types
-		Type typeSystem = Type.getType(System.class);
-		Type typePS = Type.getType(PrintStream.class);
-		Type typeString = Type.getType(String.class);
-		Type typeThrowable = Type.getType(Throwable.class);
+        // if the processor apply type is CALLSITE_ARGS
+        // the only allowed marker is BytecodeMarker
+        if(ArgumentProcessorMode.CALLSITE_ARGS.equals(procApplyType)
+                && marker.getClass() != BytecodeMarker.class) {
+            throw new ProcessorException(
+                    "ArgumentProcessor applied in mode CALLSITE_ARGS in method "
+                    + className + "." + methodName
+                    + " can be used only with BytecodeMarker");
+        }
 
-		// add try label at the beginning
-		LabelNode tryBegin = new LabelNode();
-		instructions.insert(tryBegin);
+        Proc processor = processors.get(processorType);
 
-		// ## try {
+        if (processor == null) {
+            throw new ProcessorException("In snippet " + className + "."
+                    + methodName + " - unknow processor used: "
+                    + processorType.getClassName());
+        }
 
-		// ## }
+        ProcInvocation prcInv = new ProcInvocation(processor, procApplyType);
 
-		// normal flow should jump after handler
-		LabelNode handlerEnd = new LabelNode();
-		instructions.add(new JumpInsnNode(Opcodes.GOTO, handlerEnd));
+        // get instruction index
 
-		// ## after normal flow
-		
-		// add try label at the end
-		LabelNode tryEnd = new LabelNode();
-		instructions.add(tryEnd);
-		
-		// ## after abnormal flow - exception handler
+        return new ProcessorInfo(i, prcInv);
+    }
 
-		// add handler begin
-		LabelNode handlerBegin = new LabelNode();
-		instructions.add(handlerBegin);
+    private void insertExceptionHandler(InsnList instructions,
+            List<TryCatchBlockNode> tryCatchBlocks) {
 
-		// add error report
-		
-		// put error stream on the stack
-		instructions.add(new FieldInsnNode(Opcodes.GETSTATIC,
-				typeSystem.getInternalName(),
-				"err",
-				typePS.getDescriptor()));
-		
-		// put error report on the stack
-		instructions.add(new LdcInsnNode(
-				"Snippet " + className + "." + methodName
-				+ " introduced exception that was not"
-				+ " handled. This would change the application control flow."
-				+ " Exiting..."));
-		
-		// invoke printing
-		instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
-				typePS.getInternalName(),
-				"println",
-				"(" + typeString.getDescriptor() + ")V"));
-		
-		// duplicate exception reference on the stack
-		instructions.add(new InsnNode(Opcodes.DUP));
-		
-		// invoke printing stack trace
-		instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
-				typeThrowable.getInternalName(),
-				"printStackTrace",
-				"()V"));
-		
-		// add system exit
-		
-		// add exit code
-		final int EXIT_CODE = 666;
-		instructions.add(AsmHelper.loadConst(EXIT_CODE));
-		
-		// invoke System.exit()
-		instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-				typeSystem.getInternalName(), "exit", "(I)V"));
-		
-		// add throw exception just for proper stack frame calculation
-		instructions.add(new InsnNode(Opcodes.ATHROW));
-		
-		// add handler end
-		instructions.add(handlerEnd);
+        // NOTE: snippet should not throw an exception
+        // this method inserts try-finally for each snippet and fails
+        // immediately in the case of exception produced by snippet
 
-		// ## add handler to the list
-		tryCatchBlocks.add(new TryCatchBlockNode(tryBegin, tryEnd,
-				handlerBegin, null));
-		
-	}
-	
-	private void insertDynamicBypass(InsnList instructions) {
+        // inserts
+        // try {
+        // ... original code
+        // } finally {
+        //   System.err.println("...");
+        //   e.printStackTrace(); // possible here :)
+        //   System.exit(...);
+        // }
 
-		// inserts
-		// DynamicBypass.activate();
-		// ... original code
-		// DynamicBypass.deactivate();
+        // resolve types
+        Type typeSystem = Type.getType(System.class);
+        Type typePS = Type.getType(PrintStream.class);
+        Type typeString = Type.getType(String.class);
+        Type typeThrowable = Type.getType(Throwable.class);
 
-		// resolve type
-		Type typeDB = Type.getType(DynamicBypass.class);
+        // add try label at the beginning
+        LabelNode tryBegin = new LabelNode();
+        instructions.insert(tryBegin);
 
-		// add invocation of activate at the beginning
-		instructions.insert(new MethodInsnNode(Opcodes.INVOKESTATIC,
-				typeDB.getInternalName(), "activate", "()V"));
+        // ## try {
 
-		// ## after normal flow
+        // ## }
 
-		// add invocation of deactivate - normal flow
-		instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-				typeDB.getInternalName(), "deactivate", "()V"));
-	}
+        // normal flow should jump after handler
+        LabelNode handlerEnd = new LabelNode();
+        instructions.add(new JumpInsnNode(Opcodes.GOTO, handlerEnd));
+
+        // ## after normal flow
+
+        // add try label at the end
+        LabelNode tryEnd = new LabelNode();
+        instructions.add(tryEnd);
+
+        // ## after abnormal flow - exception handler
+
+        // add handler begin
+        LabelNode handlerBegin = new LabelNode();
+        instructions.add(handlerBegin);
+
+        // add error report
+
+        // put error stream on the stack
+        instructions.add(new FieldInsnNode(Opcodes.GETSTATIC,
+                typeSystem.getInternalName(),
+                "err",
+                typePS.getDescriptor()));
+
+        // put error report on the stack
+        instructions.add(new LdcInsnNode(
+                "Snippet " + className + "." + methodName
+                + " introduced exception that was not"
+                + " handled. This would change the application control flow."
+                + " Exiting..."));
+
+        // invoke printing
+        instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+                typePS.getInternalName(),
+                "println",
+                "(" + typeString.getDescriptor() + ")V"));
+
+        // duplicate exception reference on the stack
+        instructions.add(new InsnNode(Opcodes.DUP));
+
+        // invoke printing stack trace
+        instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+                typeThrowable.getInternalName(),
+                "printStackTrace",
+                "()V"));
+
+        // add system exit
+
+        // add exit code
+        final int EXIT_CODE = 666;
+        instructions.add(AsmHelper.loadConst(EXIT_CODE));
+
+        // invoke System.exit()
+        instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                typeSystem.getInternalName(), "exit", "(I)V"));
+
+        // add throw exception just for proper stack frame calculation
+        instructions.add(new InsnNode(Opcodes.ATHROW));
+
+        // add handler end
+        instructions.add(handlerEnd);
+
+        // ## add handler to the list
+        tryCatchBlocks.add(new TryCatchBlockNode(tryBegin, tryEnd,
+                handlerBegin, null));
+
+    }
+
+    private void insertDynamicBypass(InsnList instructions) {
+
+        // inserts
+        // DynamicBypass.activate();
+        // ... original code
+        // DynamicBypass.deactivate();
+
+        // resolve type
+        Type typeDB = Type.getType(DynamicBypass.class);
+
+        // add invocation of activate at the beginning
+        instructions.insert(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                typeDB.getInternalName(), "activate", "()V"));
+
+        // ## after normal flow
+
+        // add invocation of deactivate - normal flow
+        instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                typeDB.getInternalName(), "deactivate", "()V"));
+    }
 }
