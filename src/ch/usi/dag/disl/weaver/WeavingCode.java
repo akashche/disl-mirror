@@ -36,6 +36,7 @@ import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.weaver.pe.MaxCalculator;
 import ch.usi.dag.disl.weaver.pe.PartialEvaluator;
@@ -145,7 +146,7 @@ public class WeavingCode {
     }
 
     private void preFixDynamicInfoCheck() throws DynamicContextException {
-        for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (iList)) {
+        for (AbstractInsnNode instr : Insns.selectAll (iList)) {
 
             // it is invocation...
             if (instr.getOpcode() != Opcodes.INVOKEINTERFACE) {
@@ -347,7 +348,7 @@ public class WeavingCode {
                     basicframe = info.getRetFrame();
                 }
 
-                int slot = AsmHelper.getInternalParamIndex(method, operand);
+                int slot = AsmHelper.getParameterSlot (method, operand);
                 int args = Type.getArgumentTypes(method.desc).length;
 
                 // index should be less than the size of local variables
@@ -486,7 +487,7 @@ public class WeavingCode {
     private int fixLocalIndex(InsnList src, int offset) {
         int max = offset;
 
-        for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (src)) {
+        for (AbstractInsnNode instr : Insns.selectAll (src)) {
 
             if (instr instanceof VarInsnNode) {
 
@@ -580,8 +581,9 @@ public class WeavingCode {
 
             instructions.insertBefore(
                     target,
-                    new VarInsnNode(type.getOpcode(Opcodes.ILOAD), AsmHelper
-                            .getInternalParamIndex(method,
+                    new VarInsnNode(
+                        type.getOpcode(Opcodes.ILOAD), AsmHelper
+                            .getParameterSlot (method,
                                     processorMethod.getArgPos())
                             - method.maxLocals));
 
@@ -741,8 +743,7 @@ public class WeavingCode {
                                     - method.maxLocals);
                 } else {
 
-                    AbstractInsnNode callee = AsmHelper.skipVirtualInsns(
-                            shadow.getRegionStart(), true);
+                    AbstractInsnNode callee = Insns.FORWARD.firstRealInsn (shadow.getRegionStart());
 
                     if (!(callee instanceof MethodInsnNode)) {
                         throw new DiSLFatalException("In snippet "
@@ -805,8 +806,7 @@ public class WeavingCode {
                     }
                 } else {
 
-                    AbstractInsnNode callee = AsmHelper.skipVirtualInsns(
-                            shadow.getRegionStart(), true);
+                    AbstractInsnNode callee = Insns.FORWARD.firstRealInsn (shadow.getRegionStart());
 
                     if (!(callee instanceof MethodInsnNode)) {
                         throw new DiSLFatalException("In snippet "

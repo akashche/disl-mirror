@@ -20,6 +20,7 @@ import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.FrameHelper;
 
 public class WeavingInfo {
@@ -116,8 +117,7 @@ public class WeavingInfo {
         sourceFrameMap = FrameHelper.createSourceMapping(classNode.name,
                 methodNode);
 
-        AbstractInsnNode last = AsmHelper.skipVirtualInsns(
-                instructions.getLast(), false);
+        AbstractInsnNode last = Insns.REVERSE.firstRealInsn (instructions.getLast());
         retFrame = basicFrameMap.get(last);
     }
 

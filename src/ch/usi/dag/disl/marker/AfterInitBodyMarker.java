@@ -9,11 +9,10 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 
 /**
- * <p>
- * Marks whole method body.
- *
+ * Marks a method body after call to constructor.
  * <p>
  * Sets the start at the beginning of a method and the end at the end of a
  * method. If the method is a constructor, the start is inserted after the
@@ -33,7 +32,7 @@ public class AfterInitBodyMarker extends AbstractMarker {
         // Add all instructions preceding the RETURN instructions
         // as marked region ends.
         //
-        for (final AbstractInsnNode insn : AsmHelper.allInsnsFrom(method.instructions)) {
+        for (final AbstractInsnNode insn : Insns.selectAll (method.instructions)) {
             int opcode = insn.getOpcode();
             if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) {
                 region.addEnd(insn.getPrevious());

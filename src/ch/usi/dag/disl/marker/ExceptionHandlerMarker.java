@@ -7,13 +7,11 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
 /**
- * <p>
- * Marks exception handler.
- *
+ * Marks an exception handler.
  * <p>
  * Sets the start at the beginning of an exception handler and the end at the
  * end of an exception handler.
@@ -32,8 +30,9 @@ public class ExceptionHandlerMarker extends AbstractDWRMarker {
         for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
 
             List<AbstractInsnNode> exits = cfg.visit(tcb.handler);
-            regions.add(new MarkedRegion(AsmHelper.skipVirtualInsns(tcb.handler,
-                    true), exits));
+            regions.add(new MarkedRegion(
+                Insns.FORWARD.firstRealInsn (tcb.handler), exits
+            ));
         }
 
         return regions;

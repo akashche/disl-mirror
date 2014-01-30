@@ -22,6 +22,7 @@ import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
@@ -55,7 +56,7 @@ public class UnprocessedCode {
         Set <SyntheticLocalVar> slvList = new HashSet <SyntheticLocalVar> ();
         Set <ThreadLocalVar> tlvList = new HashSet <ThreadLocalVar> ();
 
-        for (AbstractInsnNode insn : AsmHelper.allInsnsFrom (instructions)) {
+        for (AbstractInsnNode insn : Insns.selectAll (instructions)) {
             // *** Parse synthetic local variables ***
             SyntheticLocalVar slv = insnUsesField (insn, allLVs.getSyntheticLocals ());
             if (slv != null) {
@@ -89,7 +90,7 @@ public class UnprocessedCode {
         Map<String, StaticContextMethod> staticContexts =
                 new HashMap<String, StaticContextMethod>();
 
-        for (AbstractInsnNode instr : AsmHelper.allInsnsFrom (instructions)) {
+        for (AbstractInsnNode instr : Insns.selectAll (instructions)) {
             // *** Parse static context methods in use ***
 
             StaticContextMethod scm = insnInvokesStaticContext(

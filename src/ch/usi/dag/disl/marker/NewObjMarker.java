@@ -8,19 +8,16 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.Constants;
 
 /**
- * <p>
- * <b>note:</b> This class is work in progress
- *
- * <p>
  * Marks object creation.
- *
  * <p>
  * Sets the start before new instruction and the end after the constructor
  * invocation.
+ * <p>
+ * <b>Note:</b> This class is work in progress.
  */
 public class NewObjMarker extends AbstractDWRMarker {
 
@@ -33,7 +30,7 @@ public class NewObjMarker extends AbstractDWRMarker {
         int invokedNews = 0;
 
         // find invocation of constructor after new instruction
-        for (AbstractInsnNode instruction : AsmHelper.allInsnsFrom(method.instructions)) {
+        for (AbstractInsnNode instruction : Insns.selectAll (method.instructions)) {
 
             // track new instruction
             if (instruction.getOpcode() == Opcodes.NEW) {

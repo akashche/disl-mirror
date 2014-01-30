@@ -7,12 +7,10 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 
 /**
- * <p>
- * Marks try block.
- *
+ * Marks a try block.
  * <p>
  * Sets the start at the beginning of a try block and the end at the end of a
  * try block.
@@ -26,8 +24,10 @@ public class TryClauseMarker extends AbstractDWRMarker {
 
         for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
 
-            AbstractInsnNode start = AsmHelper.skipVirtualInsns(tcb.start, true);
-            AbstractInsnNode end = AsmHelper.skipVirtualInsns(tcb.end, false);
+            AbstractInsnNode start = Insns.FORWARD.firstRealInsn (tcb.start);
+            // RFC LB: Consider nextRealInsn, since TCB end is exclusive
+            // This depends on the semantics of marked region
+            AbstractInsnNode end = Insns.REVERSE.firstRealInsn (tcb.end);
             regions.add(new MarkedRegion(start, end));
         }
 

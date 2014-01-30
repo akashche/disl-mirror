@@ -9,14 +9,12 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
-import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 
 /**
+ * Marks bytecode instructions depending on the ASM class type.
  * <p>
- * <b>note:</b> This class is work in progress
- *
- * <p>
- * Marks instruction depending on ASM class type.
+ * <b>Note:</b> This class is work in progress.
  */
 public class InsnNodeMarker extends AbstractInsnMarker {
 
@@ -56,7 +54,7 @@ public class InsnNodeMarker extends AbstractInsnMarker {
 
         List<AbstractInsnNode> seleted = new LinkedList<AbstractInsnNode>();
 
-        for (AbstractInsnNode instr : AsmHelper.allInsnsFrom(methodNode.instructions)) {
+        for (AbstractInsnNode instr : Insns.selectAll (methodNode.instructions)) {
 
             for (Class<? extends AbstractInsnNode> clazz : classes) {
 

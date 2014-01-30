@@ -7,7 +7,7 @@ import java.util.Map;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 import ch.usi.dag.disl.snippet.Shadow;
-import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.Insn;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
 /**
@@ -59,7 +59,7 @@ public class BasicBlockStaticContext extends AbstractStaticContext {
 
         while (!ends.contains(start)) {
 
-            if (! AsmHelper.isVirtualInstr(start)) {
+            if (! Insn.isVirtual (start)) {
                 count++;
             }
 

@@ -15,7 +15,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
 public class CtrlFlowGraph {
@@ -60,7 +60,7 @@ public class CtrlFlowGraph {
                 end = end.getPrevious();
             }
 
-            end = AsmHelper.skipVirtualInsns(end, false);
+            end = Insns.REVERSE.firstRealInsn (end);
             nodes.add(new BasicBlock(i, start, end));
         }
     }
@@ -91,7 +91,7 @@ public class CtrlFlowGraph {
     // If not found, return null.
     public BasicBlock getBB(AbstractInsnNode instr) {
 
-        instr = AsmHelper.skipVirtualInsns(instr, true);
+        instr = Insns.FORWARD.firstRealInsn (instr);
 
         while (instr != null) {
 

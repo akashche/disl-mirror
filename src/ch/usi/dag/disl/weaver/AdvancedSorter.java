@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 
 public class AdvancedSorter extends TryCatchBlockSorter {
 
@@ -27,14 +28,12 @@ public class AdvancedSorter extends TryCatchBlockSorter {
 
         for (int i = 0; i < tcbs.length; i++) {
 
-            int istart = instructions.indexOf(AsmHelper.skipVirtualInsns(
-                    tcbs[i].start, true));
+            int istart = instructions.indexOf(Insns.FORWARD.firstRealInsn (tcbs[i].start));
             int iend = instructions.indexOf(tcbs[i].end);
 
             for (int j = i; j < tcbs.length; j++) {
 
-                int jstart = instructions.indexOf(AsmHelper.skipVirtualInsns(
-                        tcbs[j].start, true));
+                int jstart = instructions.indexOf(Insns.FORWARD.firstRealInsn (tcbs[j].start));
                 int jend = instructions.indexOf(tcbs[j].end);
 
                 if ((AsmHelper.offsetBefore(instructions, istart, jstart)
@@ -61,8 +60,7 @@ public class AdvancedSorter extends TryCatchBlockSorter {
             }
 
             private int blockLength(TryCatchBlockNode block) {
-                int startidx = instructions.indexOf(AsmHelper.skipVirtualInsns(
-                        block.start, true));
+                int startidx = instructions.indexOf(Insns.FORWARD.firstRealInsn (block.start));
                 int endidx = instructions.indexOf(block.end);
                 return endidx - startidx;
             }

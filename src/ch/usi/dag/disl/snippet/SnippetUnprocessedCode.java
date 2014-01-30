@@ -31,6 +31,7 @@ import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 
 /**
  * Contains unprocessed code of the Snippet.
@@ -97,7 +98,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
             new HashMap<Integer, ProcInvocation>();
 
         int insnIndex = 0;
-        for (AbstractInsnNode insn : AsmHelper.allInsnsFrom (instructions)) {
+        for (AbstractInsnNode insn : Insns.selectAll (instructions)) {
             // *** Parse processors in use ***
             // no other modifications to the code should be done before weaving
             // otherwise, produced instruction reference can be invalid

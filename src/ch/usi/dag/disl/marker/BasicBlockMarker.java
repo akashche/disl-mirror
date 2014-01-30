@@ -6,13 +6,11 @@ import java.util.List;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
 /**
- * <p>
- * Marks basic block.
- *
+ * Marks a basic block.
  * <p>
  * Sets the start at the beginning of a basic block and the end at the end of a
  * basic block. Considers only jump instructions, lookup switch and table
@@ -29,8 +27,9 @@ public class BasicBlockMarker extends AbstractDWRMarker {
         List<AbstractInsnNode> seperators = BasicBlockCalc.getAll(
                 methodNode.instructions, methodNode.tryCatchBlocks, isPrecise);
 
-        AbstractInsnNode last = AsmHelper.skipVirtualInsns(
-                methodNode.instructions.getLast(), false);
+        AbstractInsnNode last = Insns.REVERSE.firstRealInsn (
+            methodNode.instructions.getLast()
+        );
 
         seperators.add(last);
 
@@ -43,8 +42,9 @@ public class BasicBlockMarker extends AbstractDWRMarker {
                 end = end.getPrevious();
             }
 
-            regions.add(new MarkedRegion(start, AsmHelper.skipVirtualInsns(end,
-                    false)));
+            regions.add(new MarkedRegion(
+                start, Insns.REVERSE.firstRealInsn (end)
+            ));
         }
 
         return regions;

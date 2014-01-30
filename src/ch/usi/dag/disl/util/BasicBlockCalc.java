@@ -14,6 +14,8 @@ import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import ch.usi.dag.disl.util.AsmHelper.Insns;
+
 
 public class BasicBlockCalc {
 
@@ -38,7 +40,7 @@ public class BasicBlockCalc {
         Set <AbstractInsnNode> bbStarts = new HashSet <AbstractInsnNode> () {
             @Override
             public boolean add (AbstractInsnNode insn) {
-                return super.add (AsmHelper.skipVirtualInsnsForward (insn));
+                return super.add (Insns.FORWARD.firstRealInsn (insn));
             }
 
             @Override
@@ -62,7 +64,7 @@ public class BasicBlockCalc {
         // block and collect the starting instructions of the basic blocks
         // that follow them.
         //
-        for (final AbstractInsnNode insn : AsmHelper.allInsnsFrom (instructions)) {
+        for (final AbstractInsnNode insn : Insns.selectAll (instructions)) {
             SWITCH: switch (insn.getType ()) {
             //
             // IFEQ, IFNE, IFLT, IFGE, IFGT, IFLE, IF_ICMPEQ,
@@ -76,7 +78,7 @@ public class BasicBlockCalc {
             // also starts with the next instruction.
             //
             // The GOTO instruction changes the control flow unconditionally,
-            // so only one basic block follows it.
+            // so only one basic block follows from it.
             //
             case AbstractInsnNode.JUMP_INSN: {
                 bbStarts.add (((JumpInsnNode) insn).label);
@@ -85,7 +87,7 @@ public class BasicBlockCalc {
                     // There must be a valid (non-virtual) instruction
                     // following a conditional/subroutine jump instruction.
                     //
-                    AbstractInsnNode nextInsn = AsmHelper.nextNonVirtualInsn (insn);
+                    AbstractInsnNode nextInsn = Insns.FORWARD.nextRealInsn (insn);
                     if (nextInsn != null) {
                         bbStarts.add (nextInsn);
                     }
@@ -149,7 +151,7 @@ public class BasicBlockCalc {
         // not help here, because we were adding entries out-of-order (jumps).
         //
         List <AbstractInsnNode> result = new ArrayList <AbstractInsnNode> ();
-        for (final AbstractInsnNode insn : AsmHelper.allInsnsFrom (instructions)) {
+        for (final AbstractInsnNode insn : Insns.selectAll (instructions)) {
             if (bbStarts.contains (insn)) {
                 result.add (insn);
             }

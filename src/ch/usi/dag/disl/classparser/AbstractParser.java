@@ -26,8 +26,10 @@ import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.FrameHelper;
+import ch.usi.dag.disl.util.Insn;
 
 /**
  * Parses DiSL class with local variables
@@ -210,7 +212,7 @@ abstract class AbstractParser {
         // the next initialization block.
         //
         AbstractInsnNode firstInitInsn = initInsns.getFirst ();
-        for (final AbstractInsnNode insn : AsmHelper.allInsnsFrom (initInsns)) {
+        for (final AbstractInsnNode insn : Insns.selectAll (initInsns)) {
             if (AsmHelper.isReturn (insn.getOpcode ())) {
                 break;
             }
@@ -272,7 +274,7 @@ abstract class AbstractParser {
             //
             // Clone only real instructions, we should not need labels.
             //
-            if (! AsmHelper.isVirtualInstr (insn)) {
+            if (! Insn.isVirtual (insn)) {
                 result.add (insn.clone (dummy));
             }
         }

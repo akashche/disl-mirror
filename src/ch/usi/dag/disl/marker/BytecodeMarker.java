@@ -9,13 +9,11 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.exception.MarkerException;
-import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.AsmOpcodes;
 
 /**
- * <p>
- * Marks one java bytecode instruction.
- *
+ * Marks one bytecode instruction.
  * <p>
  * Sets the start before a bytecode instruction and the end after a bytecode
  * instruction. If the bytecode instruction is (conditional) jump the end is
@@ -60,7 +58,7 @@ public class BytecodeMarker extends AbstractDWRMarker {
     public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
 
         List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-        for (AbstractInsnNode instruction : AsmHelper.allInsnsFrom(method.instructions)) {
+        for (AbstractInsnNode instruction : Insns.selectAll (method.instructions)) {
 
             if (searchedInstrNums.contains(instruction.getOpcode())) {
 

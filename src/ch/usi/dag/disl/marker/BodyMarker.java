@@ -8,12 +8,10 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
-import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 
 /**
- * <p>
- * Marks whole method body.
- *
+ * Marks a method body.
  * <p>
  * Sets the start at the beginning of a method and the end at the end of a
  * method.
@@ -27,7 +25,7 @@ public class BodyMarker extends AbstractMarker {
         MarkedRegion region =
                 new MarkedRegion(method.instructions.getFirst());
 
-        for (AbstractInsnNode instr : AsmHelper.allInsnsFrom(method.instructions)) {
+        for (AbstractInsnNode instr : Insns.selectAll (method.instructions)) {
 
             int opcode = instr.getOpcode();
 

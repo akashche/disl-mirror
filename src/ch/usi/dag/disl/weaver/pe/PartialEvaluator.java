@@ -25,6 +25,7 @@ import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.util.cfg.BasicBlock;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
@@ -109,8 +110,7 @@ public class PartialEvaluator {
 
         for (BasicBlock bb : cfg.getNodes()) {
 
-            AbstractInsnNode instr = AsmHelper.skipVirtualInsns(bb.getExit(),
-                    false);
+            AbstractInsnNode instr = Insns.REVERSE.firstRealInsn (bb.getExit());
             int opcode = instr.getOpcode();
             Frame<ConstValue> frame = frames.get(instr);
 
@@ -638,8 +638,7 @@ public class PartialEvaluator {
                     continue;
                 }
 
-                if (AsmHelper.skipVirtualInsns(((JumpInsnNode) instr).label,
-                        false) != instr) {
+                if (Insns.REVERSE.firstRealInsn (((JumpInsnNode) instr).label) != instr) {
                     continue;
                 }
 
@@ -658,14 +657,13 @@ public class PartialEvaluator {
                 boolean flag = false;
 
                 for (LabelNode label : lsin.labels) {
-                    if (AsmHelper.skipVirtualInsns(label, false) != instr) {
+                    if (Insns.REVERSE.firstRealInsn (label) != instr) {
                         flag = true;
                         continue;
                     }
                 }
 
-                if (flag
-                        || AsmHelper.skipVirtualInsns(lsin.dflt, false) != instr) {
+                if (flag || Insns.REVERSE.firstRealInsn (lsin.dflt) != instr) {
                     continue;
                 }
 
@@ -682,14 +680,13 @@ public class PartialEvaluator {
                 boolean flag = false;
 
                 for (LabelNode label : tsin.labels) {
-                    if (AsmHelper.skipVirtualInsns(label, false) != instr) {
+                    if (Insns.REVERSE.firstRealInsn (label) != instr) {
                         flag = true;
                         continue;
                     }
                 }
 
-                if (flag
-                        || AsmHelper.skipVirtualInsns(tsin.dflt, false) != instr) {
+                if (flag || Insns.REVERSE.firstRealInsn (tsin.dflt) != instr) {
                     continue;
                 }
 
@@ -713,8 +710,10 @@ public class PartialEvaluator {
         boolean isOptimized = false;
 
         for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
-            if (AsmHelper.skipVirtualInsns(tcb.start, true) == AsmHelper
-                    .skipVirtualInsns(tcb.end, true)) {
+            // TCB start is inclusive, TCB end is exclusive.
+            final AbstractInsnNode first = Insns.FORWARD.firstRealInsn (tcb.start);
+            final AbstractInsnNode last = Insns.REVERSE.nextRealInsn (tcb.end);
+            if (first == last) {
                 method.tryCatchBlocks.remove(tcb);
                 isOptimized |= removeUnusedBB(cfg);
             }

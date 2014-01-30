@@ -28,6 +28,7 @@ import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.AsmHelper;
+import ch.usi.dag.disl.util.AsmHelper.Insns;
 
 // The weaver instruments byte-codes into java class.
 public class Weaver {
@@ -64,7 +65,7 @@ public class Weaver {
             //
             if (var.hasInitCode ()) {
                 instructions.insertBefore (
-                    first, AsmHelper.cloneInsnList (var.getInitCode ())
+                    first, AsmHelper.cloneInstructions (var.getInitCode ())
                 );
 
             } else {
@@ -78,7 +79,7 @@ public class Weaver {
                 if (type.getSort () != Type.ARRAY) {
                     instructions.insertBefore (first, AsmHelper.loadDefault (type));
                 } else {
-                    instructions.insertBefore (first, AsmHelper.loadDefault ());
+                    instructions.insertBefore (first, AsmHelper.loadNull ());
                     instructions.insertBefore (first, AsmHelper.checkCast (type));
                 }
 
@@ -155,9 +156,7 @@ public class Weaver {
     private static LabelNode getEndLabel(MethodNode methodNode,
             AbstractInsnNode instr) {
 
-        if (instr.getNext() != null
-                && AsmHelper.skipVirtualInsns(instr.getNext(), true) != null) {
-
+        if (Insns.FORWARD.nextRealInsn (instr) != null) {
             LabelNode branch = new LabelNode();
             methodNode.instructions.insert(instr, branch);
 
