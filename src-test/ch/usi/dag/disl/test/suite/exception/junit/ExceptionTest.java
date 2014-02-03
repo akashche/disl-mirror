@@ -19,7 +19,7 @@ public class ExceptionTest {
 		r.waitFor();
 		r.assertIsFinished();
 		if(Boolean.parseBoolean(System.getProperty("disl.test.verbose"))) { r.destroyIfRunningAndFlushOutputs(); }
-		r.assertIsSuccessfull();
+		r.assertIsSuccessful();
 		r.assertClientOut("client.out.resource");
 		r.assertClientErrNull();
 		r.assertServerOutNull();

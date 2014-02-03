@@ -98,9 +98,9 @@ public class ClientServerRunner {
     }
 
 
-    public void assertIsSuccessfull () {
-        assertTrue ("client not successfull", client.isSuccessfull ());
-        assertTrue ("server not successfull", server.isSuccessfull ());
+    public void assertIsSuccessful () {
+        assertTrue ("client not successful", client.isSuccessful ());
+        assertTrue ("server not successful", server.isSuccessful ());
     }
 
 

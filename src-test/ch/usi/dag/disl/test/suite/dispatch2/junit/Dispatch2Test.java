@@ -24,7 +24,7 @@ public class Dispatch2Test {
         if (Boolean.parseBoolean (System.getProperty ("disl.test.verbose"))) {
             r.destroyIfRunningAndFlushOutputs ();
         }
-        r.assertIsSuccessfull ();
+        r.assertIsSuccessful ();
         r.assertClientOut ("client.out.resource");
         r.assertEvaluationOut ("evaluation.out.resource");
         r.assertRestOutErrNull ();

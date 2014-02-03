@@ -169,10 +169,10 @@ public class ClientServerEvaluationRunner {
     }
 
 
-    public void assertIsSuccessfull () {
-        assertTrue ("client not successfull", client.isSuccessfull ());
-        assertTrue ("evaluation not successfull", evaluation.isSuccessfull ());
-        assertTrue ("server not successfull", server.isSuccessfull ());
+    public void assertIsSuccessful () {
+        assertTrue ("client not successful", client.isSuccessful ());
+        assertTrue ("evaluation not successful", evaluation.isSuccessful ());
+        assertTrue ("server not successful", server.isSuccessful ());
     }
 
 

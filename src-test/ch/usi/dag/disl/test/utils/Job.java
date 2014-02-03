@@ -251,7 +251,7 @@ public class Job {
      *         True - If job has successfully finished returning zero.
      *         False - If job has not finished yet or not successfully.
      */
-    public boolean isSuccessfull() {
+    public boolean isSuccessful() {
         if (process == null) {
             return false;
         }
