@@ -27,23 +27,23 @@ public class AdvancedSorter extends TryCatchBlockSorter {
         tcbs = tryCatchBlocks.toArray(tcbs);
 
         for (int i = 0; i < tcbs.length; i++) {
-
             int istart = instructions.indexOf(Insns.FORWARD.firstRealInsn (tcbs[i].start));
             int iend = instructions.indexOf(tcbs[i].end);
 
             for (int j = i; j < tcbs.length; j++) {
-
                 int jstart = instructions.indexOf(Insns.FORWARD.firstRealInsn (tcbs[j].start));
                 int jend = instructions.indexOf(tcbs[j].end);
 
-                if ((AsmHelper.offsetBefore(instructions, istart, jstart)
-                        && AsmHelper.offsetBefore(instructions, jstart, iend)
-                        && AsmHelper.offsetBefore(instructions, iend, jend)) ||
-                        (AsmHelper.offsetBefore(instructions, jstart, istart)
-                        && AsmHelper.offsetBefore(instructions, istart, jend)
-                        && AsmHelper.offsetBefore(instructions, jend, iend))) {
-
-                    throw new DiSLFatalException("Crossing exception handler.");
+                if ((
+                        AsmHelper.offsetBefore(instructions, istart, jstart) &&
+                        AsmHelper.offsetBefore(instructions, jstart, iend) &&
+                        AsmHelper.offsetBefore(instructions, iend, jend)
+                    ) || (
+                        AsmHelper.offsetBefore(instructions, jstart, istart) &&
+                        AsmHelper.offsetBefore(instructions, istart, jend) &&
+                        AsmHelper.offsetBefore(instructions, jend, iend)
+                )) {
+                    throw new DiSLFatalException ("Overlapping exception handler.");
                 }
             }
         }
