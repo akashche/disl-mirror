@@ -643,7 +643,7 @@ public class WeavingCode {
             ProcInstance processor = piResolver.get(shadow, i);
 
             if (processor != null) {
-                if (processor.getProcApplyType() == ArgumentProcessorMode.METHOD_ARGS) {
+                if (processor.getMode() == ArgumentProcessorMode.METHOD_ARGS) {
                     iList.insert(instr, procInMethod(processor));
                 } else {
                     iList.insert(instr, procBeforeInvoke(processor));

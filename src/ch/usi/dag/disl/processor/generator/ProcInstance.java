@@ -5,22 +5,28 @@ import java.util.List;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 
 public class ProcInstance {
+    private final ArgumentProcessorMode __mode;
+    private final List <ProcMethodInstance> __methods;
 
-    private ArgumentProcessorMode procApplyType;
-    private List<ProcMethodInstance> methods;
+    //
 
-    public ProcInstance(ArgumentProcessorMode procApplyType,
-            List<ProcMethodInstance> methods) {
-        super();
-        this.procApplyType = procApplyType;
-        this.methods = methods;
+    public ProcInstance (
+        final ArgumentProcessorMode mode,
+        final List <ProcMethodInstance> methods
+    ) {
+        __mode = mode;
+        __methods = methods;
     }
 
-    public ArgumentProcessorMode getProcApplyType() {
-        return procApplyType;
+    //
+
+    public ArgumentProcessorMode getMode () {
+        return __mode;
     }
 
-    public List<ProcMethodInstance> getMethods() {
-        return methods;
+
+    public List <ProcMethodInstance> getMethods () {
+        return __methods;
     }
+
 }
