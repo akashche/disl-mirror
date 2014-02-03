@@ -19,4 +19,9 @@ public abstract class DiSLException extends Exception {
     public DiSLException(Throwable cause) {
         super(cause);
     }
+
+    public DiSLException (final String format, final Object ... args) {
+        super (String.format (format, args));
+    }
+
 }

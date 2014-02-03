@@ -24,7 +24,7 @@ import ch.usi.dag.disl.classcontext.ClassContext;
 import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
-import ch.usi.dag.disl.exception.DynamicContextException;
+import ch.usi.dag.disl.exception.InvalidContextUsageException;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
 import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
@@ -145,7 +145,7 @@ public class WeavingCode {
         }
     }
 
-    private void preFixDynamicInfoCheck() throws DynamicContextException {
+    private void preFixDynamicInfoCheck() throws InvalidContextUsageException {
         for (AbstractInsnNode instr : Insns.selectAll (iList)) {
 
             // it is invocation...
@@ -182,7 +182,7 @@ public class WeavingCode {
                 break;
 
             default:
-                throw new DynamicContextException("In snippet "
+                throw new InvalidContextUsageException("In snippet "
                         + snippet.getOriginClassName() + "."
                         + snippet.getOriginMethodName()
                         + " - pass the first (pos)"
@@ -192,7 +192,7 @@ public class WeavingCode {
 
             // second operand test
             if (! AsmHelper.isTypeConstLoadInsn (secondOperand)) {
-                throw new DynamicContextException("In snippet "
+                throw new InvalidContextUsageException("In snippet "
                         + snippet.getOriginClassName() + "."
                         + snippet.getOriginMethodName()
                         + " - pass the second (type)"
@@ -221,7 +221,7 @@ public class WeavingCode {
     // NOTE that if the user requests for the stack value, some store
     // instructions will be inserted to the target method, and new local slot
     // will be used for storing this.
-    public void fixDynamicInfo(boolean throwing) throws DynamicContextException {
+    public void fixDynamicInfo(boolean throwing) throws InvalidContextUsageException {
 
         preFixDynamicInfoCheck();
 
@@ -303,7 +303,7 @@ public class WeavingCode {
                     // index should be less than the stack height
                     if (operand >= basicframe.getStackSize() || operand < 0) {
 
-                        throw new DynamicContextException("In snippet "
+                        throw new InvalidContextUsageException("In snippet "
                                 + snippet.getOriginClassName() + "."
                                 + snippet.getOriginMethodName()
                                 + " - trying to access the stack item NO."
@@ -316,7 +316,7 @@ public class WeavingCode {
                             operand).getType();
 
                     if (t.getSort() != targetType.getSort()) {
-                        throw new DynamicContextException("In snippet "
+                        throw new InvalidContextUsageException("In snippet "
                                 + snippet.getOriginClassName() + "."
                                 + snippet.getOriginMethodName()
                                 + " - trying to access the stack item NO."
@@ -354,7 +354,7 @@ public class WeavingCode {
                 // index should be less than the size of local variables
                 if (operand >= args || operand < 0) {
 
-                    throw new DynamicContextException("In snippet "
+                    throw new InvalidContextUsageException("In snippet "
                             + snippet.getOriginClassName() + "."
                             + snippet.getOriginMethodName()
                             + " - trying to access the method argument NO."
@@ -368,7 +368,7 @@ public class WeavingCode {
 
                 if (t.getSort() != targetType.getSort()) {
 
-                    throw new DynamicContextException("In snippet "
+                    throw new InvalidContextUsageException("In snippet "
                             + snippet.getOriginClassName() + "."
                             + snippet.getOriginMethodName()
                             + " - trying to access the method argument NO."
@@ -393,7 +393,7 @@ public class WeavingCode {
                 // index should be less than the size of local variables
                 if (operand >= basicframe.getLocals() || operand < 0) {
 
-                    throw new DynamicContextException("In snippet "
+                    throw new InvalidContextUsageException("In snippet "
                             + snippet.getOriginClassName() + "."
                             + snippet.getOriginMethodName()
                             + " - trying to access the local variable NO."
@@ -407,7 +407,7 @@ public class WeavingCode {
 
                 if (t.getSort() != targetType.getSort()) {
 
-                    throw new DynamicContextException("In snippet "
+                    throw new InvalidContextUsageException("In snippet "
                             + snippet.getOriginClassName() + "."
                             + snippet.getOriginMethodName()
                             + " - trying to access the local variable NO."
@@ -865,7 +865,7 @@ public class WeavingCode {
     }
 
     public void transform(SCGenerator staticInfoHolder, PIResolver piResolver, boolean throwing)
-            throws DynamicContextException {
+            throws InvalidContextUsageException {
         fixProcessor(piResolver);
         fixProcessorInfo();
         fixStaticInfo(staticInfoHolder);
