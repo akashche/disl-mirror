@@ -23,168 +23,168 @@ import ch.usi.dag.disl.snippet.Snippet;
 
 public class ProcGenerator {
 
-	Map<Proc, ProcInstance> insideMethodPIs = new HashMap<Proc, ProcInstance>();
+    Map<Proc, ProcInstance> insideMethodPIs = new HashMap<Proc, ProcInstance>();
 
-	public PIResolver compute(Map<Snippet, List<Shadow>> snippetMarkings)
-			throws ProcessorException {
+    public PIResolver compute(Map<Snippet, List<Shadow>> snippetMarkings)
+            throws ProcessorException {
 
-		PIResolver piResolver = new PIResolver();
+        PIResolver piResolver = new PIResolver();
 
-		// for each snippet
-		for (Snippet snippet : snippetMarkings.keySet()) {
+        // for each snippet
+        for (Snippet snippet : snippetMarkings.keySet()) {
 
-			Map<Integer, ProcInvocation> invokedProcs = snippet.getCode()
-					.getInvokedProcessors();
+            Map<Integer, ProcInvocation> invokedProcs = snippet.getCode()
+                    .getInvokedProcessors();
 
-			for (Shadow shadow : snippetMarkings.get(snippet)) {
+            for (Shadow shadow : snippetMarkings.get(snippet)) {
 
-				// for each processor defined in snippet
-				for (Integer instrPos : invokedProcs.keySet()) {
+                // for each processor defined in snippet
+                for (Integer instrPos : invokedProcs.keySet()) {
 
-					ProcInvocation prcInv = invokedProcs.get(instrPos);
+                    ProcInvocation prcInv = invokedProcs.get(instrPos);
 
-					ProcInstance prcInst = null;
+                    ProcInstance prcInst = null;
 
-					// handle apply type
-					switch (prcInv.getProcApplyType()) {
+                    // handle apply type
+                    switch (prcInv.getProcApplyType()) {
 
-					case METHOD_ARGS: {
-						prcInst = computeInsideMethod(shadow, prcInv);
-						break;
-					}
+                    case METHOD_ARGS: {
+                        prcInst = computeInsideMethod(shadow, prcInv);
+                        break;
+                    }
 
-					case CALLSITE_ARGS: {
-						prcInst = computeBeforeInvocation(shadow, prcInv);
-						break;
-					}
+                    case CALLSITE_ARGS: {
+                        prcInst = computeBeforeInvocation(shadow, prcInv);
+                        break;
+                    }
 
-					default:
-						throw new DiSLFatalException(
-								"Proc computation not defined");
-					}
-					
-					if(prcInst != null) {
-						// add result to processor instance resolver
-						piResolver.set(shadow, instrPos, prcInst);
-					}
-				}
-			}
-		}
+                    default:
+                        throw new DiSLFatalException(
+                                "Proc computation not defined");
+                    }
 
-		return piResolver;
-	}
+                    if(prcInst != null) {
+                        // add result to processor instance resolver
+                        piResolver.set(shadow, instrPos, prcInst);
+                    }
+                }
+            }
+        }
 
-	private ProcInstance computeInsideMethod(Shadow shadow,
-			ProcInvocation prcInv) {
+        return piResolver;
+    }
 
-		// all instances of inside method processor will be the same
-		// if we have one, we can use it multiple times
+    private ProcInstance computeInsideMethod(Shadow shadow,
+            ProcInvocation prcInv) {
 
-		ProcInstance procInst = insideMethodPIs.get(prcInv.getProcessor());
+        // all instances of inside method processor will be the same
+        // if we have one, we can use it multiple times
 
-		if (procInst == null) {
-			procInst = createProcInstance(ArgumentProcessorMode.METHOD_ARGS,
-					shadow.getMethodNode().desc, shadow, prcInv);
-		}
+        ProcInstance procInst = insideMethodPIs.get(prcInv.getProcessor());
 
-		return procInst;
-	}
+        if (procInst == null) {
+            procInst = createProcInstance(ArgumentProcessorMode.METHOD_ARGS,
+                    shadow.getMethodNode().desc, shadow, prcInv);
+        }
 
-	private ProcInstance computeBeforeInvocation(Shadow shadow,
-			ProcInvocation prcInv) throws ProcessorException {
+        return procInst;
+    }
 
-		// NOTE: ProcUnprocessedCode checks that CALLSITE_ARGS is
-		// used only with BytecodeMarker
-		
-		// because it is BytecodeMarker, it should have only one end 
-		if(shadow.getRegionEnds().size() > 1) {
-			throw new DiSLFatalException(
-					"Expected only one end in marked region");
-		}
-		
-		// get instruction from the method code
-		// the method invocation is the instruction marked as end
-		AbstractInsnNode instr = shadow.getRegionEnds().get(0);
+    private ProcInstance computeBeforeInvocation(Shadow shadow,
+            ProcInvocation prcInv) throws ProcessorException {
 
-		String fullMethodName = shadow.getClassNode().name + "."
-				+ shadow.getMethodNode().name;
-		
-		// check - method invocation
-		if (!(instr instanceof MethodInsnNode)) {
-			throw new ProcessorException("ArgumentProcessor "
-					+ prcInv.getProcessor().getName()
-					+ " is not applied before method invocation in method "
-					+ fullMethodName);
-		}
+        // NOTE: ProcUnprocessedCode checks that CALLSITE_ARGS is
+        // used only with BytecodeMarker
 
-		MethodInsnNode methodInvocation = (MethodInsnNode) instr;
+        // because it is BytecodeMarker, it should have only one end
+        if(shadow.getRegionEnds().size() > 1) {
+            throw new DiSLFatalException(
+                    "Expected only one end in marked region");
+        }
 
-		return createProcInstance(ArgumentProcessorMode.CALLSITE_ARGS,
-				methodInvocation.desc, shadow, prcInv);
-	}
+        // get instruction from the method code
+        // the method invocation is the instruction marked as end
+        AbstractInsnNode instr = shadow.getRegionEnds().get(0);
 
-	private ProcInstance createProcInstance(ArgumentProcessorMode procApplyType,
-			String methodDesc, Shadow shadow, ProcInvocation prcInv) {
+        String fullMethodName = shadow.getClassNode().name + "."
+                + shadow.getMethodNode().name;
 
-		List<ProcMethodInstance> procMethodInstances = 
-			new LinkedList<ProcMethodInstance>();
+        // check - method invocation
+        if (!(instr instanceof MethodInsnNode)) {
+            throw new ProcessorException("ArgumentProcessor "
+                    + prcInv.getProcessor().getName()
+                    + " is not applied before method invocation in method "
+                    + fullMethodName);
+        }
 
-		// get argument types
-		Type[] argTypeArray = Type.getArgumentTypes(methodDesc);
-		
-		// create processor method instances for each argument if applicable
-		for (int i = 0; i < argTypeArray.length; ++i) {
+        MethodInsnNode methodInvocation = (MethodInsnNode) instr;
 
-			List<ProcMethodInstance> pmis = createMethodInstances(i,
-					argTypeArray.length, argTypeArray[i],
-					prcInv.getProcessor(), shadow, prcInv);
+        return createProcInstance(ArgumentProcessorMode.CALLSITE_ARGS,
+                methodInvocation.desc, shadow, prcInv);
+    }
 
-			procMethodInstances.addAll(pmis);
-		}
+    private ProcInstance createProcInstance(ArgumentProcessorMode procApplyType,
+            String methodDesc, Shadow shadow, ProcInvocation prcInv) {
 
-		if(procMethodInstances.isEmpty()) {
-			return null;
-		}
+        List<ProcMethodInstance> procMethodInstances =
+            new LinkedList<ProcMethodInstance>();
 
-		// create new processor instance
-		return new ProcInstance(procApplyType, procMethodInstances);
-	}
+        // get argument types
+        Type[] argTypeArray = Type.getArgumentTypes(methodDesc);
 
-	private List<ProcMethodInstance> createMethodInstances(int argPos,
-			int argsCount, Type argType, Proc processor, Shadow shadow,
-			ProcInvocation prcInv) {
+        // create processor method instances for each argument if applicable
+        for (int i = 0; i < argTypeArray.length; ++i) {
 
-		ProcArgType methodArgType = ProcArgType.valueOf(argType);
-		
-		List<ProcMethodInstance> result = new LinkedList<ProcMethodInstance>();
-		
-		// traverse all methods and find the proper ones
-		for (ProcMethod method : processor.getMethods()) {
-			
-			// check argument type
-			if(method.getTypes().contains(methodArgType)) {
-				
-				ProcMethodInstance pmi = new ProcMethodInstance(argPos,
-						argsCount, methodArgType, argType.getDescriptor(),
-						method.getCode());
-				
-				// check guard
-				if (isPMGuardApplicable(method.getGuard(), shadow, pmi)) {
+            List<ProcMethodInstance> pmis = createMethodInstances(i,
+                    argTypeArray.length, argTypeArray[i],
+                    prcInv.getProcessor(), shadow, prcInv);
 
-					// add method
-					result.add(pmi);
-				}
-			}
-		}
-		
-		return result;
-	}
+            procMethodInstances.addAll(pmis);
+        }
 
-	private boolean isPMGuardApplicable(Method guard, Shadow shadow,
-			ProcMethodInstance pmi) {
+        if(procMethodInstances.isEmpty()) {
+            return null;
+        }
 
-		// evaluate processor method guard
-		return GuardHelper.guardApplicable(guard, shadow, pmi.getArgPos(), 
-				pmi.getArgTypeDesc(), pmi.getArgsCount());
-	}
+        // create new processor instance
+        return new ProcInstance(procApplyType, procMethodInstances);
+    }
+
+    private List<ProcMethodInstance> createMethodInstances(int argPos,
+            int argsCount, Type argType, Proc processor, Shadow shadow,
+            ProcInvocation prcInv) {
+
+        ProcArgType methodArgType = ProcArgType.valueOf(argType);
+
+        List<ProcMethodInstance> result = new LinkedList<ProcMethodInstance>();
+
+        // traverse all methods and find the proper ones
+        for (ProcMethod method : processor.getMethods()) {
+
+            // check argument type
+            if(method.getTypes().contains(methodArgType)) {
+
+                ProcMethodInstance pmi = new ProcMethodInstance(argPos,
+                        argsCount, methodArgType, argType.getDescriptor(),
+                        method.getCode());
+
+                // check guard
+                if (isPMGuardApplicable(method.getGuard(), shadow, pmi)) {
+
+                    // add method
+                    result.add(pmi);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private boolean isPMGuardApplicable(Method guard, Shadow shadow,
+            ProcMethodInstance pmi) {
+
+        // evaluate processor method guard
+        return GuardHelper.guardApplicable(guard, shadow, pmi.getArgPos(),
+                pmi.getArgTypeDesc(), pmi.getArgsCount());
+    }
 }
