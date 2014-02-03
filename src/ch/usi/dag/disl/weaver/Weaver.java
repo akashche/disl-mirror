@@ -153,9 +153,9 @@ public class Weaver {
 
     // Return a successor label of weaving location corresponding to
     // the input 'end'.
-    private static LabelNode getEndLabel(MethodNode methodNode,
-            AbstractInsnNode instr) {
-
+    private static LabelNode getEndLabel(
+        MethodNode methodNode, AbstractInsnNode instr
+    ) {
         if (Insns.FORWARD.nextRealInsn (instr) != null) {
             LabelNode branch = new LabelNode();
             methodNode.instructions.insert(instr, branch);
@@ -185,18 +185,18 @@ public class Weaver {
             int start_offset = ilst.indexOf(tcb.start);
             int end_offset = ilst.indexOf(tcb.end);
 
-            if (AsmHelper.offsetBefore(ilst, new_start_offset, start_offset)
-                    && AsmHelper.offsetBefore(ilst, start_offset,
-                            new_end_offset)
-                    && AsmHelper.offsetBefore(ilst, new_end_offset, end_offset)) {
-
+            if (
+                AsmHelper.offsetBefore (ilst, new_start_offset, start_offset)
+                && AsmHelper.offsetBefore (ilst, start_offset, new_end_offset)
+                && AsmHelper.offsetBefore (ilst, new_end_offset, end_offset)
+            ) {
                 new_start_offset = start_offset;
-            } else if (AsmHelper.offsetBefore(ilst, start_offset,
-                    new_start_offset)
-                    && AsmHelper.offsetBefore(ilst, new_start_offset,
-                            end_offset)
-                    && AsmHelper.offsetBefore(ilst, end_offset, new_end_offset)) {
 
+            } else if (
+                AsmHelper.offsetBefore (ilst, start_offset, new_start_offset)
+                && AsmHelper.offsetBefore (ilst, new_start_offset, end_offset)
+                && AsmHelper.offsetBefore (ilst, end_offset, new_end_offset)
+            ) {
                 new_start_offset = end_offset;
             }
         }
