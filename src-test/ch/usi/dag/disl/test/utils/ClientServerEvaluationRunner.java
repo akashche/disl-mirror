@@ -48,6 +48,7 @@ public class ClientServerEvaluationRunner extends Runner {
         );
 
         serverCommand.addAll (propertiesStartingWith ("dislserver."));
+        serverCommand.addAll (propertiesStartingWith ("disl."));
         serverCommand.add (_DISL_SERVER_MAIN_CLASS_.getName ());
 
         //
