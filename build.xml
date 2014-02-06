@@ -377,9 +377,11 @@
 		<junit haltonfailure="no" haltonerror="no" failureproperty="junit.failure">
 			<classpath refid="classpath" />
 			<formatter type="brief" usefile="false" />
-			<!-- allow properties starting with "-Ddisl." to be passed to tests -->
+			<!-- allow "disl.", "dislserver.", and "dislreserver." properties to be passed to tests -->
 			<syspropertyset>
-				<propertyref prefix="disl" />
+				<propertyref prefix="disl." />
+				<propertyref prefix="dislserver." />
+				<propertyref prefix="dislreserver." />
 			</syspropertyset>
 			<batchtest fork="yes">
 				<fileset dir="${src.test}">

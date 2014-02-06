@@ -3,24 +3,16 @@ package ch.usi.dag.disl.test.utils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.List;
 
+public class ClientServerRunner extends Runner {
 
-public class ClientServerRunner {
+    private Job __client;
 
-    private final int WAIT_FOR_SERVER_INIT_MS = 3000;
-
-    private final int WAIT_FOR_TEST_MS = 60000;
-
-    private final Class <?> c;
-
-    private Job client;
-
-    private Job server;
+    private Job __server;
 
     private boolean clientOutNull;
 
@@ -30,9 +22,11 @@ public class ClientServerRunner {
 
     private boolean serverErrNull;
 
+    //
 
-    public ClientServerRunner (final Class <?> c) {
-        this.c = c;
+    public ClientServerRunner (final Class <?> testClass) {
+        super (testClass);
+
         clientOutNull = true;
         clientErrNull = true;
         serverOutNull = true;
@@ -40,213 +34,161 @@ public class ClientServerRunner {
     }
 
 
-    private String getTestName () {
-        final String [] packages = this.c.getPackage ().getName ().split ("\\.");
-        return packages [packages.length - 2];
+    @Override
+    protected void _start (
+        final File testInstrJar, final File testAppJar
+    ) throws IOException {
+        __server = __startServer (testInstrJar);
+
+        _INIT_TIME_LIMIT_.softSleep ();
+
+        if (! __server.isRunning ()) {
+            throw new IOException ("server failed: "+ __server.getError ());
+        }
+
+        //
+
+        __client = __startClient (testInstrJar, testAppJar);
     }
 
 
-    public void start ()
-    throws IOException {
-        final String test = getTestName ();
+    private Job __startClient (
+        final File testInstrJar, final File testAppJar
+    ) throws IOException {
+        final List <String> clientCommand = newLinkedList (
+            _JAVA_COMMAND_,
+            String.format ("-agentpath:%s", _DISL_AGENT_LIB_),
+            String.format ("-javaagent:%s", _DISL_AGENT_JAR_),
+            String.format (
+                "-Xbootclasspath/a:%s",
+                makeClassPath (_DISL_AGENT_JAR_, testInstrJar)
+            )
+        );
 
-        final String [] serverCmd = new String [] {
-            "java",
-            "-cp", "build-test/disl-instr-" + test + ".jar:build/disl-server.jar",
-            "ch.usi.dag.dislserver.DiSLServer"
-        };
-        server = new Job (serverCmd);
-        server.execute ();
+        clientCommand.addAll (propertiesStartingWith ("disl."));
+        clientCommand.addAll (Arrays.asList (
+            "-jar", testAppJar.toString ()
+        ));
 
-        server.waitFor (WAIT_FOR_SERVER_INIT_MS);
+        //
 
-        final String [] clientCmd = new String [] {
-            "java",
-            "-agentpath:build/libdislagent.so",
-            "-javaagent:build/disl-agent.jar",
-            "-Xbootclasspath/a:build/disl-agent.jar:build-test/disl-instr-"
-                + test + ".jar",
-            "-jar", "build-test/disl-app-" + test + ".jar"
-        };
-        client = new Job (clientCmd);
-        client.execute ();
+        final Job result = new Job (clientCommand);
+        result.start ();
+        return result;
     }
 
 
-    private boolean waitFor (final long milliseconds) {
+    private Job __startServer (final File testInstrJar) throws IOException {
+        final List <String> serverCommand = newLinkedList (
+            _JAVA_COMMAND_,
+            "-cp", makeClassPath (testInstrJar, _DISL_SERVER_JAR_)
+        );
+
+        serverCommand.addAll (propertiesStartingWith ("dislserver."));
+        serverCommand.add (_DISL_SERVER_MAIN_CLASS_.getName ());
+
+        //
+
+        final Job result = new Job (serverCommand);
+        result.start ();
+        return result;
+    }
+
+
+    @Override
+    protected boolean _waitFor (final Duration duration) {
         boolean finished = true;
-        finished = finished & client.waitFor (milliseconds);
-        finished = finished & server.waitFor (milliseconds);
+        finished = finished & __client.waitFor (duration);
+        finished = finished & __server.waitFor (duration);
         return finished;
     }
 
 
-    public boolean waitFor () {
-        return waitFor (WAIT_FOR_TEST_MS);
-    }
-
-
     public void assertIsStarted () {
-        assertTrue ("client not started", client.isStarted ());
-        assertTrue ("server not started", server.isStarted ());
+        assertTrue ("client not started", __client.isStarted ());
+        assertTrue ("server not started", __server.isStarted ());
     }
 
 
     public void assertIsFinished () {
-        assertTrue ("client not finished", client.isFinished ());
-        assertTrue ("server not finished", server.isFinished ());
+        assertTrue ("client not finished", __client.isFinished ());
+        assertTrue ("server not finished", __server.isFinished ());
     }
 
 
     public void assertIsSuccessful () {
-        assertTrue ("client not successful", client.isSuccessful ());
-        assertTrue ("server not successful", server.isSuccessful ());
+        assertTrue ("client failed", __client.isSuccessful ());
+        assertTrue ("server failed", __server.isSuccessful ());
     }
 
 
-    private void writeFile (final String filename, final String str)
-    throws FileNotFoundException {
-
-        PrintWriter out = null;
-        try {
-            out = new PrintWriter (filename);
-            out.print (str);
-        }
-        finally {
-            if(out != null) {
-                out.close ();
-            }
-        }
+    public void destroyIfRunningAndFlushOutputs () throws IOException {
+        _destroyIfRunningAndDumpOutputs (__client, "client");
+        _destroyIfRunningAndDumpOutputs (__server, "server");
     }
 
 
-    private void destroyIfRunningAndFlushOutputs (
-        final boolean cout, final boolean cerr, final boolean sout, final boolean serr, final boolean destroy)
-    throws FileNotFoundException, IOException {
-        if (client != null) {
-            if (client.isRunning () && destroy) {
-                client.destroy ();
-            }
-            if (!client.isRunning () && cout) {
-                writeFile (
-                    String.format ("tmp.%s.client.out.txt", getTestName ()),
-                    client.getOutput ());
-            }
-            if (!client.isRunning () && cerr) {
-                writeFile (
-                    String.format ("tmp.%s.client.err.txt", getTestName ()),
-                    client.getError ());
-            }
-        }
-        if (server != null) {
-            if (server.isRunning () && destroy) {
-                server.destroy ();
-            }
-            if (!server.isRunning () && cout) {
-                writeFile (
-                    String.format ("tmp.%s.server.out.txt", getTestName ()),
-                    server.getOutput ());
-            }
-            if (!server.isRunning () && cerr) {
-                writeFile (
-                    String.format ("tmp.%s.server.err.txt", getTestName ()),
-                    server.getError ());
-            }
-        }
-    }
-
-
-    public void destroyIfRunningAndFlushOutputs ()
-    throws FileNotFoundException, IOException {
-        destroyIfRunningAndFlushOutputs (true, true, true, true, true);
-    }
-
-
-    private String getResource (final String filename)
-    throws IOException {
-
-        BufferedReader reader = null;
-        try {
-
-            reader = new BufferedReader (
-                new InputStreamReader (this.c.getResourceAsStream (filename), "UTF-8"));
-
-            final StringBuffer buffer = new StringBuffer ();
-            for (int c = reader.read (); c != -1; c = reader.read ()) {
-                buffer.append ((char) c);
-            }
-
-            return buffer.toString ();
-        } finally {
-            if(reader != null) {
-                reader.close ();
-            }
-        }
-    }
-
-
-    public void assertClientOut (final String filename)
-    throws IOException {
+    public void assertClientOut (final String fileName) throws IOException {
         clientOutNull = false;
         assertEquals (
-            "client out does not match", getResource (filename), client.getOutput ());
+            "client out does not match",
+            _readResource (fileName), __client.getOutput ()
+        );
     }
 
 
-    public void assertClientOutNull ()
-    throws IOException {
+    public void assertClientOutNull () throws IOException {
         clientOutNull = false;
-        assertEquals ("client out does not match", "", client.getOutput ());
+        assertEquals ("client out does not match", "", __client.getOutput ());
     }
 
 
-    public void assertClientErr (final String filename)
-    throws IOException {
+    public void assertClientErr (final String fileName) throws IOException {
         clientErrNull = false;
         assertEquals (
-            "client err does not match", getResource (filename), client.getError ());
+            "client err does not match",
+            _readResource (fileName), __client.getError ()
+        );
     }
 
 
-    public void assertClientErrNull ()
-    throws IOException {
+    public void assertClientErrNull () throws IOException {
         clientErrNull = false;
-        assertEquals ("client err does not match", "", client.getError ());
+        assertEquals ("client err does not match", "", __client.getError ());
     }
 
 
-    public void assertServerOut (final String filename)
-    throws IOException {
+    public void assertServerOut (final String fileName) throws IOException {
         serverOutNull = false;
         assertEquals (
-            "server out does not match", getResource (filename), server.getOutput ());
+            "server out does not match",
+            _readResource (fileName), __server.getOutput ()
+        );
     }
 
 
-    public void assertServerOutNull ()
-    throws IOException {
+    public void assertServerOutNull () throws IOException {
         serverOutNull = false;
-        assertEquals ("server out does not match", "", server.getOutput ());
+        assertEquals ("server out does not match", "", __server.getOutput ());
     }
 
 
-    public void assertServerErr (final String filename)
-    throws IOException {
+    public void assertServerErr (final String fileName) throws IOException {
         serverErrNull = false;
         assertEquals (
-            "server err does not match", getResource (filename), server.getError ());
+            "server err does not match",
+            _readResource (fileName), __server.getError ()
+        );
     }
 
 
-    public void assertServerErrNull ()
-    throws IOException {
+    public void assertServerErrNull () throws IOException {
         serverErrNull = false;
-        assertEquals ("server err does not match", "", server.getError ());
+        assertEquals ("server err does not match", "", __server.getError ());
     }
 
 
-    public void assertRestOutErrNull ()
-    throws IOException {
+    public void assertRestOutErrNull () throws IOException {
         if (clientOutNull) {
             assertClientOutNull ();
         }
@@ -262,25 +204,12 @@ public class ClientServerRunner {
     }
 
 
-    public void verbose ()
-    throws IOException {
-        System.out.println ("client-out:");
-        System.out.println (client.getOutput ());
-        System.out.println ("client-err:");
-        System.out.println (client.getError ());
-        System.out.println ("server-out:");
-        System.out.println (server.getOutput ());
-        System.out.println ("server-err:");
-        System.out.println (server.getError ());
-    }
-
-
     public void destroy () {
-        if (client != null) {
-            client.destroy ();
+        if (__client != null) {
+            __client.destroy ();
         }
-        if (server != null) {
-            server.destroy ();
+        if (__server != null) {
+            __server.destroy ();
         }
     }
 }

@@ -25,7 +25,7 @@ public class DispatchTest {
             r.destroyIfRunningAndFlushOutputs ();
         }
         r.assertIsSuccessful ();
-        r.assertEvaluationOut ("evaluation.out.resource");
+        r.assertShadowOut ("evaluation.out.resource");
         r.assertRestOutErrNull ();
     }
 

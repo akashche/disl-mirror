@@ -1,267 +1,337 @@
 package ch.usi.dag.disl.test.utils;
 
-import java.io.File;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 
 /**
- * Class wraps standard java Process class and adds some more features. Prior to
- * the execution itself it saves binaries to the specified location and then
+ * Wraps the {@link Process} class provided by Java and adds some more features.
+ * Prior to execution, a job saves binaries to the specified location and then
  * executes specified command.
- * 
+ * <p>
  * It is possible to retrieve the exit value of the process or the state of the
  * process. Normal output stream and error stream can be accessed represented as
- * a String it is not intended for heavy use but just for debugging purposes.
- * 
+ * a {@link String}, but it is only intended for debugging purposes.
+ *
  * @author Frantisek Haas
- * 
+ * @author Lubomir Bulej
  */
-public class Job {
+final class Job {
 
-    private Process              process        = null;
-    /** Process build to create the child process. */
-    private final ProcessBuilder processBuilder = new ProcessBuilder();
-    /** Whether to close all streams to the child process right after start. */
-    private boolean              closeStreams   = false;
-    /** Process output. */
-    private String               output         = new String();
-    /** Process error. */
-    private String               error          = new String();
+    private static final String __EMPTY_STRING__ = "";
 
-    public Job(String[] command, File directory) {
-        processBuilder.command(command);
-        processBuilder.directory(directory);
-        processBuilder.environment().clear();
-    }
+    /** Whether to close all streams of the underlying process after start. */
+    private static final boolean __CLOSE_STREAMS__ = false;
 
-    public Job(String[] command) {
-        processBuilder.command(command);
-        processBuilder.environment().clear();
-    }
+    //
+
+    /** Builder to create the underlying process. */
+    private final ProcessBuilder __builder;
+
+    //
+
+    /** The underlying process. */
+    private Process __process;
+
+    /** The contents of the underlying process standard output stream. */
+    private String __output;
+
+    /** The contents of the underlying process standard error stream. */
+    private String __error;
 
     /**
-     * Executes the command in the directory.
-     * 
+     * Waits for {@link #__process} to finish, sets {@link #__isRunning} to
+     * {@code false}, and notifies all objects waiting on {@link #__isRunning}.
      */
-    public void execute()
-            throws IOException {
-        process = processBuilder.start();
-        /**
-         * <p>
-         * It seams that reading streams from created process is a bit lot
-         * tricky and hangs the reader. Therefore it's better to redirect stdout
-         * and stderr to files in the forked application.
-         */
-        if (closeStreams) {
-            process.getOutputStream().close();
-            process.getInputStream().close();
-            process.getErrorStream().close();
-        }
+    private Thread __waiter;
+
+    /** The status of the underlying process. */
+    private final AtomicBoolean __isRunning = new AtomicBoolean ();
+
+    //
+
+    public Job (final List <String> command) {
+        final ProcessBuilder builder = new ProcessBuilder ();
+        builder.command (command);
+        builder.environment ().clear ();
+
+        //
+
+        __builder = builder;
     }
 
-    /**
-     * Kills the process.
-     * 
-     */
-    public void destroy() {
-        if (process != null) {
-            process.destroy();
-        }
-    }
 
     /**
-     * Returns stream to process' input stream.
-     * 
-     * @return
+     * Executes the command corresponding to this {@link Job}.
+     *
      * @throws IOException
+     *         if a problem occurs while trying to execute the job command
      */
-    public OutputStream getInput()
-            throws IOException {
-        if (process == null) {
-            throw new IOException("Process not started.");
+    public void start () throws IOException {
+        __ensureJobNotStarted();
+
+        //
+
+        __process = __builder.start ();
+        __isRunning.set (true);
+
+        //
+        // It seems that reading streams from the created process is very
+        // tricky and hangs the reader. It's better to redirect stdout
+        // and stderr to files in the forked process.
+        //
+        if (__CLOSE_STREAMS__) {
+            __process.getInputStream ().close ();
+            __process.getOutputStream ().close ();
+            __process.getErrorStream ().close ();
         }
 
-        return process.getOutputStream();
-    }
-
-    /**
-     * Reads entire process output stream into string.
-     * 
-     * May block if process is still running.
-     * 
-     * @return
-     * @throws IOException
-     */
-    public String getOutput()
-            throws IOException {
-        if (process == null || closeStreams) {
-            return output;
-        }
-
-        final int BUFFER_SIZE = 4096;
-        final int EOF = -1;
-
-        InputStream outputStream = process.getInputStream();
-
-        byte[] buffer = new byte[BUFFER_SIZE];
-        int length = outputStream.read(buffer);
-
-        while (length != EOF) {
-            output += new String(buffer, 0, length);
-            length = outputStream.read(buffer);
-        }
-
-        return output;
-    }
-
-    /**
-     * Reads entire process error stream into string.
-     * 
-     * May block if process is still running.
-     * 
-     * @return
-     * @throws IOException
-     */
-    public String getError()
-            throws IOException {
-        if (process == null || closeStreams) {
-            return error;
-        }
-
-        final int BUFFER_SIZE = 4096;
-        final int EOF = -1;
-
-        InputStream errorStream = process.getErrorStream();
-
-        byte[] buffer = new byte[BUFFER_SIZE];
-        int length = errorStream.read(buffer);
-
-        while (length != EOF) {
-            error += new String(buffer, 0, length);
-            length = errorStream.read(buffer);
-        }
-
-        return error;
-    }
-
-    /**
-     * Returns job exit status. If job has not yet finished returns -1 by
-     * default.
-     * 
-     * @return
-     */
-    public int getReturnCode() {
-        if (process == null) {
-            return 0;
-        }
-
-        try {
-            return process.exitValue();
-        } catch (IllegalThreadStateException e) {
-            // thrown if process is still running
-            return -1;
-        }
-    }
-
-    /**
-     * Waits maximum of specified time. Returns true if job is not running.
-     * Returns false otherwise.
-     * 
-     * @param milliseconds
-     * @return
-     */
-    public boolean waitFor(long milliseconds) {
-        if (!isRunning()) {
-            return true;
-        }
-
-        final long millisecondsWaitInterval = 100;
-        while (true) {
-            if (milliseconds < millisecondsWaitInterval) {
+        __waiter = new Thread (new Runnable () {
+            @Override
+            public void run () {
                 try {
-                    Thread.sleep(milliseconds);
-                } catch (InterruptedException e) {
-                    Thread.interrupted();
-                }
-                return isRunning();
+                    __process.waitFor ();
 
-            } else {
-                milliseconds -= millisecondsWaitInterval;
-                try {
-                    Thread.sleep(millisecondsWaitInterval);
-                } catch (InterruptedException e) {
-                    Thread.interrupted();
+                    // update the state
+                    synchronized (__isRunning) {
+                        __isRunning.set (false);
+                    }
+
+                } catch (final InterruptedException ie) {
+                    // just leave, without updating the state
                 }
 
-                if (!isRunning()) {
-                    return true;
+                // wake any sleepers
+                synchronized (__isRunning) {
+                    __isRunning.notifyAll ();
                 }
             }
-        }
-    }
-    
-    /**
-     * Indicates job status.
-     * 
-     * @return
-     *         True - If job is already started
-     *         False - Otherwise.
-     */
-    public boolean isStarted() {
-    	return (process != null);
+        });
+
+        __waiter.start ();
     }
 
-    /**
-     * Indicates job status.
-     * 
-     * @return
-     *         True - If job is still running.
-     *         False - If job is not running yet or not anymore.
-     */
-    public boolean isRunning() {
-        if (process == null) {
-            return false;
-        }
 
-        try {
-            process.exitValue();
-            return false;
-        } catch (IllegalThreadStateException e) {
-            // thrown if process is still running
-            return true;
+    private void __ensureJobNotStarted () {
+        if (isStarted ()) {
+            throw new IllegalStateException ("the job has been already started");
         }
     }
-    
+
+
     /**
-     * Indicates job status.
-     * 
-     * @return
-     *         True - If job is finished or never started.
-     *         False - Otherwise.
+     * Kills the process associated with this {@link Job}. The job must have
+     * been started first.
+     *
+     * @throws IllegalStateException
+     *         if the job has not been yet started
      */
-    public boolean isFinished() {
-    	return !isRunning();
+    public void destroy() {
+        __ensureJobStarted ();
+
+        //
+
+        __waiter.interrupt ();
+        __process.destroy ();
+
+        __output = null;
+        __error = null;
+        __process = null;
+        __waiter = null;
     }
 
+
+    private void __ensureJobStarted () {
+        if (!isStarted ()) {
+            throw new IllegalStateException ("the job needs to be started first");
+        }
+    }
+
+
     /**
-     * Indicates job status using process exit value.
-     * 
-     * @return
-     *         True - If job has successfully finished returning zero.
-     *         False - If job has not finished yet or not successfully.
+     * Provides access to the input stream of the process associated with this
+     * {@link Job}. The job must have been started first.
+     *
+     * @return the input stream of the process associated with this {@link Job}.
+     * @throws IllegalStateException
+     *         if the job has not been yet started
      */
-    public boolean isSuccessful() {
-        if (process == null) {
-            return false;
+    public OutputStream getInput () {
+        __ensureJobStarted ();
+
+        //
+
+        return __process.getOutputStream ();
+    }
+
+
+    /**
+     * Reads out the whole output stream of the underlying process into a
+     * {@link String}. May block if the associated process is still running. The
+     * job must have been started first.
+     *
+     * @return {@link String} containing the whole process output.
+     * @throws IOException
+     *         if an I/O error occurs while reading the process output
+     * @throws IllegalStateException
+     *         if the job has not been yet started
+     */
+    public String getOutput () throws IOException {
+        __ensureJobStarted ();
+
+        //
+
+        if (__CLOSE_STREAMS__) {
+            return __EMPTY_STRING__;
         }
 
-        try {
-            return (process.exitValue() == 0);
-        } catch (IllegalThreadStateException e) {
-            // thrown if process is still running
-            return false;
+        //
+
+        if (__output == null) {
+            __output = __streamToString (__process.getInputStream ());
         }
+
+        return __output;
+    }
+
+
+    /**
+     * Reads out the whole error output stream of the underlying process into a
+     * {@link String}. May block if the associated process is still running. The
+     * job must have been started first.
+     *
+     * @return {@link String} containing the whole process error output.
+     * @throws IOException
+     *         if an I/O error occurs while reading the process error output
+     * @throws IllegalStateException
+     *         if the job has not been yet started
+     */
+    public String getError () throws IOException {
+        __ensureJobStarted ();
+
+        //
+
+        if (__CLOSE_STREAMS__) {
+            return __EMPTY_STRING__;
+        }
+
+        //
+
+        if (__error == null) {
+            __error = __streamToString (__process.getErrorStream ());
+        }
+
+        return __error;
+    }
+
+
+    private static String __streamToString (
+        final InputStream input
+    ) throws IOException {
+        final ByteArrayOutputStream output = new ByteArrayOutputStream ();
+
+        final int bufferSize = 4096;
+        final byte [] buffer = new byte [bufferSize];
+
+        READ_LOOP: while (true) {
+            final int bytesRead = input.read (buffer, 0, bufferSize);
+            if (bytesRead < 1) {
+                break READ_LOOP;
+            }
+
+            output.write (buffer, 0, bytesRead);
+        }
+
+        return output.toString ();
+    }
+
+
+    /**
+     * Waits for a job to finish, for at most the specified time. Returns
+     * {@code true} if a job is finished or has finished within the given time
+     * limit.
+     *
+     * @param duration
+     *        the time limit duration
+     * @param unit
+     *        the unit of the time limit duration
+     * @return {@code true} if a job is finished, {@code false} otherwise.
+     */
+    public boolean waitFor (final Duration duration) {
+        __ensureJobStarted ();
+
+        //
+
+        synchronized (__isRunning) {
+            long remainingNanos = duration.to (NANOSECONDS);
+            while (__isRunning.get () && remainingNanos > 0) {
+                try {
+                    final long startTime = System.nanoTime ();
+                    NANOSECONDS.timedWait (__isRunning, remainingNanos);
+                    remainingNanos -= System.nanoTime () - startTime;
+
+                } catch (final InterruptedException ie) {
+                    // just return the current state if interrupted
+                }
+            }
+
+            return !__isRunning.get ();
+        }
+    }
+
+
+    /**
+     * Determines the status of this {@link Job} and returns {@code true} if the
+     * job has been started.
+     *
+     * @return {@code true} if the job has been started, {@code false}
+     *         otherwise.
+     */
+    public boolean isStarted () {
+        return (__process != null);
+    }
+
+
+    /**
+     * Determines the status of this {@link Job} and returns {@code true} if the
+     * job has been started and is still running.
+     *
+     * @return {@code true} if a started job is still running, {@code false}
+     *         otherwise.
+     */
+    public boolean isRunning () {
+        return isStarted () && __isRunning.get ();
+    }
+
+
+    /**
+     * Determines the status of this {@link Job} and returns {@code true} if the
+     * job has been started and is finished.
+     *
+     * @return {@code true} if a started job has finished, {@code false}
+     *         otherwise.
+     */
+    public boolean isFinished () {
+        return isStarted () && !__isRunning.get ();
+    }
+
+
+    /**
+     * Determines the status of this {@link Job} and returns {@code true} if the
+     * job has been started and finished successfully, i.e. it exited with a
+     * zero value.
+     *
+     * @return {@code true} if a started job finished successfully,
+     *         {@code false} otherwise.
+     */
+    public boolean isSuccessful () {
+        // The exit value MUST be queried AFTER a process has terminated.
+        return isFinished () && __process.exitValue () == 0;
     }
 }
-

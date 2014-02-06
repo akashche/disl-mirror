@@ -26,7 +26,7 @@ public class DispatchMPTest {
         }
         r.assertIsSuccessful ();
         r.assertClientOut ("client.out.resource");
-        r.assertEvaluationOut ("evaluation.out.resource");
+        r.assertShadowOut ("evaluation.out.resource");
         r.assertRestOutErrNull ();
     }
 
