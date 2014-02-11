@@ -18,11 +18,12 @@ import ch.usi.dag.disl.marker.BytecodeMarker;
  * @author Aibek Sarimbekov
  * @author Lubomir Bulej
  */
-final class FieldAccessStaticContext extends AbstractStaticContext {
+public final class FieldAccessStaticContext extends AbstractStaticContext {
 
     public FieldAccessStaticContext () {
         // invoked by DiSL
     }
+
 
     /**
      * @return {@code True} if the context is valid.
