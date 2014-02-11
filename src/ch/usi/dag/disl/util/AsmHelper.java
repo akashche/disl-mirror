@@ -294,6 +294,13 @@ public abstract class AsmHelper {
         return new TypeInsnNode (Opcodes.CHECKCAST, type.getDescriptor ());
     }
 
+    //
+
+    public static FieldInsnNode getField (
+        final Type owner, final String name, final Type desc
+    ) {
+        return getField (owner.getInternalName (), name, desc.getDescriptor ());
+    }
 
     public static FieldInsnNode getField (
         final String owner, final String name, final String desc
