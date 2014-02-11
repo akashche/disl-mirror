@@ -2,18 +2,15 @@ package ch.usi.dag.disl.test.utils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 import ch.usi.dag.dislreserver.DiSLREServer;
 import ch.usi.dag.dislserver.DiSLServer;
+import ch.usi.dag.util.Files;
+import ch.usi.dag.util.Strings;
 
 public abstract class Runner {
 
@@ -53,8 +50,9 @@ public abstract class Runner {
     private static String __getJavaCommand () {
         final String javaHome = System.getenv (_ENV_JAVA_HOME_);
         if (javaHome != null) {
-            final File jreBinDir = new File (new File (javaHome, "jre"), "bin");
-            return new File (jreBinDir, "java").toString ();
+            return new File (
+                new File (new File (javaHome, "jre"), "bin"), "java"
+            ).toString ();
         } else {
             return "java";
         }
@@ -94,72 +92,30 @@ public abstract class Runner {
 
     //
 
-    static void writeString (
-        final String content, final String fileName
-    ) throws FileNotFoundException {
-        final PrintWriter out = new PrintWriter (fileName);
-
-        try {
-            out.print (content);
-
-        } finally {
-            out.close ();
-        }
+    protected String _loadResource (final String name) throws IOException {
+        return Files.loadStringResource (__testClass, name);
     }
 
-
-    static <E> List <E> newLinkedList (final E ... elements) {
-        return new LinkedList <E> (Arrays.asList (elements));
-    }
-
-
-    static String makeClassPath (final File ... paths) {
-        final StringBuilder builder = new StringBuilder ();
-
-        String effectiveSeparator = "";
-        for (final File path : paths) {
-            builder.append (effectiveSeparator);
-            builder.append (path);
-
-            effectiveSeparator = File.pathSeparator;
+    protected void _destroyIfRunningAndDumpOutputs (
+        final Job job, final String prefix
+    ) throws IOException {
+        if (job.isRunning ()) {
+            job.destroy ();
         }
 
-        return builder.toString ();
-    }
+        Files.storeString (
+            String.format ("tmp.%s.%s.out.txt", __testName, prefix),
+            job.getOutput ()
+        );
 
 
-    protected String _testName () {
-        return __testName;
+        Files.storeString (
+            String.format ("tmp.%s.%s.err.txt", __testName, prefix),
+            job.getError ()
+        );
     }
 
     //
-
-    protected String _readResource (final String fileName) throws IOException {
-        return __readResource (__testClass, fileName);
-    }
-
-    private static String __readResource (
-        final Class <?> refClass, final String fileName
-    ) throws IOException {
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader (new InputStreamReader (
-                refClass.getResourceAsStream (fileName), "UTF-8"
-            ));
-
-            final StringBuffer buffer = new StringBuffer ();
-            for (int c = reader.read (); c != -1; c = reader.read ()) {
-                buffer.append ((char) c);
-            }
-
-            return buffer.toString ();
-        } finally {
-            if(reader != null) {
-                reader.close ();
-            }
-        }
-    }
-
 
     static List <String> propertiesStartingWith (final String prefix) {
         final List <String> result = new LinkedList <String> ();
@@ -180,22 +136,8 @@ public abstract class Runner {
     }
 
 
-    protected void _destroyIfRunningAndDumpOutputs (
-        final Job job, final String prefix
-    ) throws IOException {
-        if (job.isRunning ()) {
-            job.destroy ();
-        }
-
-        Runner.writeString (
-            job.getOutput (),
-            String.format ("tmp.%s.%s.out.txt", __testName, prefix)
-        );
-
-        Runner.writeString (
-            job.getError (),
-            String.format ("tmp.%s.%s.err.txt", __testName, prefix)
-        );
+    static String classPath (final File ... paths) {
+        return Strings.join (File.pathSeparator, (Object []) paths);
     }
 
 }

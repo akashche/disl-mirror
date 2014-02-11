@@ -78,7 +78,13 @@
 		<exec executable="make" dir="${src.reagent}" />
 	</target>
 
-	<target name="compile-test" depends="compile-disl,compile-reserver,compile-redispatch">
+	<target name="compile-util">
+		<javac srcdir="${src.util}" destdir="bin" debug="true" includeAntRuntime="false">
+			<classpath refid="buildpath" />
+		</javac>
+	</target>
+
+	<target name="compile-test" depends="compile-util,compile-disl,compile-reserver,compile-redispatch">
 		<javac srcdir="${src.test}" destdir="bin" debug="true" includeAntRuntime="false">
 			<classpath refid="buildpath" />
 		</javac>

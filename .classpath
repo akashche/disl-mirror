@@ -5,6 +5,7 @@
 	<classpathentry kind="src" path="src-re-server"/>
 	<classpathentry kind="src" path="src-agent-java"/>
 	<classpathentry kind="src" path="src-test"/>
+	<classpathentry kind="src" path="src-util"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="build/eclipse-dynamicbypass.jar"/>
 	<classpathentry kind="lib" path="lib/asm-debug-all-4.1.jar"/>

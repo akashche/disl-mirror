@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import ch.usi.dag.util.Lists;
+
 
 public class ClientServerEvaluationRunner extends Runner {
 
@@ -42,35 +44,35 @@ public class ClientServerEvaluationRunner extends Runner {
     }
 
     private Job __startServer (final File testInstrJar) throws IOException {
-        final List <String> serverCommand = newLinkedList (
+        final List <String> command = Lists.newLinkedList (
             _JAVA_COMMAND_,
-            "-cp", makeClassPath (testInstrJar, _DISL_SERVER_JAR_)
+            "-cp", Runner.classPath (testInstrJar, _DISL_SERVER_JAR_)
         );
 
-        serverCommand.addAll (propertiesStartingWith ("dislserver."));
-        serverCommand.addAll (propertiesStartingWith ("disl."));
-        serverCommand.add (_DISL_SERVER_MAIN_CLASS_.getName ());
+        command.addAll (propertiesStartingWith ("dislserver."));
+        command.addAll (propertiesStartingWith ("disl."));
+        command.add (_DISL_SERVER_MAIN_CLASS_.getName ());
 
         //
 
-        final Job result = new Job (serverCommand);
+        final Job result = new Job (command);
         result.start ();
         return result;
     }
 
 
     private Job __startShadow (final File testInstrJar) throws IOException {
-        final List <String> shadowCommand = newLinkedList (
+        final List <String> command = Lists.newLinkedList (
             _JAVA_COMMAND_, "-Xms1G", "-Xmx2G",
-            "-cp", makeClassPath (testInstrJar, _DISL_RE_SERVER_JAR_)
+            "-cp", Runner.classPath (testInstrJar, _DISL_RE_SERVER_JAR_)
         );
 
-        shadowCommand.addAll (propertiesStartingWith ("dislreserver."));
-        shadowCommand.add (_DISL_RE_SERVER_MAIN_CLASS_.getName ());
+        command.addAll (propertiesStartingWith ("dislreserver."));
+        command.add (_DISL_RE_SERVER_MAIN_CLASS_.getName ());
 
         //
 
-        final Job result = new Job (shadowCommand);
+        final Job result = new Job (command);
         result.start ();
         return result;
     }
@@ -79,24 +81,24 @@ public class ClientServerEvaluationRunner extends Runner {
     private Job __startClient (
         final File testInstrJar, final File testAppJar
     ) throws IOException {
-        final List <String> clientCommand = newLinkedList (
+        final List <String> command = Lists.newLinkedList (
             _JAVA_COMMAND_,
             String.format ("-agentpath:%s", _DISL_AGENT_LIB_),
             String.format ("-agentpath:%s", _DISL_RE_AGENT_LIB_),
             String.format ("-javaagent:%s", _DISL_AGENT_JAR_),
-            String.format ("-Xbootclasspath/a:%s", makeClassPath (
+            String.format ("-Xbootclasspath/a:%s", Runner.classPath (
                 _DISL_AGENT_JAR_, testInstrJar, _DISL_RE_DISPATCH_JAR_
             ))
         );
 
-        clientCommand.addAll (propertiesStartingWith ("disl."));
-        clientCommand.addAll (Arrays.asList (
+        command.addAll (propertiesStartingWith ("disl."));
+        command.addAll (Arrays.asList (
             "-jar", testAppJar.toString ()
         ));
 
         //
 
-        final Job result = new Job (clientCommand);
+        final Job result = new Job (command);
         result.start ();
         return result;
     }
@@ -167,7 +169,7 @@ public class ClientServerEvaluationRunner extends Runner {
         clientOutNull = false;
         assertEquals (
             "client out does not match",
-            _readResource (fileName), __client.getOutput ()
+            _loadResource (fileName), __client.getOutput ()
         );
     }
 
@@ -182,7 +184,7 @@ public class ClientServerEvaluationRunner extends Runner {
         clientErrNull = false;
         assertEquals (
             "client err does not match",
-            _readResource (fileName), __client.getError ()
+            _loadResource (fileName), __client.getError ()
         );
     }
 
@@ -197,7 +199,7 @@ public class ClientServerEvaluationRunner extends Runner {
         shadowOutNull = false;
         assertEquals (
             "shadow out does not match",
-            _readResource (fileName), __shadow.getOutput ()
+            _loadResource (fileName), __shadow.getOutput ()
         );
     }
 
@@ -212,7 +214,7 @@ public class ClientServerEvaluationRunner extends Runner {
         shadowErrNull = false;
         assertEquals (
             "shadow err does not match",
-            _readResource (fileName), __shadow.getError ()
+            _loadResource (fileName), __shadow.getError ()
         );
     }
 
@@ -227,7 +229,7 @@ public class ClientServerEvaluationRunner extends Runner {
         serverOutNull = false;
         assertEquals (
             "server out does not match",
-            _readResource (fileName), __server.getOutput ()
+            _loadResource (fileName), __server.getOutput ()
         );
     }
 
@@ -243,7 +245,7 @@ public class ClientServerEvaluationRunner extends Runner {
         serverErrNull = false;
         assertEquals (
             "server err does not match",
-            _readResource (fileName), __server.getError ()
+            _loadResource (fileName), __server.getError ()
         );
     }
 
