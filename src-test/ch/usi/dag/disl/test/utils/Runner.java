@@ -9,7 +9,7 @@ import java.util.List;
 
 import ch.usi.dag.dislreserver.DiSLREServer;
 import ch.usi.dag.dislserver.DiSLServer;
-import ch.usi.dag.util.Files;
+import ch.usi.dag.util.Duration;
 import ch.usi.dag.util.Strings;
 
 public abstract class Runner {
@@ -93,7 +93,7 @@ public abstract class Runner {
     //
 
     protected String _loadResource (final String name) throws IOException {
-        return Files.loadStringResource (__testClass, name);
+        return Strings.loadFromResource (__testClass, name);
     }
 
     protected void _destroyIfRunningAndDumpOutputs (
@@ -103,13 +103,13 @@ public abstract class Runner {
             job.destroy ();
         }
 
-        Files.storeString (
+        Strings.storeToFile (
             String.format ("tmp.%s.%s.out.txt", __testName, prefix),
             job.getOutput ()
         );
 
 
-        Files.storeString (
+        Strings.storeToFile (
             String.format ("tmp.%s.%s.err.txt", __testName, prefix),
             job.getError ()
         );

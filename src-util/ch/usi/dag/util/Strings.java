@@ -1,5 +1,13 @@
 package ch.usi.dag.util;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+
 /**
  * Utility class providing miscellaneous string operations.
  *
@@ -107,6 +115,154 @@ public final class Strings {
         //
 
         return builder.toString ();
+    }
+
+    //
+
+    public static String drainStream (
+        final InputStream input
+    ) throws IOException {
+        final ByteArrayOutputStream output = new ByteArrayOutputStream ();
+
+        final int bufferSize = 4096;
+        final byte [] buffer = new byte [bufferSize];
+
+        READ_LOOP: while (true) {
+            final int bytesRead = input.read (buffer, 0, bufferSize);
+            if (bytesRead < 1) {
+                break READ_LOOP;
+            }
+
+            output.write (buffer, 0, bytesRead);
+        }
+
+        return output.toString ();
+    }
+
+    //
+
+    /**
+     * Loads an entire file into a string. This method should be only used for
+     * reasonable sized text files.
+     *
+     * @param fileName
+     *        the name of the file to read
+     * @return a {@link String} with the contents of the given file
+     * @throws FileNotFoundException
+     *         if the given file could not be found
+     * @throws IOException
+     *         if the file could not be read
+     */
+    public static String loadFromFile (final String fileName) throws IOException {
+        return __drainStreamAndClose (new FileInputStream (fileName));
+    }
+
+
+    /**
+     * Loads an entire file into a string. This method should be only used for
+     * reasonably sized text files.
+     *
+     * @param fileName
+     *        the name of the file to read
+     * @return a {@link String} with the contents of the given file
+     * @throws FileNotFoundException
+     *         if the given file could not be found
+     * @throws IOException
+     *         if the file could not be read
+     */
+    public static String loadFromFile (final File fileName) throws IOException {
+        return __drainStreamAndClose (new FileInputStream (fileName));
+    }
+
+
+    /**
+     * Loads an entire resource associated with a given class into a string.
+     * This method should be only used for reasonably sized text resources.
+     *
+     * @param refClass
+     *        the reference class to use when looking for an associated resource
+     * @param name
+     *        the name of the resource to read
+     * @return a {@link String} with the contents of the given resource, or
+     *         {@code null} if the resource could not be found
+     * @throws FileNotFoundException
+     *         if the given resource could not be found
+     * @throws IOException
+     *         if the resource could not be read
+     */
+    public static String loadFromResource (
+        final Class <?> refClass, final String name
+    ) throws IOException {
+        final InputStream input = refClass.getResourceAsStream (name);
+        if (input != null) {
+            return __drainStreamAndClose (input);
+
+        } else {
+            throw new FileNotFoundException ("no such resource: "+ name);
+        }
+    }
+
+
+    static String __drainStreamAndClose (
+        final InputStream input
+    ) throws IOException {
+        try {
+            return drainStream (input);
+
+        } finally {
+            input.close ();
+        }
+    }
+
+    //
+
+    /**
+     * Stores a string into a file.
+     *
+     * @param fileName
+     *        the name of the file to write.
+     * @param content
+     *        the string to write.
+     * @throws FileNotFoundException
+     *         if the given file could not be created
+     * @throws IOException
+     *         if an error occurs while writing to the file
+     */
+    public static void storeToFile (
+        final File fileName, final String content
+    ) throws FileNotFoundException {
+        __printAndClose (new PrintWriter (fileName), content);
+    }
+
+
+    /**
+     * Stores a string into a file.
+     *
+     * @param fileName
+     *        the name of the file to write.
+     * @param content
+     *        the string to write.
+     * @throws FileNotFoundException
+     *         if the given file could not be created
+     * @throws IOException
+     *         if an error occurs while writing to the file
+     */
+    public static void storeToFile (
+        final String fileName, final String content
+    ) throws FileNotFoundException {
+        __printAndClose (new PrintWriter (fileName), content);
+    }
+
+
+    static void __printAndClose (
+        final PrintWriter output, final String content
+    ) {
+        try {
+            output.print (content);
+
+        } finally {
+            output.close ();
+        }
     }
 
 }

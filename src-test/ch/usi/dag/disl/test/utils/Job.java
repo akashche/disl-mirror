@@ -1,13 +1,13 @@
 package ch.usi.dag.disl.test.utils;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import ch.usi.dag.util.Duration;
+import ch.usi.dag.util.Strings;
+import ch.usi.dag.util.function.Predicate;
 
 
 /**
@@ -46,8 +46,9 @@ final class Job {
     private String __error;
 
     /**
-     * Waits for {@link #__process} to finish, sets {@link #__isRunning} to
-     * {@code false}, and notifies all objects waiting on {@link #__isRunning}.
+     * Waits for {@link #__process} to finish. What that happens, sets
+     * {@link #__isRunning} to {@code false}, and notifies all objects waiting
+     * on {@link #__isRunning}.
      */
     private Thread __waiter;
 
@@ -85,6 +86,8 @@ final class Job {
         // It seems that reading streams from the created process is very
         // tricky and hangs the reader. It's better to redirect stdout
         // and stderr to files in the forked process.
+        //
+        // TODO LB: What exactly does that mean?
         //
         if (__CLOSE_STREAMS__) {
             __process.getInputStream ().close ();
@@ -194,7 +197,7 @@ final class Job {
         //
 
         if (__output == null) {
-            __output = __streamToString (__process.getInputStream ());
+            __output = Strings.drainStream (__process.getInputStream ());
         }
 
         return __output;
@@ -224,31 +227,10 @@ final class Job {
         //
 
         if (__error == null) {
-            __error = __streamToString (__process.getErrorStream ());
+            __error = Strings.drainStream (__process.getErrorStream ());
         }
 
         return __error;
-    }
-
-
-    private static String __streamToString (
-        final InputStream input
-    ) throws IOException {
-        final ByteArrayOutputStream output = new ByteArrayOutputStream ();
-
-        final int bufferSize = 4096;
-        final byte [] buffer = new byte [bufferSize];
-
-        READ_LOOP: while (true) {
-            final int bytesRead = input.read (buffer, 0, bufferSize);
-            if (bytesRead < 1) {
-                break READ_LOOP;
-            }
-
-            output.write (buffer, 0, bytesRead);
-        }
-
-        return output.toString ();
     }
 
 
@@ -261,29 +243,23 @@ final class Job {
      *        the time limit duration
      * @param unit
      *        the unit of the time limit duration
-     * @return {@code true} if a job is finished, {@code false} otherwise.
+     * @return {@code true} if a job has finished, {@code false} otherwise.
      */
     public boolean waitFor (final Duration duration) {
         __ensureJobStarted ();
 
         //
 
-        synchronized (__isRunning) {
-            long remainingNanos = duration.to (NANOSECONDS);
-            while (__isRunning.get () && remainingNanos > 0) {
-                try {
-                    final long startTime = System.nanoTime ();
-                    NANOSECONDS.timedWait (__isRunning, remainingNanos);
-                    remainingNanos -= System.nanoTime () - startTime;
-
-                } catch (final InterruptedException ie) {
-                    // just return the current state if interrupted
-                }
-            }
-
-            return !__isRunning.get ();
-        }
+        return duration.awaitUninterruptibly (__isRunning, __BOOLEAN_IS_FALSE__);
     }
+
+    private static Predicate <AtomicBoolean> __BOOLEAN_IS_FALSE__ =
+        new Predicate <AtomicBoolean> () {
+            @Override
+            public boolean test (final AtomicBoolean value) {
+                return !value.get ();
+            }
+        };
 
 
     /**

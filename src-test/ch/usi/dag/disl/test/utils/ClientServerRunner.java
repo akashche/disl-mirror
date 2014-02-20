@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import ch.usi.dag.util.Duration;
 import ch.usi.dag.util.Lists;
 
 public class ClientServerRunner extends Runner {
@@ -42,7 +43,7 @@ public class ClientServerRunner extends Runner {
     ) throws IOException {
         __server = __startServer (testInstrJar);
 
-        _INIT_TIME_LIMIT_.softSleep ();
+        _INIT_TIME_LIMIT_.sleepUninterruptibly ();
 
         if (! __server.isRunning ()) {
             throw new IOException ("server failed: "+ __server.getError ());
