@@ -9,59 +9,59 @@ import java.net.Socket;
 
 public class NetMessageReader {
 
-	private final Socket socket;
-	private final DataInputStream is;
-	private final DataOutputStream os;
+    private final Socket socket;
+    private final DataInputStream is;
+    private final DataOutputStream os;
 
-	public NetMessageReader(Socket socket) throws IOException {
-		
-		this.socket = socket;
+    public NetMessageReader(Socket socket) throws IOException {
 
-		is = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-		os = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-	}
+        this.socket = socket;
 
-	public NetMessage readMessage() throws IOException {
+        is = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+        os = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+    }
 
-		// protocol:
-		// java int - control string length (ctl)
-		// java int - class code length (ccl)
-		// bytes[ctl] - control string (contains class name)
-		// bytes[ccl] - class code
-		
-		int controlLength = is.readInt();
-		int classCodeLength = is.readInt();
-		
-		// allocate buffer for class reading
-		byte[] control = new byte[controlLength];
-		byte[] classCode = new byte[classCodeLength];
+    public NetMessage readMessage() throws IOException {
 
-		// read class
-		is.readFully(control);
-		is.readFully(classCode);
+        // protocol:
+        // java int - control string length (ctl)
+        // java int - class code length (ccl)
+        // bytes[ctl] - control string (contains class name)
+        // bytes[ccl] - class code
 
-		return new NetMessage(control, classCode);
-	}
+        int controlLength = is.readInt();
+        int classCodeLength = is.readInt();
 
-	public void close() throws IOException {
+        // allocate buffer for class reading
+        byte[] control = new byte[controlLength];
+        byte[] classCode = new byte[classCodeLength];
 
-		is.close();
-		socket.close();
-	}
+        // read class
+        is.readFully(control);
+        is.readFully(classCode);
 
-	public void sendMessage(NetMessage nm) throws IOException {
+        return new NetMessage(control, classCode);
+    }
 
-		// protocol:
-		// java int - control string (ctl)
-		// java int - class code length (ccl)
-		// bytes[ctl] - control string
-		// bytes[ccl] - class code
-		
-		os.writeInt(nm.getControl().length);
-		os.writeInt(nm.getClassCode().length);
-		
-		os.write(nm.getControl());
-		os.write(nm.getClassCode());
-		os.flush();
-	}
+    public void close() throws IOException {
+
+        is.close();
+        socket.close();
+    }
+
+    public void sendMessage(NetMessage nm) throws IOException {
+
+        // protocol:
+        // java int - control string (ctl)
+        // java int - class code length (ccl)
+        // bytes[ctl] - control string
+        // bytes[ccl] - class code
+
+        os.writeInt(nm.getControl().length);
+        os.writeInt(nm.getClassCode().length);
+
+        os.write(nm.getControl());
+        os.write(nm.getClassCode());
+        os.flush();
+    }
 }

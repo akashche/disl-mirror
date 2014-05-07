@@ -15,167 +15,167 @@ import ch.usi.dag.disl.util.Constants;
 
 public class Worker extends Thread {
 
-	private static final boolean debug = Boolean
-			.getBoolean(DiSLServer.PROP_DEBUG);
+    private static final boolean debug = Boolean
+            .getBoolean(DiSLServer.PROP_DEBUG);
 
-	private static final String PROP_UNINSTR = "dislserver.uninstrumented";
-	private static final String uninstrPath = 
-			System.getProperty(PROP_UNINSTR, null);
+    private static final String PROP_UNINSTR = "dislserver.uninstrumented";
+    private static final String uninstrPath =
+            System.getProperty(PROP_UNINSTR, null);
 
-	private static final String PROP_INSTR = "dislserver.instrumented";
-	private static final String instrPath = 
-			System.getProperty(PROP_INSTR, null);
+    private static final String PROP_INSTR = "dislserver.instrumented";
+    private static final String instrPath =
+            System.getProperty(PROP_INSTR, null);
 
-	// used for replays
-	private static final byte[] emptyByteArray = new byte[0];
-	
-	private final NetMessageReader sc;
-	private final DiSL disl;
-	
-	private final AtomicLong instrumentationTime = new AtomicLong();
+    // used for replays
+    private static final byte[] emptyByteArray = new byte[0];
 
-	Worker(NetMessageReader sc, DiSL disl) {
-		this.sc = sc;
-		this.disl = disl;
-	}
+    private final NetMessageReader sc;
+    private final DiSL disl;
 
-	public void run() {
+    private final AtomicLong instrumentationTime = new AtomicLong();
 
-		try {
+    Worker(NetMessageReader sc, DiSL disl) {
+        this.sc = sc;
+        this.disl = disl;
+    }
 
-			instrumentationLoop();
+    public void run() {
 
-			sc.close();
-		}
-		catch (Throwable e) {
-			DiSLServer.reportError(e);
-		}
-		finally {
-			DiSLServer.workerDone(instrumentationTime.get());
-		}
-	}
+        try {
 
-	private void instrumentationLoop() throws Exception {
+            instrumentationLoop();
 
-		try {
-		
-		while (true) {
+            sc.close();
+        }
+        catch (Throwable e) {
+            DiSLServer.reportError(e);
+        }
+        finally {
+            DiSLServer.workerDone(instrumentationTime.get());
+        }
+    }
 
-			NetMessage nm = sc.readMessage();
+    private void instrumentationLoop() throws Exception {
 
-			// communication closed by the client
-			if (nm.getControl().length == 0 && nm.getClassCode().length == 0) {
-				return;
-			}
+        try {
 
-			byte[] instrClass;
+        while (true) {
 
-			try {
-				
-				long startTime = System.nanoTime();
-				
-				instrClass = instrument(new String(nm.getControl()),
-						nm.getClassCode());
-				
-				instrumentationTime.addAndGet(System.nanoTime() - startTime);
-			}
-			catch (Exception e) {
+            NetMessage nm = sc.readMessage();
 
-				// instrumentation error
-				// send the client a description of the server-side error
+            // communication closed by the client
+            if (nm.getControl().length == 0 && nm.getClassCode().length == 0) {
+                return;
+            }
 
-				String errToReport = e.getMessage();
-				
-				// during debug send the whole message
-				if(debug) {
-					StringWriter sw = new StringWriter();
-					e.printStackTrace(new PrintWriter(sw));
-					errToReport = sw.toString();
-				}
+            byte[] instrClass;
 
-				// error protocol:
-				// control contains the description of the server-side error
-				// class code is an array of size zero
-				String errMsg = "Instrumentation error for class "
-						+ new String(nm.getControl()) + ": " + errToReport;
+            try {
 
-				sc.sendMessage(new NetMessage(errMsg.getBytes(),
-						emptyByteArray));
+                long startTime = System.nanoTime();
 
-				throw e;
-			}
+                instrClass = instrument(new String(nm.getControl()),
+                        nm.getClassCode());
 
-			NetMessage replyData = null;
-			
-			if(instrClass != null) {
-				// class was modified - send modified data
-				replyData = new NetMessage(emptyByteArray, instrClass);
-			}
-			else {
-				// zero length means no modification
-				replyData = new NetMessage(emptyByteArray, emptyByteArray);
-			}
-			
-			sc.sendMessage(replyData);
-		}
-		
-		}
-		catch (IOException e) {
-			throw new DiSLServerException(e);
-		}
-	}
-	
-	private byte[] instrument(String className, byte[] origCode)
-			throws DiSLServerException, DiSLException {
-		
-		// backup for empty class name
-		if(className == null || className.isEmpty()) {
-			className = UUID.randomUUID().toString();
-		}
-		
-		// dump uninstrumented
-		if (uninstrPath != null) {
-			dump(className, origCode, uninstrPath);
-		}
+                instrumentationTime.addAndGet(System.nanoTime() - startTime);
+            }
+            catch (Exception e) {
 
-		// instrument
-		byte[] instrCode = disl.instrument(origCode);
+                // instrumentation error
+                // send the client a description of the server-side error
 
-		// dump instrumented
-		if (instrPath != null && instrCode != null) {
-			dump(className, instrCode, instrPath);
-		}
+                String errToReport = e.getMessage();
 
-		return instrCode;
-	}
+                // during debug send the whole message
+                if(debug) {
+                    StringWriter sw = new StringWriter();
+                    e.printStackTrace(new PrintWriter(sw));
+                    errToReport = sw.toString();
+                }
 
-	private void dump(String className, byte[] codeAsBytes, String path)
-			throws DiSLServerException {
-		
-		try {
-		
-			// extract the class name and package name
-			int i = className.lastIndexOf(Constants.PACKAGE_INTERN_DELIM);
-			String onlyClassName = className.substring(i + 1);
-			String packageName = className.substring(0, i + 1);
-			
-			// construct path to the class
-			String pathWithPkg = path + File.separator + packageName;
+                // error protocol:
+                // control contains the description of the server-side error
+                // class code is an array of size zero
+                String errMsg = "Instrumentation error for class "
+                        + new String(nm.getControl()) + ": " + errToReport;
 
-			// create directories
-			new File(pathWithPkg).mkdirs();
+                sc.sendMessage(new NetMessage(errMsg.getBytes(),
+                        emptyByteArray));
 
-			// dump the class code
-			FileOutputStream fo = new FileOutputStream(pathWithPkg
-					+ onlyClassName + Constants.CLASS_EXT);
-			fo.write(codeAsBytes);
-			fo.close();
-		}
-		catch (FileNotFoundException e) {
-			throw new DiSLServerException(e);
-		}
-		catch (IOException e) {
-			throw new DiSLServerException(e);
-		}
-	}
+                throw e;
+            }
+
+            NetMessage replyData = null;
+
+            if(instrClass != null) {
+                // class was modified - send modified data
+                replyData = new NetMessage(emptyByteArray, instrClass);
+            }
+            else {
+                // zero length means no modification
+                replyData = new NetMessage(emptyByteArray, emptyByteArray);
+            }
+
+            sc.sendMessage(replyData);
+        }
+
+        }
+        catch (IOException e) {
+            throw new DiSLServerException(e);
+        }
+    }
+
+    private byte[] instrument(String className, byte[] origCode)
+            throws DiSLServerException, DiSLException {
+
+        // backup for empty class name
+        if(className == null || className.isEmpty()) {
+            className = UUID.randomUUID().toString();
+        }
+
+        // dump uninstrumented
+        if (uninstrPath != null) {
+            dump(className, origCode, uninstrPath);
+        }
+
+        // instrument
+        byte[] instrCode = disl.instrument(origCode);
+
+        // dump instrumented
+        if (instrPath != null && instrCode != null) {
+            dump(className, instrCode, instrPath);
+        }
+
+        return instrCode;
+    }
+
+    private void dump(String className, byte[] codeAsBytes, String path)
+            throws DiSLServerException {
+
+        try {
+
+            // extract the class name and package name
+            int i = className.lastIndexOf(Constants.PACKAGE_INTERN_DELIM);
+            String onlyClassName = className.substring(i + 1);
+            String packageName = className.substring(0, i + 1);
+
+            // construct path to the class
+            String pathWithPkg = path + File.separator + packageName;
+
+            // create directories
+            new File(pathWithPkg).mkdirs();
+
+            // dump the class code
+            FileOutputStream fo = new FileOutputStream(pathWithPkg
+                    + onlyClassName + Constants.CLASS_EXT);
+            fo.write(codeAsBytes);
+            fo.close();
+        }
+        catch (FileNotFoundException e) {
+            throw new DiSLServerException(e);
+        }
+        catch (IOException e) {
+            throw new DiSLServerException(e);
+        }
+    }
 }
