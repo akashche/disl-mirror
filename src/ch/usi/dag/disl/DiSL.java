@@ -86,7 +86,7 @@ public class DiSL {
 
     /**
      * DiSL initialization.
-     * 
+     *
      * @param useDynamicBypass
      *            enable or disable dynamic bypass instrumentation
      */
@@ -159,7 +159,7 @@ public class DiSL {
 
     /**
      * Finds transformer class in configuration and allocates it.
-     * 
+     *
      * @return newly allocated transformer.
      */
     private Transformer resolveTransformer() throws ManifestInfoException,
@@ -198,9 +198,9 @@ public class DiSL {
 
     /**
      * Instruments a method in a class.
-     * 
+     *
      * NOTE: This method changes the classNode argument
-     * 
+     *
      * @param classNode
      *            class that will be instrumented
      * @param methodNode
@@ -336,7 +336,7 @@ public class DiSL {
 
     /**
      * Selects only shadows matching the passed guard.
-     * 
+     *
      * @param guard
      *            guard, on witch conditions are the shadows selected
      * @param marking
@@ -390,10 +390,10 @@ public class DiSL {
 
     /**
      * Instruments class node.
-     * 
+     *
      * Note: This method is thread safe. Parameter classNode is changed during
      * the invocation.
-     * 
+     *
      * @param classNode
      *            class node to instrument
      * @return instrumented class
@@ -471,7 +471,7 @@ public class DiSL {
 
     /**
      * Instruments array of bytes representing a class.
-     * 
+     *
      * @param classAsBytes
      *            class as array of bytes
      * @return instrumented class as array of bytes
