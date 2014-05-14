@@ -267,10 +267,10 @@ public class ClientServerEvaluationRunner extends Runner {
         }
 
         if (shadowOutNull) {
-            assertClientOutNull ();
+            assertShadowOutNull ();
         }
         if (shadowErrNull) {
-            assertClientErrNull ();
+            assertShadowErrNull ();
         }
 
         if (serverOutNull) {
