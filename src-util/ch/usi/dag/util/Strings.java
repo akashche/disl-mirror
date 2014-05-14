@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.util.Iterator;
 
 /**
  * Utility class providing miscellaneous string operations.
@@ -53,6 +54,57 @@ public final class Strings {
         } else {
             return EMPTY_STRING;
         }
+    }
+
+
+    /**
+     * Joins an iterable of strings using a "glue" string.
+     */
+    public static String join (final String glue, final Iterable <String> fragments) {
+        Assert.objectNotNull (glue, "glue");
+        Assert.objectNotNull (fragments, "fragments");
+
+        //
+        // To avoid reallocations in the StringBuilder, count the number of
+        // fragments in the iterable and obtain an initial estimate of the
+        // length of the result. Bail out quickly if the iterable is empty
+        // or if it only contains a single element.
+        //
+        int resultLength = 0;
+        int fragmentCount = 0;
+
+        for (final String fragment : fragments) {
+            resultLength = fragment.length ();
+            fragmentCount += 1;
+        }
+
+        if (fragmentCount == 0) {
+            return EMPTY_STRING;
+        }
+
+        //
+
+        final Iterator <String> fit = fragments.iterator ();
+        if (fragmentCount == 1) {
+            return fit.next ();
+        }
+
+        //
+        // Adjust the length of the result with the combined length of all
+        // glue instances, and join the fragments using the glue. Since there
+        // are at least two fragments, we can append the first fragment
+        // unconditionally outside the loop body.
+        //
+        resultLength += glue.length () * (fragmentCount - 1);
+        final StringBuilder builder = new StringBuilder (resultLength);
+
+        builder.append (fit.next ());
+        while (fit.hasNext ()) {
+            builder.append (glue);
+            builder.append (fit.next ());
+        }
+
+        return builder.toString ();
     }
 
 
