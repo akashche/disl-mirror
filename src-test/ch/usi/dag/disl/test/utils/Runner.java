@@ -53,9 +53,7 @@ public abstract class Runner {
     private static String __getJavaCommand () {
         final String javaHome = System.getenv (_ENV_JAVA_HOME_);
         if (javaHome != null) {
-            return new File (
-                new File (new File (javaHome, "jre"), "bin"), "java"
-            ).toString ();
+            return Strings.join (File.separator, javaHome, "jre", "bin", "java");
         } else {
             return "java";
         }
