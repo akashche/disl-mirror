@@ -108,25 +108,29 @@ public class ClientServerRunner extends Runner {
     }
 
 
-    public void assertIsStarted () {
+    @Override
+    protected void _assertIsStarted () {
         assertTrue ("client not started", __client.isStarted ());
         assertTrue ("server not started", __server.isStarted ());
     }
 
 
-    public void assertIsFinished () {
+    @Override
+    protected void _assertIsFinished () {
         assertTrue ("client not finished", __client.isFinished ());
         assertTrue ("server not finished", __server.isFinished ());
     }
 
 
-    public void assertIsSuccessful () {
+    @Override
+    protected void _assertIsSuccessful () {
         assertTrue ("client failed", __client.isSuccessful ());
         assertTrue ("server failed", __server.isSuccessful ());
     }
 
 
-    public void destroyIfRunningAndFlushOutputs () throws IOException {
+    @Override
+    protected void _destroyIfRunningAndDumpOutputs () throws IOException {
         _destroyIfRunningAndDumpOutputs (__client, "client");
         _destroyIfRunningAndDumpOutputs (__server, "server");
     }
@@ -192,7 +196,8 @@ public class ClientServerRunner extends Runner {
     }
 
 
-    public void assertRestOutErrNull () throws IOException {
+    @Override
+    protected void _assertRestOutErrNull () throws IOException {
         if (clientOutNull) {
             assertClientOutNull ();
         }
@@ -208,10 +213,12 @@ public class ClientServerRunner extends Runner {
     }
 
 
-    public void destroy () {
+    @Override
+    protected void _destroy () {
         if (__client != null) {
             __client.destroy ();
         }
+
         if (__server != null) {
             __server.destroy ();
         }

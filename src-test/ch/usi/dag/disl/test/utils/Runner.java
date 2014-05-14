@@ -92,11 +92,44 @@ public abstract class Runner {
 
     //
 
+    public final void assertIsStarted () {
+        _assertIsStarted ();
+    }
+
+    protected abstract void _assertIsStarted ();
+
+    //
+
+    public final void assertIsFinished () {
+        _assertIsFinished ();
+    }
+
+    protected abstract void _assertIsFinished ();
+
+    //
+
+    public final void assertIsSuccessful () {
+        _assertIsSuccessful ();
+    }
+
+    protected abstract void _assertIsSuccessful ();
+
+    //
+
     protected String _loadResource (final String name) throws IOException {
         return Strings.loadFromResource (__testClass, name);
     }
 
-    protected void _destroyIfRunningAndDumpOutputs (
+    //
+
+    public final void destroyIfRunningAndDumpOutputs () throws IOException {
+        _destroyIfRunningAndDumpOutputs ();
+    }
+
+    protected abstract void _destroyIfRunningAndDumpOutputs () throws IOException;
+
+
+    protected final void _destroyIfRunningAndDumpOutputs (
         final Job job, final String prefix
     ) throws IOException {
         if (job.isRunning ()) {
@@ -114,6 +147,22 @@ public abstract class Runner {
             job.getError ()
         );
     }
+
+    //
+
+    public final void destroy () {
+        _destroy ();
+    }
+
+    protected abstract void _destroy ();
+
+    //
+
+    public final void assertRestOutErrNull () throws IOException {
+        _assertRestOutErrNull ();
+    }
+
+    protected abstract void _assertRestOutErrNull () throws IOException;
 
     //
 
