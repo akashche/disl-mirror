@@ -79,6 +79,13 @@ final class Job {
 
         //
 
+        if (Runner.TEST_DEBUG) {
+            System.out.println ("Starting job:");
+            System.out.println (Strings.join (" ", __builder.command ()));
+        }
+
+        //
+
         __process = __builder.start ();
         __isRunning.set (true);
 

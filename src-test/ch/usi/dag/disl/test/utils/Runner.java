@@ -33,7 +33,10 @@ public abstract class Runner {
     protected static final File _DISL_RE_SERVER_JAR_ = new File (_DISL_BUILD_DIR_, "dislre-server.jar");
     protected static final Class <?> _DISL_RE_SERVER_MAIN_CLASS_ = DiSLREServer.class;
 
+    //
+
     protected static final File _TEST_BUILD_DIR_ = new File ("build-test");
+    static final boolean TEST_DEBUG = Boolean.getBoolean ("disl.test.debug");
 
     //
 
