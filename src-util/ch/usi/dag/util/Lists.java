@@ -2,6 +2,7 @@ package ch.usi.dag.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -142,19 +143,28 @@ public final class Lists {
         //
 
         final int collectionCount = collections.length;
-        if (collectionCount >= 1) {
-            final ArrayList <E> result = new ArrayList <E> (collections [0]);
-            for (int i = 1; i < collectionCount; i++) {
-                result.addAll (collections [i]);
+        if (collectionCount > 0) {
+            //
+            // Aggregate collection sizes to determine the size of the
+            // resulting ArrayList to avoid reallocations, then gather
+            // all elements from the collections.
+            //
+            int elementCount = 0;
+            for (final Collection <? extends E> collection : collections) {
+                elementCount += collection.size ();
+            }
+
+            final ArrayList <E> result = new ArrayList <E> (elementCount);
+            for (final Collection <? extends E> collection : collections) {
+                result.addAll (collection);
             }
 
             return result;
 
         } else {
-            return new ArrayList <E> (0);
+            return Collections.emptyList ();
         }
     }
-
 
     /* ***********************************************************************
      * LinkedList
