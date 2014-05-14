@@ -10,25 +10,25 @@ import ch.usi.dag.disl.test.utils.ClientServerRunner;
 @RunWith(JUnit4.class)
 public class DynamicContextTest {
 
-	ClientServerRunner r = new ClientServerRunner(this.getClass());
+    ClientServerRunner r = new ClientServerRunner(this.getClass());
 
-	@Test
-	public void test()
-			throws Exception {
-		r.start();
-		r.waitFor();
-		r.assertIsFinished();
-		if(Boolean.parseBoolean(System.getProperty("disl.test.verbose"))) { r.destroyIfRunningAndFlushOutputs(); }
-		r.assertIsSuccessful();
-		r.assertClientOut("client.out.resource");
-		r.assertClientErrNull();
-		r.assertServerOutNull();
-		r.assertServerErrNull();
-	}
+    @Test
+    public void test()
+            throws Exception {
+        r.start();
+        r.waitFor();
+        r.assertIsFinished();
+        if(Boolean.parseBoolean(System.getProperty("disl.test.verbose"))) { r.destroyIfRunningAndFlushOutputs(); }
+        r.assertIsSuccessful();
+        r.assertClientOut("client.out.resource");
+        r.assertClientErrNull();
+        r.assertServerOutNull();
+        r.assertServerErrNull();
+    }
 
-	@After
-	public void cleanup() {
-		r.destroy();
-	}
+    @After
+    public void cleanup() {
+        r.destroy();
+    }
 }
 
