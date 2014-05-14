@@ -102,6 +102,8 @@ final class Job {
             __process.getErrorStream ().close ();
         }
 
+        //
+
         __waiter = new Thread (new Runnable () {
             @Override
             public void run () {
@@ -142,7 +144,7 @@ final class Job {
      * @throws IllegalStateException
      *         if the job has not been yet started
      */
-    public void destroy() {
+    public void destroy () {
         __ensureJobStarted ();
 
         //
