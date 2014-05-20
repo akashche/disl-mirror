@@ -14,49 +14,49 @@ import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.Constants;
 
 /**
- * This is just a utility class for disl compilation 
+ * This is just a utility class for disl compilation
  */
 public final class ExtendThread {
 
-	private static final String THREAD_BIN_DIR = "./bin-thread/"; 
-	
-	public static void main(String[] args) throws Exception {
-		
-		Class<?> tc = Thread.class;
+    private static final String THREAD_BIN_DIR = "./bin-thread/";
 
-		// get thread class as resource
-		InputStream tis = tc.getResourceAsStream("Thread.class");
+    public static void main(String[] args) throws Exception {
 
-		// prepare dynamic bypass variable
-		ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass",
-				Type.getType(boolean.class), false);
-		tlv.setDefaultValue(0);
-		
-		// prepare Set with dynamic bypass
-		Set<ThreadLocalVar> tlvs = new HashSet<ThreadLocalVar>();
-		tlvs.add(tlv);
-		
-		// parse Thread in ASM
-		ClassReader cr = new ClassReader(tis);
-		ClassWriter cw = new ClassWriter(cr, 0);
-		
-		// put dynamic bypass into Thread using TLVInserter
-		cr.accept(new TLVInserter(cw, tlvs), 0);
-		
-		// prepare Thread file name
-		String threadFileName = tc.getName();
-		threadFileName = threadFileName.replace(
-				Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_INTERN_DELIM);
-		threadFileName += Constants.CLASS_EXT;
-		
-		// output Thread code into special thread bin directory
-		write(THREAD_BIN_DIR + threadFileName, cw.toByteArray());
-	}
-		
+        Class<?> tc = Thread.class;
 
-	private static void write(String outputFile, byte[] data) throws IOException {
-		FileOutputStream fos = new FileOutputStream(outputFile);
-		fos.write(data);
-		fos.close();
-	}
+        // get thread class as resource
+        InputStream tis = tc.getResourceAsStream("Thread.class");
+
+        // prepare dynamic bypass variable
+        ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass",
+                Type.getType(boolean.class), false);
+        tlv.setDefaultValue(0);
+
+        // prepare Set with dynamic bypass
+        Set<ThreadLocalVar> tlvs = new HashSet<ThreadLocalVar>();
+        tlvs.add(tlv);
+
+        // parse Thread in ASM
+        ClassReader cr = new ClassReader(tis);
+        ClassWriter cw = new ClassWriter(cr, 0);
+
+        // put dynamic bypass into Thread using TLVInserter
+        cr.accept(new TLVInserter(cw, tlvs), 0);
+
+        // prepare Thread file name
+        String threadFileName = tc.getName();
+        threadFileName = threadFileName.replace(
+                Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_INTERN_DELIM);
+        threadFileName += Constants.CLASS_EXT;
+
+        // output Thread code into special thread bin directory
+        write(THREAD_BIN_DIR + threadFileName, cw.toByteArray());
+    }
+
+
+    private static void write(String outputFile, byte[] data) throws IOException {
+        FileOutputStream fos = new FileOutputStream(outputFile);
+        fos.write(data);
+        fos.close();
+    }
 }
