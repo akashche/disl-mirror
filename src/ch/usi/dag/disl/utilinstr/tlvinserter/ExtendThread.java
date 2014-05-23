@@ -1,8 +1,10 @@
 package ch.usi.dag.disl.utilinstr.tlvinserter;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,52 +13,76 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.util.Constants;
+
 
 /**
- * This is just a utility class for disl compilation
+ * Extends {@link Thread} with a "bypass" variable and writes its new bytecode
+ * to a class file in a given directory. This is required to compile DiSL bypass
+ * code, which checks the state of the "bypass" variable.
  */
 public final class ExtendThread {
 
-    private static final String THREAD_BIN_DIR = "./bin-thread/";
+    public static void main (final String ... args) throws Exception {
 
-    public static void main(String[] args) throws Exception {
+        if (args.length < 1) {
+            System.err.println ("usage: ExtendThread <output-directory>");
+            System.exit (1);
+        }
 
-        Class<?> tc = Thread.class;
+        final File outputDir  = new File (args [0]);
+        if (!outputDir.isDirectory ()) {
+            System.err.printf ("error: %s does not exist or is not a directory!\n", outputDir);
+            System.exit (1);
+        }
 
-        // get thread class as resource
-        InputStream tis = tc.getResourceAsStream("Thread.class");
+        //
+        // Define a thread-local non-inheritable boolean variable named
+        // "bypass", with a default value of false,
+        //
+        final ThreadLocalVar tlBypass = new ThreadLocalVar (
+            null, "bypass", Type.getType (boolean.class), false
+        );
 
-        // prepare dynamic bypass variable
-        ThreadLocalVar tlv = new ThreadLocalVar(null, "bypass",
-                Type.getType(boolean.class), false);
-        tlv.setDefaultValue(0);
+        tlBypass.setDefaultValue (0);
 
-        // prepare Set with dynamic bypass
-        Set<ThreadLocalVar> tlvs = new HashSet<ThreadLocalVar>();
-        tlvs.add(tlv);
-
-        // parse Thread in ASM
-        ClassReader cr = new ClassReader(tis);
-        ClassWriter cw = new ClassWriter(cr, 0);
-
-        // put dynamic bypass into Thread using TLVInserter
-        cr.accept(new TLVInserter(cw, tlvs), 0);
-
-        // prepare Thread file name
-        String threadFileName = tc.getName();
-        threadFileName = threadFileName.replace(
-                Constants.PACKAGE_STD_DELIM, Constants.PACKAGE_INTERN_DELIM);
-        threadFileName += Constants.CLASS_EXT;
-
-        // output Thread code into special thread bin directory
-        write(THREAD_BIN_DIR + threadFileName, cw.toByteArray());
+        //
+        // Extend Thread with a "bypass" variable and dump the new Thread
+        // bytecode into given directory.
+        //
+        __writeThread (outputDir, __extendThread (tlBypass));
     }
 
 
-    private static void write(String outputFile, byte[] data) throws IOException {
-        FileOutputStream fos = new FileOutputStream(outputFile);
-        fos.write(data);
-        fos.close();
+    private static byte [] __extendThread (
+        final ThreadLocalVar ... tlvs
+    ) throws IOException {
+        final InputStream is = Thread.class.getResourceAsStream ("Thread.class");
+        final ClassReader cr = new ClassReader (is);
+        final ClassWriter cw = new ClassWriter (cr, 0);
+        final Set <ThreadLocalVar> vars = new HashSet <ThreadLocalVar> (Arrays.asList (tlvs));
+        cr.accept (new TLVInserter (cw, vars), 0);
+        return cw.toByteArray ();
+    }
+
+
+    private static void __writeThread (
+        final File baseDir, final byte [] bytes
+    ) throws IOException {
+        final Class <Thread> tc = Thread.class;
+        final String pkgName = tc.getPackage ().getName ();
+        final String dirName = pkgName.replace ('.', File.separatorChar);
+
+        final File outputDir = new File (baseDir, dirName);
+        outputDir.mkdirs ();
+
+        final String fileName = String.format ("%s.class", tc.getSimpleName ());
+        final File outputFile = new File (outputDir, fileName);
+
+        final FileOutputStream fos = new FileOutputStream (outputFile);
+        try {
+            fos.write (bytes);
+        } finally {
+            fos.close ();
+        }
     }
 }

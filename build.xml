@@ -26,9 +26,10 @@
 	</target>
 
 	<target name="prepare-extendedthread" depends="compile-tlvinserter">
-		<mkdir dir="bin-thread/java/lang" />
+		<mkdir dir="bin-thread" />
 		<java fork="true" classname="ch.usi.dag.disl.utilinstr.tlvinserter.ExtendThread">
 			<classpath refid="buildpath" />
+			<arg value="${basedir}/bin-thread" />
 		</java>
 		<mkdir dir="${build}" />
 		<jar basedir="bin-thread" destfile="${extendedthread.path}" />
