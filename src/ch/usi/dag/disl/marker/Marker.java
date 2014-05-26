@@ -13,7 +13,7 @@ import ch.usi.dag.disl.snippet.Snippet;
  * <p>
  * Basic interface that every marker has to implement. Marker should return list
  * of shadows that are marks for particular method.
- * 
+ *
  * <p>
  * There is a list of already prepared markers that select various regions in
  * scoped methods.
@@ -28,7 +28,7 @@ import ch.usi.dag.disl.snippet.Snippet;
  * {@link ch.usi.dag.disl.marker.BodyMarker
  * BodyMarker}</li>
  * <li>
- * {@link ch.usi.dag.disl.marker.BytcodeMarker
+ * {@link ch.usi.dag.disl.marker.BytecodeMarker
  * BytcodeMarker}</li>
  * <li>
  * {@link ch.usi.dag.disl.marker.EmptyMarker
@@ -52,7 +52,7 @@ import ch.usi.dag.disl.snippet.Snippet;
  * {@link ch.usi.dag.disl.marker.TryClauseMarker
  * TryClauseMarker}</li>
  * </ul>
- * 
+ *
  * <p>
  * It's also possible to implement and use custom markers. This interface might
  * be implemented directly or following abstract markers might be used.
@@ -73,7 +73,7 @@ public interface Marker {
     /**
      * <p>
      * Returns shadows for the marked method.
-     * 
+     *
      * @param classNode
      *            represents class being marked
      * @param methodNode
