@@ -6,16 +6,18 @@ located in the ch.usi.dag.disl.test.junit package and complex tests in the
 ch.usi.dag.disl.test.suite package that invoke all parts of the framework
 (client, server, ...) and verify computed results.
 
-All tests are performed calling
-- ant test
+All tests are executed by running
+$ ant test
 
-To use the for debuging purpose during development a single suite test (for
-example "after" test) can be invoked calling
-- ant suite-test -Dtest.name=after
+To use the tests for debuging purposes during development, a single test suite
+(for example, "after") can be executed by running
+$ ant test -Dtest.name=after
 
-Parameters specified to ant at command line starting with "-Ddisl." are passed
-to the test. For example to show tests output specify 
-- -Ddisl.test.verbose=true
+Properties passed to Ant on the command line starting with "-Ddisl.",
+"-Ddislserver.", and "-Ddislreserver." are passed to the test. For example,
+to save the outputs produced by the test suites, use
+
+-Ddisl.test.verbose=true
 
 When built with "ant prepare-test" tests can be also run directly. They are
 packed in the "build-test" directory.
@@ -28,12 +30,12 @@ Implementation is a bit tricky in few aspects.
 
 Firstly, building of suite test apps and instrumentations is handled by a
 scripted target that lists all directories in a "ch.usi.dag.disl.test.suite"
-package and one by one "app" and "instr" package are jared.
+package, and produces "app" and "inst" jars for each suite.
 
-Secondly, when running the instances of client and server using Process API
+Secondly, when running the instances of client and server using Process API,
 never forget to clear environment variables as inherited classpath could cause
-serious troubles.
+serious trouble.
 
-If a suite instr test contains a manifest file it's used and if none is present
-"DiSLClass" is default for "DiSL-Classes" attribute.
-
+If a suite instr source directory contains a manifest file, it will be used
+when packaging the instrumentation into a jar, otherwise a default manifest
+will be used, with the "DiSL-Classes" attribute set to "DiSLClass".

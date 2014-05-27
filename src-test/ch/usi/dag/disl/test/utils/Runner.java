@@ -3,6 +3,7 @@ package ch.usi.dag.disl.test.utils;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -20,22 +21,22 @@ public abstract class Runner {
     protected static final String _ENV_JAVA_HOME_ = "JAVA_HOME";
     protected static final String _JAVA_COMMAND_ = __getJavaCommand ();
 
-    protected static final File _DISL_BUILD_DIR_ = new File ("build");
-    protected static final File _DISL_AGENT_JAR_ = new File (_DISL_BUILD_DIR_, "disl-agent.jar");
-    protected static final File _DISL_AGENT_LIB_ = new File (_DISL_BUILD_DIR_, "libdislagent.so");
+    protected static final File _DISL_LIB_DIR_ = new File (System.getProperty ("disl.lib.dir", "lib"));
+    protected static final File _DISL_AGENT_JAR_ = new File (_DISL_LIB_DIR_, "disl-agent.jar");
+    protected static final File _DISL_AGENT_LIB_ = new File (_DISL_LIB_DIR_, System.getProperty ("disl.agent.lib", "libdislagent.so"));
 
-    protected static final File _DISL_SERVER_JAR_ = new File (_DISL_BUILD_DIR_, "disl-server.jar");
+    protected static final File _DISL_SERVER_JAR_ = new File (_DISL_LIB_DIR_, "disl-server.jar");
     protected static final Class <?> _DISL_SERVER_MAIN_CLASS_ = DiSLServer.class;
 
-    protected static final File _DISL_RE_AGENT_LIB_ = new File (_DISL_BUILD_DIR_, "libdislreagent.so");
-    protected static final File _DISL_RE_DISPATCH_JAR_ = new File (_DISL_BUILD_DIR_, "dislre-dispatch.jar");
+    protected static final File _DISL_RE_AGENT_LIB_ = new File (_DISL_LIB_DIR_, System.getProperty ("shvm.agent.lib", "libdislreagent.so"));
+    protected static final File _DISL_RE_DISPATCH_JAR_ = new File (_DISL_LIB_DIR_, "dislre-dispatch.jar");
 
-    protected static final File _DISL_RE_SERVER_JAR_ = new File (_DISL_BUILD_DIR_, "dislre-server.jar");
+    protected static final File _DISL_RE_SERVER_JAR_ = new File (_DISL_LIB_DIR_, "dislre-server.jar");
     protected static final Class <?> _DISL_RE_SERVER_MAIN_CLASS_ = DiSLREServer.class;
 
     //
 
-    protected static final File _TEST_BUILD_DIR_ = new File ("build-test");
+    protected static final File _TEST_LIB_DIR_ = new File (System.getProperty ("test.lib.dir", "test-jars"));
     static final boolean TEST_DEBUG = Boolean.getBoolean ("disl.test.debug");
 
     //
@@ -68,15 +69,27 @@ public abstract class Runner {
     //
 
     public void start () throws IOException {
-        final File testInstrJar = new File (
-            _TEST_BUILD_DIR_, String.format ("disl-instr-%s.jar", __testName)
+        final File testInstJar = new File (
+            _TEST_LIB_DIR_, String.format ("%s-inst.jar", __testName)
         );
+
+        if (!testInstJar.exists ()) {
+            throw new FileNotFoundException (String.format (
+                "instrumentation jar not found: %s", testInstJar.toString ()
+            ));
+        }
 
         final File testAppJar = new File (
-            _TEST_BUILD_DIR_, String.format ("disl-app-%s.jar", __testName)
+            _TEST_LIB_DIR_, String.format ("%s-app.jar", __testName)
         );
 
-        _start (testInstrJar, testAppJar);
+        if (!testAppJar.exists ()) {
+            throw new FileNotFoundException (String.format (
+                "application jar not found: %s", testAppJar.toString ()
+            ));
+        }
+
+        _start (testInstJar, testAppJar);
     }
 
     protected abstract void _start (

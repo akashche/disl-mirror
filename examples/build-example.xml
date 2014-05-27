@@ -1,0 +1,68 @@
+<project name="example">
+	<!--
+		This build file is intended to be included
+		from a build.xml file in each example directory.
+	-->
+
+	<dirname property="examples.basedir" file="${ant.file.example}" />
+	<property file="${examples.basedir}/build.properties" />
+
+	<path id="inst.classpath">
+		<pathelement location="${examples.basedir}/${asm.path}" />
+		<pathelement location="${examples.basedir}/${disl.server.path}" />
+		<pathelement location="${examples.basedir}/${shvm.server.path}" />
+		<pathelement location="${examples.basedir}/${shvm.dispatch.path}" />
+	</path>
+
+
+	<target name="init">
+		<mkdir dir="${build}" />
+	</target>
+
+
+	<target name="compile-app" depends="init">
+		<mkdir dir="${build.app}" />
+		<javac srcdir="${src.app}" destdir="${build.app}" debug="true" includeAntRuntime="false" />
+	</target>
+	
+	<target name="package-app" depends="compile-app" description="Creates application package.">
+		<jar basedir="${build.app}" destfile="${build}/${app.jar.name}">
+			<manifest>
+				<attribute name="Main-Class" value="Main" />
+			</manifest>
+		</jar>
+	</target>
+
+
+	<target name="compile-inst" depends="init">
+		<mkdir dir="${build.inst}" />
+		<javac srcdir="${src.inst}" destdir="${build.inst}" debug="true" includeAntRuntime="false">
+			<classpath refid="inst.classpath" />
+		</javac>
+	</target>
+
+	<target name="package-inst" depends="compile-inst" description="Creates instrumentation package.">
+		<jar basedir="${build.inst}" destfile="${build}/${inst.jar.name}" excludes="MANIFEST.MF" manifest="${src.inst}/MANIFEST.MF" />
+	</target>
+
+
+	<target name="build" depends="package-app,package-inst" />
+
+
+	<target name="run" depends="build">
+		<exec executable="${examples.basedir}/${bin.path}/disl.py">
+			<arg value="-cse" />
+			<!-- <arg value="-c_out=client.out" /> -->
+			<!-- <arg value="-e_out=evaluation.out" /> -->
+			<arg value="--" />
+			<arg value="${build}/${inst.jar.name}" />
+			<arg value="-jar" />
+			<arg value="${build}/${app.jar.name}" />
+		</exec>	
+	</target>
+
+
+	<target name="clean">
+		<delete dir="${build}" />
+	</target>
+</project>

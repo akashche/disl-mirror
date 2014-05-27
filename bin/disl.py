@@ -12,7 +12,7 @@ from subprocess import *
 # CONSTANTS 
 ######################################################################
 # default disl_home value, relative to the script
-DEFAULT_DISL_HOME = "../../"
+DEFAULT_DISL_HOME = os.path.relpath ("%s/.." % os.path.dirname(__file__))
 # string to be substituted by the actual value of DISL_HOME in paths
 VARIABLE_DISL_HOME = "${DISL_HOME}"
 
@@ -34,7 +34,7 @@ def disl_home():
 # LIB_SUFFIX
 ######################################################################
 def lib_suffix():
-	if platform.system() == "Darwin":	
+	if platform.system() == "Darwin":
 		return ".jnilib"
 	else:
 		return ".so"
@@ -44,11 +44,11 @@ def lib_suffix():
 ######################################################################
 def general_parser(parser):
 	# positional variant of i for simplicity
-	# both cannot be set at once	
-	parser.add_argument("instr", 
+	# both cannot be set at once
+	parser.add_argument("inst", 
 		default=None, 
 		nargs="?",
-		help="path to jar containing disl instrumentation code, same as '-i'")
+		help="path to jar containing DiSL instrumentation code, same as '-i'")
 	
 	# positional variant of c_app for simplicity
 	# both cannot be set at once	
@@ -65,18 +65,18 @@ def general_parser(parser):
 	parser.add_argument("-cs",
 		action="store_true",
 		default=True,
-		help="set to start client and server")
+		help="start client and DiSL server")
 	
 	parser.add_argument("-cse",
 		action="store_true",
 		default=False,
-		help="set to start client, server and remote evaluation")
+		help="start client, DiSL server and Shadow VM server")
 	
 	parser.add_argument("-i", 
 		dest="instrumentation",
 		default=None, 
 		metavar="PATH",
-		help="path to jar containing disl instrumentation code, same as 'instr'")
+		help="path to jar containing DiSL instrumentation code, same as 'inst'")
 
 	parser.add_argument("-t",
 		dest="test_dir",
@@ -140,14 +140,14 @@ def server_parser(parser):
 		default=[],
 		metavar="A",
 		nargs="+",
-		help="java options of the server")
+		help="options for the DiSL server JVM")
 
 	group.add_argument("-s_args",
 		action="append",
 		default=[],
 		metavar="A",
 		nargs="+",
-		help="arguments to the server application")
+		help="DiSL server arguments")
 	
 	group.add_argument("-s_out", 
 		default=None, 
@@ -194,7 +194,7 @@ def server_parser(parser):
 		help="listening network port")
 
 	return
-	
+
 
 ######################################################################
 # EVALUATION_PARSER 
@@ -207,14 +207,14 @@ def evaluation_parser(parser):
 		default=[],
 		nargs="+",
 		metavar="A", 
-		help="java options of the evaluation server")
+		help="options for the Shadow VM server JVM")
 	
 	group.add_argument("-e_args",
 		action="append",
 		default=[],
 		nargs="+",
 		metavar="A", 
-		help="arguments to the evaluation server application")
+		help="Shadow VM server arguments")
 	
 	group.add_argument("-e_out", 
 		default=None, 
@@ -251,11 +251,12 @@ def documentation_parser(parser):
 	parser.formatter_class=argparse.RawTextHelpFormatter
 
 	parser.description = """
-This script is a DiSL client application, server and evaluation server starter.
+This is a DiSL application, DiSL instrumentation server, and Shadow VM server launcher.
 
-By default a client application that will be instrumented and the server that 
-will instrument the application will be started. To start remote evaluation
-server too. Specify '-cse' option.
+By default, the script starts a DiSL instrumentation server VM and a client application
+VM that will be instrumented using DiSL. For instrumentations using remote analysis
+execution in Shadow VM, the Shadow VM server needs to be started as well, which needs
+to be specified explicitly using the '-cse' option.
 
 To pass option like arguments (starting with dash) one must either use equal 
 sign or positional variant of the argument if it's present. For example 
@@ -272,9 +273,9 @@ variable.
 EXAMPLES:
 
 To execute the example application run following:
-	./disl.py -- instr/build/disl-instr.jar -jar app/build/example-app.jar
+	./disl.py -- build/example-inst.jar -jar build/example-app.jar
 or	
-	./disl.py -cs -i=instr/build/disl-instr.jar -c_app=-jar c_app=app/build/example-app.jar
+	./disl.py -cs -i=build/example-inst.jar -c_app="-jar build/example-app.jar"
 """
 
 ######################################################################
@@ -284,8 +285,8 @@ def make_parser():
 	parser = argparse.ArgumentParser()
 	general_parser(parser)
 	client_parser(parser)
-	server_parser(parser)	
-	evaluation_parser(parser)	
+	server_parser(parser)
+	evaluation_parser(parser)
 	documentation_parser(parser)
 	
 	return parser
@@ -346,15 +347,15 @@ def parse_arguments(parser):
 	if args.e_port is not None:
 		args.e_opts+= ["-Ddislreserver.port="+args.e_port]
 
-	# supply instrumentation from positional instr if set
-	if args.instrumentation is not None and args.instr is not None:
-		parser.error("-i and instr set both")	
-	if args.instr is not None:
-		args.instrumentation = args.instr
+	# supply instrumentation from positional 'inst' if set
+	if args.instrumentation is not None and args.inst is not None:
+		parser.error("-i and -inst set both")
+	if args.inst is not None:
+		args.instrumentation = args.inst
 
 	# supply c_app from positional app if set
 	if args.c_app is not None and args.app is not None:
-		parser.error("-c_app and app set both")	
+		parser.error("-c_app and -app set both")
 	if args.app is not None:
 		args.c_app = args.app
 	
@@ -398,7 +399,7 @@ def run(cmd, out, err):
 	if err is not None:
 		err_f = open(err, "w")
 	
-	process = Popen(cmd, stdout=out_f, stderr=err_f, shell=False)	
+	process = Popen(cmd, stdout=out_f, stderr=err_f, shell=False)
 	return process	
 
 
@@ -407,12 +408,12 @@ def run(cmd, out, err):
 ######################################################################
 def run_server(args, parser):
 	if args.instrumentation is None:
-		parser.error("argument instr (-i) is required to run the client")	
+		parser.error("argument instr (-i) is required to run the client")
 
 	try_kill(".server.pid")
 
-	s_jar = args.disl_home+"/build/disl-server.jar"
-	s_class = "ch.usi.dag.dislserver.DiSLServer" 
+	s_jar = args.disl_home+"/lib/disl-server.jar"
+	s_class = "ch.usi.dag.dislserver.DiSLServer"
 
 	s_cmd = ["java"]
 	s_cmd+= args.s_opts
@@ -435,12 +436,12 @@ def run_server(args, parser):
 ######################################################################
 def run_evaluation(args, parser):
 	if args.instrumentation is None:
-		parser.error("argument instr (-i) is required to run the client")	
+		parser.error("argument instr (-i) is required to run the client")
 
 	try_kill(".evaluation.pid")
 
-	e_jar = args.disl_home+"/build/dislre-server.jar"
-	e_class = "ch.usi.dag.dislreserver.DiSLREServer" 
+	e_jar = args.disl_home+"/lib/dislre-server.jar"
+	e_class = "ch.usi.dag.dislreserver.DiSLREServer"
 
 	e_cmd = ["java"]
 	e_cmd+= args.s_opts
@@ -464,15 +465,15 @@ def run_evaluation(args, parser):
 ######################################################################
 def run_client(args, parser):
 	if args.c_app is None:
-		parser.error("argument app (-c_app) is required to run the client")	
+		parser.error("argument app (-c_app) is required to run the client")
 	
 	if args.instrumentation is None:
-		parser.error("argument instr (-i) is required to run the client")	
+		parser.error("argument instr (-i) is required to run the client")
 
-	cagent = args.disl_home+"/build/libdislagent"+lib_suffix()
-	eagent = args.disl_home+"/build/libdislreagent"+lib_suffix()
-	jagent = args.disl_home+"/build/disl-agent.jar"
-	dispatch = args.disl_home+"/build/dislre-dispatch.jar"
+	cagent = args.disl_home+"/lib/libdislagent"+lib_suffix()
+	eagent = args.disl_home+"/lib/libdislreagent"+lib_suffix()
+	jagent = args.disl_home+"/lib/disl-agent.jar"
+	dispatch = args.disl_home+"/lib/dislre-dispatch.jar"
 
 	c_cmd = ["java"]
 	c_cmd+= args.c_opts
@@ -492,7 +493,7 @@ def run_client(args, parser):
 
 	#print c_cmd
 
-	client = run(c_cmd, args.c_out, args.c_err)	
+	client = run(c_cmd, args.c_out, args.c_err)
 	client.wait()
 
 	# let server and evaluation finish
@@ -532,6 +533,7 @@ def main():
 ######################################################################
 # ENTRY_POINT
 ######################################################################
+
 if __name__ == "__main__":
 	main()
 

@@ -1,15 +1,15 @@
 DiSL
 ====
 
-DiSL is a Java bytecode instrumentation framework intended for observation
-of programs executing in the Java Virtual Machine. It has been mainly used
-for development of dynamic program analysis instrumentations, but it can be
-used equally well to develop instrumentations for, e.g. runtime performance
+DiSL is a Java bytecode instrumentation framework intended for observation of
+programs executing in the Java Virtual Machine. It has been mainly used for
+development of dynamic program analysis instrumentations, but it can be used
+equally well to develop instrumentations for, e.g. runtime performance
 monitoring, or other tasks not bent on altering program execution.
 
 DiSL is inspired by AOP, but in contrast to mainstream AOP languages, it
-features an open join point model where any region of bytecodes can serve as
-a join point (i.e., code location to be instrumented). DiSL also reconciles
+features an open join point model where any region of bytecodes can serve as a
+join point (i.e., code location to be instrumented). DiSL also reconciles
 high-level language concepts, such as the pointcut/advice programming model
 found in AOP, with high expressiveness, and efficiency of bytecode
 manipulation performed using low-level libraries such as ASM. As a result,
@@ -45,23 +45,29 @@ javahome/var.local.tmp file to javahome/var.local and modify it to set the
 JAVA_HOME variable to point to the root of the JDK installation you want to
 use.
 
-Finally, to compile DiSL, run the "ant" command in the root directory.
-
-You can create javadoc documentation by running "ant javadoc".
-
-
-EXAMPLES ========
-
-For the basic instrumentation example, please look in the example directory.
-Also the src-test directory contains simple examples of DiSL features.
+Finally, to compile DiSL, run the "ant" command in the top-level directory.
 
 
 DOCUMENTATION =============
 
 Please look at http://disl.projects.ow2.org/xwiki/bin/view/Main/Doc.
 
+After building DiSL, you will find the API documentation and an introduction
+to instrumenting applications with DiSL in the output/dist/doc directory.
+
+
+EXAMPLES ========
+
+For a set of simple examples showcasing basic DiSL features, please look in
+the "examples" directory. Note that the "examples" are meant to be used with
+DiSL a distribution directory layout, which will be created in the
+"output/dist" directory after buildig DiSL.
+
+In addition, the "src-test" directory contains additional examples used for
+testing other DiSL features -- these can be run using Ant.
+
 
 USER ERRORS ===========
 
 If you get a Java error during instrumentation or running your application,
-please look at USERERRORS document describing most common problems.
+please look at the USER_ERRORS document describing most common problems.

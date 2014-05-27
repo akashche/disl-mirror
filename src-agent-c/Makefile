@@ -3,8 +3,6 @@ ifneq (, $(wildcard javahome/var))
 include javahome/var
 endif
 
-BUILDDIR=../build
-
 # Source lists
 LIBNAME=dislagent
 SOURCES=dislagent.c
@@ -42,8 +40,8 @@ ifeq ($(DEBUG), TRUE)
 CFLAGS += -DDEBUG
 endif
 
-build: $(LIBRARY)
-	cp $(LIBRARY) $(BUILDDIR)
+
+all: $(LIBRARY)
 
 # Build native library
 $(LIBRARY): $(OBJECTS)
@@ -55,5 +53,3 @@ clean:
 
 debug:
 	$(MAKE) DEBUG=TRUE
-
-all: build
