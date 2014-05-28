@@ -585,15 +585,15 @@
 
 	<!-- Summary targets -->
 
-	<target name="compile" depends="compile-disl,compile-disl-agent,compile-disl-agent-java,compile-shvm,compile-shvm-agent" description="Compiles DiSL and Shadow VM" />
+	<target name="compile" depends="compile-disl,compile-disl-agent,compile-disl-agent-java,compile-shvm,compile-shvm-agent" description="Compiles DiSL, Shadow VM, and JVM agents for both." />
 
-	<target name="package" depends="package-disl,copy-disl-agent,package-disl-agent-java,package-shvm,copy-shvm-agent,package-shvm-dispatch,copy-asm,copy-examples" description="Packages DiSL and Shadow VM" />
+	<target name="package" depends="package-disl,copy-disl-agent,package-disl-agent-java,package-shvm,copy-shvm-agent,package-shvm-dispatch,copy-asm,copy-examples" description="Packages DiSL and Shadow VM for distribution, without documentation." />
 
-	<target name="eclipse" depends="package-eclipse-agent,package-eclipse-bypass" description="Creates supporting libraries for DiSL development under Eclipse" />
+	<target name="eclipse" depends="package-eclipse-agent,package-eclipse-bypass" description="Creates supporting libraries for DiSL development under Eclipse." />
 
-	<target name="build" depends="compile,package,build-doc,build-jdoc" />
+	<target name="build" depends="compile,package,build-doc,build-jdoc" description="Packages DiSL and Shadow VM for distribution, including documentation." />
 
-	<target name="release" depends="build,package-src,copy-misc,release-bin,release-src" />
+	<target name="release" depends="build,package-src,copy-misc,release-bin,release-src" description="Builds DiSL source and binary release archives." />
 
 
 	<!-- Clean up -->
