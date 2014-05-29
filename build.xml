@@ -475,13 +475,12 @@
 			<then>
 				<echo>Running a single test suite: ${test.name}</echo>
 				<fileset id="test.batch" dir="${src.test}">
-					<include name="*ch/usi/dag/disl/test/suite/${test.name}/junit/*Test.java" />
+					<include name="**/suite/${test.name}/junit/*Test.java" />
 				</fileset>
 			</then><else>
 				<echo>Running all tests.</echo>
 				<fileset id="test.batch" dir="${src.test}">
-					<include name="ch/usi/dag/disl/test/junit/*Test.java" />
-					<include name="ch/usi/dag/disl/test/suite/*/junit/*Test.java" />
+					<include name="**/junit/*Test.java" />
 				</fileset>
 			</else>
 		</if>
@@ -611,9 +610,8 @@
 	<!-- Releases -->
 
 	<target name="release-bin" depends="build,package-src">
-
+		<!-- Collect the artifacts from output and source directories. -->
 		<zip destfile="${release.bin.zip}">
-			<!-- zipfileset prefix="disl-${disl.version}" dir="${dist}" /-->
 			<zipfileset prefix="${disl.prefix}/${dist.bin}" dir="${src.bin}" filemode="755" />
 			<zipfileset prefix="${disl.prefix}/${dist.lib}" dir="${out.lib}">
 				<include name="${asm.lib}" />
@@ -637,6 +635,7 @@
 			</zipfileset>
 		</zip>
 
+		<!-- Convert the zip archive to bzip2 compressed tar. -->
 		<tar destfile="${release.bin.tar}" compression="bzip2">
 			<zipfileset src="${release.bin.zip}" />
 		</tar>
