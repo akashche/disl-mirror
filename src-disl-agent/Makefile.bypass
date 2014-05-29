@@ -1,0 +1,6 @@
+# Generated using the "prepare-disl-agent-makefile" Ant target.
+BYPASS_DIR = ../output/build/disl-bypass
+BYPASS_PKG_PATH = ch/usi/dag/disl/dynamicbypass
+BYPASS_FILES += ../output/build/disl-bypass/always/ch/usi/dag/disl/dynamicbypass/BypassCheck.class
+BYPASS_FILES += ../output/build/disl-bypass/dynamic/ch/usi/dag/disl/dynamicbypass/BypassCheck.class
+BYPASS_FILES += ../output/build/disl-bypass/never/ch/usi/dag/disl/dynamicbypass/BypassCheck.class

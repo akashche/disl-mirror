@@ -3,9 +3,9 @@
 ================================================================================
 
 These examples demonstrate fthe basic features of DiSL. In addition, they
-provide guidelines on how to package the instrumentation classes and how to run
-the instrumented application using a simple launcher script that takes care of
-starting the necessary Java virtual machines.
+provide basic guidelines on how to package the instrumentation classes and how
+to run the instrumented application using a simple launcher script that takes
+care of starting the necessary Java virtual machines.
 
 
 --------------------------------------------------------------------------------
@@ -107,20 +107,19 @@ more details try running this example directly using "disl.py" and supplying
 = HOW TO RUN THE EXAMPLES
 ================================================================================
 
-If you have downloaded a binary DiSL distribution, enter the "examples"
-directory. If you are using a source DiSL distribution, first compile DiSL by
-running "ant" in the top-level directory (see README), then enter the
-"output/dist/examples" directory.
+If you are using a source DiSL distribution, first compile DiSL by running
+"ant" in the top-level directory (see README). You can skip this step if you
+are using a binary distribution of DiSL.
 
-Choose an example you want to run, for example "smoke", and enter the
-corresponding directory. To run the example, just execute "ant run".
+In the "examples" directory, choose an example you want to run, e.g., "smoke",
+enter the corresponding directory, and execute "ant run".
 
 This command builds and packages the application and the instrumentation
 classes and then, using the laucher script, starts the DiSL instrumentation
 server and later on the application VM.
 
-The output of the application and the applied instrumentation should be visible
-on the console.
+The output of the application as well as that of the applied instrumentation
+should be visible on the console.
 
 When compiled, the example can be also run using the "disl.py" launcher script
 found in the "bin" directory, which allows specifying more options. To learn

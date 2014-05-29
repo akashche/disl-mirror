@@ -39,9 +39,9 @@ public class ClientServerRunner extends Runner {
 
     @Override
     protected void _start (
-        final File testInstrJar, final File testAppJar
+        final File testInstJar, final File testAppJar
     ) throws IOException {
-        __server = __startServer (testInstrJar);
+        __server = __startServer (testInstJar);
 
         _INIT_TIME_LIMIT_.sleepUninterruptibly ();
 
@@ -51,21 +51,19 @@ public class ClientServerRunner extends Runner {
 
         //
 
-        __client = __startClient (testInstrJar, testAppJar);
+        __client = __startClient (testInstJar, testAppJar);
     }
 
 
     private Job __startClient (
-        final File testInstrJar, final File testAppJar
+        final File testInstJar, final File testAppJar
     ) throws IOException {
         final List <String> command = Lists.newLinkedList (
             _JAVA_COMMAND_,
             String.format ("-agentpath:%s", _DISL_AGENT_LIB_),
-            String.format ("-javaagent:%s", _DISL_AGENT_JAR_),
-            String.format (
-                "-Xbootclasspath/a:%s",
-                Runner.classPath (_DISL_AGENT_JAR_, testInstrJar)
-            )
+            String.format ("-Xbootclasspath/a:%s", Runner.classPath (
+                _DISL_BYPASS_JAR_, testInstJar
+            ))
         );
 
         command.addAll (propertiesStartingWith ("disl."));
@@ -81,15 +79,15 @@ public class ClientServerRunner extends Runner {
     }
 
 
-    private Job __startServer (final File testInstrJar) throws IOException {
+    private Job __startServer (final File testInstJar) throws IOException {
         final List <String> command = Lists.newLinkedList (
             _JAVA_COMMAND_,
-            "-cp", Runner.classPath (testInstrJar, _DISL_SERVER_JAR_)
+            "-classpath", Runner.classPath (_DISL_SERVER_JAR_, testInstJar)
         );
 
         command.addAll (propertiesStartingWith ("dislserver."));
         command.addAll (propertiesStartingWith ("disl."));
-        command.add (_DISL_SERVER_MAIN_CLASS_.getName ());
+        command.add (_DISL_SERVER_CLASS_.getName ());
 
         //
 

@@ -44,15 +44,15 @@ public class ClientServerEvaluationRunner extends Runner {
         serverErrNull = true;
     }
 
-    private Job __startServer (final File testInstrJar) throws IOException {
+    private Job __startServer (final File testInstJar) throws IOException {
         final List <String> command = Lists.newLinkedList (
             _JAVA_COMMAND_,
-            "-cp", Runner.classPath (testInstrJar, _DISL_SERVER_JAR_)
+            "-classpath", Runner.classPath (_DISL_SERVER_JAR_, testInstJar)
         );
 
         command.addAll (propertiesStartingWith ("dislserver."));
         command.addAll (propertiesStartingWith ("disl."));
-        command.add (_DISL_SERVER_MAIN_CLASS_.getName ());
+        command.add (_DISL_SERVER_CLASS_.getName ());
 
         //
 
@@ -62,14 +62,14 @@ public class ClientServerEvaluationRunner extends Runner {
     }
 
 
-    private Job __startShadow (final File testInstrJar) throws IOException {
+    private Job __startShadow (final File testInstJar) throws IOException {
         final List <String> command = Lists.newLinkedList (
             _JAVA_COMMAND_, "-Xms1G", "-Xmx2G",
-            "-cp", Runner.classPath (testInstrJar, _DISL_RE_SERVER_JAR_)
+            "-classpath", Runner.classPath (_SHVM_SERVER_JAR_, testInstJar)
         );
 
         command.addAll (propertiesStartingWith ("dislreserver."));
-        command.add (_DISL_RE_SERVER_MAIN_CLASS_.getName ());
+        command.add (_SHVM_SERVER_CLASS_.getName ());
 
         //
 
@@ -80,15 +80,14 @@ public class ClientServerEvaluationRunner extends Runner {
 
 
     private Job __startClient (
-        final File testInstrJar, final File testAppJar
+        final File testInstJar, final File testAppJar
     ) throws IOException {
         final List <String> command = Lists.newLinkedList (
             _JAVA_COMMAND_,
             String.format ("-agentpath:%s", _DISL_AGENT_LIB_),
-            String.format ("-agentpath:%s", _DISL_RE_AGENT_LIB_),
-            String.format ("-javaagent:%s", _DISL_AGENT_JAR_),
+            String.format ("-agentpath:%s", _SHVM_AGENT_LIB_),
             String.format ("-Xbootclasspath/a:%s", Runner.classPath (
-                _DISL_AGENT_JAR_, testInstrJar, _DISL_RE_DISPATCH_JAR_
+                _DISL_BYPASS_JAR_, _SHVM_DISPATCH_JAR_, testInstJar
             ))
         );
 
@@ -107,10 +106,10 @@ public class ClientServerEvaluationRunner extends Runner {
 
     @Override
     protected void _start (
-        final File testInstrJar, final File testAppJar
+        final File testInstJar, final File testAppJar
     ) throws IOException {
-        __server = __startServer (testInstrJar);
-        __shadow = __startShadow (testInstrJar);
+        __server = __startServer (testInstJar);
+        __shadow = __startShadow (testInstJar);
 
         _INIT_TIME_LIMIT_.sleepUninterruptibly ();
 
@@ -124,7 +123,7 @@ public class ClientServerEvaluationRunner extends Runner {
 
         //
 
-        __client = __startClient (testInstrJar, testAppJar);
+        __client = __startClient (testInstJar, testAppJar);
     }
 
 

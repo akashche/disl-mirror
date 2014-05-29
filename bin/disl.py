@@ -472,7 +472,7 @@ def run_client(args, parser):
 
 	cagent = args.disl_home+"/lib/libdislagent"+lib_suffix()
 	eagent = args.disl_home+"/lib/libdislreagent"+lib_suffix()
-	jagent = args.disl_home+"/lib/disl-agent.jar"
+	bypass = args.disl_home+"/lib/disl-bypass.jar"
 	dispatch = args.disl_home+"/lib/dislre-dispatch.jar"
 
 	c_cmd = ["java"]
@@ -482,12 +482,10 @@ def run_client(args, parser):
 	if args.cse == True:
 		c_cmd+= ["-agentpath:"+eagent]
 
-	c_cmd+= ["-javaagent:"+jagent]
-
 	if args.cse == True:
-		c_cmd+= ["-Xbootclasspath/a:"+jagent+":"+args.instrumentation+":"+dispatch]
+		c_cmd+= ["-Xbootclasspath/a:"+bypass+":"+args.instrumentation+":"+dispatch]
 	else:
-		c_cmd+= ["-Xbootclasspath/a:"+jagent+":"+args.instrumentation]
+		c_cmd+= ["-Xbootclasspath/a:"+bypass+":"+args.instrumentation]
 
 	c_cmd+= args.c_app
 

@@ -1,68 +1,62 @@
+<!--
+	This build file is intended to be included
+	from a build.xml file in each example directory.
+-->
 <project name="example">
-	<!--
-		This build file is intended to be included
-		from a build.xml file in each example directory.
-	-->
-
+	<property name="build.sysclasspath" value="ignore" />
 	<dirname property="examples.basedir" file="${ant.file.example}" />
+
+	<property file="${examples.basedir}/build-override.properties" />
 	<property file="${examples.basedir}/build.properties" />
 
 	<path id="inst.classpath">
-		<pathelement location="${examples.basedir}/${asm.path}" />
-		<pathelement location="${examples.basedir}/${disl.server.path}" />
-		<pathelement location="${examples.basedir}/${shvm.server.path}" />
-		<pathelement location="${examples.basedir}/${shvm.dispatch.path}" />
+		<pathelement location="${asm.path}" />
+		<pathelement location="${disl.server.path}" />
+		<pathelement location="${shvm.server.path}" />
+		<pathelement location="${shvm.dispatch.path}" />
 	</path>
 
 
-	<target name="init">
-		<mkdir dir="${build}" />
-	</target>
-
-
-	<target name="compile-app" depends="init">
+	<target name="build-app" description="Compiles and packages the application.">
 		<mkdir dir="${build.app}" />
 		<javac srcdir="${src.app}" destdir="${build.app}" debug="true" includeAntRuntime="false" />
-	</target>
-	
-	<target name="package-app" depends="compile-app" description="Creates application package.">
-		<jar basedir="${build.app}" destfile="${build}/${app.jar.name}">
+
+		<jar destfile="${app.path}" basedir="${build.app}">
 			<manifest>
 				<attribute name="Main-Class" value="Main" />
 			</manifest>
 		</jar>
 	</target>
 
-
-	<target name="compile-inst" depends="init">
+	<target name="build-inst" description="Compiles and packages the instrumentation.">
 		<mkdir dir="${build.inst}" />
 		<javac srcdir="${src.inst}" destdir="${build.inst}" debug="true" includeAntRuntime="false">
 			<classpath refid="inst.classpath" />
 		</javac>
+
+		<jar destfile="${inst.path}" basedir="${build.inst}" excludes="MANIFEST.MF" manifest="${src.inst}/MANIFEST.MF" />
 	</target>
 
-	<target name="package-inst" depends="compile-inst" description="Creates instrumentation package.">
-		<jar basedir="${build.inst}" destfile="${build}/${inst.jar.name}" excludes="MANIFEST.MF" manifest="${src.inst}/MANIFEST.MF" />
-	</target>
 
-
-	<target name="build" depends="package-app,package-inst" />
+	<target name="build" depends="build-app,build-inst" />
 
 
 	<target name="run" depends="build">
-		<exec executable="${examples.basedir}/${bin.path}/disl.py">
+		<exec executable="${disl.launcher.path}">
+			<arg value="-d" />
+			<arg value="${disl.home}" />
 			<arg value="-cse" />
 			<!-- <arg value="-c_out=client.out" /> -->
 			<!-- <arg value="-e_out=evaluation.out" /> -->
 			<arg value="--" />
-			<arg value="${build}/${inst.jar.name}" />
+			<arg value="${inst.path}" />
 			<arg value="-jar" />
-			<arg value="${build}/${app.jar.name}" />
-		</exec>	
+			<arg value="${app.path}" />
+		</exec>
 	</target>
 
 
 	<target name="clean">
-		<delete dir="${build}" />
+		<delete dir="${build.dir}" />
 	</target>
 </project>

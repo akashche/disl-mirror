@@ -1,9 +1,23 @@
 <project name="disl" default="build" basedir=".">
 
+	<property name="build.sysclasspath" value="ignore" />
 	<property file="disl.version" />
 	<property file="build.properties" />
 
 
+	<!--
+		Define additional tasks from ant-contrib.
+	-->
+	<taskdef resource="${ant-contrib.resource}">
+		<classpath>
+			<pathelement location="${ant-contrib.path}" />
+		</classpath>
+	</taskdef>
+
+
+	<!--
+		Define various class path elements.
+	-->
 	<path id="asm.classpath">
 		<pathelement location="${asm.path}" />
 	</path>
@@ -23,7 +37,7 @@
 	</path>
 
 	<path id="disl.bypass.classpath">
-		<pathelement location="${build.disl.bypass}/always" />
+		<pathelement location="${build.disl.bypass}/dynamic" />
 	</path>
 
 	<path id="shvm.classpath">
@@ -32,26 +46,9 @@
 	</path>
 
 
-	<path id="classpath">
-		<pathelement location="${build.disl}" />
-		<pathelement location="${asm.path}" />
-		<pathelement location="${junit.core.path}" />
-		<pathelement location="${junit.hamcrest.path}" />
-	</path>
-
-
 	<!-- Initialization -->
 
-	<target name="init">
-		<!--
-			Define additional tasks from ant-contrib.
-		-->
-		<taskdef resource="${ant-contrib.resource}">
-			<classpath>
-				<pathelement location="${ant-contrib.path}" />
-			</classpath>
-		</taskdef>
-
+	<target name="determine-lib-names">
 		<!--
 			Determine the names of native agent libraries.
 			Mac OS X (Darwin) is considered a Unix family.
@@ -82,33 +79,66 @@
 			</if></else>
 		</if>
 
-		<property name="disl.agent.lib" value="${dl.prefix}dislagent${dl.suffix}" />
-		<property name="shvm.agent.lib" value="${dl.prefix}dislreagent${dl.suffix}" />
-
-		<!--
-			Create initial build directories.
-		-->
-		<mkdir dir="${build}" />
-		<mkdir dir="${build.disl}" />
-		<mkdir dir="${dist.lib}" />
+		<property name="disl.agent.lib" value="${dl.prefix}${disl.agent.lib.base}${dl.suffix}" />
+		<property name="shvm.agent.lib" value="${dl.prefix}${shvm.agent.lib.base}${dl.suffix}" />
 	</target>
+
+
+	<!--
+		Looks for a class file or a source file with a given name, and
+		sets the value of a given property to the fully qualified
+		class name when a matching class (or source) file is found.
+	-->
+	<macrodef name="find-class">
+		<attribute name="dir" />
+		<attribute name="name" />
+		<attribute name="property" />
+		<attribute name="suffix" default=".class" />
+		<attribute name="setonempty" default="true" />
+		<sequential>
+			<pathconvert property="@{property}" setonempty="@{setonempty}">
+				<fileset dir="@{dir}" includes="**/@{name}@{suffix}" />
+				<mapper type="package" from="${basedir}/@{dir}/*@{suffix}" to="*" />
+			</pathconvert>
+		</sequential>
+	</macrodef>
 
 
 	<!-- DiSL bypass -->
 
-	<target name="compile-tlvi" depends="init">
-		<mkdir dir="${build.disl}" />
-		<javac srcdir="${src.disl}" includes="ch/usi/dag/disl/utilinstr/tlvinserter/" destdir="${build.disl}" includeAntRuntime="false">
-			<classpath>
-				<path refid="asm.classpath" />
-			</classpath>
-		</javac>
+	<!--
+		To compile DiSL bypass code, we need an extended Thread class
+		containing a public "bypass" field used by the dynamic bypass
+		code. When running an application with DiSL instrumentation,
+		the Thread class will be extended at load time, but we need
+		one also for compilation.
+
+		Here we first check if the extended Thread class exists, and
+		if not, we compile a simple Thread class extender and use it
+		to generate the extended Thread. The check is inside a target
+		so that it is performed only before actually attempting to
+		create the extended Thread.
+	-->
+	<target name="check-disl-thread">
+		<pathconvert property="disl.thread.available" setonempty="false">
+			<fileset dir="." includes="${build.disl.thread}/**/Thread.class" />
+		</pathconvert>
 	</target>
 
+	<target name="create-disl-thread" depends="check-disl-thread" unless="disl.thread.available">
+		<!-- Compile Thread extender -->
+		<mkdir dir="${build.disl}" />
+		<javac destdir="${build.disl}" srcdir="${src.disl}" debug="yes">
+			<include name="**/ExtendThread.java" />
+			<classpath refid="asm.classpath" />
+		</javac>
 
-	<target name="create-disl-thread" depends="compile-tlvi">
+		<!-- Generated extended Thread -->
+		<local name="extender.class" />
+		<find-class property="extender.class" dir="${build.disl}" name="ExtendThread" />
+
 		<mkdir dir="${build.disl.thread}" />
-		<java fork="true" classname="ch.usi.dag.disl.utilinstr.tlvinserter.ExtendThread">
+		<java classname="${extender.class}" fork="true">
 			<classpath>
 				<path refid="disl.classpath" />
 				<path refid="asm.classpath" />
@@ -118,154 +148,226 @@
 	</target>
 
 
+	<!--
+		Compile multiple versions of the bypass code: one which always
+		bypasses the instrumentation, one which never bypasses the
+		instrumentation, and one that checks the "bypass" field in
+		the extended Thread class to determine whether to bypass the
+		instrumentation or not.
+
+		After compiling, create a file set of default bypass classes.
+		The DiSL agent requires those so that instrumented application
+		can find the BypassCheck class, and after switch to dynamic
+		bypass performed by the agent, also the DynamicBypass class.
+		The DiSL server requires both classes to create class literals
+		in the weaver code.
+	-->
 	<target name="compile-disl-bypass" depends="create-disl-thread">
-		<mkdir dir="${build.disl.bypass}" />
-		
-		<mkdir dir="${build.disl.bypass}/always" />
-		<javac srcdir="${src.disl.bypass}" destdir="${build.disl.bypass}/always" debug="true" includeAntRuntime="false">
-			<compilerarg value="-Xbootclasspath/p:${basedir}/${build.disl.thread}" />
-		</javac>
+		<for list="always,never,dynamic" param="variant">
+			<sequential>
+				<mkdir dir="${build.disl.bypass}/@{variant}" />
+				<javac destdir="${build.disl.bypass}/@{variant}" srcdir="${src.disl.bypass}/@{variant}" debug="true">
+					<compilerarg value="-Xbootclasspath/p:${basedir}/${build.disl.thread}" />
+				</javac>
+			</sequential>
+		</for>
 
-		<mkdir dir="${build.disl.bypass}/dynamic" />
-		<javac srcdir="${src.disl.bypass.dynamic}" destdir="${build.disl.bypass}/dynamic" debug="true" includeAntRuntime="false">
-			<classpath>
-				<path refid="disl.bypass.classpath" />
-			</classpath>
-		</javac>
+		<union id="disl.bypass.files">
+			<fileset dir="${build.disl.bypass}/always" includes="**/BypassCheck.class" />
+			<fileset dir="${build.disl.bypass}/dynamic" includes="**/DynamicBypass.class" />
+		</union>
 	</target>
 
 
-	<!-- DiSL Java agent -->
-
-	<target name="compile-disl-agent-java" depends="compile-disl-bypass">
-		<mkdir dir="${build.disl.agent.java}" />
-		<javac srcdir="${src.disl.agent.java}" destdir="${build.disl.agent.java}" debug="true" includeAntRuntime="false">
-			<classpath>
-				<path refid="disl.bypass.classpath" />
-			</classpath>
-		</javac>
-	</target>
-
-
-	<target name="package-disl-agent-java" depends="compile-disl-agent-java">
-		<jar destfile="${dist.lib}/disl-agent.jar">
-			<fileset dir="${build.disl.agent.java}" />
-			<fileset dir="${build.disl.bypass}/always" />
-			<mappedresources>
-				<fileset dir="${build.disl.bypass}/dynamic" />
-				<globmapper from="*/DynamicBypassCheck.class" to="DynamicBypassCheck-AfterBootstrap.class" />
-			</mappedresources>
-			<manifest>
-				<attribute name="Premain-Class" value="ch.usi.dag.dislagent.DiSLAgent" />
-				<attribute name="Can-Redefine-Classes" value="true" />
-				<attribute name="DiSL-Version" value="${disl.version}" />
-			</manifest>
+	<!--
+		Package the default variant of the bypass code which will
+		be included in the boot classpath. By default, we include
+		a BypassCheck variant that always bypasses instrumentation.
+		We also include DynamicBypass class that is needed by the
+		dynamic variant of the BypassCheck class, which will be
+		substituted by the DiSL agent in place of the default on.
+	-->
+	<target name="package-disl-bypass" depends="compile-disl-bypass">
+		<jar destfile="${out.lib}/${disl.bypass.lib}">
+			<resources refid="disl.bypass.files" />
 		</jar>
 	</target>
 
 
 	<!-- Shared utility code -->
 
-	<target name="compile-util" depends="init">
+	<target name="compile-util">
 		<mkdir dir="${build.util}" />
-		<javac srcdir="${src.util}" destdir="${build.util}" debug="true" includeAntRuntime="false" />
+		<javac destdir="${build.util}" srcdir="${src.util}" debug="true" />
 	</target>
 
 
 	<!-- DiSL -->
 
-	<target name="compile-disl" depends="compile-disl-bypass,compile-util">
-		<javac srcdir="${src.disl}" destdir="${build.disl}" debug="true" includeAntRuntime="false">
+	<target name="compile-disl" depends="compile-util,compile-disl-bypass">
+		<mkdir dir="${build.disl}" />
+		<javac destdir="${build.disl}" srcdir="${src.disl}" debug="true">
 			<classpath>
-				<!-- path refid="util.classpath" / -->
-				<path refid="disl.classpath" />
 				<path refid="disl.bypass.classpath" />
+				<path refid="util.classpath" />
 				<path refid="asm.classpath" />
 			</classpath>
 		</javac>
 	</target>
 
 
-	<target name="package-disl" depends="compile-disl">
-		<jar destfile="${dist.lib}/disl-server.jar">
+	<target name="package-disl" depends="compile-disl,package-disl-bypass">
+		<local name="disl.server.class" />
+		<find-class property="disl.server.class" dir="${build.disl}" name="DiSLServer" />
+
+		<jar destfile="${out.lib}/${disl.lib}">
 			<manifest>
 				<attribute name="Class-Path" value="${asm.lib}" />
-				<attribute name="Main-Class" value="ch.usi.dag.dislserver.DiSLServer" />
+				<attribute name="Main-Class" value="${disl.server.class}" />
 				<attribute name="DiSL-Version" value="${disl.version}" />
 			</manifest>
 
-			<!-- fileset dir="${build.util}" includes="**/*" / -->
-			<fileset dir="${build.disl}" includes="**/*" excludes="**/ExtendThread.class" />
-			<fileset dir="${build.disl.bypass}/always" includes="**/*" />
+			<fileset dir="${build.util}" />
+			<fileset dir="${build.disl}" excludes="**/ExtendThread.class" />
+			<resources refid="disl.bypass.files" />
 		</jar>
 	</target>
 
 
 	<!-- DiSL agent -->
 
-	<target name="compile-disl-agent" depends="init">
-		<exec executable="make" dir="${src.disl.agent}/javahome" />
-		<exec executable="make" dir="${src.disl.agent}" />
+	<!--
+		The DiSL agent requires a header file containing flags for
+		various code generation options. This target generates the
+		header using "javah" after compiling DiSL.
+	-->
+	<property name="disl.agent.codeflags.path" value="${src.disl.agent}/codeflags.h" />
+	<uptodate property="disl.agent.codeflags.uptodate" targetfile="${disl.agent.codeflags.path}">
+		<srcfiles dir="${src.disl}" includes="**/DiSL.java" />
+	</uptodate>
+
+	<target name="prepare-disl-agent-codeflags" depends="compile-disl" unless="disl.agent.codeflags.uptodate">
+		<local name="flags.class" />
+		<find-class property="flags.class" dir="${build.disl}" name="*CodeOption$Flag" />
+
+		<javah outputFile="${disl.agent.codeflags.path}">
+			<class name="${flags.class}" />
+			<classpath refid="disl.classpath" />
+		</javah>
+	</target>
+
+
+	<!--
+		The DiSL agent requires the bytecode of several bypass
+		classes. The agent build system will convert the bytecode to
+		a C source file, but it needs to know where to look for the
+		class files. This target generates "Makefile.bypass" which
+		provides the C build system with the necessary information.
+	-->
+	<property name="disl.agent.makefile.path" value="${src.disl.agent}/Makefile.bypass" />
+	<available property="disl.agent.makefile.available" file="${makefile.path}" />
+
+	<target name="prepare-disl-agent-makefile" depends="compile-disl" unless="disl.agent.makefile.available">
+		<echo file="${disl.agent.makefile.path}"># Generated using the "prepare-disl-agent-makefile" Ant target.${line.separator}</echo>
+		<echo file="${disl.agent.makefile.path}" append="true">BYPASS_DIR = ../${build.disl.bypass}${line.separator}</echo>
+		<echo file="${disl.agent.makefile.path}" append="true">BYPASS_PKG_PATH = ch/usi/dag/disl/dynamicbypass${line.separator}</echo>
+
+		<for param="path">
+			<path>
+				<fileset dir="${build.disl.bypass}" includes="**/BypassCheck.class" />
+				<!-- fileset dir="${build.disl.bypass}" includes="**/DynamicBypass.class" /-->
+			</path>
+			<sequential>
+				<local name="path.relative" />
+				<pathconvert property="path.relative">
+					<path path="@{path}" />
+					<mapper type="glob" from="${basedir}/*" to="../*" />
+				</pathconvert>
+				<echo file="${disl.agent.makefile.path}" append="true">BYPASS_FILES += ${path.relative}${line.separator}</echo>
+			</sequential>
+		</for>
+	</target>
+
+	<target name="prepare-disl-agent" depends="prepare-disl-agent-codeflags,prepare-disl-agent-makefile" />
+
+
+	<target name="compile-disl-agent" depends="prepare-disl-agent,determine-lib-names">
+		<exec executable="make" dir="${src.disl.agent}">
+			<arg value="WHOLE=1" />
+		</exec>
+	</target>
+
+
+	<!--
+		This target cross-compiles the DiSL agent library for
+		Windows using MinGW. It is currently not used in the
+		default build, but should be used for binary releases.
+	-->
+	<target name="compile-disl-agent-mingw" depends="prepare-disl-agent,determine-lib-names">
+		<exec executable="make" dir="${src.disl.agent}">
+			<arg value="WHOLE=1" />
+			<arg value="TARGET_ENV=MinGW" />
+		</exec>
 	</target>
 
 
 	<target name="copy-disl-agent" depends="compile-disl-agent">
-		<copy file="${src.disl.agent}/${dl.prefix}dislagent${dl.suffix}" todir="${dist.lib}" />
+		<copy file="${src.disl.agent}/${disl.agent.lib}" todir="${out.lib}" />
 	</target>
 
 
 	<!-- Shadow VM -->
 
-	<target name="compile-shvm" depends="init">
+	<target name="compile-shvm-dispatch">
+		<mkdir dir="${build.shvm.dispatch}" />
+		<javac destdir="${build.shvm.dispatch}" srcdir="${src.shvm.dispatch}" debug="true" />
+	</target>
+
+
+	<target name="package-shvm-dispatch" depends="compile-shvm-dispatch">
+		<jar destfile="${out.lib}/${shvm.dispatch.lib}" basedir="${build.shvm.dispatch}" />
+	</target>
+
+
+	<target name="compile-shvm" depends="compile-shvm-dispatch">
 		<mkdir dir="${build.shvm}" />
-		<javac srcdir="${src.shvm}" destdir="${build.shvm}" debug="true" includeAntRuntime="false">
-			<classpath>
-				<path refid="asm.classpath" />
-			</classpath>
+		<javac destdir="${build.shvm}" srcdir="${src.shvm}" debug="true">
+			<classpath refid="asm.classpath" />
 		</javac>
 	</target>
 
 
-	<target name="package-shvm" depends="compile-shvm">
-		<jar basedir="${build.shvm}" destfile="${dist.lib}/dislre-server.jar" includes="ch/usi/dag/**">
+	<target name="package-shvm" depends="compile-shvm,package-shvm-dispatch">
+		<local name="shvm.server.class" />
+		<find-class property="shvm.server.class" dir="${build.shvm}" name="DiSLREServer" />
+
+		<jar destfile="${out.lib}/${shvm.lib}" basedir="${build.shvm}">
 			<manifest>
 				<attribute name="Class-Path" value="${asm.lib}" />
-				<attribute name="Main-Class" value="ch.usi.dag.dislreserver.DiSLREServer" />
+				<attribute name="Main-Class" value="${shvm.server.class}" />
 				<attribute name="DiSL-Version" value="${disl.version}" />
 			</manifest>
 		</jar>
 	</target>
 
-
-	<target name="compile-shvm-dispatch" depends="init">
-		<mkdir dir="${build.shvm.dispatch}" />
-		<javac srcdir="${src.shvm.dispatch}" destdir="${build.shvm.dispatch}" debug="true" includeAntRuntime="false" />
-	</target>
-
-
-	<target name="package-shvm-dispatch" depends="compile-shvm-dispatch">
-		<jar basedir="${build.shvm.dispatch}" destfile="${dist.lib}/dislre-dispatch.jar" includes="ch/usi/dag/**" />
-	</target>
-
-
 	<!-- Shadow VM agent -->
 
-	<target name="compile-shvm-agent">
+	<target name="compile-shvm-agent" depends="determine-lib-names">
 		<exec executable="make" dir="${src.shvm.agent}/javahome" />
 		<exec executable="make" dir="${src.shvm.agent}" />
 	</target>
 
 
 	<target name="copy-shvm-agent" depends="compile-shvm-agent">
-		<copy file="${src.shvm.agent}/${dl.prefix}dislreagent${dl.suffix}" todir="${dist.lib}" />
+		<copy file="${src.shvm.agent}/${shvm.agent.lib}" todir="${out.lib}" />
 	</target>
 
 
 	<!-- JUnit tests and DiSL/Shadow VM test suites -->
 
-	<target name="compile-test" depends="compile-util,compile-disl,compile-shvm,compile-shvm-dispatch">
+	<target name="compile-test" depends="compile-util,compile-disl,compile-shvm">
 		<mkdir dir="${build.test}" />
-		<javac srcdir="${src.test}" destdir="${build.test}" debug="true" includeAntRuntime="false" >
+		<javac destdir="${build.test}" srcdir="${src.test}" debug="true">
 			<classpath>
 				<path refid="util.classpath" />
 				<path refid="disl.classpath" />
@@ -297,7 +399,6 @@
 
 
 	<target name="package-test" depends="compile-test">
-		<mkdir dir="${build.test.jars}" />
 		<property name="suite.base.pkg" value="ch.usi.dag.disl.test.suite" />
 		<package2path package="${suite.base.pkg}" property="suite.base.path" />
 
@@ -325,20 +426,16 @@
 
 
 	<target name="package-test-suite">
-		<!--
-			Package target application classes.
-		-->
-		<jar jarfile="${build.test.jars}/${test.suite.name}-app.jar" basedir="${build.test}">
-			<include name="${test.suite.path}/app/**" />
+		<!-- Package target application classes. -->
+		<jar destfile="${out.test}/${test.suite.name}-app.jar">
+			<fileset dir="${build.test}" includes="${test.suite.path}/app/**" />
 			<manifest>
 				<attribute name="Main-Class" value="${test.suite.pkg}.app.TargetClass" />
 			</manifest>
 		</jar>
 
-		<!--
-			Package instrumentation classes.
-		-->
-		<property name="inst.jar" value="${build.test.jars}/${test.suite.name}-inst.jar" />
+		<!-- Package instrumentation classes. -->
+		<property name="inst.jar" value="${out.test}/${test.suite.name}-inst.jar" />
 		<property name="inst.manifest" value="${test.suite.path}/instr/MANIFEST.MF" />
 
 		<fileset id="inst.files" dir="${build.test}">
@@ -353,11 +450,11 @@
 		<if>
 			<available file="${src.test}/${inst.manifest}" />
 			<then>
-				<jar jarfile="${inst.jar}" manifest="${src.test}/${inst.manifest}">
+				<jar destfile="${inst.jar}" manifest="${src.test}/${inst.manifest}">
 					<fileset refid="inst.files" />
 				</jar>
 			</then><else>
-				<jar jarfile="${inst.jar}">
+				<jar destfile="${inst.jar}">
 					<fileset refid="inst.files" />
 					<manifest>
 						<attribute name="DiSL-Classes" value="${test.suite.pkg}.instr.DiSLClass" />
@@ -410,9 +507,9 @@
 				<propertyref prefix="dislserver." />
 				<propertyref prefix="dislreserver." />
 			</syspropertyset>
-			
-			<sysproperty key="disl.lib.dir" value="${dist.lib}" />
-			<sysproperty key="test.lib.dir" value="${build.test.jars}" />
+
+			<sysproperty key="disl.lib.dir" value="${out.lib}" />
+			<sysproperty key="test.lib.dir" value="${out.test}" />
 			<sysproperty key="disl.agent.lib" value="${disl.agent.lib}" />
 			<sysproperty key="shvm.agent.lib" value="${shvm.agent.lib}" />
 
@@ -425,25 +522,21 @@
 
 	<!-- Eclipse support -->
 
-	<target name="package-eclipse-agent" depends="init">
-		<jar jarfile="${out.dir}/eclipse-agent.jar">
+	<target name="package-eclipse-agent">
+		<local name="agent.class" />
+		<find-class property="agent.class" dir="${src.test}" name="Agent" suffix=".java" />
+
+		<jar destfile="${out.lib}/${eclipse.agent.lib}">
 			<manifest>
-				<attribute name="Premain-Class" value="ch.usi.dag.disl.testtools.agent.Agent" />
+				<attribute name="Premain-Class" value="${agent.class}" />
 			</manifest>
-		</jar>
-	</target>
-
-
-	<target name="package-eclipse-bypass" depends="compile-disl-bypass">
-		<jar destfile="${out.dir}/eclipse-dynamicbypass.jar">
-			<fileset dir="${build.disl.bypass}/always" />
 		</jar>
 	</target>
 
 
 	<!-- Documentation -->
 
-	<target name="build-doc" depends="init">
+	<target name="build-doc">
 		<delete dir="${build.doc.intro}" />
 		<copy todir="${build.doc.intro}">
 			<fileset dir="${src.doc.intro}" />
@@ -452,16 +545,13 @@
 			<arg value="--pdf" />
 			<arg value="dislintro.tex" />
 		</exec>
-
-		<mkdir dir="${dist.doc.intro}" />
-		<copy file="${build.doc.intro}/dislintro.pdf" todir="${dist.doc.intro}" />
 	</target>
 
 
 	<target name="build-jdoc" depends="compile">
-		<mkdir dir="${dist.doc.jdoc}" />
-		<javadoc destdir="${dist.doc.jdoc}"
-			access="public" author="true" version="true" use="true" 
+		<mkdir dir="${out.doc.jdoc}" />
+		<javadoc destdir="${out.doc.jdoc}"
+			access="public" author="true" version="true" use="true"
 			nodeprecated="false" nodeprecatedlist="false"
 			noindex="false" splitindex="true" nonavbar="false" notree="false"
 			overview="${src.doc.jdoc}/overview.html"
@@ -503,36 +593,14 @@
 	<!-- Miscellaneous -->
 
 	<target name="copy-asm">
-		<copy file="${asm.path}" tofile="${dist.lib}/${asm.lib}" />
+		<copy file="${asm.path}" tofile="${out.lib}/${asm.lib}" />
 	</target>
 
-	<target name="copy-examples">
-		<copy todir="${dist.bin}">
-			<fileset dir="${src.bin}" />
-		</copy>
-		<chmod perm="ugo+x" type="file">
-			<fileset dir="${dist.bin}" />
-		</chmod>
-
-		<copy todir="${dist.examples}">
-			<fileset dir="${src.examples}" />
-		</copy>
-	</target>
-
-	<target name="copy-misc">
-		<copy todir="${dist}" flatten="true">
-			<resources>
-				<file file="COPYING" />
-				<file file="README" />
-				<file file="USER_ERRORS" />
-			</resources>
-		</copy>
-	</target>
 
 	<target name="package-src">
-		<zip destfile="${dist}/src.zip">
+		<zip destfile="${out.src}/src.zip">
 			<zipfileset dir="${src.disl}" />
-			<zipfileset dir="${src.disl.bypass}" />
+			<zipfileset dir="${src.disl.bypass}/dynamic" />
 			<zipfileset dir="${src.shvm}" />
 			<zipfileset dir="${src.shvm.dispatch}" />
 			<zipfileset dir="${src.util}" />
@@ -542,9 +610,31 @@
 
 	<!-- Releases -->
 
-	<target name="release-bin"> 
+	<target name="release-bin" depends="build,package-src">
+
 		<zip destfile="${release.bin.zip}">
-			<zipfileset dir="${dist}" />
+			<!-- zipfileset prefix="disl-${disl.version}" dir="${dist}" /-->
+			<zipfileset prefix="${disl.prefix}/${dist.bin}" dir="${src.bin}" filemode="755" />
+			<zipfileset prefix="${disl.prefix}/${dist.lib}" dir="${out.lib}">
+				<include name="${asm.lib}" />
+				<include name="${disl.lib}" />
+				<include name="${disl.bypass.lib}" />
+				<include name="${disl.agent.lib}" />
+				<include name="${shvm.lib}" />
+				<include name="${shvm.dispatch.lib}" />
+				<include name="${shvm.agent.lib}" />
+			</zipfileset>
+			<zipfileset prefix="${disl.prefix}/${dist.doc.intro}" file="${build.doc.intro}/dislintro.pdf" />
+			<zipfileset prefix="${disl.prefix}/${dist.doc.jdoc}" dir="${out.doc.jdoc}" />
+			<zipfileset prefix="${disl.prefix}/${dist.examples}" dir="${src.examples}">
+				<exclude name="build-override.properties" />
+			</zipfileset>
+			<zipfileset prefix="${disl.prefix}/${dist.src}" dir="${out.src}" />
+			<zipfileset prefix="${disl.prefix}" dir=".">
+				<include name="COPYING" />
+				<include name="README" />
+				<include name="USER_ERRORS" />
+			</zipfileset>
 		</zip>
 
 		<tar destfile="${release.bin.tar}" compression="bzip2">
@@ -553,14 +643,14 @@
 	</target>
 
 
-	<target name="release-src">
+	<target name="release-src" depends="clean-examples">
 		<zip destfile="${release.src.zip}">
 			<zipfileset prefix="disl-${disl.version}" dir=".">
-				<include name="bin/" />
-				<include name="doc/" />
-				<include name="examples/" />
-				<include name="lib/*.jar" />
-				<include name="lib/*.txt" />
+				<include name="${src.bin}/" />
+				<include name="${src.doc}/" />
+				<include name="${src.examples}/" />
+				<include name="${lib.dir}/*.jar" />
+				<include name="${lib.dir}/*.txt" />
 				<include name="COPYING" />
 				<include name="README" />
 				<include name="README_TESTS" />
@@ -585,27 +675,29 @@
 
 	<!-- Summary targets -->
 
-	<target name="compile" depends="compile-disl,compile-disl-agent,compile-disl-agent-java,compile-shvm,compile-shvm-agent" description="Compiles DiSL, Shadow VM, and JVM agents for both." />
+	<target name="compile" depends="compile-disl,compile-disl-agent,compile-shvm,compile-shvm-agent" description="Compiles DiSL, Shadow VM, and JVM agents for both." />
 
-	<target name="package" depends="package-disl,copy-disl-agent,package-disl-agent-java,package-shvm,copy-shvm-agent,package-shvm-dispatch,copy-asm,copy-examples" description="Packages DiSL and Shadow VM for distribution, without documentation." />
+	<target name="package" depends="package-disl,copy-disl-agent,package-shvm,copy-shvm-agent,copy-asm" description="Packages DiSL and Shadow VM for distribution, without documentation." />
 
-	<target name="eclipse" depends="package-eclipse-agent,package-eclipse-bypass" description="Creates supporting libraries for DiSL development under Eclipse." />
+	<target name="eclipse" depends="package-eclipse-agent,package-disl-bypass" description="Creates libraries required for DiSL development under Eclipse." />
 
 	<target name="build" depends="compile,package,build-doc,build-jdoc" description="Packages DiSL and Shadow VM for distribution, including documentation." />
 
-	<target name="release" depends="build,package-src,copy-misc,release-bin,release-src" description="Builds DiSL source and binary release archives." />
+	<target name="release" depends="release-bin,release-src" description="Builds DiSL source and binary release archives." />
 
 
 	<!-- Clean up -->
 
-	<target name="clean">
+	<target name="clean-examples">
+		<ant dir="${src.examples}" target="clean" />
+	</target>
+
+
+	<target name="clean" depends="clean-examples">
 		<delete dir="${out.dir}" />
 
-		<exec executable="make" dir="${src.disl.agent}/javahome">
-			<arg value="clean" />
-		</exec>
 		<exec executable="make" dir="${src.disl.agent}">
-			<arg value="clean" />
+			<arg value="cleanall" />
 		</exec>
 
 		<exec executable="make" dir="${src.shvm.agent}/javahome">

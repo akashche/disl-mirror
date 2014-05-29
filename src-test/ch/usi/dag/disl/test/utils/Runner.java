@@ -13,6 +13,7 @@ import ch.usi.dag.dislserver.DiSLServer;
 import ch.usi.dag.util.Duration;
 import ch.usi.dag.util.Strings;
 
+
 public abstract class Runner {
 
     protected static final Duration _INIT_TIME_LIMIT_ = Duration.of (3, SECONDS);
@@ -22,17 +23,20 @@ public abstract class Runner {
     protected static final String _JAVA_COMMAND_ = __getJavaCommand ();
 
     protected static final File _DISL_LIB_DIR_ = new File (System.getProperty ("disl.lib.dir", "lib"));
-    protected static final File _DISL_AGENT_JAR_ = new File (_DISL_LIB_DIR_, "disl-agent.jar");
-    protected static final File _DISL_AGENT_LIB_ = new File (_DISL_LIB_DIR_, System.getProperty ("disl.agent.lib", "libdislagent.so"));
 
-    protected static final File _DISL_SERVER_JAR_ = new File (_DISL_LIB_DIR_, "disl-server.jar");
-    protected static final Class <?> _DISL_SERVER_MAIN_CLASS_ = DiSLServer.class;
+    protected static final File _DISL_AGENT_LIB_ = __libPath ("disl.agent.lib", "libdislagent.so");
+    protected static final File _DISL_BYPASS_JAR_ = __libPath ("disl.bypass.jar", "disl-bypass.jar");
+    protected static final File _DISL_SERVER_JAR_ = __libPath ("disl.server.jar", "disl-server.jar");
+    protected static final Class <?> _DISL_SERVER_CLASS_ = DiSLServer.class;
 
-    protected static final File _DISL_RE_AGENT_LIB_ = new File (_DISL_LIB_DIR_, System.getProperty ("shvm.agent.lib", "libdislreagent.so"));
-    protected static final File _DISL_RE_DISPATCH_JAR_ = new File (_DISL_LIB_DIR_, "dislre-dispatch.jar");
+    protected static final File _SHVM_AGENT_LIB_ = __libPath ("shvm.agent.lib", "libdislreagent.so");
+    protected static final File _SHVM_DISPATCH_JAR_ = __libPath ("shvm.dispatch.jar", "dislre-dispatch.jar");
+    protected static final File _SHVM_SERVER_JAR_ = __libPath ("shvm.server.jar", "dislre-server.jar");
+    protected static final Class <?> _SHVM_SERVER_CLASS_ = DiSLREServer.class;
 
-    protected static final File _DISL_RE_SERVER_JAR_ = new File (_DISL_LIB_DIR_, "dislre-server.jar");
-    protected static final Class <?> _DISL_RE_SERVER_MAIN_CLASS_ = DiSLREServer.class;
+    private static File __libPath (final String property, final String defaultValue) {
+        return new File (_DISL_LIB_DIR_, System.getProperty (property, defaultValue));
+    }
 
     //
 
@@ -93,7 +97,7 @@ public abstract class Runner {
     }
 
     protected abstract void _start (
-        final File testInstrJar, final File testAppJar
+        final File testInstJar, final File testAppJar
     ) throws IOException;
 
     //
