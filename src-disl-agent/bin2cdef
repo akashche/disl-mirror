@@ -16,7 +16,7 @@ while [ $# -gt 1 ]; do
 
 
 jvmtiClassDefinition ${NAME}_classdef = {
-	.class_byte_count = $(stat --format '%s' ${FILE}),
+	.class_byte_count = $(ls -l ${FILE} | awk '{print $5}'),
 	.class_bytes = (unsigned char *)
 $(hexdump -e '"\t\t" "Q" 16/1 "xxx%02x" "Q" "\n"' ${FILE} |sed 's/xxx  //g; y/Q/"/; s/xxx/\\x/g'),
 };

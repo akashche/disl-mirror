@@ -101,7 +101,7 @@ all: $(LIBRARY)
 # Build native library
 ifneq (,$(WHOLE))
 
-CFLAGS += -DWHOLE -fwhole-program -flto
+CFLAGS += -DWHOLE -flto
 
 $(LIBRARY): $(HEADERS) $(SOURCES)
 	$(CC) $(CFLAGS) $(TARGET_ARCH) $(CFLAGS_LD) $(SOURCES) $(LIBS) $(OUTPUT_OPTION)

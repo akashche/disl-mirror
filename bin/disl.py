@@ -332,7 +332,7 @@ def parse_arguments(parser):
 	if args.s_port is not None:
 		args.s_opts+= ["-Ddislserver.port="+args.s_port]
 	if args.s_noexcepthandler is True:
-		args.s_opts+= ["-Ddisl.noexcepthandler"]
+		args.s_opts+= ["-Ddisl.noexcepthandler=true"]
 	if args.s_exclusionlist is not None:
 		args.s_opts+= ["-Ddisl.exclusionList="+args.s_exclusionlist]
 	if args.s_instrumented is not None:

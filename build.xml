@@ -680,7 +680,7 @@
 
 	<target name="eclipse" depends="package-eclipse-agent,package-disl-bypass" description="Creates libraries required for DiSL development under Eclipse." />
 
-	<target name="build" depends="compile,package,build-doc,build-jdoc" description="Packages DiSL and Shadow VM for distribution, including documentation." />
+	<target name="build" depends="compile,package,build-jdoc" description="Packages DiSL and Shadow VM for distribution, including documentation." />
 
 	<target name="release" depends="release-bin,release-src" description="Builds DiSL source and binary release archives." />
 
