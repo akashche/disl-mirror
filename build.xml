@@ -187,7 +187,7 @@
 		dynamic variant of the BypassCheck class, which will be
 		substituted by the DiSL agent in place of the default on.
 	-->
-	<target name="package-disl-bypass" depends="compile-disl-bypass">
+	<target name="build-disl-bypass" depends="compile-disl-bypass">
 		<jar destfile="${out.lib}/${disl.bypass.lib}">
 			<resources refid="disl.bypass.files" />
 		</jar>
@@ -216,7 +216,7 @@
 	</target>
 
 
-	<target name="package-disl" depends="compile-disl,package-disl-bypass">
+	<target name="build-disl" depends="compile-disl,build-disl-bypass">
 		<local name="disl.server.class" />
 		<find-class property="disl.server.class" dir="${build.disl}" name="DiSLServer" />
 
@@ -311,7 +311,7 @@
 	</target>
 
 
-	<target name="copy-disl-agent" depends="compile-disl-agent">
+	<target name="build-disl-agent" depends="compile-disl-agent">
 		<copy file="${src.disl.agent}/${disl.agent.lib}" todir="${out.lib}" />
 	</target>
 
@@ -324,7 +324,7 @@
 	</target>
 
 
-	<target name="package-shvm-dispatch" depends="compile-shvm-dispatch">
+	<target name="build-shvm-dispatch" depends="compile-shvm-dispatch">
 		<jar destfile="${out.lib}/${shvm.dispatch.lib}" basedir="${build.shvm.dispatch}" />
 	</target>
 
@@ -337,7 +337,7 @@
 	</target>
 
 
-	<target name="package-shvm" depends="compile-shvm,package-shvm-dispatch">
+	<target name="build-shvm" depends="compile-shvm,build-shvm-dispatch">
 		<local name="shvm.server.class" />
 		<find-class property="shvm.server.class" dir="${build.shvm}" name="DiSLREServer" />
 
@@ -358,7 +358,7 @@
 	</target>
 
 
-	<target name="copy-shvm-agent" depends="compile-shvm-agent">
+	<target name="build-shvm-agent" depends="compile-shvm-agent">
 		<copy file="${src.shvm.agent}/${shvm.agent.lib}" todir="${out.lib}" />
 	</target>
 
@@ -398,7 +398,7 @@
 	</macrodef>
 
 
-	<target name="package-test" depends="compile-test">
+	<target name="build-test" depends="compile-test">
 		<property name="suite.base.pkg" value="ch.usi.dag.disl.test.suite" />
 		<package2path package="${suite.base.pkg}" property="suite.base.path" />
 
@@ -415,7 +415,7 @@
 			<sequential>
 				<local name="suite.name" />
 				<basename file="@{suite.path}" property="suite.name" />
-				<antcall target="package-test-suite">
+				<antcall target="build-test-suite">
 					<param name="test.suite.name" value="${suite.name}" />
 					<param name="test.suite.path" value="${suite.base.path}/${suite.name}" />
 					<param name="test.suite.pkg" value="${suite.base.pkg}.${suite.name}" />
@@ -425,7 +425,7 @@
 	</target>
 
 
-	<target name="package-test-suite">
+	<target name="build-test-suite">
 		<!-- Package target application classes. -->
 		<jar destfile="${out.test}/${test.suite.name}-app.jar">
 			<fileset dir="${build.test}" includes="${test.suite.path}/app/**" />
@@ -465,7 +465,7 @@
 	</target>
 
 
-	<target name="test" depends="package,package-test" description="Runs all tests or a selected (-Dtest.name=...) test suite.">
+	<target name="test" depends="build,build-test" description="Runs all tests or a selected (-Dtest.name=...) test suite.">
 		<!--
 			If test.name is set to a name of a test suite, only include the test suite
 			in the batch of tests to be run, otherwise include all tests and suites.
@@ -521,7 +521,7 @@
 
 	<!-- Eclipse support -->
 
-	<target name="package-eclipse-agent">
+	<target name="build-eclipse-agent">
 		<local name="agent.class" />
 		<find-class property="agent.class" dir="${src.test}" name="Agent" suffix=".java" />
 
@@ -535,15 +535,49 @@
 
 	<!-- Documentation -->
 
-	<target name="build-doc">
+	<macrodef name="pdflatex">
+		<attribute name="dir" default="." />
+		<element name="exec-elements" implicit="yes" />
+		<sequential>
+			<local name="pdflatex.output" />
+			<local name="pdflatex.result" />
+
+			<exec executable="pdflatex" dir="@{dir}" outputproperty="pdflatex.output" resultproperty="pdflatex.result">
+				<exec-elements />
+			</exec>
+			<fail message="${pdflatex.output}">
+				<condition><isfailure code="${pdflatex.result}" /></condition>
+			</fail>
+		</sequential>
+	</macrodef>
+
+
+	<target name="check-doc">
+		<property name="doc.intro.tex" value="dislintro.tex" />
+		<property name="doc.intro.pdf" value="${build.doc.intro}/dislintro.pdf" />
+		<fileset id="doc.intro.files" dir="${src.doc.intro}" />
+
+		<uptodate property="doc.intro.uptodate" targetfile="${doc.intro.pdf}">
+			<srcfiles refid="doc.intro.files" />
+		</uptodate>
+	</target>
+
+
+	<target name="build-doc" depends="check-doc" unless="doc.intro.uptodate">
 		<delete dir="${build.doc.intro}" />
 		<copy todir="${build.doc.intro}">
-			<fileset dir="${src.doc.intro}" />
+			<fileset refid="doc.intro.files" />
 		</copy>
-		<exec executable="rubber" dir="${build.doc.intro}">
-			<arg value="--pdf" />
-			<arg value="dislintro.tex" />
-		</exec>
+
+		<echo>Compiling Introduction to Instrumentation with DiSL</echo>
+		<pdflatex dir="${build.doc.intro}">
+			<arg value="-draftmode" />
+			<arg value="${doc.intro.tex}" />
+		</pdflatex>
+
+		<pdflatex dir="${build.doc.intro}">
+			<arg value="${doc.intro.tex}" />
+		</pdflatex>
 	</target>
 
 
@@ -622,7 +656,7 @@
 				<include name="${shvm.dispatch.lib}" />
 				<include name="${shvm.agent.lib}" />
 			</zipfileset>
-			<zipfileset prefix="${disl.prefix}/${dist.doc.intro}" file="${build.doc.intro}/dislintro.pdf" />
+			<zipfileset prefix="${disl.prefix}/${dist.doc.intro}" file="${doc.intro.pdf}" />
 			<zipfileset prefix="${disl.prefix}/${dist.doc.jdoc}" dir="${out.doc.jdoc}" />
 			<zipfileset prefix="${disl.prefix}/${dist.examples}" dir="${src.examples}">
 				<exclude name="build-override.properties" />
@@ -674,15 +708,15 @@
 
 	<!-- Summary targets -->
 
-	<target name="compile" depends="compile-disl,compile-disl-agent,compile-shvm,compile-shvm-agent" description="Compiles DiSL, Shadow VM, and JVM agents for both." />
+	<target name="compile" depends="compile-disl,compile-disl-agent,compile-shvm,compile-shvm-agent" description="Compiles DiSL, Shadow VM, and the JVM agents for both." />
 
-	<target name="package" depends="package-disl,copy-disl-agent,package-shvm,copy-shvm-agent,copy-asm" description="Packages DiSL and Shadow VM for distribution, without documentation." />
+	<target name="build" depends="build-disl,build-disl-agent,build-shvm,build-shvm-agent,copy-asm" description="Builds DiSL and Shadow VM, without documentation." />
 
-	<target name="eclipse" depends="package-eclipse-agent,package-disl-bypass" description="Creates libraries required for DiSL development under Eclipse." />
+	<target name="eclipse" depends="build-eclipse-agent,build-disl-bypass" description="Creates libraries for developing DiSL under Eclipse." />
 
-	<target name="build" depends="compile,package,build-jdoc" description="Packages DiSL and Shadow VM for distribution, including documentation." />
+	<target name="doc" depends="build-doc,build-jdoc" description="Builds DiSL documentation (requires javadoc and pdflatex)." />
 
-	<target name="release" depends="release-bin,release-src" description="Builds DiSL source and binary release archives." />
+	<target name="release" depends="doc,release-bin,release-src" description="Produces DiSL source and binary release archives." />
 
 
 	<!-- Clean up -->
