@@ -318,7 +318,7 @@
 	-->
 	<target name="compile-disl-agent-mingw" depends="prepare-disl-agent,determine-lib-names">
 		<exec executable="make" dir="${src.disl.agent}">
-			<!-- arg value="WHOLE=1" /-->
+			<arg value="WHOLE=1" />
 			<arg value="TARGET_ENV=MinGW" />
 		</exec>
 	</target>
