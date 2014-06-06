@@ -2,7 +2,7 @@
 -include Makefile.local
 
 INCLUDE_DIR ?= ../src-jdk-include
-
+LIBRARY_BASE ?= dislagent
 
 ifeq ($(OS),Windows_NT)
     ifeq (,$(findstring /cygdrive/,$(PATH)))
@@ -19,6 +19,10 @@ endif
 TARGET_ENV ?= $(HOST_ENV)
 TARGET_CPU ?= $(HOST_CPU)
 
+LIBRARY_WINDOWS = $(LIBRARY_BASE).dll
+LIBRARY_MACOSX = lib$(LIBRARY_BASE).jnilib
+LIBRARY_LINUX = lib$(LIBRARY_BASE).so
+
 ifneq ($(HOST_ENV),$(TARGET_ENV))
     ifneq ($(TARGET_ENV),MinGW)
         $(error Cross-compiling is only supported for TARGET_ENV=MinGW)
@@ -28,9 +32,8 @@ ifneq ($(HOST_ENV),$(TARGET_ENV))
 endif
 
 ifneq (,$(filter MinGW Cygwin,$(TARGET_ENV)))
-    LIB_PREFIX :=
-    LIB_SUFFIX := .dll
     JDK_TARGET := windows
+    LIBRARY := $(LIBRARY_WINDOWS)
 
     ifeq (MinGW,$(TARGET_ENV))
         CC := $(TARGET_CPU)-w64-mingw32-gcc
@@ -41,14 +44,14 @@ ifneq (,$(filter MinGW Cygwin,$(TARGET_ENV)))
     endif
 
 else ifeq (Darwin,$(TARGET_ENV))
-    LIB_PREFIX := lib
-    LIB_SUFFIX := .jnilib
     JDK_TARGET := macosx
+    LIBRARY := $(LIBRARY_MACOSX)
 
 else ifeq (Linux,$(TARGET_ENV))
-    LIB_PREFIX := lib
-    LIB_SUFFIX := .so
+    LIBRARY := $(LIBRARY_LINUX)
     JDK_TARGET := linux
+
+    CFLAGS_WHOLE := -fwhole-program
 else
     $(error Target environment $(TARGET_ENV) is not supported)
 endif
@@ -59,14 +62,15 @@ SOURCES = bytecode.c common.c jvmtiutil.c connection.c \
 	connpool.c msgchannel.c network.c dislagent.c
 
 HEADERS = $(wildcard *.h) codeflags.h
+GENSRCS = Makefile.bypass bytecode.c codeflags.h
 OBJECTS = $(SOURCES:%.c=%.o)
+SRCDEPS = $(SOURCES:%.c=%.d)
 
-LIBRARY = $(LIB_PREFIX)dislagent$(LIB_SUFFIX)
 
 
 # Base options depending on the build
 ifeq (,$(DEBUG))
-    CFLAGS += -O3 -DNDEBUG -fomit-frame-pointer
+    CFLAGS += -O3 -DNDEBUG
 else
     CFLAGS += -g3 -DDEBUG
 endif
@@ -95,33 +99,31 @@ CFLAGS += -std=gnu99 -W -Wall -Wextra -Wno-unused-parameter
 -include Makefile.quirks
 
 
-all: $(LIBRARY)
+# Default goal
+
+.PHONY: agent
+agent: $(GENSRCS) $(LIBRARY)
 
 
-# Build native library
-ifneq (,$(WHOLE))
+# Convenience targets
 
-CFLAGS += -DWHOLE -flto
+.PHONY: whole
+whole:
+	@$(MAKE) WHOLE=1
 
-$(LIBRARY): $(HEADERS) $(SOURCES)
-	$(CC) $(CFLAGS) $(TARGET_ARCH) $(CFLAGS_LD) $(SOURCES) $(LIBS) $(OUTPUT_OPTION)
-
-else
-
-$(LIBRARY): $(HEADERS) $(OBJECTS)
-	$(CC) $(CFLAGS) $(TARGET_ARCH) $(CFLAGS_LD) $(OBJECTS) $(LIBS) $(OUTPUT_OPTION)
-
-endif
-
+.PHONY: debug
+debug:
+	@$(MAKE) DEBUG=1
 
 # Generated files
 
+Makefile.bypass:
+	ant -f ../build.xml prepare-disl-agent-makefile
+
 include Makefile.bypass
 
-$(BYPASS_FILES):
-	ant -f ../build.xml compile-disl-bypass
 
-bytecode.c: $(BYPASS_FILES) Makefile.bypass bin2cdef
+bytecode.c: Makefile.bypass bin2cdef $(BYPASS_FILES)
 	./bin2cdef \
 		$(foreach BPC,$(BYPASS_FILES),$(BPC) $(subst /$(BYPASS_PKG_PATH)/,_,$(subst $(BYPASS_DIR)/,,$(BPC:.class=)))) \
 		> $@
@@ -131,23 +133,46 @@ codeflags.h:
 	ant -f ../build.xml prepare-disl-agent-codeflags
 
 
+# Compilation and linking targets
+
+ifneq (,$(WHOLE))
+
+#
+# Despite the GCC documentation saying that -flto should not be used with
+# -fwhole-program, the option needs to be there, otherwise GCC produces a
+# library with undefined symbols (bypass bytecode) despite them being present.
+#
+CFLAGS += -DWHOLE -flto $(CFLAGS_WHOLE)
+
+$(LIBRARY): $(HEADERS) $(SOURCES)
+	$(CC) $(CFLAGS) $(TARGET_ARCH) $(CFLAGS_LD) $(SOURCES) $(LIBS) $(OUTPUT_OPTION)
+
+else
+
+CFLAGS += -flto
+
+$(LIBRARY): $(OBJECTS)
+	$(CC) $(CFLAGS) $(TARGET_ARCH) $(CFLAGS_LD) $(OBJECTS) $(LIBS) $(OUTPUT_OPTION)
+
+%.d: %.c
+	@$(CC) -MM $< | sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@
+
+-include $(SRCDEPS)
+
+endif
+
+
 # Cleanup targets
 
+.PHONY: clean
 clean:
 	-rm -f $(OBJECTS)
+	-rm -f $(SRCDEPS)
 
+.PHONY: cleanall
 cleanall: clean
-	-rm -f $(LIBRARY)
+	-rm -f $(LIBRARY_LINUX) $(LIBRARY_MACOSX) $(LIBRARY_WINDOWS)
 
+.PHONY: pristine
 pristine: cleanall
-	-rm -f Makefile.build
-	-rm -f codeflags.h bytecode.c
-
-
-# Convenience targets
-
-debug:
-	$(MAKE) DEBUG=1
-
-whole:
-	$(MAKE) WHOLE=1
+	-rm -f $(GENSRCS)
