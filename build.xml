@@ -166,7 +166,7 @@
 		<for list="always,never,dynamic" param="variant">
 			<sequential>
 				<mkdir dir="${build.disl.bypass}/@{variant}" />
-				<javac destdir="${build.disl.bypass}/@{variant}" srcdir="${src.disl.bypass}/@{variant}" debug="true">
+				<javac destdir="${build.disl.bypass}/@{variant}" srcdir="${src.disl.bypass}/@{variant}" debug="true" source="1.4" target="1.4">
 					<compilerarg value="-Xbootclasspath/p:${basedir}/${build.disl.thread}" />
 				</javac>
 			</sequential>
@@ -727,8 +727,6 @@
 
 
 	<target name="clean" depends="clean-examples">
-		<delete dir="${out.dir}" />
-
 		<exec executable="make" dir="${src.disl.agent}">
 			<arg value="cleanall" />
 		</exec>
@@ -739,6 +737,8 @@
 		<exec executable="make" dir="${src.shvm.agent}">
 			<arg value="clean" />
 		</exec>
+
+		<delete dir="${out.dir}" />
 	</target>
 
 </project>
