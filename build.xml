@@ -246,7 +246,12 @@
 		<srcfiles dir="${src.disl}" includes="**/DiSL.java" />
 	</uptodate>
 
-	<target name="prepare-disl-agent-codeflags" depends="compile-disl" unless="disl.agent.codeflags.uptodate">
+	<target name="prepare-disl-agent-codeflags" unless="disl.agent.codeflags.uptodate">
+		<antcall target="generate-disl-agent-codeflags" />
+	</target>
+
+
+	<target name="generate-disl-agent-codeflags" depends="compile-disl">
 		<local name="flags.class" />
 		<find-class property="flags.class" dir="${build.disl}" name="*CodeOption$Flag" />
 
@@ -265,9 +270,16 @@
 		provides the C build system with the necessary information.
 	-->
 	<property name="disl.agent.makefile.path" value="${src.disl.agent}/Makefile.bypass" />
-	<available property="disl.agent.makefile.available" file="${makefile.path}" />
+	<uptodate property="disl.agent.makefile.uptodate" targetfile="${disl.agent.makefile.path}">
+		<srcfiles dir="${src.disl.bypass}" />
+	</uptodate>
 
-	<target name="prepare-disl-agent-makefile" depends="compile-disl" unless="disl.agent.makefile.available">
+	<target name="prepare-disl-agent-makefile" unless="disl.agent.makefile.uptodate">
+		<antcall target="generate-disl-agent-makefile" />
+	</target>
+
+
+	<target name="generate-disl-agent-makefile" depends="compile-disl">
 		<echo file="${disl.agent.makefile.path}"># Generated using the "prepare-disl-agent-makefile" Ant target.${line.separator}</echo>
 		<echo file="${disl.agent.makefile.path}" append="true">BYPASS_DIR = ../${build.disl.bypass}${line.separator}</echo>
 		<echo file="${disl.agent.makefile.path}" append="true">BYPASS_PKG_PATH = ch/usi/dag/disl/dynamicbypass${line.separator}</echo>
@@ -288,6 +300,7 @@
 		</for>
 	</target>
 
+
 	<target name="prepare-disl-agent" depends="prepare-disl-agent-codeflags,prepare-disl-agent-makefile" />
 
 
@@ -305,7 +318,7 @@
 	-->
 	<target name="compile-disl-agent-mingw" depends="prepare-disl-agent,determine-lib-names">
 		<exec executable="make" dir="${src.disl.agent}">
-			<arg value="WHOLE=1" />
+			<!-- arg value="WHOLE=1" /-->
 			<arg value="TARGET_ENV=MinGW" />
 		</exec>
 	</target>
