@@ -366,8 +366,9 @@
 	<!-- Shadow VM agent -->
 
 	<target name="compile-shvm-agent" depends="determine-lib-names">
-		<exec executable="make" dir="${src.shvm.agent}/javahome" />
-		<exec executable="make" dir="${src.shvm.agent}" />
+		<exec executable="make" dir="${src.shvm.agent}">
+			<arg value="WHOLE=1" />
+		</exec>
 	</target>
 
 
@@ -744,11 +745,8 @@
 			<arg value="cleanall" />
 		</exec>
 
-		<exec executable="make" dir="${src.shvm.agent}/javahome">
-			<arg value="clean" />
-		</exec>
 		<exec executable="make" dir="${src.shvm.agent}">
-			<arg value="clean" />
+			<arg value="cleanall" />
 		</exec>
 
 		<delete dir="${out.dir}" />

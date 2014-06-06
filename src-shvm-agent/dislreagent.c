@@ -1725,7 +1725,14 @@ void JNICALL jvmti_callback_thread_end_hook(
 
 // ******************* JVMTI entry method *******************
 
-JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) {
+#ifdef WHOLE
+#define VISIBLE __attribute__((externally_visible))
+#else
+#define VISIBLE
+#endif
+
+JNIEXPORT jint JNICALL VISIBLE
+Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) {
 
 #ifdef DEBUG
 	setvbuf(stdout, NULL, _IONBF, 0);
