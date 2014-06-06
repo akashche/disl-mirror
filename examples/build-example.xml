@@ -10,7 +10,6 @@
 	<property file="${examples.basedir}/build.properties" />
 
 	<path id="inst.classpath">
-		<pathelement location="${asm.path}" />
 		<pathelement location="${disl.server.path}" />
 		<pathelement location="${shvm.server.path}" />
 		<pathelement location="${shvm.dispatch.path}" />
