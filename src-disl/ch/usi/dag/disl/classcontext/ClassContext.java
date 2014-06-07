@@ -1,15 +1,18 @@
 package ch.usi.dag.disl.classcontext;
 
 /**
- * Allows converting Strings to Class objects.
+ * Allows converting {@link String} literals to {@link Class} instances.
  */
 public interface ClassContext {
-	
-	/**
-	 * Converts string name to the class object.
-	 * 
-	 * @param name string containing name of the class
-	 * @return class object
-	 */
-	Class<?> asClass(String name); 
+
+    /**
+     * Converts a {@link String} literal representing an internal class name to
+     * a {@link Class} instance.
+     *
+     * @param name an internal name of the class
+     * @return {@link Class} instance corresponding to the class name, or
+     *         {@code null} if the class name could not be resolved.
+     */
+    Class <?> asClass (String internalName);
+
 }

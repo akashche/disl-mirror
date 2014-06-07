@@ -42,22 +42,23 @@ abstract class AbstractParser {
         return allLocalVars;
     }
 
+
     // ****************************************
     // Local Variables Parsing and Processing
     // ****************************************
 
     // returns local vars defined in this class
-    protected void processLocalVars(ClassNode classNode) throws ParserException {
+    protected void processLocalVars (final ClassNode dislClass) throws ParserException {
 
         // parse local variables
-        LocalVars localVars = parseLocalVars(classNode.name, classNode.fields);
+        LocalVars localVars = parseLocalVars(dislClass.name, dislClass.fields);
 
         // add local vars from this class to all local vars from all classes
         allLocalVars.putAll(localVars);
 
         // get static initialization code
         MethodNode cinit = null;
-        for (MethodNode method : classNode.methods) {
+        for (MethodNode method : dislClass.methods) {
 
             // get the code
             if (method.name.equals(Constants.STATIC_INIT_NAME)) {
@@ -69,9 +70,10 @@ abstract class AbstractParser {
         // parse init code for local vars and assigns them accordingly
         if (cinit != null && cinit.instructions != null) {
             parseInitCodeForSLV(cinit.instructions, localVars.getSyntheticLocals());
-            parseInitCodeForTLV(classNode.name, cinit, localVars.getThreadLocals());
+            parseInitCodeForTLV(dislClass.name, cinit, localVars.getThreadLocals());
         }
     }
+
 
     private LocalVars parseLocalVars(String className, List<FieldNode> fields)
             throws ParserException {
@@ -95,7 +97,7 @@ abstract class AbstractParser {
             }
 
             AnnotationNode annotation =
-                (AnnotationNode) field.invisibleAnnotations.get(0);
+                field.invisibleAnnotations.get(0);
 
             Type annotationType = Type.getType(annotation.desc);
 
@@ -113,12 +115,8 @@ abstract class AbstractParser {
 
             // synthetic local
             if (annotationType.equals(Type.getType(SyntheticLocal.class))) {
-
-                SyntheticLocalVar slv = parseSyntheticLocal(className, field,
-                        annotation);
-
+                SyntheticLocalVar slv = parseSyntheticLocal(className, field, annotation);
                 result.getSyntheticLocals().put(slv.getID(), slv);
-
                 continue;
             }
 
@@ -207,7 +205,7 @@ abstract class AbstractParser {
         //
         // When encountering a field access instruction for a synthetic local
         // variable field, copy the code starting at the instruction marked as
-        // first and ending with the field access instruction, and mark the
+        // first and ending with the field access instruction. Then mark the
         // instruction following the field access as the first instruction of
         // the next initialization block.
         //
@@ -221,7 +219,7 @@ abstract class AbstractParser {
             // Only consider instructions access fields. This will leave us only
             // with GETFIELD, PUTFIELD, GETSTATIC, and PUTSTATIC instructions.
             //
-            // XXX LB: Could we only consider PUTSTATIC instructions?
+            // RFC LB: Could we only consider PUTSTATIC instructions?
             //
             if (insn instanceof FieldInsnNode) {
                 final FieldInsnNode lastInitInsn = (FieldInsnNode) insn;
@@ -233,7 +231,7 @@ abstract class AbstractParser {
                     lastInitInsn.owner, lastInitInsn.name
                 ));
                 if (slv == null) {
-                    // XXX LB: Advance firstInitInsn also here?
+                    // RFC LB: Advance firstInitInsn here as well?
                     continue;
                 }
 
@@ -405,4 +403,5 @@ abstract class AbstractParser {
             }
         }
     }
+
 }

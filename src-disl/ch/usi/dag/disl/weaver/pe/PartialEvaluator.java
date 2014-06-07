@@ -521,7 +521,7 @@ public class PartialEvaluator {
 
         if (InvocationInterpreter.getInstance().isRegistered(instr)) {
 
-            MethodInsnNode min = (MethodInsnNode) instr;
+            MethodInsnNode min = instr;
             String desc = min.desc;
 
             if (min.getOpcode() == Opcodes.INVOKEVIRTUAL) {
@@ -709,7 +709,7 @@ public class PartialEvaluator {
         CtrlFlowGraph cfg = CtrlFlowGraph.build(method);
         boolean isOptimized = false;
 
-        for (TryCatchBlockNode tcb : method.tryCatchBlocks) {
+        for (final TryCatchBlockNode tcb : method.tryCatchBlocks) {
             // TCB start is inclusive, TCB end is exclusive.
             final AbstractInsnNode first = Insns.FORWARD.firstRealInsn (tcb.start);
             final AbstractInsnNode last = Insns.REVERSE.nextRealInsn (tcb.end);

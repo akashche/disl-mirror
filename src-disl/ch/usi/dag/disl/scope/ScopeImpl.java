@@ -9,236 +9,147 @@ import org.objectweb.asm.Type;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.util.Constants;
 
+
 /**
- * <p>
  * Filters methods based on class name, method name, method parameters and
- * return type.
- *
- *
+ * return type. A filter is specified as follows:
+ * <ul>
+ * <b>[&lt;returnType&gt;] [&lt;className&gt;.]&lt;methodName&gt;
+ * [(&lt;paramTypes&gt;)]</b>
+ * </ul>
+ * To match multiple methods, the individual filter elements (or their parts)
+ * can be substituted with the "*" wild card character, which will expand to
+ * zero or more non-whitespace characters. The individual filter elements have
+ * the following meaning:
  * <p>
- * Name of the filtered method is specified as follows:
- *
+ * <dl>
+ * <dt>&lt;returnType&gt;
+ * <dd>The type of the method's return value, specified either as a fully
+ * qualified class name (for reference types) or a primitive type name. If not
+ * specified, the filter will match all return types. For example:
  * <p>
- * <b>returnparam classname.methodname(parameters)</b>
- *
- *
+ * <dl>
+ * <dt>* or nothing
+ * <dd>matches all return types
+ * <dt>*.String
+ * <dd>matches methods returning a String class from any package, e.g.,
+ * java.lang.String, or my.package.String.
+ * <dt>*String
+ * <dd>matches methods returning any class with a name ending with String from
+ * any package, e.g., java.lang.String, my.package.String, or
+ * my.package.BigString
+ * </dl>
+ * <dt>&lt;className&gt;
+ * <dd>Fully qualified name of the class containing the methods the filter is
+ * supposed to match. If not specified, the filter will match all classes. The
+ * package part of a class name can be omitted, in which case the filter will
+ * match all packages. To match a class without a package name (i.e. in the
+ * default package), specify the package name as "[default]". For example:
  * <p>
- * <b>wildcards</b> Some filter patterns might be completely or partly
- * substituted with "*" wild card that might be expanded to none or unspecified
- * number of non-white character.
- *
- *
+ * <dl>
+ * <dt>* or nothing
+ * <dd>matches all classes
+ * <dt>TargetClass
+ * <dd>matches a class named TargetClass in any package
+ * <dt>[default].TargetClass
+ * <dd>matches a class named TargetClass only in the default package, i.e., it
+ * does not match my.pkg.TargetClass
+ * <dt>TargetClass*
+ * <dd>matches any class with a name starting with TargetClass in any package,
+ * e.g., TargetClassFoo in any package, or TargetClassBar in any package
+ * <dt>my.pkg.*Math
+ * <dd>matches any class with a name ending with Math in the my.pkg package and
+ * all sub packages, e.g., my.pkg.Math, my.pkg.FastMath, my.pkg.new.FastMath, or
+ * my.pkg.new.fast.Math
+ * </dl>
+ * <dt>&lt;methodName&gt;
+ * <dd>The name of the method the filter is supposed to match. This filter
+ * element is mandatory, therefore to match any method name, the
+ * &lt;methodName&gt; element must be replaced with a "*". To match class
+ * initializers and class constructors, use their bytecode-internal names, i.e.,
+ * "clinit" and "init", respectively. For example:
  * <p>
- * <b>methodname</b> is a mandatory part of the pattern specified. The method
- * name might be partly or completely replaced using "*". To filter in class
- * initializer or class instance constructor specify respectively "clinit" or
- * "init".
- *
+ * <dl>
+ * <dt>*
+ * <dd>matches all methods
+ * <dt>*init
+ * <dd>matches class initializer (clinit), class constructor (init), and any
+ * method with a name ending with "init"
+ * </dl>
  * <p>
- * Examples:
- * <ul>
- *
- * <li>*</li>
- * <ul>
- * matches:
- * <li>all methods</li>
- * </ul>
- *
- * <li>*init</li>
- * <ul>
- * matches:
- * <li>class initializer - "clinit"</li>
- * <li>class constructor - "init"</li>
- * <li>every other method ending with "init"</li>
- * </ul>
- *
- * </ul>
- *
- *
+ * <dt>&lt;paramTypes&gt;
+ * <dd>A comma-separated list of method parameter types. Each parameter type is
+ * specified either as a fully qualified class name or a primitive type name.
+ * The filter parameter list can end with "..", which matches all remaining
+ * method parameters. If not specified, the filter matches all methods
+ * regardless of their parameter types. For example:
  * <p>
- * <b>returnparam</b> is the returning parameter of the method. It is specified
- * by fully qualified name of the class or pritimive type. If the returnparam is
- * missing, it matches all the return types. Wild cards might substitute pattern
- * partly or completely.
- *
+ * <dl>
+ * <dt>(..)
+ * <dd>matches methods with any (including none) parameters, e.g., (), or (int)
+ * <dt>(int, int, ..)
+ * <dd>matches any method with at least two parameters, and the parameter list
+ * starting with two integers, e.g., (int, int), (int, int, double), or (int,
+ * int, Object, String)
+ * <dt>(java.lang.String, java.lang.String[])
+ * <dd>matches a method with exactly two parameters with matching types. The
+ * types are matched verbatim, i.e., there is no matching based on subtyping.
+ * </dl>
+ * </dl>
+ * To put it all together, consider the following complete examples:
  * <p>
- * Examples:
- * <ul>
- *
- * <li>* or nothing</li>
- * <ul>
- * matches:
- * <li>all return types</li>
- * </ul>
- *
- * <li>*.String</li>
- * <ul>
- * matches:
- * <li>java.lang.String</li>
- * <li>my.package.String</li>
- * <li>every other String class in all packages</li>
- * </ul>
- *
- * <li>*String</li>
- * <ul>
- * matches:
- * <li>java.lang.String</li>
- * <li>my.package.String</li>
- * <li>my.package.BigString</li>
- * <li>every other String class in all packages</li>
- * <li>every other class ending with String in all packages</li>
- * </ul>
- *
- * </ul>
- *
- *
- * <p>
- * <b>classname</b> is the fully qualified name of the class where the filtered
- * method resides. Classname is not required. If it's not specified all classes
- * match. Packagename might be omitted and in such case all packages with
- * classname specified do match. To specify a class without any package add
- * "[default]" as packagename. Wild cards might substitute pattern partly or
- * completely.
- *
- * <p>
- * Examples:
- * <ul>
- *
- * <li>* or nothing</li>
- * <ul>
- * matches:
- * <li>all classes</li>
- * </ul>
- *
- * <li>TargetClass</li>
- * <ul>
- * matches:
- * <li>TargetClass in all packages</li>
- * </ul>
- *
- * <li>[default].TargetClass</li>
- * <ul>
- * matches:
- * <li>TargetClass in default package only</li>
- * not matches:
- * <li>my.pkg.TargetClass</li>
- * </ul>
- *
- * <li>TargetClass*</li>
- * <ul>
- * matches:
- * <li>TargetClassFoo in all packages</li>
- * <li>TargetClassBar in all packages</li>
- * <li>every other class starting with TargetClass in all packages</li>
- * </ul>
- *
- * <li>my.pkg.*Math</li>
- * <ul>
- * matches:
- * <li>my.pkg.Math</li>
- * <li>my.pkg.FastMath</li>
- * <li>my.pkg.new.FastMath</li>
- * <li>my.pkg.new.fast.Math</li>
- * <li>every other class ending with Math in my.pkg subpackages</li>
- * </ul>
- *
- * </ul>
- *
- *
- * <p>
- * <b>parameters</b> are specified same as <i>returnparam</i> and are separated
- * by ",". Parameter can be partly or completely substituted with "*". ".." can
- * be supplied instead of last parameter specification and matches all remaining
- * method parameters.
- *
- * <p>
- * Examples:
- * <ul>
- *
- * <li>(..)</li>
- * <ul>
- * matches:
- * <li>()</li>
- * <li>(int)</li>
- * <li>every other</li>
- * </ul>
- *
- * <li>(int, int, ..)</li>
- * <ul>
- * matches:
- * <li>(int, int)</li>
- * <li>(int, int, int)</li>
- * <li>every other starting with two ints</li>
- * </ul>
- *
- * <li>(java.lang.String, java.lang.String[])</li>
- * <ul>
- * matches:
- * <li>(java.lang.String, java.lang.String[])</li>
- * </ul>
- *
- * </ul>
- *
- *
- * <p>
- * Complete examples:
- * <ul>
- *
- * <li>my.pkg.TargetClass.main(java.lang.String[])</li>
- * <ul>
- * matches:
- * <li>exactly this one method</li>
- * </ul>
- *
- * <li>int *</li>
- * <ul>
- * matches:
- * <li>all methods returning integer</li>
- * </ul>
- *
- * <li>*(int, int, int)</li>
- * <ul>
- * matches:
- * <li>all methods accepting three integers</li>
- * </ul>
- *
- * </ul>
+ * <dl>
+ * <dt>my.pkg.TargetClass.main(java.lang.String[])
+ * <dd>matches the "main" method in class my.pkg.TargetClass which takes as a
+ * parameter an array of Strings. In this case, the return type is not
+ * important, because the parameter signature is fully specified.
+ * <dt>int *
+ * <dd>matches all methods returning an integer value
+ * <dt>*(int, int, int)
+ * <dd>matches all methods accepting three integer values
+ * </dl>
  */
 public class ScopeImpl implements Scope {
 
-    private final String PARAM_BEGIN      = "(";
-    private final String PARAM_END        = ")";
-    private final String PARAM_DELIM      = ",";
-    private final String METHOD_DELIM     = ".";
+    private final String PARAM_BEGIN = "(";
+
+    private final String PARAM_END = ")";
+
+    private final String PARAM_DELIM = ",";
+
+    private final String METHOD_DELIM = ".";
+
     private final String PARAM_MATCH_REST = "..";
-    private final String DEFAULT_PKG      = "[default]";
-    private final String RETURN_DELIM     = " ";
 
-    private String       classWildCard;
-    private String       methodWildCard;
-    private String       returnWildCard;
-    private List<String> paramsWildCard;
+    private final String DEFAULT_PKG = "[default]";
 
-    private int lastWhitespace(final String where) {
+    private final String RETURN_DELIM = " ";
 
-        final char[] whereCharArray = where.toCharArray();
+    private String classWildCard;
 
-        for (int i = whereCharArray.length - 1; i >= 0; --i) {
+    private String methodWildCard;
 
-            if (Character.isWhitespace(whereCharArray[i])) {
-                return i;
+    private String returnWildCard;
+
+    private List <String> paramsWildCard;
+
+
+    private int lastWhitespace (final String str) {
+        final int len = str.length ();
+        for (int pos = len - 1; pos >= 0; pos--) {
+            if (Character.isWhitespace (str.charAt (pos))) {
+                return pos;
             }
         }
 
         return -1;
     }
 
-    // thx -
-    // http://stackoverflow.com/questions/4067809/how-to-check-space-in-string
-    private boolean containsWhiteSpace(final String toCheck) {
 
-        for (final char c : toCheck.toCharArray()) {
-            if (Character.isWhitespace(c)) {
+    private boolean containsWhiteSpace (final String str) {
+        final int len = str.length ();
+        for (int pos = 0; pos < len; pos++) {
+            if (Character.isWhitespace (str.charAt (pos))) {
                 return true;
             }
         }
@@ -246,7 +157,8 @@ public class ScopeImpl implements Scope {
         return false;
     }
 
-    public ScopeImpl(final String scopeExpression) throws ScopeParserException {
+
+    public ScopeImpl (final String scopeExpression) throws ScopeParserException {
 
         // -- parse the scope into parts - trim whitespace everywhere --
 
@@ -258,56 +170,56 @@ public class ScopeImpl implements Scope {
         String restOfExpr = scopeExpression;
 
         // -- method parameters --
-        final int paramBegin = restOfExpr.lastIndexOf(PARAM_BEGIN);
+        final int paramBegin = restOfExpr.lastIndexOf (PARAM_BEGIN);
         if (paramBegin != -1) {
 
             // + 1 - don't include PARAM_BEGIN
-            String paramsStr = restOfExpr.substring(paramBegin + 1);
-            restOfExpr = restOfExpr.substring(0, paramBegin);
+            String paramsStr = restOfExpr.substring (paramBegin + 1);
+            restOfExpr = restOfExpr.substring (0, paramBegin);
 
             // remove whitespace
-            paramsStr = paramsStr.trim();
+            paramsStr = paramsStr.trim ();
 
             // PARAM_END check
-            if (!paramsStr.endsWith(PARAM_END)) {
-                throw new ScopeParserException("Scope \"" + scopeExpression
-                        + "\" should end with \"" + PARAM_END + "\"");
+            if (!paramsStr.endsWith (PARAM_END)) {
+                throw new ScopeParserException ("Scope \"" + scopeExpression
+                    + "\" should end with \"" + PARAM_END + "\"");
             }
 
             // remove PARAM_END
-            final int paramEnd = paramsStr.lastIndexOf(PARAM_END);
-            paramsStr = paramsStr.substring(0, paramEnd);
+            final int paramEnd = paramsStr.lastIndexOf (PARAM_END);
+            paramsStr = paramsStr.substring (0, paramEnd);
 
-            paramsWildCard = new LinkedList<String>();
+            paramsWildCard = new LinkedList <String> ();
 
             // test for emptiness
-            if (!paramsStr.trim().isEmpty()) {
+            if (!paramsStr.trim ().isEmpty ()) {
 
                 // separate params and trim them again
-                final String[] params = paramsStr.split(PARAM_DELIM);
-                for (String param : Arrays.asList(params)) {
+                final String [] params = paramsStr.split (PARAM_DELIM);
+                for (String param : Arrays.asList (params)) {
 
-                    param = param.trim();
+                    param = param.trim ();
 
-                    if (param.isEmpty()) {
-                        throw new ScopeParserException("Scope \""
-                                + scopeExpression
-                                + "\" has bad parameter definition");
+                    if (param.isEmpty ()) {
+                        throw new ScopeParserException ("Scope \""
+                            + scopeExpression
+                            + "\" has bad parameter definition");
                     }
 
-                    paramsWildCard.add(param);
+                    paramsWildCard.add (param);
                 }
             }
 
-            final int pmrIndex = paramsWildCard.indexOf(PARAM_MATCH_REST);
+            final int pmrIndex = paramsWildCard.indexOf (PARAM_MATCH_REST);
 
             // if the index is valid, the first occurrence of PARAM_MATCH_REST
             // should be at the end of the parameters
-            if (pmrIndex != -1 && pmrIndex != paramsWildCard.size() - 1) {
-                throw new ScopeParserException("Scope \""
-                        + scopeExpression
-                        + "\" should have \"" + PARAM_MATCH_REST + "\""
-                        + " only as last parameter");
+            if (pmrIndex != -1 && pmrIndex != paramsWildCard.size () - 1) {
+                throw new ScopeParserException ("Scope \""
+                    + scopeExpression
+                    + "\" should have \"" + PARAM_MATCH_REST + "\""
+                    + " only as last parameter");
             }
         }
 
@@ -316,55 +228,52 @@ public class ScopeImpl implements Scope {
         // after parsing parameters and trimming split around white space
         // this should work
         String returnExpr = "";
-        if (restOfExpr.split(RETURN_DELIM).length == 2) {
-            returnExpr = restOfExpr.split(RETURN_DELIM, 2)[0];
-            restOfExpr = restOfExpr.split(RETURN_DELIM, 2)[1];
+        if (restOfExpr.split (RETURN_DELIM).length == 2) {
+            returnExpr = restOfExpr.split (RETURN_DELIM, 2) [0];
+            restOfExpr = restOfExpr.split (RETURN_DELIM, 2) [1];
         }
 
         // -- method name --
-        final int methodDelim = restOfExpr.lastIndexOf(METHOD_DELIM);
+        final int methodDelim = restOfExpr.lastIndexOf (METHOD_DELIM);
         if (methodDelim != -1) {
             // + 1 - don't include METHOD_DELIM
-            methodWildCard = restOfExpr.substring(methodDelim + 1);
-            restOfExpr = restOfExpr.substring(0, methodDelim);
-        }
-        else {
+            methodWildCard = restOfExpr.substring (methodDelim + 1);
+            restOfExpr = restOfExpr.substring (0, methodDelim);
+        } else {
             methodWildCard = restOfExpr;
             restOfExpr = null;
         }
 
         // remove whitespace
-        methodWildCard = methodWildCard.trim();
+        methodWildCard = methodWildCard.trim ();
 
-        if (methodWildCard.isEmpty()) {
-            throw new ScopeParserException("Scope \"" + scopeExpression
-                    + "\" should have defined method at least as \"*\"");
+        if (methodWildCard.isEmpty ()) {
+            throw new ScopeParserException ("Scope \"" + scopeExpression
+                + "\" should have defined method at least as \"*\"");
         }
 
         // -- full class name --
         if (restOfExpr != null) {
-
             // remove whitespace
-            restOfExpr = restOfExpr.trim();
+            restOfExpr = restOfExpr.trim ();
 
-            if (!restOfExpr.isEmpty()) {
+            if (!restOfExpr.isEmpty ()) {
 
-                final int classDelim = lastWhitespace(restOfExpr);
+                final int classDelim = lastWhitespace (restOfExpr);
                 if (classDelim != -1) {
                     // + 1 - don't include whitespace
-                    classWildCard = restOfExpr.substring(classDelim + 1);
-                    restOfExpr = restOfExpr.substring(0, classDelim);
-                }
-                else {
+                    classWildCard = restOfExpr.substring (classDelim + 1);
+                    restOfExpr = restOfExpr.substring (0, classDelim);
+                } else {
                     classWildCard = restOfExpr;
                     restOfExpr = null;
                 }
 
                 // if there is no package specified - allow any
-                if (classWildCard.indexOf(Constants.PACKAGE_STD_DELIM) == -1
-                        && !classWildCard.startsWith(WildCard.WILDCARD_STR)) {
+                if (classWildCard.indexOf (Constants.PACKAGE_STD_DELIM) == -1
+                    && !classWildCard.startsWith (WildCard.WILDCARD_STR)) {
                     classWildCard = WildCard.WILDCARD_STR +
-                            Constants.PACKAGE_STD_DELIM + classWildCard;
+                        Constants.PACKAGE_STD_DELIM + classWildCard;
                 }
             }
         }
@@ -374,15 +283,12 @@ public class ScopeImpl implements Scope {
         restOfExpr = returnExpr;
         // remove whitespace for next parsing
         if (restOfExpr != null) {
-
-            restOfExpr = restOfExpr.trim();
-
-            if (!restOfExpr.isEmpty()) {
-
+            restOfExpr = restOfExpr.trim ();
+            if (!restOfExpr.isEmpty ()) {
                 // no whitespace in restOfExpr
-                if (containsWhiteSpace(restOfExpr)) {
-                    throw new ScopeParserException("Cannot parse scope \""
-                            + scopeExpression + "\"");
+                if (containsWhiteSpace (restOfExpr)) {
+                    throw new ScopeParserException ("Cannot parse scope \""
+                        + scopeExpression + "\"");
                 }
 
                 returnWildCard = restOfExpr;
@@ -390,16 +296,17 @@ public class ScopeImpl implements Scope {
         }
     }
 
+
     @Override
-    public boolean matches(String className, final String methodName,
-            final String methodDesc) {
+    public boolean matches (String className, final String methodName,
+        final String methodDesc) {
         // write(className, methodName, methodDesc);
 
         // -- match class (with package) --
 
         // replace delimiters for matching
-        className = className.replace(
-                Constants.PACKAGE_INTERN_DELIM, Constants.PACKAGE_STD_DELIM);
+        className = className.replace (
+            Constants.PACKAGE_INTERN_DELIM, Constants.PACKAGE_STD_DELIM);
 
         // if className has default package (nothing), add our default package
         // reasons:
@@ -407,19 +314,19 @@ public class ScopeImpl implements Scope {
         // package into scope
         // 2) default package would not be matched if no package was specified
         // in the scope (because of substitution made)
-        if (className.indexOf(Constants.PACKAGE_STD_DELIM) == -1) {
+        if (className.indexOf (Constants.PACKAGE_STD_DELIM) == -1) {
             className = DEFAULT_PKG + Constants.PACKAGE_STD_DELIM + className;
         }
 
         if (classWildCard != null
-                && !WildCard.match(className, classWildCard)) {
+            && !WildCard.match (className, classWildCard)) {
             return false;
         }
 
         // -- match method name --
 
         if (methodWildCard != null
-                && !WildCard.match(methodName, methodWildCard)) {
+            && !WildCard.match (methodName, methodWildCard)) {
             return false;
         }
 
@@ -428,40 +335,40 @@ public class ScopeImpl implements Scope {
         if (paramsWildCard != null) {
 
             // get parameters and match one by one
-            final Type[] parameters = Type.getArgumentTypes(methodDesc);
+            final Type [] parameters = Type.getArgumentTypes (methodDesc);
 
             // get last param
             String lastParamWC = null;
-            if (!paramsWildCard.isEmpty()) {
-                lastParamWC = paramsWildCard.get(paramsWildCard.size() - 1);
+            if (!paramsWildCard.isEmpty ()) {
+                lastParamWC = paramsWildCard.get (paramsWildCard.size () - 1);
             }
 
             // if the last param is not PARAM_MATCH_REST then test for equal
             // size
-            if (!PARAM_MATCH_REST.equals(lastParamWC) &&
-                    parameters.length != paramsWildCard.size()) {
+            if (!PARAM_MATCH_REST.equals (lastParamWC) &&
+                parameters.length != paramsWildCard.size ()) {
                 return false;
             }
 
             // not enough parameters
-            if (PARAM_MATCH_REST.equals(lastParamWC) &&
-                    parameters.length < paramsWildCard.size() - 1) {
+            if (PARAM_MATCH_REST.equals (lastParamWC) &&
+                parameters.length < paramsWildCard.size () - 1) {
                 return false;
             }
 
             for (int i = 0; i < parameters.length; ++i) {
 
-                final String paramWC = paramsWildCard.get(i);
+                final String paramWC = paramsWildCard.get (i);
 
                 // if there is PARAM_MATCH_REST then stop
                 // works even if there is no additional parameter
-                if (paramWC.equals(PARAM_MATCH_REST)) {
+                if (paramWC.equals (PARAM_MATCH_REST)) {
                     break;
                 }
 
-                final String typeName = parameters[i].getClassName();
+                final String typeName = parameters [i].getClassName ();
 
-                if (!WildCard.match(typeName, paramWC)) {
+                if (!WildCard.match (typeName, paramWC)) {
                     return false;
                 }
             }
@@ -470,10 +377,10 @@ public class ScopeImpl implements Scope {
         // -- match return type --
 
         if (returnWildCard != null) {
-            final Type returnType = Type.getReturnType(methodDesc);
-            final String typeName = returnType.getClassName();
+            final Type returnType = Type.getReturnType (methodDesc);
+            final String typeName = returnType.getClassName ();
 
-            if (!WildCard.match(typeName, returnWildCard)) {
+            if (!WildCard.match (typeName, returnWildCard)) {
                 return false;
             }
         }
@@ -481,21 +388,25 @@ public class ScopeImpl implements Scope {
         return true;
     }
 
-    @Override
-    public String toString() {
-        String p = "";
 
+    @Override
+    public String toString () {
+        final StringBuilder params = new StringBuilder ();
         if (paramsWildCard != null) {
-            p += "(";
-            for (final String s : paramsWildCard) {
-                p += s + ", ";
+            params.append ("(");
+
+            String delim = "";
+            for (final String param : paramsWildCard) {
+                params.append (delim);
+                params.append (param);
+                delim = ", ";
             }
-            if (p.length() > 1) {
-                p = p.substring(0, p.length() - 2);
-            }
-            p += ")";
+
+            params.append (")");
         }
 
-        return String.format("r=%s c=%s m=%s p=%s", returnWildCard, classWildCard, methodWildCard, p);
+        return String.format ("r=%s c=%s m=%s p=%s",
+            returnWildCard, classWildCard, methodWildCard, params.toString ()
+        );
     }
 }

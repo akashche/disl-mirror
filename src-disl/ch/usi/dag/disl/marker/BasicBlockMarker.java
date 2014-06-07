@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.BasicBlockCalc;
 
+
 /**
  * Marks a basic block.
  * <p>
@@ -20,29 +21,29 @@ public class BasicBlockMarker extends AbstractDWRMarker {
 
     protected boolean isPrecise = false;
 
+
     @Override
-    public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode methodNode) {
-
-        List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-        List<AbstractInsnNode> seperators = BasicBlockCalc.getAll(
-                methodNode.instructions, methodNode.tryCatchBlocks, isPrecise);
-
-        AbstractInsnNode last = Insns.REVERSE.firstRealInsn (
-            methodNode.instructions.getLast()
+    public List <MarkedRegion> markWithDefaultWeavingReg (final MethodNode methodNode) {
+        final List <MarkedRegion> regions = new LinkedList <MarkedRegion> ();
+        final List <AbstractInsnNode> seperators = BasicBlockCalc.getAll (
+            methodNode.instructions, methodNode.tryCatchBlocks, isPrecise
         );
 
-        seperators.add(last);
+        final AbstractInsnNode last = Insns.REVERSE.firstRealInsn (
+            methodNode.instructions.getLast ()
+        );
 
-        for (int i = 0; i < seperators.size() - 1; i++) {
+        seperators.add (last);
 
-            AbstractInsnNode start = seperators.get(i);
-            AbstractInsnNode end = seperators.get(i + 1);
+        for (int i = 0; i < seperators.size () - 1; i++) {
+            final AbstractInsnNode start = seperators.get (i);
+            AbstractInsnNode end = seperators.get (i + 1);
 
-            if (i != seperators.size() - 2) {
-                end = end.getPrevious();
+            if (i != seperators.size () - 2) {
+                end = end.getPrevious ();
             }
 
-            regions.add(new MarkedRegion(
+            regions.add (new MarkedRegion (
                 start, Insns.REVERSE.firstRealInsn (end)
             ));
         }

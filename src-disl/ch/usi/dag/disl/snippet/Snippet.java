@@ -18,107 +18,107 @@ import ch.usi.dag.disl.scope.Scope;
  */
 public class Snippet implements Comparable<Snippet> {
 
-	private String originClassName;
-	private String originMethodName;
-	
-	private Class<?> annotationClass;
-	private Marker marker;
-	private Scope scope;
-	private Method guard;
-	private int order;
-	private SnippetUnprocessedCode unprocessedCode;
-	private SnippetCode code;
+    private String originClassName;
+    private String originMethodName;
 
-	/**
-	 * Creates snippet structure.
-	 */
-	public Snippet(String originClassName, String originMethodName,
-			Class<?> annotationClass, Marker marker, Scope scope, Method guard,
-			int order, SnippetUnprocessedCode unprocessedCode) {
-		super();
-		this.originClassName = originClassName;
-		this.originMethodName = originMethodName;
-		this.annotationClass = annotationClass;
-		this.marker = marker;
-		this.scope = scope;
-		this.guard = guard;
-		this.order = order;
-		this.unprocessedCode = unprocessedCode;
-	}
+    private Class<?> annotationClass;
+    private Marker marker;
+    private Scope scope;
+    private Method guard;
+    private int order;
+    private SnippetUnprocessedCode unprocessedCode;
+    private SnippetCode code;
 
-	/**
-	 * Get the class name where the snippet is defined.
-	 */
-	public String getOriginClassName() {
-		return originClassName;
-	}
+    /**
+     * Creates snippet structure.
+     */
+    public Snippet(String originClassName, String originMethodName,
+            Class<?> annotationClass, Marker marker, Scope scope, Method guard,
+            int order, SnippetUnprocessedCode unprocessedCode) {
+        super();
+        this.originClassName = originClassName;
+        this.originMethodName = originMethodName;
+        this.annotationClass = annotationClass;
+        this.marker = marker;
+        this.scope = scope;
+        this.guard = guard;
+        this.order = order;
+        this.unprocessedCode = unprocessedCode;
+    }
 
-	/**
-	 * Get the method name where the snippet is defined.
-	 */
-	public String getOriginMethodName() {
-		return originMethodName;
-	}
+    /**
+     * Get the class name where the snippet is defined.
+     */
+    public String getOriginClassName() {
+        return originClassName;
+    }
 
-	/**
-	 * Get the snippet annotation class.
-	 */
-	public Class<?> getAnnotationClass() {
-		return annotationClass;
-	}
+    /**
+     * Get the method name where the snippet is defined.
+     */
+    public String getOriginMethodName() {
+        return originMethodName;
+    }
 
-	/**
-	 * Get the snippet marker.
-	 */
-	public Marker getMarker() {
-		return marker;
-	}
+    /**
+     * Get the snippet annotation class.
+     */
+    public Class<?> getAnnotationClass() {
+        return annotationClass;
+    }
 
-	/**
-	 * Get the snippet scope.
-	 */
-	public Scope getScope() {
-		return scope;
-	}
+    /**
+     * Get the snippet marker.
+     */
+    public Marker getMarker() {
+        return marker;
+    }
 
-	/**
-	 * Get the snippet guard.
-	 */
-	public Method getGuard() {
-		return guard;
-	}
-	
-	/**
-	 * Get the snippet order.
-	 */
-	public int getOrder() {
-		return order;
-	}
+    /**
+     * Get the snippet scope.
+     */
+    public Scope getScope() {
+        return scope;
+    }
 
-	/**
-	 * Get the snippet code.
-	 */
-	public SnippetCode getCode() {
-		return code;
-	}
+    /**
+     * Get the snippet guard.
+     */
+    public Method getGuard() {
+        return guard;
+    }
 
-	/**
-	 * Compares snippets according to order.
-	 */
-	public int compareTo(Snippet o) {
-		return o.getOrder() - order;
-	}
+    /**
+     * Get the snippet order.
+     */
+    public int getOrder() {
+        return order;
+    }
 
-	/**
-	 * Initializes snippet -- prepares the snippet code.
-	 */
-	public void init(LocalVars allLVs, Map<Type, Proc> processors,
-			boolean exceptHandler, boolean useDynamicBypass)
-			throws StaticContextGenException, ReflectionException,
-			ProcessorException {
+    /**
+     * Get the snippet code.
+     */
+    public SnippetCode getCode() {
+        return code;
+    }
 
-		code = unprocessedCode.process(allLVs, processors, marker,
-				exceptHandler, useDynamicBypass);
-		unprocessedCode = null;
-	}
+    /**
+     * Compares snippets according to order.
+     */
+    public int compareTo(Snippet o) {
+        return o.getOrder() - order;
+    }
+
+    /**
+     * Initializes snippet -- prepares the snippet code.
+     */
+    public void init(LocalVars allLVs, Map<Type, Proc> processors,
+            boolean exceptHandler, boolean useDynamicBypass)
+            throws StaticContextGenException, ReflectionException,
+            ProcessorException {
+
+        code = unprocessedCode.process(allLVs, processors, marker,
+                exceptHandler, useDynamicBypass);
+        unprocessedCode = null;
+    }
 }

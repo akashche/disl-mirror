@@ -1,22 +1,28 @@
 package ch.usi.dag.disl.exception;
 
-public class ReflectionException extends DiSLException {
+/**
+ * Wraps exceptions that occurred during reflective operations.
+ */
+public final class ReflectionException extends DiSLException {
 
     private static final long serialVersionUID = 1746507695125084587L;
 
-    public ReflectionException() {
-        super();
+    //
+
+    public ReflectionException (final String message, final Throwable cause) {
+        super (message, cause);
     }
 
-    public ReflectionException(String message, Throwable cause) {
-        super(message, cause);
+
+    public ReflectionException (final String format, final Object ... args) {
+        super (String.format (format, args));
     }
 
-    public ReflectionException(String message) {
-        super(message);
+
+    public ReflectionException (
+        final Throwable cause, final String format, final Object ... args
+    ) {
+        super (String.format (format, args), cause);
     }
 
-    public ReflectionException(Throwable cause) {
-        super(cause);
-    }
 }

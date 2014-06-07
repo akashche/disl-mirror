@@ -2,8 +2,7 @@ package ch.usi.dag.disl.processorcontext;
 
 /**
  * <p>
- * Allows accessing method arguments and apply argument processors.
- * 
+ * Allows accessing method arguments and applying argument processors.
  * <ul>
  * <li>{@link #apply(Class, ArgumentProcessorMode)}</li>
  * <li>{@link #getReceiver(ArgumentProcessorMode)}</li>
@@ -13,33 +12,33 @@ package ch.usi.dag.disl.processorcontext;
 public interface ArgumentProcessorContext {
 
     /**
-     * <p>
-     * Applies mentioned processor for method or call-site arguments.
-     * 
-     * @param argumentProcessor
-     *            processor class to apply
+     * Applies given argument processor to method arguments, either at call-site
+     * or within an invoked method.
+     *
+     * @param argumentProcessorClass
+     *        argument processor class to apply
      * @param mode
-     *            in which should be processor applied
+     *        where to apply the argument processor.
      */
-    void apply(Class<?> argumentProcessor, ArgumentProcessorMode mode);
+    void apply (Class <?> argumentProcessorClass, ArgumentProcessorMode mode);
+
 
     /**
-     * <p>
-     * Returns the object on which is the processed method (arguments of that
-     * method) called. Returns null for static methods.
-     * 
+     * Returns the receiver of the method invocation or {@code null} for static
+     * methods.
+     *
      * @param mode
-     *            for which should be the object retrieved
+     *        for which should be the object retrieved
      */
-    Object getReceiver(ArgumentProcessorMode mode);
+    Object getReceiver (ArgumentProcessorMode mode);
+
 
     /**
-     * <p>
-     * Returns the object array composed from the method arguments. Note that
+     * Returns an object array containing the method arguments. Note that
      * primitive types will be boxed.
-     * 
+     *
      * @param mode
-     *            for which should be the argument array retrieved
+     *        for which should be the argument array retrieved
      */
-    Object[] getArgs(ArgumentProcessorMode mode);
+    Object [] getArgs (ArgumentProcessorMode mode);
 }

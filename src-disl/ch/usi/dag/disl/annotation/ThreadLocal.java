@@ -4,6 +4,7 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
+
 /**
  * Indicates that accesses to the annotated field should be translated into
  * accesses to a thread-local variable.
@@ -19,19 +20,23 @@ import java.lang.annotation.Target;
  * classes, they should be kept {@code private}.
  */
 @Documented
-@Target(value = { ElementType.FIELD })
+@Target(ElementType.FIELD)
 public @interface ThreadLocal {
-
-    // NOTE if you want to change names, you need to change
-    // ClassParser.TLAnnotationData class in startutil project
-
-    // NOTE because of implementation of annotations in Java the defaults,
-    // are not retrieved from here but from the class mentioned above.
+    //
+    // NOTE
+    //
+    // If you change any names here, you also need to change them
+    // in the DiSL class parser. Only do that if absolutely necessary,
+    // because this annotation is part of the DiSL public API.
+    //
+    // Also note that the defaults are not retrieved from here, but
+    // are set in the DiSL class parser.
+    //
 
     /**
      * Determines the default value for a thread-local variable.
      * <p>
-     * If {@code true} , the default value is inherited from the parent thread,
+     * If {@code true}, the default value is inherited from the parent thread,
      * otherwise the value is initialized to the default value corresponding to
      * its type.
      */

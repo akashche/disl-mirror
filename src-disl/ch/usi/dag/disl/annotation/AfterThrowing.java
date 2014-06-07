@@ -1,110 +1,121 @@
 package ch.usi.dag.disl.annotation;
 
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
+
+import ch.usi.dag.disl.classcontext.ClassContext;
+import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.marker.Marker;
+import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
+import ch.usi.dag.disl.staticcontext.StaticContext;
+
 
 /**
+ * Marks a method as a DiSL snippet to be inserted after the marked code region.
+ * The snippet code will be executed after an exit cause by an exception.
  * <p>
- * The AfterThrowing annotation instructs DiSL to insert the snippet body after
- * the marked region. The snippet will be invoked after an exit caused by an
- * exception.
- * 
+ * <b>Note:</b> This is a general contract. The actual implementation depends on
+ * the particular marker used with the snippet.
  * <p>
- * <b>note:</b> This is only general contract. It depends on particular marker
- * how the contract will be implemented.
- * 
- * <p>
- * <b>usage:</b>
- * 
- * <p>
- * There are multiple optional parameters the annotation takes. Browse them for
- * more details on usage.
+ * The annotation has the following parameters which control the inlining of a
+ * snippet into target code:
  * <ul>
- * <li>{@link #marker}</li>
- * <li>{@link #args}</li>
- * <li>{@link #guard}</li>
- * <li>{@link #scope}</li>
- * <li>{@link #order}</li>
- * <li>{@link #dynamicBypass}</li>
+ * <li>{@link #marker}
+ * <li>{@link #args}
+ * <li>{@link #guard}
+ * <li>{@link #scope}
+ * <li>{@link #order}
+ * <li>{@link #dynamicBypass}
  * </ul>
- * 
  * <p>
- * This annotation should be used only with static methods that does not return
- * any value or throw any exception.
- * 
+ * This annotation can be only used with methods. In particular, a method
+ * representing a snippet must be {@code static}, must not return any value, and
+ * must not throw any exceptions.
  * <p>
- * The method might be specified with arguments of following types.
- * {@link ch.usi.dag.disl.staticcontext.StaticContext StaticContext (or
- * derived)}, {@link ch.usi.dag.disl.dynamiccontext.DynamicContext
- * DynamicContext}, {@link ch.usi.dag.disl.classcontext.ClassContext
- * ClassContext} and
- * {@link ch.usi.dag.disl.processorcontext.ArgumentProcessorContext
- * ArgumentProcessContext}. There's no restriction on order or number of these
- * arguments.
+ * The method can declare parameters the following types:
+ * <ul>
+ * <li>{@link StaticContext} (or another type implementing it),
+ * <li>{@link DynamicContext},
+ * <li>{@link ClassContext}, and
+ * <li>{@link ArgumentProcessorContext}.
+ * </ul>
+ * <p>
+ * The ordering and the number of the parameters is arbitrary.
  */
+@Documented
+@Target (ElementType.METHOD)
 public @interface AfterThrowing {
-
-    // NOTE if you want to change names, you need to change
-    // SnippetParser.SnippetAnnotationData class
-
-    // NOTE because of implementation of annotations in java the defaults
-    // are not retrieved from here but from class mentioned above
+    //
+    // NOTE
+    //
+    // If you change any names here, you also need to change them
+    // in the DiSL class parser. Only do that if absolutely necessary,
+    // because this annotation is part of the DiSL public API.
+    //
+    // Also note that the defaults are not retrieved from here, but
+    // are set in the DiSL class parser.
+    //
 
     /**
-     * <p>
-     * Marker class defines a region where the snippet is applied.
-     * 
+     * Selects the marker class. A marker determines the region of code within a
+     * method where to apply the snippet.
+     *
      * @see ch.usi.dag.disl.marker.Marker Implementation details
      */
-    Class<? extends Marker> marker();
+    Class <? extends Marker> marker();
+
 
     /**
+     * Optional argument for the marker class, passed as a {@link String}.
      * <p>
-     * Argument for the marker (as string).
-     * 
-     * <p>
-     * Default value means none.
+     * Default value: {@code ""}, means "no arguments".
      */
-    String args() default ""; // cannot be null :(
+    String args() default "";
+
 
     /**
+     * Selects methods in which to apply the snippet.
      * <p>
-     * Scope of the methods, where the snippet is applied.
-     * 
+     * See the {@link ch.usi.dag.disl.scope} package for more information about
+     * the scoping language.
      * <p>
-     * Default value means everything.
-     * 
-     * @see ch.usi.dag.disl.scope.ScopeImpl Implementation details
+     * Default value: {@code "*"}, means "everywhere".
      */
     String scope() default "*";
 
-    /**
-     * <p>
-     * The guard class defining if the snippet will be inlined in particular
-     * region or not.
-     * 
-     * <p>
-     * Default value means none.
-     */
-    Class<? extends Object> guard() default Object.class; // cannot be null :(
 
     /**
+     * Selects the guard class. A guard class determines whether a snippet
+     * will be inlined at a particular location or not. In general, guards
+     * provide more fine-grained control compared to scopes.
      * <p>
-     * Defines ordering of the snippets. Smaller number indicates that snippet
-     * will be inlined closer to the instrumented code.
-     * 
+     * Default value: {@code void.class}, means "no guard used".
+     */
+    Class <? extends Object> guard() default void.class;
+
+
+    /**
+     * Determines snippet order when multiple snippets are to be inlined
+     * at the same location. The smaller the number, the closer to the boundary
+     * of the marked code region will be the snippet inlined.
      * <p>
-     * Default is 100.
+     * Default value: {@code 100}
      */
     int order() default 100;
 
+
     /**
+     * Controls automatic bypass activation. This is an advanced option that
+     * allows to turn off automatic bypass activation for inlined snippets. This
+     * can be used when a snippet does not use any other (instrumented) classes,
+     * or when manual control over bypass activation is desired.
      * <p>
-     * You can in general disable dynamic bypass on snippets, that are not using
-     * any other class. (Advanced option)
-     * 
-     * <p>
-     * <b>note:</b> Usage of dynamic bypass is determined by the underlying
+     * NOTE: Usage of dynamic bypass is determined by the underlying
      * instrumentation framework.
+     * <p>
+     * Default value: {@code true}, means "automatic bypass activation".
      */
     boolean dynamicBypass() default true;
+
 }

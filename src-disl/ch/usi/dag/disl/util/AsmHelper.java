@@ -720,12 +720,17 @@ public abstract class AsmHelper {
         return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
     }
 
+    public static boolean isReturn (final AbstractInsnNode insn) {
+        final int opcode = insn.getOpcode ();
+        return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
+    }
 
-    public static boolean isBranch (final AbstractInsnNode instruction) {
-        final int opcode = instruction.getOpcode();
-        return instruction instanceof JumpInsnNode
-                || instruction instanceof LookupSwitchInsnNode
-                || instruction instanceof TableSwitchInsnNode
+
+    public static boolean isBranch (final AbstractInsnNode insn) {
+        final int opcode = insn.getOpcode();
+        return insn instanceof JumpInsnNode
+                || insn instanceof LookupSwitchInsnNode
+                || insn instanceof TableSwitchInsnNode
                 || opcode == Opcodes.ATHROW || opcode == Opcodes.RET
                 || (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
     }
@@ -843,7 +848,6 @@ public abstract class AsmHelper {
     // For a constructor, the return value will be the instruction after
     // the object initialization.
     public static AbstractInsnNode findFirstValidMark(final MethodNode method) {
-
         AbstractInsnNode first = method.instructions.getFirst();
 
         // This is not a constructor. Just return the first instruction
@@ -877,7 +881,6 @@ public abstract class AsmHelper {
         adapter.visitCode();
 
         for (final AbstractInsnNode node : Insns.selectAll (method.instructions)) {
-
             node.accept(adapter);
 
             // first instruction will be instruction after constructor call

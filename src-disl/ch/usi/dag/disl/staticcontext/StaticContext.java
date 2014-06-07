@@ -5,7 +5,6 @@ import ch.usi.dag.disl.snippet.Shadow;
 /**
  * <p>
  * The static context provides information derived from code's static analysis.
- * 
  * <p>
  * There is a list of already prepared static contexts.
  * <ul>
@@ -25,21 +24,20 @@ import ch.usi.dag.disl.snippet.Shadow;
  * {@link ch.usi.dag.disl.staticcontext.LoopStaticContext
  * LoopStaticContext - experimental}</li>
  * </ul>
- * 
  * <p>
- * To implement custom static context all methods should follow convention:
+ * Every static context class has to implement this interface. All static
+ * context methods must adhere to the following convention:
  * <ul>
- * <li>static context methods does not have parameters</li>
- * <li>return value can be only basic type or String</li>
- * <li>implementation has to be thread-safe</li>
+ * <li>a static context method does not have parameters</li>
+ * <li>the return value can be only a primitive type or a String</li>
  * </ul>
+ * In addition, a {@link StaticContext} implementation has to be thread-safe.
  */
 public interface StaticContext {
 
     /**
-     * <p>
      * Receives static context data. Call to this method precedes a static
      * context method invocation.
      */
-    void staticContextData(Shadow sa);
+    void staticContextData (Shadow shadow);
 }

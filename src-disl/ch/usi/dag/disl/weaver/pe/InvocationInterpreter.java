@@ -121,22 +121,24 @@ public class InvocationInterpreter {
 
     private static InvocationInterpreter instance;
 
-    static {
-        instance = new InvocationInterpreter();
-
-        instance.register(Boolean.class);
-        instance.register(Byte.class);
-        instance.register(Character.class);
-        instance.register(Double.class);
-        instance.register(Float.class);
-        instance.register(Integer.class);
-        instance.register(Long.class);
-        instance.register(Short.class);
-        instance.register(String.class);
-        instance.register(StringBuilder.class);
-    }
-
     public static InvocationInterpreter getInstance() {
+
+        if (instance == null) {
+
+            instance = new InvocationInterpreter();
+
+            instance.register(Boolean.class);
+            instance.register(Byte.class);
+            instance.register(Character.class);
+            instance.register(Double.class);
+            instance.register(Float.class);
+            instance.register(Integer.class);
+            instance.register(Long.class);
+            instance.register(Short.class);
+            instance.register(String.class);
+            instance.register(StringBuilder.class);
+        }
+
         return instance;
     }
 }

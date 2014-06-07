@@ -8,35 +8,35 @@ import ch.usi.dag.disl.annotation.SyntheticLocal;
 
 public class SyntheticLocalVar extends AbstractLocalVar {
 
-	private SyntheticLocal.Initialize initialize;
+    private SyntheticLocal.Initialize initialize;
 
-	private InsnList initCode;
+    private InsnList initCode;
 
-	//
+    //
 
-	public SyntheticLocalVar (
-		String className, String fieldName, Type type,
-		SyntheticLocal.Initialize initialize
-	) {
-		super (className, fieldName, type);
-		this.initialize = initialize;
-	}
-
-
-	public SyntheticLocal.Initialize getInitialize () {
-		return initialize;
-	}
+    public SyntheticLocalVar (
+        String className, String fieldName, Type type,
+        SyntheticLocal.Initialize initialize
+    ) {
+        super (className, fieldName, type);
+        this.initialize = initialize;
+    }
 
 
-	public InsnList getInitCode () {
-		return initCode;
-	}
+    public SyntheticLocal.Initialize getInitialize () {
+        return initialize;
+    }
 
-	public boolean hasInitCode () {
-		return initCode != null;
-	}
-	
-	public void setInitCode (final InsnList initCode) {
-		this.initCode = initCode;
-	}
+
+    public InsnList getInitCode () {
+        return initCode;
+    }
+
+    public boolean hasInitCode () {
+        return initCode != null;
+    }
+
+    public void setInitCode (final InsnList initCode) {
+        this.initCode = initCode;
+    }
 }

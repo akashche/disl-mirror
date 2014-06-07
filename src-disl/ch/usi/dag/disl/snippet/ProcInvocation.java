@@ -5,20 +5,20 @@ import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 
 public class ProcInvocation {
 
-	private Proc processor;
-	private ArgumentProcessorMode procApplyType;
-	
-	public ProcInvocation(Proc processor, ArgumentProcessorMode procApplyType) {
-		super();
-		this.processor = processor;
-		this.procApplyType = procApplyType;
-	}
+    private Proc processor;
+    private ArgumentProcessorMode procApplyType;
 
-	public Proc getProcessor() {
-		return processor;
-	}
+    public ProcInvocation(Proc processor, ArgumentProcessorMode procApplyType) {
+        super();
+        this.processor = processor;
+        this.procApplyType = procApplyType;
+    }
 
-	public ArgumentProcessorMode getProcApplyType() {
-		return procApplyType;
-	}
+    public Proc getProcessor() {
+        return processor;
+    }
+
+    public ArgumentProcessorMode getProcApplyType() {
+        return procApplyType;
+    }
 }

@@ -20,50 +20,50 @@ import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
  */
 public class SnippetCode extends Code {
 
-	private boolean usesProcessorContext;
-	// integer (key) is an index of an instruction in snippet code that invokes
-	// processor
-	private Map<Integer, ProcInvocation> invokedProcessors;
+    private boolean usesProcessorContext;
+    // integer (key) is an index of an instruction in snippet code that invokes
+    // processor
+    private Map<Integer, ProcInvocation> invokedProcessors;
 
-	public SnippetCode(InsnList instructions,
-			List<TryCatchBlockNode> tryCatchBlocks,
-			Set<SyntheticLocalVar> referencedSLV,
-			Set<ThreadLocalVar> referencedTLV,
-			boolean containsHandledException,
-			Set<StaticContextMethod> staticContexts,
-			boolean usesDynamicContext,
-			boolean usesClassContext,
-			boolean usesProcessorContext,
-			Map<Integer, ProcInvocation> invokedProcessors
-			) {
-		
-		super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
-				staticContexts, usesDynamicContext, usesClassContext,
-				containsHandledException);
-		this.invokedProcessors = invokedProcessors;
-		this.usesProcessorContext = usesProcessorContext;
-	}
+    public SnippetCode(InsnList instructions,
+            List<TryCatchBlockNode> tryCatchBlocks,
+            Set<SyntheticLocalVar> referencedSLV,
+            Set<ThreadLocalVar> referencedTLV,
+            boolean containsHandledException,
+            Set<StaticContextMethod> staticContexts,
+            boolean usesDynamicContext,
+            boolean usesClassContext,
+            boolean usesProcessorContext,
+            Map<Integer, ProcInvocation> invokedProcessors
+            ) {
 
-	/**
-	 * Returns list of all argument processors referenced in the code.
-	 */
-	public Map<Integer, ProcInvocation> getInvokedProcessors() {
-		return invokedProcessors;
-	}
-	
+        super(instructions, tryCatchBlocks, referencedSLV, referencedTLV,
+                staticContexts, usesDynamicContext, usesClassContext,
+                containsHandledException);
+        this.invokedProcessors = invokedProcessors;
+        this.usesProcessorContext = usesProcessorContext;
+    }
 
-	public SnippetCode clone () {
-		// clone code first
-		ClonedCode cc = ClonedCode.create (getInstructions (), getTryCatchBlocks ());
+    /**
+     * Returns list of all argument processors referenced in the code.
+     */
+    public Map<Integer, ProcInvocation> getInvokedProcessors() {
+        return invokedProcessors;
+    }
 
-		return new SnippetCode (
-			cc.getInstructions (), cc.getTryCatchBlocks (),
-			new HashSet <SyntheticLocalVar> (getReferencedSLVs ()),
-			new HashSet <ThreadLocalVar> (getReferencedTLVs ()),
-			containsHandledException (), 
-			new HashSet <StaticContextMethod> (getStaticContexts ()),
-			usesDynamicContext (), usesClassContext (), usesProcessorContext,
-			new HashMap <Integer, ProcInvocation> (invokedProcessors)
-		);
-	}
+
+    public SnippetCode clone () {
+        // clone code first
+        ClonedCode cc = ClonedCode.create (getInstructions (), getTryCatchBlocks ());
+
+        return new SnippetCode (
+            cc.getInstructions (), cc.getTryCatchBlocks (),
+            new HashSet <SyntheticLocalVar> (getReferencedSLVs ()),
+            new HashSet <ThreadLocalVar> (getReferencedTLVs ()),
+            containsHandledException (),
+            new HashSet <StaticContextMethod> (getStaticContexts ()),
+            usesDynamicContext (), usesClassContext (), usesProcessorContext,
+            new HashMap <Integer, ProcInvocation> (invokedProcessors)
+        );
+    }
 }

@@ -1,27 +1,29 @@
 package ch.usi.dag.disl.transformer;
 
 /**
- * Allows transformation of a class before it is passed to DiSL. The transformer
+ * Allows transforming a class before it is passed to DiSL. The transformer
  * class has to be specified in the instrumentation manifest.
- * 
- * Transformer implementation has to be thread-safe.  
+ *
+ * <b>Note:</b> The {@link Transformer} implementation has to be thread-safe.
  */
 public interface Transformer {
 
 	/**
-	 * The class to be transformed is passed as an argument and the transformed
-	 * class is returned.
+	 * Transforms the given class bytecode and returns the
+	 * bytecode of the transformed class.
 	 * 
 	 * @param classfileBuffer class to be transformed
-	 * @return transformed class
+	 * @return bytecode of the transformed class
 	 */
 	byte[] transform(byte[] classfileBuffer) throws Exception;
-	
+
+
 	/**
-	 * If this method returns true, not instrumented classes are still
-	 * treated as modified (by DiSL) and propagated out. Otherwise, the DiSL
-	 * will report class as unmodified. 
-	 * 
+	 * Determines whether classes that were not modified during the 
+	 * transformation are treated by DiSL as modified and propagated
+	 * back. If this method returns {@code false}, DiSL will report
+	 * such classes as unmodified.
+
 	 * @return propagation flag
 	 */
 	boolean propagateUninstrumentedClasses();

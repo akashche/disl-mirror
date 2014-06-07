@@ -12,6 +12,7 @@ import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.AsmOpcodes;
 
+
 /**
  * Marks one bytecode instruction.
  * <p>
@@ -21,48 +22,47 @@ import ch.usi.dag.disl.util.AsmOpcodes;
  */
 public class BytecodeMarker extends AbstractDWRMarker {
 
-    protected static final String INSTR_DELIM       = ",";
+    protected static final String INSTR_DELIM = ",";
 
-    protected Set<Integer>        searchedInstrNums = new HashSet<Integer>();
+    protected Set <Integer> searchedInstrNums = new HashSet <Integer> ();
 
-    public BytecodeMarker(Parameter param) throws MarkerException {
+
+    public BytecodeMarker (final Parameter param) throws MarkerException {
 
         // set delim for instruction list
-        param.setMultipleValDelim(INSTR_DELIM);
+        param.setMultipleValDelim (INSTR_DELIM);
 
         // translate all instructions to opcodes
-        for (String instr : param.getMultipleValues()) {
-
+        for (final String instr : param.getMultipleValues ()) {
             try {
+                final AsmOpcodes opcode = AsmOpcodes.valueOf (
+                    instr.trim ().toUpperCase ()
+                );
 
-                AsmOpcodes opcode =
-                        AsmOpcodes.valueOf(instr.trim().toUpperCase());
-                searchedInstrNums.add(opcode.getNumber());
-            } catch (IllegalArgumentException e) {
-
-                throw new MarkerException("Instruction \"" + instr +
-                        "\" cannot be found. See " +
-                        AsmOpcodes.class.getName() +
-                        " enum for list of possible instructions");
+                searchedInstrNums.add (opcode.getNumber ());
+            } catch (final IllegalArgumentException e) {
+                throw new MarkerException (
+                    "Instruction \""+ instr +"\" cannot be found. "+
+                    "See the "+ AsmOpcodes.class.getName () +" enum for "+
+                    "the list of valid instructions."
+                );
             }
         }
 
-        if (searchedInstrNums.isEmpty()) {
-            throw new MarkerException("Bytecode marker cannot operate without" +
-                    " selected instructions. Pass instruction list using" +
-                    " \"param\" annotation attribute.");
+        if (searchedInstrNums.isEmpty ()) {
+            throw new MarkerException ("Bytecode marker cannot operate without" +
+                " selected instructions. Pass instruction list using" +
+                " \"param\" annotation attribute.");
         }
     }
 
+
     @Override
-    public List<MarkedRegion> markWithDefaultWeavingReg(MethodNode method) {
-
-        List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
-        for (AbstractInsnNode instruction : Insns.selectAll (method.instructions)) {
-
-            if (searchedInstrNums.contains(instruction.getOpcode())) {
-
-                regions.add(new MarkedRegion(instruction, instruction));
+    public List <MarkedRegion> markWithDefaultWeavingReg (final MethodNode method) {
+        final List <MarkedRegion> regions = new LinkedList <MarkedRegion> ();
+        for (final AbstractInsnNode insn : Insns.selectAll (method.instructions)) {
+            if (searchedInstrNums.contains (insn.getOpcode ())) {
+                regions.add (new MarkedRegion (insn, insn));
             }
         }
 

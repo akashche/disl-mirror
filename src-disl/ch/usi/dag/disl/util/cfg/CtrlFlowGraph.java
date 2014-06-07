@@ -46,17 +46,16 @@ public class CtrlFlowGraph {
         method_exits = new HashSet<BasicBlock>();
 
         // Generating basic blocks
-        List<AbstractInsnNode> seperators = BasicBlockCalc.getAll(instructions,
+        List<AbstractInsnNode> separators = BasicBlockCalc.getAll(instructions,
                 tryCatchBlocks, false);
         AbstractInsnNode last = instructions.getLast();
-        seperators.add(last);
+        separators.add(last);
 
-        for (int i = 0; i < seperators.size() - 1; i++) {
+        for (int i = 0; i < separators.size() - 1; i++) {
+            AbstractInsnNode start = separators.get(i);
+            AbstractInsnNode end = separators.get(i + 1);
 
-            AbstractInsnNode start = seperators.get(i);
-            AbstractInsnNode end = seperators.get(i + 1);
-
-            if (i != seperators.size() - 2) {
+            if (i != separators.size() - 2) {
                 end = end.getPrevious();
             }
 
@@ -90,11 +89,9 @@ public class CtrlFlowGraph {
     // Return a basic block that contains the input instruction.
     // If not found, return null.
     public BasicBlock getBB(AbstractInsnNode instr) {
-
         instr = Insns.FORWARD.firstRealInsn (instr);
 
         while (instr != null) {
-
             for (int i = 0; i < nodes.size(); i++) {
                 if (nodes.get(i).getEntrance().equals(instr)) {
                     return nodes.get(i);

@@ -8,15 +8,17 @@ public interface ArgumentContext {
     /**
      * Returns position of the processed argument.
      */
-    int getPosition();
+    int getPosition ();
+
 
     /**
      * Returns type descriptor of the processed argument.
      */
-    String getTypeDescriptor();
+    String getTypeDescriptor ();
+
 
     /**
      * Returns total number of processed arguments.
      */
-    int getTotalCount();
+    int getTotalCount ();
 }

@@ -8,25 +8,27 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 
+
 abstract class AbstractInsnMarker extends AbstractMarker {
 
-	@Override
-	public final List<MarkedRegion> mark(MethodNode methodNode) {
+    @Override
+    public final List <MarkedRegion> mark (final MethodNode methodNode) {
+        final List <MarkedRegion> regions = new LinkedList <MarkedRegion> ();
 
-		List<MarkedRegion> regions = new LinkedList<MarkedRegion>();
+        for (final AbstractInsnNode instruction : markInstruction (methodNode)) {
+            final MarkedRegion region = new MarkedRegion (instruction, instruction);
+            region.setWeavingRegion (new WeavingRegion (
+                instruction, new LinkedList <AbstractInsnNode> (region.getEnds ()),
+                instruction, instruction
+            ));
 
-		for (AbstractInsnNode instruction : markInstruction(methodNode)) {
+            regions.add (region);
+        }
 
-			MarkedRegion region = new MarkedRegion(instruction, instruction);
-			region.setWeavingRegion(new WeavingRegion(instruction,
-					new LinkedList<AbstractInsnNode>(region.getEnds()),
-					instruction, instruction));
-			regions.add(region);
-		}
+        return regions;
+    }
 
-		return regions;
-	}
 
-	public abstract List<AbstractInsnNode> markInstruction(MethodNode methodNode);
+    public abstract List <AbstractInsnNode> markInstruction (MethodNode methodNode);
 
 }

@@ -21,18 +21,15 @@ public class BasicBlockStaticContext extends AbstractStaticContext {
     private Map<String, CtrlFlowGraph> cache = new HashMap<String, CtrlFlowGraph>();
     protected CtrlFlowGraph customData;
 
-    public void staticContextData(Shadow sa) {
-
-        super.staticContextData(sa);
+    public void staticContextData (final Shadow shadow) {
+        super.staticContextData (shadow);
 
         String key = staticContextData.getClassNode().name
                 + staticContextData.getMethodNode().name
                 + staticContextData.getMethodNode().desc;
 
         customData = cache.get(key);
-
         if (customData == null) {
-
             customData = produceCustomData();
             cache.put(key, customData);
         }
@@ -46,24 +43,22 @@ public class BasicBlockStaticContext extends AbstractStaticContext {
     }
 
     /**
-     * Returns size of the instrumented basic block.
+     * Returns the size of the instrumented basic block.
      */
     public int getBBSize() {
-
+        //
+        // If the start instruction is also an end instruction,
+        // then the size of the basic block is 1 instruction.
+        //
         int count = 1;
-        AbstractInsnNode start;
-        List<AbstractInsnNode> ends;
+        final List <AbstractInsnNode> ends = staticContextData.getRegionEnds ();
 
-        start = staticContextData.getRegionStart();
-        ends = staticContextData.getRegionEnds();
-
-        while (!ends.contains(start)) {
-
-            if (! Insn.isVirtual (start)) {
-                count++;
-            }
-
-            start = start.getNext();
+        for (
+            AbstractInsnNode insn = staticContextData.getRegionStart ();
+            !ends.contains (insn);
+            insn = insn.getNext ()
+        ) {
+            count += Insn.isVirtual (insn) ? 0 : 1;
         }
 
         return count;
