@@ -1,10 +1,9 @@
 /**
  * DO NOT EDIT!
  *
- * This file was generated using the bin2cdef script.
+ * This file was generated using the 'generate-disl-agent-bytecode' target.
  */
 #include <jvmti.h>
-
 
 jvmtiClassDefinition always_BypassCheck_classdef = {
 	.class_byte_count = 388,
@@ -35,7 +34,6 @@ jvmtiClassDefinition always_BypassCheck_classdef = {
 		"\x00\x00\x00\x06\x00\x01\x00\x00\x00\x0f\x00\x01\x00\x0d\x00\x00"
 		"\x00\x02\x00\x0e",
 };
-
 
 jvmtiClassDefinition dynamic_BypassCheck_classdef = {
 	.class_byte_count = 460,
@@ -70,7 +68,6 @@ jvmtiClassDefinition dynamic_BypassCheck_classdef = {
 		"\x02\xac\x00\x00\x00\x01\x00\x08\x00\x00\x00\x06\x00\x01\x00\x00"
 		"\x00\x0b\x00\x01\x00\x0e\x00\x00\x00\x02\x00\x0f",
 };
-
 
 jvmtiClassDefinition never_BypassCheck_classdef = {
 	.class_byte_count = 388,

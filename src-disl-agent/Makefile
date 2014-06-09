@@ -62,7 +62,7 @@ SOURCES = bytecode.c common.c jvmtiutil.c connection.c \
 	connpool.c msgchannel.c network.c dislagent.c
 
 HEADERS = $(wildcard *.h) codeflags.h
-GENSRCS = Makefile.bypass bytecode.c codeflags.h
+GENSRCS = bytecode.c codeflags.h
 OBJECTS = $(SOURCES:%.c=%.o)
 SRCDEPS = $(SOURCES:%.c=%.d)
 
@@ -117,17 +117,8 @@ debug:
 
 # Generated files
 
-Makefile.bypass:
-	ant -f ../build.xml prepare-disl-agent-makefile
-
-include Makefile.bypass
-
-
-bytecode.c: Makefile.bypass bin2cdef $(BYPASS_FILES)
-	./bin2cdef \
-		$(foreach BPC,$(BYPASS_FILES),$(BPC) $(subst /$(BYPASS_PKG_PATH)/,_,$(subst $(BYPASS_DIR)/,,$(BPC:.class=)))) \
-		> $@
-
+bytecode.c:
+	ant -f ../build.xml prepare-disl-agent-bytecode
 
 codeflags.h:
 	ant -f ../build.xml prepare-disl-agent-codeflags
