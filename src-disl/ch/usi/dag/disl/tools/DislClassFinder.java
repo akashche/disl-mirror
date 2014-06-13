@@ -28,17 +28,32 @@ import ch.usi.dag.disl.annotation.ProcessAlso;
 import ch.usi.dag.disl.annotation.SyntheticLocal;
 import ch.usi.dag.util.Sets;
 
+
+/**
+ * Identifies DiSL classes based on the use of DiSL annotations. Only classes
+ * related to snippet expansion are considered DiSL classes, i.e., classes
+ * containing DiSL snippets and argument processor classes. Guards are not
+ * considered DiSL classes.
+ *
+ * @author Lubomir Bulej
+ */
 public final class DislClassFinder implements Processor {
 
-    private final Set <String> __dislClasses = Sets.newHashSet ();
-
+    //
+    // Configuration. Initialized by the init() method.
     //
 
     private Messager __messager;
     private PrintStream __output;
     private String __separator;
-    private String __effectiveSeparator;
     private boolean __forceEol;
+
+    //
+    // State kept between processing rounds.
+    //
+
+    private String __effectiveSeparator;
+    private final Set <String> __dislClasses = Sets.newHashSet ();
 
     //
 
@@ -64,6 +79,7 @@ public final class DislClassFinder implements Processor {
 
     @Override
     public Set <String> getSupportedAnnotationTypes () {
+
         final Set <String> result = Sets.newLinkedHashSet ();
         for (final Class <?> annotationClass : __annotations__) {
             result.add (annotationClass.getName ());
@@ -141,8 +157,14 @@ public final class DislClassFinder implements Processor {
 
         for (final TypeElement te : annotations) {
             for (final Element e : env.getElementsAnnotatedWith (te)) {
-                final String className = __getEnlosingClassName (e);
-                if (__dislClasses.add (className)) {
+                final String className = __getEnclosingClassName (e);
+                if (className == null) {
+                    __messager.printMessage (Kind.WARNING, String.format (
+                        "could not get enclosing class name for %s (%s)",
+                        e, e.getKind ()
+                    ));
+
+                } else if (__dislClasses.add (className)) {
                     newClasses.add (className);
                 }
             }
@@ -156,8 +178,8 @@ public final class DislClassFinder implements Processor {
         }
 
         //
-        // Force a new line in the output file at the end of processing
-        // and close the output unless it is system output.
+        // At the end of processing, force a new line in the output file
+        // (if required) and close the output (unless it is system output).
         //
         if (env.processingOver ()) {
             if (__forceEol && __dislClasses.size () > 0) {
@@ -174,21 +196,82 @@ public final class DislClassFinder implements Processor {
     }
 
 
-    private String __getEnlosingClassName (final Element initial) {
+    private String __getEnclosingClassName (final Element element) {
         //
         // Our annotations apply to classes, methods, and fields.
-        // For methods and fields, traverse the chain of enclosing
-        // elements to the top-level class.
+        // For methods and fields, find the enclosing class and then
+        // return the binary qualified name of the resulting class.
+        // Return null if the enclosing class could not be found.
         //
-        Element current = initial;
-        while (true) {
+        final ElementKind kind = element.getKind ();
+        if (kind.isClass ()) {
+            return __getBinaryClassName (element);
+
+        } else if (kind == ElementKind.METHOD || kind == ElementKind.FIELD) {
+            final Element parent = element.getEnclosingElement ();
+            if (parent.getKind ().isClass ()) {
+                return __getBinaryClassName (parent);
+            }
+        }
+
+        //
+        // Could not find enclosing class.
+        //
+        return null;
+    }
+
+
+    private String __getBinaryClassName (final Element element) {
+        //
+        // If the parent element is package, we can just use the class name.
+        // Otherwise we have to traverse the enclosing classes to build the
+        // binary name.
+        //
+        if (element.getEnclosingElement ().getKind () == ElementKind.PACKAGE) {
+            return element.toString ();
+
+        } else {
+            return __buildBinaryClassName (element);
+        }
+    }
+
+
+    private String __buildBinaryClassName (final Element element) {
+        //
+        // Replace '.' before inner class names with '$'.
+        // For details on class binary names, see
+        //
+        // http://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1
+        //
+        final StringBuilder name = new StringBuilder (element.toString ());
+
+        Element current = element;
+        int lastPosition = name.length ();
+
+        TRAVERSAL: while (true) {
             final Element parent = current.getEnclosingElement ();
-            if (parent == null || parent.getKind () == ElementKind.PACKAGE) {
-                return current.toString ();
+            if (!parent.getKind ().isClass ()) {
+                break TRAVERSAL;
             }
 
+            lastPosition = __lastIndexOf (name, '.', lastPosition);
+            name.setCharAt (lastPosition,  '$');
             current = parent;
         }
+
+        return name.toString ();
+    }
+
+
+    private int __lastIndexOf (
+        final StringBuilder sb, final char chr, final int startPosition
+    ) {
+        int position = Math.min (startPosition, sb.length () - 1);
+        while (position >= 0 && sb.charAt (position) != chr) {
+            position--;
+        }
+
+        return position;
     }
 
 

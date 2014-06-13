@@ -37,6 +37,7 @@ never forget to clear environment variables as inherited classpath could cause
 serious trouble.
 
 The manifest file in the instrumentation jars for each suite will contain an
-attribute, DiSL-Classes, listing classes that are used for snippet expansion.
-The comma-separated list of classess is generated automatically by the build
-system based on the annotations used in the instrumentation classes.
+attribute, DiSL-Classes, listing binary names of classes that are used for
+snippet expansion. The comma-separated list of classes is generated
+automatically by the build system based on snippet-related annotations used in
+the instrumentation classes.
