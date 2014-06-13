@@ -13,26 +13,26 @@ import ch.usi.dag.dislreserver.shadow.ShadowObjectTable;
 
 public class ClassInfoHandler implements RequestHandler {
 
-	public void handle(DataInputStream is, DataOutputStream os, boolean debug)
-			throws DiSLREServerException {
+    public void handle(DataInputStream is, DataOutputStream os, boolean debug)
+            throws DiSLREServerException {
 
-		try {
+        try {
 
-			long net_ref = is.readLong();
-			String classSignature = is.readUTF();
-			String classGenericStr = is.readUTF();
-			ShadowObject classLoader = ShadowObjectTable.get(is.readLong());
+            long net_ref = is.readLong();
+            String classSignature = is.readUTF();
+            String classGenericStr = is.readUTF();
+            ShadowObject classLoader = ShadowObjectTable.get(is.readLong());
 
-			ShadowClass superClass = (ShadowClass) ShadowObjectTable.get(is
-					.readLong());
-			ShadowClassTable.newInstance(net_ref, superClass, classLoader,
-					classSignature, classGenericStr, debug);
-		} catch (IOException e) {
-			throw new DiSLREServerException(e);
-		}
-	}
+            ShadowClass superClass = (ShadowClass) ShadowObjectTable.get(is
+                    .readLong());
+            ShadowClassTable.newInstance(net_ref, superClass, classLoader,
+                    classSignature, classGenericStr, debug);
+        } catch (IOException e) {
+            throw new DiSLREServerException(e);
+        }
+    }
 
-	public void exit() {
+    public void exit() {
 
-	}
+    }
 }

@@ -10,32 +10,32 @@ import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 
 public class ThreadEndHandler implements RequestHandler {
 
-	final AnalysisHandler analysisHandler;
-	
-	public ThreadEndHandler(AnalysisHandler anlHndl) {
-		analysisHandler = anlHndl;
-	}
+    final AnalysisHandler analysisHandler;
 
-	public void handle(DataInputStream is, DataOutputStream os, boolean debug)
-			throws DiSLREServerException {
+    public ThreadEndHandler(AnalysisHandler anlHndl) {
+        analysisHandler = anlHndl;
+    }
 
-		try {
+    public void handle(DataInputStream is, DataOutputStream os, boolean debug)
+            throws DiSLREServerException {
 
-			long threadId = is.readLong();
+        try {
 
-			// announce thread end to the analysis handler
-			analysisHandler.threadEnded(threadId);
-			
-		} catch (IOException e) {
-			throw new DiSLREServerException(e);
-		}
-	}
+            long threadId = is.readLong();
 
-	public void awaitProcessing() {
+            // announce thread end to the analysis handler
+            analysisHandler.threadEnded(threadId);
 
-	}
+        } catch (IOException e) {
+            throw new DiSLREServerException(e);
+        }
+    }
 
-	public void exit() {
+    public void awaitProcessing() {
 
-	}
+    }
+
+    public void exit() {
+
+    }
 }
