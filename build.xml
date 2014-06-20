@@ -22,6 +22,10 @@
 		<pathelement location="${asm.path}" />
 	</path>
 
+	<path id="log4j.classpath">
+		<pathelement location="${log4j.path}" />
+	</path>
+
 	<path id="junit.classpath">
 		<pathelement location="${junit.core.path}" />
 		<pathelement location="${junit.hamcrest.path}" />
@@ -202,7 +206,9 @@
 
 	<target name="compile-util">
 		<mkdir dir="${build.util}" />
-		<javac destdir="${build.util}" srcdir="${src.util}" debug="true" />
+		<javac destdir="${build.util}" srcdir="${src.util}" debug="true">
+			<classpath refid="log4j.classpath" />
+		</javac>
 	</target>
 
 
