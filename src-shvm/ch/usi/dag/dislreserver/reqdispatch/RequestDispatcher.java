@@ -8,8 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerException;
-import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+import ch.usi.dag.dislreserver.DiSLREServerException;
+import ch.usi.dag.dislreserver.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisHandler;
 import ch.usi.dag.dislreserver.msg.classinfo.ClassInfoHandler;
 import ch.usi.dag.dislreserver.msg.close.CloseHandler;

@@ -4,7 +4,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+import ch.usi.dag.dislreserver.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver;
 import ch.usi.dag.dislreserver.remoteanalysis.RemoteAnalysis;
 import ch.usi.dag.dislreserver.shadow.ShadowObject;

@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+import ch.usi.dag.dislreserver.DiSLREServerFatalException;
 
 /**
  * Manages executors

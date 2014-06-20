@@ -3,7 +3,7 @@ package ch.usi.dag.dislreserver.reqdispatch;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerException;
+import ch.usi.dag.dislreserver.DiSLREServerException;
 
 public interface RequestHandler {
 

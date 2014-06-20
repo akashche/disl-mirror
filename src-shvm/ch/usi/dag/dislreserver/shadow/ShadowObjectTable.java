@@ -4,7 +4,7 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+import ch.usi.dag.dislreserver.DiSLREServerFatalException;
 
 public class ShadowObjectTable {
 

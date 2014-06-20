@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerException;
+import ch.usi.dag.dislreserver.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.instr.InstrMsgReader.InstrClassMessage;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 

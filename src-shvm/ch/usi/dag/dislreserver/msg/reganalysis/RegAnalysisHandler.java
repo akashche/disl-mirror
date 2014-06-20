@@ -4,7 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerException;
+import ch.usi.dag.dislreserver.DiSLREServerException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisResolver;
 import ch.usi.dag.dislreserver.reqdispatch.RequestHandler;
 

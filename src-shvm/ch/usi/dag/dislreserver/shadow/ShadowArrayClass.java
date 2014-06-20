@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import org.objectweb.asm.Type;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+import ch.usi.dag.dislreserver.DiSLREServerFatalException;
 
 public class ShadowArrayClass extends ShadowClass {
 

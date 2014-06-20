@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.objectweb.asm.Type;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+import ch.usi.dag.dislreserver.DiSLREServerFatalException;
 
 public class ShadowClassTable {
 

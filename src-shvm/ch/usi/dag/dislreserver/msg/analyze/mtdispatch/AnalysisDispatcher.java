@@ -2,7 +2,7 @@ package ch.usi.dag.dislreserver.msg.analyze.mtdispatch;
 
 import java.util.List;
 
-import ch.usi.dag.dislreserver.exception.DiSLREServerFatalException;
+import ch.usi.dag.dislreserver.DiSLREServerFatalException;
 import ch.usi.dag.dislreserver.msg.analyze.AnalysisInvocation;
 
 // Each thread has dedicated queue where new tasks are submitted.
