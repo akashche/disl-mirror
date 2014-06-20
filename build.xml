@@ -383,9 +383,10 @@
 	</target>
 
 
-	<target name="compile-shvm" depends="compile-shvm-dispatch">
+	<target name="compile-shvm" depends="compile-util,compile-shvm-dispatch">
 		<mkdir dir="${build.shvm}" />
 		<javac destdir="${build.shvm}" srcdir="${src.shvm}" debug="true">
+			<classpath refid="util.classpath" />
 			<classpath refid="asm.classpath" />
 		</javac>
 	</target>
@@ -395,12 +396,15 @@
 		<local name="shvm.server.class" />
 		<find-class property="shvm.server.class" dir="${build.shvm}" name="DiSLREServer" />
 
-		<jar destfile="${out.lib}/${shvm.lib}" basedir="${build.shvm}">
+		<jar destfile="${out.lib}/${shvm.lib}">
 			<manifest>
 				<attribute name="Class-Path" value="${asm.lib}" />
 				<attribute name="Main-Class" value="${shvm.server.class}" />
 				<attribute name="DiSL-Version" value="${disl.version}" />
 			</manifest>
+
+			<fileset dir="${build.util}" />
+			<fileset dir="${build.shvm}" />
 		</jar>
 	</target>
 
