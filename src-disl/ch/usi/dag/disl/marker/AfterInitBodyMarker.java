@@ -34,7 +34,7 @@ public class AfterInitBodyMarker extends AbstractMarker {
         //
         for (final AbstractInsnNode insn : Insns.selectAll (method.instructions)) {
             if (AsmHelper.isReturn (insn)) {
-                region.addEnd (insn.getPrevious ());
+                region.addEnd (insn);
             }
         }
 
