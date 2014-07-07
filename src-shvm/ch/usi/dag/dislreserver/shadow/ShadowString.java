@@ -18,19 +18,18 @@ public class ShadowString extends ShadowObject {
         return value;
     }
 
-    public void setValue(String value) {
+    void setValue(String value) {
         this.value = value;
     }
 
     @Override
-    public boolean equals(Object obj) {
-
-        if (super.equals(obj)) {
-
+    public boolean equals(final Object obj) {
+        // FIXME LB: This needs a comment!
+        if (super.equals (obj)) {
             if (obj instanceof ShadowString) {
-
-                if (value != null && value.equals(((ShadowString) obj).value)) {
-                    return true;
+                final ShadowString that = (ShadowString) obj;
+                if (this.value != null) {
+                    return this.value.equals (that.value);
                 }
             }
         }
@@ -40,6 +39,15 @@ public class ShadowString extends ShadowObject {
 
     @Override
     public int hashCode() {
-        throw new UnsupportedOperationException("overriden equals, not overriden hashCode");
+        //
+        // If two shadow strings are considered equal by the above equals()
+        // method, then they certainly have the same hash code, because it
+        // is derived from objectId (which in turn is derived from object tag,
+        // a.k.a. net reference) that is ensured to be equal by the call to
+        // super.equals().
+        //
+        // If they are not equal, nobody cares about the hash code.
+        //
+        return super.hashCode ();
     }
 }
