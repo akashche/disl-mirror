@@ -72,17 +72,16 @@ public class ShadowObject implements Formattable {
 
     // only object id considered
     // TODO consider also the class ID
+    @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (int) (shadowId ^ (shadowId >>> 32));
-        return result;
+        return 31 + (int) (shadowId ^ (shadowId >>> 32));
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof ShadowObject) {
-            return shadowId == ((ShadowObject) obj).shadowId;
+            final ShadowObject that = (ShadowObject) obj;
+            return this.netRef == that.netRef;
         }
 
         return false;
