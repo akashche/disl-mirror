@@ -145,8 +145,8 @@ public abstract class ExclusionSet {
                 // read exclusion list line by line
                 final Scanner scanner = new Scanner (new FileInputStream (excListPath));
                 while (scanner.hasNextLine ()) {
-                    final String line = scanner.nextLine ();
-                    if (!line.startsWith (COMMENT_START)) {
+                    final String line = scanner.nextLine ().trim ();
+                    if (!line.isEmpty () && !line.startsWith (COMMENT_START)) {
                         exclSet.add (new ScopeImpl (line));
                     }
                 }
