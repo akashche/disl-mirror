@@ -288,6 +288,11 @@ public final class DiSLServer {
 
         } catch (final DiSLServerException dse) {
             __log.error (dse.getMessage ());
+            final Throwable cause = dse.getCause ();
+            if (cause != null) {
+                __log.error (cause.getMessage ());
+            }
+
             System.exit (1);
 
             // unreachable
