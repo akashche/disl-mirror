@@ -25,6 +25,8 @@ import ch.usi.dag.disl.util.Constants;
  * inserted before the first instruction following a call to the superclass
  * constructor.
  */
+// TODO LB: I believe this should be the default BodyMarker
+// TODO LB: Consequently, current BodyMarker should be RawBodyMarker
 public class AfterInitBodyMarker extends AbstractMarker {
 
     @Override
