@@ -4,271 +4,301 @@ import org.objectweb.asm.Opcodes;
 
 import ch.usi.dag.disl.util.Constants;
 
+
 /**
- * Provides static context information about instrumented method.
+ * Provides static context information about the instrumented method.
  */
 public class MethodStaticContext extends AbstractStaticContext {
 
     // *** Class ***
 
     /**
-     * Returns instrumented class name with "/" delimiter.
+     * Returns the internal name of the instrumented class, i.e., a fully
+     * qualified class name, with packages delimited by the '/' character.
      */
-    public String thisClassName() {
-
-        return staticContextData.getClassNode().name;
+    // XXX LB: This would be better named "thisClassInternalName".
+    public String thisClassName () {
+        return __classInternalName ();
     }
+
 
     /**
-     * Returns instrumented class name with "." delimiter.
+     * Returns the simple name of the instrumented class, i.e., a class name
+     * without the package part of the name.
      */
-    public String thisClassCanonicalName() {
-
-        return staticContextData.getClassNode().name.replace('/', '.');
+    public String thisClassSimpleName () {
+        final String name = __classInternalName ();
+        final int start = name.lastIndexOf (Constants.PACKAGE_INTERN_DELIM);
+        return (start >= 0) ? name.substring (start + 1) : name;
     }
+
 
     /**
-     * Returns outer class of the instrumented class.
+     * Returns the canonical name of the instrumented class, i.e., a fully
+     * qualified class name, with packages delimited by the '.' character.
      */
-    public String thisClassOuterClass() {
-
-        return staticContextData.getClassNode().outerClass;
+    public String thisClassCanonicalName () {
+        return __classInternalName ().replace (
+            Constants.PACKAGE_INTERN_DELIM, Constants.PACKAGE_STD_DELIM
+        );
     }
+
 
     /**
-     * Returns outer method of the instrumented class.
+     * Returns the internal name of the class enclosing the instrumented class,
+     * or {@code null} if the instrumented class is not enclosed in another
+     * class.
      */
-    public String thisClassOuterMethod() {
-
-        return staticContextData.getClassNode().outerMethod;
+    public String thisClassOuterClass () {
+        return staticContextData.getClassNode ().outerClass;
     }
+
+
+    /**
+     * Returns the name of the method enclosing the instrumented class, or
+     * {@code null} if the class is not enclosed in a method.
+     */
+    public String thisClassOuterMethod () {
+        return staticContextData.getClassNode ().outerMethod;
+    }
+
 
     /**
      * Returns outer method descriptor of the instrumented class.
      */
-    public String thisClassOuterMethodDesc() {
-
-        return staticContextData.getClassNode().outerMethodDesc;
+    public String thisClassOuterMethodDesc () {
+        return staticContextData.getClassNode ().outerMethodDesc;
     }
+
 
     /**
-     * Returns signature of the instrumented class.
+     * Returns the signature of the instrumented class, or {@code null} if the
+     * class is not a generic type.
      */
-    public String thisClassSignature() {
-
-        return staticContextData.getClassNode().signature;
+    public String thisClassSignature () {
+        return staticContextData.getClassNode ().signature;
     }
+
 
     /**
-     * Returns source file of the instrumented class.
+     * Returns the name of the source file containing the instrumented class.
      */
-    public String thisClassSourceFile() {
-
-        return staticContextData.getClassNode().sourceFile;
+    public String thisClassSourceFile () {
+        return staticContextData.getClassNode ().sourceFile;
     }
+
 
     /**
-     * Returns super class name of the instrumented class.
+     * Returns the internal name of the super class of the instrumented class,
+     * i.e., a fully qualified class name, with package names delimited by the
+     * '/' character.
      */
-    public String thisClassSuperName() {
-
-        return staticContextData.getClassNode().superName;
+    public String thisClassSuperName () {
+        return staticContextData.getClassNode ().superName;
     }
+
 
     /**
      * Returns class version as (ASM) integer of the instrumented class.
      */
-    public int thisClassVersion() {
-
-        return staticContextData.getClassNode().version;
+    public int thisClassVersion () {
+        return staticContextData.getClassNode ().version;
     }
+
 
     /**
-     * Returns true if the instrumented class is abstract.
+     * Returns {@code true} if the instrumented class is abstract.
      */
-    public boolean isClassAbstract() {
-
-        int access = staticContextData.getClassNode().access;
-        return (access & Opcodes.ACC_ABSTRACT) != 0;
+    public boolean isClassAbstract () {
+        return __classAccessFlag (Opcodes.ACC_ABSTRACT);
     }
+
 
     /**
-     * Returns true if the instrumented class is an annotation.
+     * Returns {@code true} if the instrumented class is an annotation.
      */
-    public boolean isClassAnnotation() {
-
-        int access = staticContextData.getClassNode().access;
-        return (access & Opcodes.ACC_ANNOTATION) != 0;
+    public boolean isClassAnnotation () {
+        return __classAccessFlag (Opcodes.ACC_ANNOTATION);
     }
+
 
     /**
-     * Returns true if the instrumented class is an enum.
+     * Returns {@code true} if the instrumented class is an enum.
      */
-    public boolean isClassEnum() {
-
-        int access = staticContextData.getClassNode().access;
-        return (access & Opcodes.ACC_ENUM) != 0;
+    public boolean isClassEnum () {
+        return __classAccessFlag (Opcodes.ACC_ENUM);
     }
+
 
     /**
-     * Returns true if the instrumented class is final.
+     * Returns {@code true} if the instrumented class is final.
      */
-    public boolean isClassFinal() {
-
-        int access = staticContextData.getClassNode().access;
-        return (access & Opcodes.ACC_FINAL) != 0;
+    public boolean isClassFinal () {
+        return __classAccessFlag (Opcodes.ACC_FINAL);
     }
+
 
     /**
-     * Returns true if the instrumented class is an interface.
+     * Returns {@code true} if the instrumented class is an interface.
      */
-    public boolean isClassInterface() {
-
-        int access = staticContextData.getClassNode().access;
-        return (access & Opcodes.ACC_INTERFACE) != 0;
+    public boolean isClassInterface () {
+        return __classAccessFlag (Opcodes.ACC_INTERFACE);
     }
+
 
     /**
-     * Returns true if the instrumented class is private.
+     * Returns {@code true} if the instrumented class is private.
      */
-    public boolean isClassPrivate() {
-
-        int access = staticContextData.getClassNode().access;
-        return (access & Opcodes.ACC_PRIVATE) != 0;
+    public boolean isClassPrivate () {
+        return __classAccessFlag (Opcodes.ACC_PRIVATE);
     }
+
 
     /**
-     * Returns true if the instrumented class is protected.
+     * Returns {@code true} if the instrumented class is protected.
      */
-    public boolean isClassProtected() {
-
-        int access = staticContextData.getClassNode().access;
-        return (access & Opcodes.ACC_PROTECTED) != 0;
+    public boolean isClassProtected () {
+        return __classAccessFlag (Opcodes.ACC_PROTECTED);
     }
+
 
     /**
-     * Returns true if the instrumented class is public.
+     * Returns {@code true} if the instrumented class is public.
      */
-    public boolean isClassPublic() {
-
-        int access = staticContextData.getClassNode().access;
-        return (access & Opcodes.ACC_PUBLIC) != 0;
+    public boolean isClassPublic () {
+        return __classAccessFlag (Opcodes.ACC_PUBLIC);
     }
+
 
     /**
-     * Returns true if the instrumented class is synthetic.
+     * Returns {@code true} if the instrumented class is synthetic.
      */
-    public boolean isClassSynthetic() {
-
-        int access = staticContextData.getClassNode().access;
-        return (access & Opcodes.ACC_SYNTHETIC) != 0;
+    public boolean isClassSynthetic () {
+        return __classAccessFlag (Opcodes.ACC_SYNTHETIC);
     }
+
 
     // *** Method ***
 
     /**
-     * Returns name of the instrumented method.
+     * Returns the name of the instrumented method.
      */
-    public String thisMethodName() {
-
-        return staticContextData.getMethodNode().name;
+    public String thisMethodName () {
+        return __methodName ();
     }
+
 
     /**
-     * Returns name of the instrumented method plus method's class name.
+     * Returns the fully qualified (internal) name of the instrumented method,
+     * i.e., including the (internal) name of the class containing the method.
      */
-    public String thisMethodFullName() {
-
-        return staticContextData.getClassNode().name
-                + Constants.STATIC_CONTEXT_METHOD_DELIM
-                + staticContextData.getMethodNode().name;
+    public String thisMethodFullName () {
+        return __classInternalName () + Constants.STATIC_CONTEXT_METHOD_DELIM + __methodName ();
     }
+
 
     /**
-     * Returns descriptor of the instrumented method.
+     * Returns the descriptor of the instrumented method.
      */
-    public String thisMethodDescriptor() {
-
-        return staticContextData.getMethodNode().desc;
+    public String thisMethodDescriptor () {
+        return staticContextData.getMethodNode ().desc;
     }
+
 
     /**
-     * Returns signature of the instrumented method.
+     * Returns the signature of the instrumented method.
      */
-    public String thisMethodSignature() {
-
-        return staticContextData.getMethodNode().signature;
+    public String thisMethodSignature () {
+        return staticContextData.getMethodNode ().signature;
     }
+
 
     /**
-     * Returns true if the instrumented method is a bridge.
+     * Returns {@code true} if the instrumented method is a bridge.
      */
-    public boolean isMethodBridge() {
-
-        int access = staticContextData.getMethodNode().access;
-        return (access & Opcodes.ACC_BRIDGE) != 0;
+    public boolean isMethodBridge () {
+        return __methodAccessFlag (Opcodes.ACC_BRIDGE);
     }
+
 
     /**
-     * Returns true if the instrumented method is final.
+     * Returns {@code true} if the instrumented method is final.
      */
-    public boolean isMethodFinal() {
-
-        int access = staticContextData.getMethodNode().access;
-        return (access & Opcodes.ACC_FINAL) != 0;
+    public boolean isMethodFinal () {
+        return __methodAccessFlag (Opcodes.ACC_FINAL);
     }
+
 
     /**
-     * Returns true if the instrumented method is private.
+     * Returns {@code true} if the instrumented method is private.
      */
-    public boolean isMethodPrivate() {
-
-        int access = staticContextData.getMethodNode().access;
-        return (access & Opcodes.ACC_PRIVATE) != 0;
+    public boolean isMethodPrivate () {
+        return __methodAccessFlag (Opcodes.ACC_PRIVATE);
     }
+
 
     /**
-     * Returns true if the instrumented method is protected.
+     * Returns {@code true} if the instrumented method is protected.
      */
-    public boolean isMethodProtected() {
-
-        int access = staticContextData.getMethodNode().access;
-        return (access & Opcodes.ACC_PROTECTED) != 0;
+    public boolean isMethodProtected () {
+        return __methodAccessFlag (Opcodes.ACC_PROTECTED);
     }
+
 
     /**
-     * Returns true if the instrumented method is public.
+     * Returns {@code true} if the instrumented method is public.
      */
-    public boolean isMethodPublic() {
-
-        int access = staticContextData.getMethodNode().access;
-        return (access & Opcodes.ACC_PUBLIC) != 0;
+    public boolean isMethodPublic () {
+        return __methodAccessFlag (Opcodes.ACC_PUBLIC);
     }
+
 
     /**
-     * Returns true if the instrumented method is static.
+     * Returns {@code true} if the instrumented method is static.
      */
-    public boolean isMethodStatic() {
-
-        int access = staticContextData.getMethodNode().access;
-        return (access & Opcodes.ACC_STATIC) != 0;
+    public boolean isMethodStatic () {
+        return __methodAccessFlag (Opcodes.ACC_STATIC);
     }
+
 
     /**
-     * Returns true if the instrumented method is synchronized.
+     * Returns {@code true} if the instrumented method is synchronized.
      */
-    public boolean isMethodSynchronized() {
-
-        int access = staticContextData.getMethodNode().access;
-        return (access & Opcodes.ACC_SYNCHRONIZED) != 0;
+    public boolean isMethodSynchronized () {
+        return __methodAccessFlag (Opcodes.ACC_SYNCHRONIZED);
     }
+
 
     /**
-     * Returns true if the instrumented method has variable number of arguments.
+     * Returns {@code true} if the instrumented method accepts a variable number
+     * of arguments.
      */
-    public boolean isMethodVarArgs() {
-
-        int access = staticContextData.getMethodNode().access;
-        return (access & Opcodes.ACC_VARARGS) != 0;
+    public boolean isMethodVarArgs () {
+        return __methodAccessFlag (Opcodes.ACC_VARARGS);
     }
+
+
+    //
+
+    private String __classInternalName () {
+        return staticContextData.getClassNode ().name;
+    }
+
+
+    private boolean __classAccessFlag (final int flagMask) {
+        final int access = staticContextData.getClassNode ().access;
+        return (access & flagMask) != 0;
+    }
+
+
+    private String __methodName () {
+        return staticContextData.getMethodNode ().name;
+    }
+
+
+    private boolean __methodAccessFlag (final int flagMask) {
+        final int access = staticContextData.getMethodNode ().access;
+        return (access & flagMask) != 0;
+    }
+
 }
