@@ -2,35 +2,39 @@ package ch.usi.dag.disl.marker;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
+import ch.usi.dag.disl.util.Constants;
 
 
 /**
- * Marks a method body after call to constructor.
+ * Marks a method body. This marker can be safely used with constructors.
  * <p>
- * Sets the start at the beginning of a method and the end at the end of a
- * method. If the method is a constructor, the start is inserted after the
- * constructor invocation.
+ * For normal methods, the {@link Before} snippets will be inserted before the
+ * first instruction of a method. However, for constructors, they will be
+ * inserted before the first instruction following a call to the superclass
+ * constructor.
  */
-// FIXME LB: For empty constructors, the order of After and Before snippets is
-// reversed.
 public class AfterInitBodyMarker extends AbstractMarker {
 
     @Override
     public List <MarkedRegion> mark (final MethodNode method) {
         final MarkedRegion region = new MarkedRegion (
-            AsmHelper.findFirstValidMark (method)
+            __findBodyStart (method)
         );
 
         //
-        // Add all instructions preceding RETURN instructions
-        // as marked region ends.
+        // Add all RETURN instructions as marked-region ends.
         //
         for (final AbstractInsnNode insn : Insns.selectAll (method.instructions)) {
             if (AsmHelper.isReturn (insn)) {
@@ -47,6 +51,57 @@ public class AfterInitBodyMarker extends AbstractMarker {
         final List <MarkedRegion> result = new LinkedList <MarkedRegion> ();
         result.add (region);
         return result;
+    }
+
+
+    //
+    // Finds the first instruction of a method body. For normal methods, this is
+    // the first instruction of a method, but for constructor, this is the first
+    // instruction after a call to the superclass constructor.
+    //
+    private static AbstractInsnNode __findBodyStart (final MethodNode method) {
+        //
+        // Fast path for non-constructor methods.
+        //
+        if (!method.name.equals (Constants.CONSTRUCTOR_NAME)) {
+            return method.instructions.getFirst ();
+        }
+
+        //
+        // ASM calls AdviceAdapter.onMethodEnter() at the beginning of a method
+        // or after a call to the superclass constructor. Use a simple adapter
+        // to detect the end of superclass initialization code.
+        //
+        final AtomicBoolean initialized = new AtomicBoolean (false);
+        final AdviceAdapter adapter = new AdviceAdapter (
+            Opcodes.ASM4, new MethodVisitor (Opcodes.ASM4) { /* empty */ },
+            method.access, method.name, method.desc
+        ) {
+            @Override
+            public void onMethodEnter () {
+                initialized.set (true);
+            }
+        };
+
+        //
+        // Initialize the adapter and feed it with the method's instructions
+        // until the superclass is considered initialized. The next instruction
+        // after a call to the superclass constructor is the first instruction
+        // of the constructor body.
+        //
+        adapter.visitCode ();
+        for (final AbstractInsnNode node : AsmHelper.Insns.selectAll (method.instructions)) {
+            node.accept (adapter);
+
+            if (initialized.get ()) {
+                return node.getNext ();
+            }
+        }
+
+        //
+        // This should never happen.
+        //
+        throw new AssertionError ("could not find the start of constructor body");
     }
 
 }
