@@ -74,14 +74,14 @@ public class AfterInitBodyMarker extends AbstractMarker {
         // or after a call to the superclass constructor. Use a simple adapter
         // to detect the end of superclass initialization code.
         //
-        final AtomicBoolean initialized = new AtomicBoolean (false);
+        final AtomicBoolean superInitialized = new AtomicBoolean (false);
         final AdviceAdapter adapter = new AdviceAdapter (
             Opcodes.ASM4, new MethodVisitor (Opcodes.ASM4) { /* empty */ },
             method.access, method.name, method.desc
         ) {
             @Override
             public void onMethodEnter () {
-                initialized.set (true);
+                superInitialized.set (true);
             }
         };
 
@@ -95,15 +95,17 @@ public class AfterInitBodyMarker extends AbstractMarker {
         for (final AbstractInsnNode node : AsmHelper.Insns.selectAll (method.instructions)) {
             node.accept (adapter);
 
-            if (initialized.get ()) {
+            if (superInitialized.get ()) {
                 return node.getNext ();
             }
         }
 
         //
-        // This should never happen.
+        // If we get here, we are in the Object constructor (there is no
+        // superclass) and ASM does not appear to call onMethodEnter() for
+        // that constructor. We just return the first instruction.
         //
-        throw new AssertionError ("could not find the start of constructor body");
+        return method.instructions.getFirst ();
     }
 
 }
