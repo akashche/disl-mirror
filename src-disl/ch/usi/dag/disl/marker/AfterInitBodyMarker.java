@@ -65,7 +65,7 @@ public class AfterInitBodyMarker extends AbstractMarker {
         //
         // Fast path for non-constructor methods.
         //
-        if (!method.name.equals (Constants.CONSTRUCTOR_NAME)) {
+        if (!Constants.isConstructorName (method.name)) {
             return method.instructions.getFirst ();
         }
 

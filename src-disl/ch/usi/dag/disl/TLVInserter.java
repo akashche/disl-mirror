@@ -27,7 +27,7 @@ final class TLVInserter extends ClassVisitor {
             String sig, String[] exceptions) {
 
         // add field initialization
-        if (Constants.CONSTRUCTOR_NAME.equals(name)) {
+        if (Constants.isConstructorName (name)) {
             return new TLVInitializer(super.visitMethod(access, name, desc,
                     sig, exceptions), access, name, desc);
         }

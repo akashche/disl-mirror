@@ -214,6 +214,22 @@ public class MethodStaticContext extends AbstractStaticContext {
 
 
     /**
+     * Returns {@code true} if this method is a constructor.
+     */
+    public boolean isMethodConstructor () {
+        return Constants.isConstructorName (__methodName ());
+    }
+
+
+    /**
+     * Returns {@code true} if this method is a class initializer.
+     */
+    public boolean isMethodInitializer () {
+        return Constants.isInitializerName (__methodName ());
+    }
+
+
+    /**
      * Returns {@code true} if the instrumented method is a bridge.
      */
     public boolean isMethodBridge () {
