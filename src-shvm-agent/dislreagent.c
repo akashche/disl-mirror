@@ -1285,6 +1285,14 @@ JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObjectPlusData
 			OT_DATA_OBJECT);
 }
 
+JNIEXPORT void JNICALL Java_ch_usi_dag_dislre_REDispatch_sendObjectSize
+(JNIEnv * jni_env, jclass this_class, jobject to_send) {
+	jlong size = -1;
+	jvmtiError error = (*jvmti_env)->GetObjectSize(jvmti_env, to_send, &size);
+	check_jvmti_error(jvmti_env, error, "Cannot get object size");
+	pack_long(tld_get()->analysis_buff, size);
+}
+
 
 static JNINativeMethod redispatchMethods[] = {
     {"registerMethod",     "(Ljava/lang/String;)S", (void *)&Java_ch_usi_dag_dislre_REDispatch_registerMethod},
@@ -1301,6 +1309,7 @@ static JNINativeMethod redispatchMethods[] = {
     {"sendDouble",         "(D)V",                  (void *)&Java_ch_usi_dag_dislre_REDispatch_sendDouble},
     {"sendObject",         "(Ljava/lang/Object;)V", (void *)&Java_ch_usi_dag_dislre_REDispatch_sendObject},
     {"sendObjectPlusData", "(Ljava/lang/Object;)V", (void *)&Java_ch_usi_dag_dislre_REDispatch_sendObjectPlusData},
+    {"sendObjectSize",     "(Ljava/lang/Object;)V", (void *)&Java_ch_usi_dag_dislre_REDispatch_sendObjectSize},
 };
 
 // ******************* CLASS LOAD callback *******************
