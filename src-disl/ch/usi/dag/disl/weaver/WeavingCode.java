@@ -162,6 +162,8 @@ public class WeavingCode {
                     classNameInsn, "ClassContext", methodName, "internalName"
                 );
 
+                // TODO Check that the literal is actually an internal name.
+
                 //
                 // Convert the literal to a type and replace the LDC of the
                 // String literal with LDC of a class literal. Then remove the
