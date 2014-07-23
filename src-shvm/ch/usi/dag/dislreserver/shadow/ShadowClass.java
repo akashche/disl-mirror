@@ -1,5 +1,7 @@
 package ch.usi.dag.dislreserver.shadow;
 
+import java.util.Formatter;
+
 public abstract class ShadowClass extends ShadowObject {
 
     private final int          classId;
@@ -145,4 +147,15 @@ public abstract class ShadowClass extends ShadowObject {
         return buf.toString();
     }
 
+    //
+    
+    @Override
+    public void formatTo (
+        final Formatter formatter,
+        final int flags, final int width, final int precision
+    ) {
+        // FIXME LB: ShadowClass instances do not have a ShadowClass (of Class)
+        formatter.format ("java.lang.Class@%d <%s>", getId (), getName ());
+    }
+    
 }

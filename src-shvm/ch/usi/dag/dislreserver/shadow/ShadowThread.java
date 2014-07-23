@@ -1,8 +1,11 @@
 package ch.usi.dag.dislreserver.shadow;
 
+import java.util.Formattable;
+import java.util.Formatter;
+
 // TODO ShadowTrhead should better handle if String data are not send
 //     over network - throw a runtime exception ??
-public class ShadowThread extends ShadowObject {
+public class ShadowThread extends ShadowObject implements Formattable {
 
     private String  name;
     private boolean isDaemon;
@@ -58,4 +61,16 @@ public class ShadowThread extends ShadowObject {
     public int hashCode() {
         throw new UnsupportedOperationException("overriden equals, not overriden hashCode");
     }
+
+    //
+
+    @Override
+    public void formatTo (
+        final Formatter formatter,
+        final int flags, final int width, final int precision
+    ) { 
+        super.formatTo (formatter, flags, width, precision);
+        formatter.format (" <%s>", (name != null) ? name : "unknown");
+    }
+
 }
