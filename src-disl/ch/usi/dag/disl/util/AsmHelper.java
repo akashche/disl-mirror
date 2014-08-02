@@ -419,6 +419,23 @@ public abstract class AsmHelper {
         return slot;
     }
 
+
+    /**
+     * Returns the number of local slots occupied by parameters of the given
+     * method.
+     */
+    public static int getParameterSlotCount (final MethodNode method) {
+        final Type [] types = Type.getArgumentTypes (method.desc);
+        final boolean isStatic = (method.access & Opcodes.ACC_STATIC) != 0;
+
+        int result = isStatic ? 0 : 1;
+        for (final Type type : types) {
+            result += type.getSize ();
+        }
+
+        return result;
+    }
+
     //
 
     public static final class ClonedCode {

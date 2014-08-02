@@ -149,8 +149,7 @@ class ProcessorParser extends AbstractParser {
 
         // context arguments (local variables 1, 2, ...) cannot be stored or
         // overwritten, may be used only in method calls
-        ParserHelper.usesContextProperly(className, method.name, method.desc,
-                method.instructions);
+        ParserHelper.usesContextProperly(className, method);
 
         // ** create unprocessed code holder class **
         // code is processed after everything is parsed

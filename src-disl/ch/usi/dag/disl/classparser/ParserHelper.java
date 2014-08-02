@@ -3,17 +3,18 @@ package ch.usi.dag.disl.classparser;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
+import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
+import ch.usi.dag.disl.util.Insn;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
 
@@ -53,12 +54,12 @@ abstract class ParserHelper {
                 final Field attr = parsedDataObject.getClass ().getField (name);
 
                 if (attr == null) {
-                    throw new DiSLFatalException ("Unknown attribute "
-                        + name
-                        + " in annotation "
-                        + Type.getType (annotation.desc).toString ()
-                        + ". This may happen if annotation class is changed"
-                        + "  but parser class is not.");
+                    throw new DiSLFatalException (
+                        "Unknown attribute "+ name +" in annotation "+
+                        Type.getType (annotation.desc).toString () +
+                        ". This may happen if annotation class is changed"+
+                        "  but parser class is not."
+                    );
                 }
 
                 // set attribute value into the field
@@ -73,53 +74,55 @@ abstract class ParserHelper {
 
 
     public static void usesContextProperly (
-        final String className, final String methodName,
-        final String methodDescriptor, final InsnList instructions
+        final String className, final MethodNode method
     ) throws ParserException {
+        //
+        // Check accesses to method parameters to ensure that the context
+        // is not overwritten or stored to a local variable.
+        //
+        // WARNING: The following code assumes that DiSL snippets are
+        // static methods, and therefore do not have the "this" parameter.
+        //
+        final int firstLocalSlot = AsmHelper.getParameterSlotCount (method);
+        for (final AbstractInsnNode insn : Insns.selectAll (method.instructions)) {
+            if (! (insn instanceof VarInsnNode)) {
+                continue;
+            }
 
-        final Type [] types = Type.getArgumentTypes (methodDescriptor);
-        int maxArgIndex = 0;
-
-        // count the max index of arguments
-        for (final Type type : types) {
-
-            // add number of occupied slots
-            maxArgIndex += type.getSize ();
-        }
-
-        // The following code assumes that all disl snippets are static
-        for (final AbstractInsnNode instr : Insns.selectAll (instructions)) {
-
-            switch (instr.getOpcode ()) {
-            // test if the context is stored somewhere else
-            case Opcodes.ALOAD: {
-
-                final int local = ((VarInsnNode) instr).var;
-
-                if (local < maxArgIndex
-                    && instr.getNext ().getOpcode () == Opcodes.ASTORE) {
-                    throw new ParserException ("In method " + className
-                        + "." + methodName + " - method parameter"
-                        + " (context) cannot be stored into local"
-                        + " variable");
+            final int localSlot = ((VarInsnNode) insn).var;
+            if (Insn.ASTORE.matches (insn)) {
+                //
+                // Check for stores into context parameter slot.
+                //
+                if (localSlot < firstLocalSlot) {
+                    throw new ParserException (
+                        "In method " + className
+                        + "." + method.name + " - method parameter"
+                        + " (context) cannot be overwritten"
+                    );
                 }
 
-                break;
-            }
-            // test if something is stored in the context
-            case Opcodes.ASTORE: {
-
-                final int local = ((VarInsnNode) instr).var;
-
-                if (local < maxArgIndex) {
-                    throw new ParserException ("In method " + className
-                        + "." + methodName + " - method parameter"
-                        + " (context) cannot be overwritten");
+            } else if (Insn.ALOAD.matches (insn)) {
+                //
+                // Check that an instruction following a context load is not a
+                // store to a local variable. This is just a sanity check -- we
+                // would need escape analysis to handle this properly (i.e. to
+                // avoid passing context to some method).
+                //
+                if (localSlot < firstLocalSlot) {
+                    if (Insn.ASTORE.matches (Insns.FORWARD.nextRealInsn (insn))) {
+                        throw new ParserException (
+                            "In method " + className
+                            + "." + method.name + " - method parameter"
+                            + " (context) cannot be stored into local"
+                            + " variable"
+                        );
+                    }
                 }
+            }
+        } // for
 
-                break;
-            }
-            }
-        }
     }
+
 }
+
