@@ -16,101 +16,105 @@ import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
+
 // package visible
 abstract class ParserHelper {
 
-    public static Class<?> getGuard(Type guardType) throws ReflectionException {
+    public static Class <?> getGuard (final Type guardType)
+    throws ReflectionException {
 
-        if(guardType == null) {
+        if (guardType == null) {
             return null;
         }
 
-        return ReflectionHelper.resolveClass(guardType);
+        return ReflectionHelper.resolveClass (guardType);
     }
 
-    // NOTE: first parameter is modified by this function
-    public static <T> void parseAnnotation(T parsedDataObject,
-            AnnotationNode annotation) {
 
+    // NOTE: first parameter is modified by this function
+    public static <T> void parseAnnotation (
+        final T parsedDataObject, final AnnotationNode annotation
+    ) {
         try {
 
             // nothing to do
-            if(annotation.values == null) {
+            if (annotation.values == null) {
                 return;
             }
 
-            Iterator<?> it = annotation.values.iterator();
+            final Iterator <?> it = annotation.values.iterator ();
 
-            while (it.hasNext()) {
+            while (it.hasNext ()) {
 
                 // get attribute name
-                String name = (String) it.next();
+                final String name = (String) it.next ();
 
                 // find correct field
-                Field attr = parsedDataObject.getClass().getField(name);
+                final Field attr = parsedDataObject.getClass ().getField (name);
 
                 if (attr == null) {
-
-                    throw new DiSLFatalException("Unknow attribute "
-                            + name
-                            + " in annotation "
-                            + Type.getType(annotation.desc).toString()
-                            + ". This may happen if annotation class is changed"
-                            + "  but parser class is not.");
+                    throw new DiSLFatalException ("Unknown attribute "
+                        + name
+                        + " in annotation "
+                        + Type.getType (annotation.desc).toString ()
+                        + ". This may happen if annotation class is changed"
+                        + "  but parser class is not.");
                 }
 
                 // set attribute value into the field
-                attr.set(parsedDataObject, it.next());
+                attr.set (parsedDataObject, it.next ());
             }
 
-        } catch (Exception e) {
-            throw new DiSLFatalException(
-                    "Reflection error wihle parsing annotation", e);
+        } catch (final Exception e) {
+            throw new DiSLFatalException (
+                "Reflection error while parsing annotation", e);
         }
     }
 
-    public static void usesContextProperly(String className, String methodName,
-            String methodDescriptor, InsnList instructions)
-            throws ParserException {
 
-        Type[] types = Type.getArgumentTypes(methodDescriptor);
+    public static void usesContextProperly (
+        final String className, final String methodName,
+        final String methodDescriptor, final InsnList instructions
+    ) throws ParserException {
+
+        final Type [] types = Type.getArgumentTypes (methodDescriptor);
         int maxArgIndex = 0;
 
         // count the max index of arguments
-        for (int i = 0; i < types.length; i++) {
+        for (final Type type : types) {
 
             // add number of occupied slots
-            maxArgIndex += types[i].getSize();
+            maxArgIndex += type.getSize ();
         }
 
         // The following code assumes that all disl snippets are static
-        for (AbstractInsnNode instr : Insns.selectAll (instructions)) {
+        for (final AbstractInsnNode instr : Insns.selectAll (instructions)) {
 
-            switch (instr.getOpcode()) {
+            switch (instr.getOpcode ()) {
             // test if the context is stored somewhere else
             case Opcodes.ALOAD: {
 
-                int local = ((VarInsnNode) instr).var;
+                final int local = ((VarInsnNode) instr).var;
 
                 if (local < maxArgIndex
-                        && instr.getNext().getOpcode() == Opcodes.ASTORE) {
-                    throw new ParserException("In method " + className
-                            + "." + methodName + " - method parameter"
-                            + " (context) cannot be stored into local"
-                            + " variable");
+                    && instr.getNext ().getOpcode () == Opcodes.ASTORE) {
+                    throw new ParserException ("In method " + className
+                        + "." + methodName + " - method parameter"
+                        + " (context) cannot be stored into local"
+                        + " variable");
                 }
 
                 break;
             }
-                // test if something is stored in the context
+            // test if something is stored in the context
             case Opcodes.ASTORE: {
 
-                int local = ((VarInsnNode) instr).var;
+                final int local = ((VarInsnNode) instr).var;
 
                 if (local < maxArgIndex) {
-                    throw new ParserException("In method " + className
-                            + "." + methodName + " - method parameter"
-                            + " (context) cannot be overwritten");
+                    throw new ParserException ("In method " + className
+                        + "." + methodName + " - method parameter"
+                        + " (context) cannot be overwritten");
                 }
 
                 break;

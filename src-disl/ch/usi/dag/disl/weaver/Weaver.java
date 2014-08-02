@@ -154,36 +154,36 @@ public class Weaver {
     // Return a successor label of weaving location corresponding to
     // the input 'end'.
     private static LabelNode getEndLabel(
-        MethodNode methodNode, AbstractInsnNode instr
+        final MethodNode methodNode, AbstractInsnNode instr
     ) {
         if (Insns.FORWARD.nextRealInsn (instr) != null) {
-            LabelNode branch = new LabelNode();
+            final LabelNode branch = new LabelNode();
             methodNode.instructions.insert(instr, branch);
 
-            JumpInsnNode jump = new JumpInsnNode(Opcodes.GOTO, branch);
+            final JumpInsnNode jump = new JumpInsnNode(Opcodes.GOTO, branch);
             methodNode.instructions.insert(instr, jump);
             instr = jump;
         }
 
         // Create a label just after the 'GOTO' instruction.
-        LabelNode label = new LabelNode();
+        final LabelNode label = new LabelNode();
         methodNode.instructions.insert(instr, label);
         return label;
     }
 
     // generate a try catch block node given the scope of the handler
-    public static TryCatchBlockNode getTryCatchBlock(MethodNode methodNode,
+    public static TryCatchBlockNode getTryCatchBlock(final MethodNode methodNode,
             AbstractInsnNode start, AbstractInsnNode end) {
 
-        InsnList ilst = methodNode.instructions;
+        final InsnList ilst = methodNode.instructions;
 
         int new_start_offset = ilst.indexOf(start);
-        int new_end_offset = ilst.indexOf(end);
+        final int new_end_offset = ilst.indexOf(end);
 
-        for (TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
+        for (final TryCatchBlockNode tcb : methodNode.tryCatchBlocks) {
 
-            int start_offset = ilst.indexOf(tcb.start);
-            int end_offset = ilst.indexOf(tcb.end);
+            final int start_offset = ilst.indexOf(tcb.start);
+            final int end_offset = ilst.indexOf(tcb.end);
 
             if (
                 AsmHelper.offsetBefore (ilst, new_start_offset, start_offset)
@@ -204,23 +204,23 @@ public class Weaver {
         start = ilst.get(new_start_offset);
         end = ilst.get(new_end_offset);
 
-        LabelNode startLabel = (LabelNode) start;
-        LabelNode endLabel = getEndLabel(methodNode, end);
+        final LabelNode startLabel = (LabelNode) start;
+        final LabelNode endLabel = getEndLabel(methodNode, end);
 
         return new TryCatchBlockNode(startLabel, endLabel, endLabel, null);
     }
 
-    private static void insert(MethodNode methodNode,
-            SCGenerator staticInfoHolder, PIResolver piResolver,
-            WeavingInfo info, Snippet snippet, SnippetCode code, Shadow shadow,
-            AbstractInsnNode loc) throws InvalidContextUsageException {
+    private static void insert(final MethodNode methodNode,
+            final SCGenerator staticInfoHolder, final PIResolver piResolver,
+            final WeavingInfo info, final Snippet snippet, final SnippetCode code, final Shadow shadow,
+            final AbstractInsnNode loc) throws InvalidContextUsageException {
 
         // exception handler will discard the stack and push the
         // exception object. Thus, before entering this snippet,
         // weaver must backup the stack and restore when exiting
         if (code.containsHandledException() && info.stackNotEmpty(loc)) {
-            InsnList backup = info.backupStack (loc, methodNode.maxLocals);
-            InsnList restore = info.restoreStack (loc, methodNode.maxLocals);
+            final InsnList backup = info.backupStack (loc, methodNode.maxLocals);
+            final InsnList restore = info.restoreStack (loc, methodNode.maxLocals);
 
             methodNode.maxLocals += info.getStackHeight(loc);
 
@@ -228,7 +228,7 @@ public class Weaver {
             methodNode.instructions.insert(loc, restore);
         }
 
-        WeavingCode wCode = new WeavingCode(info, methodNode,
+        final WeavingCode wCode = new WeavingCode(info, methodNode,
                 code, snippet, shadow, loc);
         wCode.transform(staticInfoHolder, piResolver, false);
 
@@ -236,18 +236,18 @@ public class Weaver {
         methodNode.tryCatchBlocks.addAll(wCode.getTCBs());
     }
 
-    public static void instrument(ClassNode classNode, MethodNode methodNode,
-            Map<Snippet, List<Shadow>> snippetMarkings,
-            List<SyntheticLocalVar> syntheticLocalVars,
-            SCGenerator staticInfoHolder, PIResolver piResolver)
+    public static void instrument(final ClassNode classNode, final MethodNode methodNode,
+            final Map<Snippet, List<Shadow>> snippetMarkings,
+            final List<SyntheticLocalVar> syntheticLocalVars,
+            final SCGenerator staticInfoHolder, final PIResolver piResolver)
             throws InvalidContextUsageException {
 
-        WeavingInfo info = new WeavingInfo(classNode, methodNode,
+        final WeavingInfo info = new WeavingInfo(classNode, methodNode,
                 snippetMarkings);
 
-        for (Snippet snippet : info.getSortedSnippets()) {
-            List<Shadow> shadows = snippetMarkings.get(snippet);
-            SnippetCode code = snippet.getCode();
+        for (final Snippet snippet : info.getSortedSnippets()) {
+            final List<Shadow> shadows = snippetMarkings.get(snippet);
+            final SnippetCode code = snippet.getCode();
 
             // skip snippet with empty code
             if (code == null) {
@@ -258,9 +258,9 @@ public class Weaver {
             // For @Before, instrument the snippet just before the
             // entrance of a region.
             if (snippet.getAnnotationClass().equals(Before.class)) {
-                for (Shadow shadow : shadows) {
+                for (final Shadow shadow : shadows) {
 
-                    AbstractInsnNode loc = shadow.getWeavingRegion().getStart();
+                    final AbstractInsnNode loc = shadow.getWeavingRegion().getStart();
                     insert(methodNode, staticInfoHolder, piResolver, info,
                             snippet, code, shadow, loc);
                 }
@@ -270,9 +270,9 @@ public class Weaver {
             // after each adjusted exit of a region.
             if (snippet.getAnnotationClass().equals(AfterReturning.class)
                     || snippet.getAnnotationClass().equals(After.class)) {
-                for (Shadow shadow : shadows) {
+                for (final Shadow shadow : shadows) {
 
-                    for (AbstractInsnNode loc : shadow.getWeavingRegion().getEnds()) {
+                    for (final AbstractInsnNode loc : shadow.getWeavingRegion().getEnds()) {
 
                         insert(methodNode, staticInfoHolder, piResolver, info,
                                 snippet, code, shadow, loc);
@@ -286,19 +286,19 @@ public class Weaver {
             if (snippet.getAnnotationClass().equals(AfterThrowing.class)
                     || snippet.getAnnotationClass().equals(After.class)) {
 
-                for (Shadow shadow : shadows) {
+                for (final Shadow shadow : shadows) {
 
-                    WeavingRegion region = shadow.getWeavingRegion();
+                    final WeavingRegion region = shadow.getWeavingRegion();
                     // after-throwing inserts the snippet once, and marks
                     // the start and the very end as the scope
-                    AbstractInsnNode loc = region.getAfterThrowEnd();
+                    final AbstractInsnNode loc = region.getAfterThrowEnd();
 
-                    WeavingCode wCode = new WeavingCode(info, methodNode, code,
+                    final WeavingCode wCode = new WeavingCode(info, methodNode, code,
                             snippet, shadow, loc);
                     wCode.transform(staticInfoHolder, piResolver, true);
 
                     // Create a try-catch clause
-                    TryCatchBlockNode tcb = getTryCatchBlock(methodNode,
+                    final TryCatchBlockNode tcb = getTryCatchBlock(methodNode,
                             region.getAfterThrowStart(), loc);
 
                     methodNode.instructions.insert(tcb.handler,
