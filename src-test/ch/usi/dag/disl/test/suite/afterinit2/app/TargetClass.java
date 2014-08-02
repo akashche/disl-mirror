@@ -9,6 +9,10 @@ import ch.usi.dag.disl.marker.AfterInitBodyMarker;
  * Tests that the {@link Before} and {@link After} snippets are correctly
  * ordered when instrumenting empty constructors using the
  * {@link AfterInitBodyMarker}.
+ * <p>
+ * FIXME LB: This test actually needs to instrument {@link Object}, which
+ * contains the only "empty" constructor, i.e., one that does not call super and
+ * only contains a single RET instruction.
  */
 public class TargetClass {
 
