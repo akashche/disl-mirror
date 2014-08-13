@@ -27,7 +27,7 @@ import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.marker.Marker;
-import ch.usi.dag.disl.processor.Proc;
+import ch.usi.dag.disl.processor.ArgProcessor;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.util.AsmHelper;
@@ -63,7 +63,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
     /**
      * Processes the stored data and creates snippet code structure.
      */
-    public SnippetCode process(LocalVars allLVs, Map<Type, Proc> processors,
+    public SnippetCode process(LocalVars allLVs, Map<Type, ArgProcessor> processors,
             Marker marker, boolean exceptHandler, boolean useDynamicBypass)
             throws StaticContextGenException, ReflectionException,
             ProcessorException {
@@ -147,7 +147,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
     }
 
     private ProcessorInfo insnInvokesProcessor(AbstractInsnNode instr, int i,
-            Map<Type, Proc> processors, Marker marker)
+            Map<Type, ArgProcessor> processors, Marker marker)
             throws ProcessorException, ReflectionException {
 
         final String APPLY_METHOD = "apply";
@@ -212,7 +212,7 @@ public class SnippetUnprocessedCode extends UnprocessedCode {
                     + " can be used only with BytecodeMarker");
         }
 
-        Proc processor = processors.get(processorType);
+        ArgProcessor processor = processors.get(processorType);
 
         if (processor == null) {
             throw new ProcessorException("In snippet " + className + "."

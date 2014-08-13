@@ -5,7 +5,7 @@ import org.objectweb.asm.Type;
 import ch.usi.dag.disl.annotation.ProcessAlso;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 
-public enum ProcArgType {
+public enum ArgProcessorKind {
 
 	BOOLEAN(Type.BOOLEAN_TYPE),
 	BYTE(Type.BYTE_TYPE),
@@ -19,7 +19,7 @@ public enum ProcArgType {
 	
 	private Type asmType;
 	
-	private ProcArgType(Type asmType) {
+	private ArgProcessorKind(Type asmType) {
 		this.asmType = asmType;
 	}
 	
@@ -27,7 +27,7 @@ public enum ProcArgType {
 		return asmType;
 	}
 	
-	public static ProcArgType valueOf(Type type) {
+	public static ArgProcessorKind valueOf(Type type) {
 		
 		if(type == null) {
 			throw new DiSLFatalException("Conversion from null not defined");
@@ -78,7 +78,7 @@ public enum ProcArgType {
 				+ " not defined");
 	}
 	
-	public static ProcArgType valueOf(ProcessAlso.Type type) {
+	public static ArgProcessorKind valueOf(ProcessAlso.Type type) {
 		
 		if(type == null) {
 			throw new DiSLFatalException("Conversion from null not defined");

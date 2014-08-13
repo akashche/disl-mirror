@@ -38,7 +38,7 @@ import ch.usi.dag.disl.exclusion.ExclusionSet;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.processor.Proc;
+import ch.usi.dag.disl.processor.ArgProcessor;
 import ch.usi.dag.disl.processor.generator.PIResolver;
 import ch.usi.dag.disl.processor.generator.ProcGenerator;
 import ch.usi.dag.disl.processor.generator.ProcInstance;
@@ -129,8 +129,8 @@ public final class DiSL {
         }
 
         // initialize processors
-        final Map<Type, Proc> processors = parser.getProcessors();
-        for (final Proc processor : processors.values()) {
+        final Map<Type, ArgProcessor> processors = parser.getProcessors();
+        for (final ArgProcessor processor : processors.values()) {
             processor.init(parser.getAllLocalVars());
         }
 

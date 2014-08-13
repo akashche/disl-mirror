@@ -11,16 +11,16 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
 import ch.usi.dag.disl.annotation.ArgumentProcessor;
+import ch.usi.dag.disl.exception.ArgProcessorParserException;
 import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ParserException;
-import ch.usi.dag.disl.exception.ProcessorParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.exception.SnippetParserException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
-import ch.usi.dag.disl.processor.Proc;
+import ch.usi.dag.disl.processor.ArgProcessor;
 import ch.usi.dag.disl.snippet.Snippet;
 
 public class DislClassParser {
@@ -30,7 +30,7 @@ public class DislClassParser {
 
     public void parse(InputStream is) throws ParserException,
             SnippetParserException, ReflectionException, ScopeParserException,
-            StaticContextGenException, ProcessorParserException,
+            StaticContextGenException, ArgProcessorParserException,
             MarkerException, GuardException {
 
         // prepare class node
@@ -91,7 +91,7 @@ public class DislClassParser {
         return snippetParser.getSnippets();
     }
 
-    public Map<Type, Proc> getProcessors() {
+    public Map<Type, ArgProcessor> getProcessors() {
         return processorParser.getProcessors();
     }
 }

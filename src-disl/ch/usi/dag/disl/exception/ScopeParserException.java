@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.exception;
 
-public class ScopeParserException extends DiSLException {
+public class ScopeParserException extends ParserException {
 
     private static final long serialVersionUID = -8728473299351707468L;
 

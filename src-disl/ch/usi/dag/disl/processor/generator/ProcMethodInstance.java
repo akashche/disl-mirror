@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.processor.generator;
 
-import ch.usi.dag.disl.processor.ProcArgType;
+import ch.usi.dag.disl.processor.ArgProcessorKind;
 import ch.usi.dag.disl.processor.ProcCode;
 
 
@@ -8,11 +8,11 @@ public class ProcMethodInstance {
 
     private int argPos;
     private int argsCount;
-    private ProcArgType argType;
+    private ArgProcessorKind argType;
     private String argTypeDesc;
     private ProcCode code;
 
-    public ProcMethodInstance(int argPos, int argsCount, ProcArgType argType,
+    public ProcMethodInstance(int argPos, int argsCount, ArgProcessorKind argType,
             String argTypeDesc, ProcCode code) {
         super();
         this.argPos = argPos;
@@ -30,7 +30,7 @@ public class ProcMethodInstance {
         return argsCount;
     }
 
-    public ProcArgType getArgType() {
+    public ArgProcessorKind getArgType() {
         return argType;
     }
 

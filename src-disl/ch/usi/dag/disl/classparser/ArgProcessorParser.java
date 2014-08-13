@@ -23,13 +23,13 @@ import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.ParserException;
-import ch.usi.dag.disl.exception.ProcessorParserException;
+import ch.usi.dag.disl.exception.ArgProcessorParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.GuardHelper;
-import ch.usi.dag.disl.processor.Proc;
-import ch.usi.dag.disl.processor.ProcArgType;
-import ch.usi.dag.disl.processor.ProcMethod;
+import ch.usi.dag.disl.processor.ArgProcessor;
+import ch.usi.dag.disl.processor.ArgProcessorKind;
+import ch.usi.dag.disl.processor.ArgProcessorMethod;
 import ch.usi.dag.disl.processor.ProcUnprocessedCode;
 import ch.usi.dag.disl.processorcontext.ArgumentContext;
 import ch.usi.dag.disl.staticcontext.StaticContext;
@@ -41,15 +41,15 @@ class ArgProcessorParser extends AbstractParser {
 
     // first map argument is ASM type representing processor class where the
     // processor is defined
-    private Map<Type, Proc> processors = new HashMap<Type, Proc>();
+    private Map<Type, ArgProcessor> processors = new HashMap<Type, ArgProcessor>();
 
-    public Map<Type, Proc> getProcessors() {
+    public Map<Type, ArgProcessor> getProcessors() {
 
         return processors;
     }
 
     public void parse(ClassNode classNode) throws ParserException,
-            ProcessorParserException, ReflectionException,
+            ArgProcessorParserException, ReflectionException,
             StaticContextGenException, GuardException {
 
         // NOTE: this method can be called many times
@@ -57,7 +57,7 @@ class ArgProcessorParser extends AbstractParser {
         // ** local variables **
         processLocalVars(classNode);
 
-        List<ProcMethod> methods = new LinkedList<ProcMethod>();
+        List<ArgProcessorMethod> methods = new LinkedList<ArgProcessorMethod>();
 
         for (MethodNode method : classNode.methods) {
 
@@ -75,43 +75,43 @@ class ArgProcessorParser extends AbstractParser {
         }
 
         if(methods.isEmpty()) {
-            throw new ProcessorParserException("ArgumentProcessor class "
+            throw new ArgProcessorParserException("ArgumentProcessor class "
                     + classNode.name + " should contain methods");
         }
 
         Type processorClassType = Type.getType("L" + classNode.name + ";");
 
         processors.put(processorClassType,
-                new Proc(classNode.name, methods));
+                new ArgProcessor(classNode.name, methods));
     }
 
-    private ProcMethod parseProcessorMethod(String className, MethodNode method)
-            throws ProcessorParserException, ReflectionException,
+    private ArgProcessorMethod parseProcessorMethod(String className, MethodNode method)
+            throws ArgProcessorParserException, ReflectionException,
             StaticContextGenException, GuardException, ParserException {
 
         String fullMethodName = className + "." + method.name;
 
         // check static
         if ((method.access & Opcodes.ACC_STATIC) == 0) {
-            throw new ProcessorParserException("Method " + fullMethodName
+            throw new ArgProcessorParserException("Method " + fullMethodName
                     + " should be declared as static");
         }
 
         // check return type
         if (!Type.getReturnType(method.desc).equals(Type.VOID_TYPE)) {
-            throw new ProcessorParserException("Method " + fullMethodName
+            throw new ArgProcessorParserException("Method " + fullMethodName
                     + " cannot return value");
         }
 
         // detect empty processors
         if (AsmHelper.containsOnlyReturn(method.instructions)) {
-            throw new ProcessorParserException("Method " + fullMethodName
+            throw new ArgProcessorParserException("Method " + fullMethodName
                      + " cannot be empty");
         }
 
         // no exception can be thrown
         if(! method.exceptions.isEmpty()) {
-            throw new ProcessorParserException("Method " + fullMethodName
+            throw new ArgProcessorParserException("Method " + fullMethodName
                      + " cannot throw any exception");
         }
 
@@ -120,7 +120,7 @@ class ArgProcessorParser extends AbstractParser {
                 className + "." + method.name, method.desc);
 
         // all processed types - add method type
-        EnumSet<ProcArgType> allProcessedTypes =
+        EnumSet<ArgProcessorKind> allProcessedTypes =
             EnumSet.of(pmArgData.getType());
 
         // ** parse processor method annotation **
@@ -143,7 +143,7 @@ class ArgProcessorParser extends AbstractParser {
 
         // detect empty snippets
         if (AsmHelper.containsOnlyReturn(method.instructions)) {
-            throw new ProcessorParserException("Method " + className + "."
+            throw new ArgProcessorParserException("Method " + className + "."
                     + method.name + " cannot be empty");
         }
 
@@ -159,20 +159,20 @@ class ArgProcessorParser extends AbstractParser {
                 pmArgData.usesArgumentContext());
 
         // return whole processor method
-        return new ProcMethod(className, method.name, allProcessedTypes,
+        return new ArgProcessorMethod(className, method.name, allProcessedTypes,
                 guardMethod, ucd);
 
     }
 
     private static class PMArgData {
 
-        private ProcArgType type;
+        private ArgProcessorKind type;
         private Set<String> staticContexts;
         private boolean usesDynamicContext;
         private boolean usesClassContext;
         private boolean usesArgumentContext;
 
-        public PMArgData(ProcArgType type, Set<String> staticContexts,
+        public PMArgData(ArgProcessorKind type, Set<String> staticContexts,
                 boolean usesDynamicContext, boolean usesClassContext,
                 boolean usesArgumentContext) {
             super();
@@ -183,7 +183,7 @@ class ArgProcessorParser extends AbstractParser {
             this.usesArgumentContext = usesArgumentContext;
         }
 
-        public ProcArgType getType() {
+        public ArgProcessorKind getType() {
             return type;
         }
 
@@ -205,19 +205,19 @@ class ArgProcessorParser extends AbstractParser {
     }
 
     private PMArgData parseProcMethodArgs(String methodID, String methodDesc)
-            throws ProcessorParserException, StaticContextGenException,
+            throws ArgProcessorParserException, StaticContextGenException,
             ReflectionException {
 
         Type[] argTypes = Type.getArgumentTypes(methodDesc);
 
-        ProcArgType procArgType = ProcArgType.valueOf(argTypes[0]);
+        ArgProcessorKind procArgType = ArgProcessorKind.valueOf(argTypes[0]);
 
         // if the ProcArgType is converted to OBJECT, test that first argument
         // is really Object.class - nothing else is allowed
-        if(procArgType == ProcArgType.OBJECT
+        if(procArgType == ArgProcessorKind.OBJECT
                 && ! Type.getType(Object.class).equals(argTypes[0])) {
 
-            throw new ProcessorParserException("In method " + methodID + ": " +
+            throw new ArgProcessorParserException("In method " + methodID + ": " +
                     "Only basic types and Object are allowed as the" +
                     " first (type) parameter");
         }
@@ -271,8 +271,8 @@ class ArgProcessorParser extends AbstractParser {
     // data holder for parseMethodAnnotation methods
     private static class ProcMethodAnnotationsData {
 
-        public EnumSet<ProcArgType> processAlsoTypes =
-            EnumSet.noneOf(ProcArgType.class);
+        public EnumSet<ArgProcessorKind> processAlsoTypes =
+            EnumSet.noneOf(ArgProcessorKind.class);
 
         public Type guard = null;
     }
@@ -280,7 +280,7 @@ class ArgProcessorParser extends AbstractParser {
     private ProcMethodAnnotationsData parseMethodAnnotations(
             String fullMethodName,
             List<AnnotationNode> invisibleAnnotations)
-            throws ProcessorParserException {
+            throws ArgProcessorParserException {
 
         ProcMethodAnnotationsData pmad = new ProcMethodAnnotationsData();
 
@@ -306,7 +306,7 @@ class ArgProcessorParser extends AbstractParser {
             }
 
             // unknown annotation
-            throw new ProcessorParserException("Method " + fullMethodName
+            throw new ArgProcessorParserException("Method " + fullMethodName
                     + " has unsupported DiSL annotation");
         }
 
@@ -357,49 +357,49 @@ class ArgProcessorParser extends AbstractParser {
             //  - second value is value name
             ProcessAlso.Type paType = ProcessAlso.Type.valueOf(enumType[1]);
 
-            pmad.processAlsoTypes.add(ProcArgType.valueOf(paType));
+            pmad.processAlsoTypes.add(ArgProcessorKind.valueOf(paType));
         }
     }
 
     private void checkProcessAlsoSetValidity(String fullMethodName,
-            ProcArgType methodArgType,
-            EnumSet<ProcArgType> processAlsoTypes)
-            throws ProcessorParserException {
+            ArgProcessorKind methodArgType,
+            EnumSet<ArgProcessorKind> processAlsoTypes)
+            throws ArgProcessorParserException {
 
-        EnumSet<ProcArgType> validSet;
+        EnumSet<ArgProcessorKind> validSet;
 
         // valid sets for types
         switch(methodArgType) {
 
         case INT: {
             validSet = EnumSet.of(
-                    ProcArgType.BOOLEAN,
-                    ProcArgType.BYTE,
-                    ProcArgType.SHORT);
+                    ArgProcessorKind.BOOLEAN,
+                    ArgProcessorKind.BYTE,
+                    ArgProcessorKind.SHORT);
             break;
         }
 
         case SHORT: {
             validSet = EnumSet.of(
-                    ProcArgType.BOOLEAN,
-                    ProcArgType.BYTE);
+                    ArgProcessorKind.BOOLEAN,
+                    ArgProcessorKind.BYTE);
             break;
         }
 
         case BYTE: {
             validSet = EnumSet.of(
-                    ProcArgType.BOOLEAN);
+                    ArgProcessorKind.BOOLEAN);
             break;
         }
 
         default: {
             // for other types empty set
-            validSet = EnumSet.noneOf(ProcArgType.class);
+            validSet = EnumSet.noneOf(ArgProcessorKind.class);
         }
         }
 
         // create set of non valid types
-        EnumSet<ProcArgType> nonValidTypes = processAlsoTypes.clone();
+        EnumSet<ArgProcessorKind> nonValidTypes = processAlsoTypes.clone();
         nonValidTypes.removeAll(validSet);
 
         if(! nonValidTypes.isEmpty()) {
@@ -408,7 +408,7 @@ class ArgProcessorParser extends AbstractParser {
 
             final String STR_DELIM = ", ";
 
-            for(ProcArgType paType : nonValidTypes) {
+            for(ArgProcessorKind paType : nonValidTypes) {
                 strNonValidTypes.append(paType.toString() + STR_DELIM);
             }
 
@@ -417,7 +417,7 @@ class ArgProcessorParser extends AbstractParser {
             strNonValidTypes.delete(strNonValidTypes.length() - delimSize,
                     strNonValidTypes.length());
 
-            throw new ProcessorParserException(methodArgType.toString()
+            throw new ArgProcessorParserException(methodArgType.toString()
                     + " processor in method "
                     + fullMethodName
                     + " cannot process "

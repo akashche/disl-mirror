@@ -1,6 +1,6 @@
 package ch.usi.dag.disl.exception;
 
-public class SnippetParserException extends DiSLException {
+public class SnippetParserException extends ParserException {
 
     private static final long serialVersionUID = -2826083567381934062L;
 

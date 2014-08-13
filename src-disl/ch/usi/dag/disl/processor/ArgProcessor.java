@@ -6,12 +6,12 @@ import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 
-public class Proc {
+public class ArgProcessor {
 
 	private String name;
-	private List<ProcMethod> methods;
+	private List<ArgProcessorMethod> methods;
 
-	public Proc(String name, List<ProcMethod> methods) {
+	public ArgProcessor(String name, List<ArgProcessorMethod> methods) {
 		super();
 		this.name = name;
 		this.methods = methods;
@@ -21,14 +21,14 @@ public class Proc {
 		return name;
 	}
 	
-	public List<ProcMethod> getMethods() {
+	public List<ArgProcessorMethod> getMethods() {
 		return methods;
 	}
 	
 	public void init(LocalVars allLVs) throws StaticContextGenException,
 			ReflectionException {
 		
-		for(ProcMethod method : methods) {
+		for(ArgProcessorMethod method : methods) {
 			method.init(allLVs);
 		}
 	}

@@ -7,18 +7,18 @@ import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 
-public class ProcMethod {
+public class ArgProcessorMethod {
 
 	private String originClassName;
 	private String originMethodName;
 	
-	private EnumSet<ProcArgType> types;
+	private EnumSet<ArgProcessorKind> types;
 	private Method guard;
 	private ProcUnprocessedCode unprocessedCode;
 	private ProcCode code;
 
-	public ProcMethod(String originClassName, String originMethodName,
-			EnumSet<ProcArgType> types, Method guard,
+	public ArgProcessorMethod(String originClassName, String originMethodName,
+			EnumSet<ArgProcessorKind> types, Method guard,
 			ProcUnprocessedCode unprocessedCode) {
 		super();
 		this.originClassName = originClassName;
@@ -36,7 +36,7 @@ public class ProcMethod {
 		return originMethodName;
 	}
 
-	public EnumSet<ProcArgType> getTypes() {
+	public EnumSet<ArgProcessorKind> getTypes() {
 		return types;
 	}
 

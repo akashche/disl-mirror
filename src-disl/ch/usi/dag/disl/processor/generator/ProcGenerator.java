@@ -13,9 +13,9 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.guard.GuardHelper;
-import ch.usi.dag.disl.processor.Proc;
-import ch.usi.dag.disl.processor.ProcArgType;
-import ch.usi.dag.disl.processor.ProcMethod;
+import ch.usi.dag.disl.processor.ArgProcessor;
+import ch.usi.dag.disl.processor.ArgProcessorKind;
+import ch.usi.dag.disl.processor.ArgProcessorMethod;
 import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
@@ -23,7 +23,7 @@ import ch.usi.dag.disl.snippet.Snippet;
 
 public class ProcGenerator {
 
-    Map<Proc, ProcInstance> insideMethodPIs = new HashMap<Proc, ProcInstance>();
+    Map<ArgProcessor, ProcInstance> insideMethodPIs = new HashMap<ArgProcessor, ProcInstance>();
 
     public PIResolver compute(Map<Snippet, List<Shadow>> snippetMarkings)
             throws ProcessorException {
@@ -151,15 +151,15 @@ public class ProcGenerator {
     }
 
     private List<ProcMethodInstance> createMethodInstances(int argPos,
-            int argsCount, Type argType, Proc processor, Shadow shadow,
+            int argsCount, Type argType, ArgProcessor processor, Shadow shadow,
             ProcInvocation prcInv) {
 
-        ProcArgType methodArgType = ProcArgType.valueOf(argType);
+        ArgProcessorKind methodArgType = ArgProcessorKind.valueOf(argType);
 
         List<ProcMethodInstance> result = new LinkedList<ProcMethodInstance>();
 
         // traverse all methods and find the proper ones
-        for (ProcMethod method : processor.getMethods()) {
+        for (ArgProcessorMethod method : processor.getMethods()) {
 
             // check argument type
             if(method.getTypes().contains(methodArgType)) {

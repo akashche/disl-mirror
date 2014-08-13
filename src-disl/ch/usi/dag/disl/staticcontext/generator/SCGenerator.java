@@ -9,7 +9,7 @@ import java.util.Set;
 import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
-import ch.usi.dag.disl.processor.ProcMethod;
+import ch.usi.dag.disl.processor.ArgProcessorMethod;
 import ch.usi.dag.disl.resolver.SCResolver;
 import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
@@ -116,7 +116,7 @@ public class SCGenerator {
                 for (ProcInvocation pi : snippetCode.getInvokedProcessors ().values ()) {
 
                     // add static contexts from all processor methods
-                    for (ProcMethod pm : pi.getProcessor ().getMethods ()) {
+                    for (ArgProcessorMethod pm : pi.getProcessor ().getMethods ()) {
 
                         // add to the pool
                         scMethods.addAll (pm.getCode ().getStaticContexts ());
