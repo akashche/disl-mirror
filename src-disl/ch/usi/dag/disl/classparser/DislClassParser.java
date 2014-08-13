@@ -23,10 +23,10 @@ import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.processor.Proc;
 import ch.usi.dag.disl.snippet.Snippet;
 
-public class ClassParser {
+public class DislClassParser {
 
     SnippetParser snippetParser = new SnippetParser();
-    ProcessorParser processorParser = new ProcessorParser();
+    ArgProcessorParser processorParser = new ArgProcessorParser();
 
     public void parse(InputStream is) throws ParserException,
             SnippetParserException, ReflectionException, ScopeParserException,

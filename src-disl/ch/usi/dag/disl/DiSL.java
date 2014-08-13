@@ -22,7 +22,7 @@ import org.objectweb.asm.tree.MethodNode;
 import ch.usi.dag.disl.cbloader.ClassByteLoader;
 import ch.usi.dag.disl.cbloader.ManifestHelper;
 import ch.usi.dag.disl.cbloader.ManifestHelper.ManifestInfo;
-import ch.usi.dag.disl.classparser.ClassParser;
+import ch.usi.dag.disl.classparser.DislClassParser;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLIOException;
 import ch.usi.dag.disl.exception.DiSLInMethodException;
@@ -122,7 +122,7 @@ public final class DiSL {
         // - create snippets
         // - create static context methods
 
-        final ClassParser parser = new ClassParser();
+        final DislClassParser parser = new DislClassParser();
 
         for (final InputStream classIS : dislClasses) {
             parser.parse(classIS);

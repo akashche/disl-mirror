@@ -37,7 +37,7 @@ import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
-class ProcessorParser extends AbstractParser {
+class ArgProcessorParser extends AbstractParser {
 
     // first map argument is ASM type representing processor class where the
     // processor is defined
