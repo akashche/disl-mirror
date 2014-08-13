@@ -84,7 +84,7 @@ public class DislClassParser {
         try {
             final ClassReader classReader = new ClassReader (is);
             final ClassNode classNode = new ClassNode ();
-            classReader.accept (classNode, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            classReader.accept (classNode, ClassReader.SKIP_FRAMES);
             return classNode;
 
         } catch (final IOException ioe) {
