@@ -102,21 +102,19 @@ abstract class AbstractParser {
             Type annotationType = Type.getType(annotation.desc);
 
             // thread local
-            if (annotationType.equals(Type.getType(
-                    ch.usi.dag.disl.annotation.ThreadLocal.class))) {
-
-                ThreadLocalVar tlv = parseThreadLocal(className, field,
-                        annotation);
-
-                result.getThreadLocals().put(tlv.getID(), tlv);
-
+            Type tlvAnnotation = Type.getType(
+                    ch.usi.dag.disl.annotation.ThreadLocal.class);
+            if (annotationType.equals(tlvAnnotation)) {
+                ThreadLocalVar tlv = parseThreadLocal (className, field, annotation);
+                result.put(tlv);
                 continue;
             }
 
             // synthetic local
-            if (annotationType.equals(Type.getType(SyntheticLocal.class))) {
+            Type slvAnnotation = Type.getType(SyntheticLocal.class);
+            if (annotationType.equals(slvAnnotation)) {
                 SyntheticLocalVar slv = parseSyntheticLocal(className, field, annotation);
-                result.getSyntheticLocals().put(slv.getID(), slv);
+                result.put(slv);
                 continue;
             }
 

@@ -1,27 +1,35 @@
 package ch.usi.dag.disl.exception;
 
+@SuppressWarnings ("serial")
 public abstract class DiSLException extends Exception {
 
-    private static final long serialVersionUID = 6916051574250648195L;
-
-    public DiSLException() {
-        super();
+    public DiSLException () {
+        super ();
     }
 
-    public DiSLException(String message, Throwable cause) {
-        super(message, cause);
+
+    public DiSLException (final String message, final Throwable cause) {
+        super (message, cause);
     }
 
-    public DiSLException(String message) {
-        super(message);
+
+    public DiSLException (final String message) {
+        super (message);
     }
 
-    public DiSLException(Throwable cause) {
-        super(cause);
+
+    public DiSLException (final Throwable cause) {
+        super (cause);
     }
 
-    public DiSLException (final String format, final Object ... args) {
+    public DiSLException (final String format, final Object... args) {
         super (String.format (format, args));
+    }
+
+    public DiSLException (
+        final Throwable cause, final String format, final Object... args
+    ) {
+        super (String.format (format, args), cause);
     }
 
 }

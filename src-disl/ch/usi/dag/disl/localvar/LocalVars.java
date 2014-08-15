@@ -1,52 +1,47 @@
 package ch.usi.dag.disl.localvar;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 
 public final class LocalVars {
 
-    private final Map <String, SyntheticLocalVar> syntheticLocals;
+    private final Map <String, SyntheticLocalVar> __syntheticLocals;
 
-    private final Map <String, ThreadLocalVar> threadLocals;
-
+    private final Map <String, ThreadLocalVar> __threadLocals;
 
     //
 
     public LocalVars () {
-        this (
-            new HashMap <String, SyntheticLocalVar> (),
-            new HashMap <String, ThreadLocalVar> ()
-        );
+        __syntheticLocals = new HashMap <String, SyntheticLocalVar> ();
+        __threadLocals = new HashMap <String, ThreadLocalVar> ();
     }
-
-
-    public LocalVars (
-        final Map <String, SyntheticLocalVar> syntheticLocals,
-        final Map <String, ThreadLocalVar> threadLocals
-    ) {
-        this.syntheticLocals = syntheticLocals;
-        this.threadLocals = threadLocals;
-    }
-
 
     //
 
-    public Map <String, SyntheticLocalVar> getSyntheticLocals () {
-        return syntheticLocals;
+    public void put (final SyntheticLocalVar slv) {
+        __syntheticLocals.put (slv.getID (), slv);
     }
 
+    public Map <String, SyntheticLocalVar> getSyntheticLocals () {
+        return Collections.unmodifiableMap (__syntheticLocals);
+    }
+
+
+    public void put (final ThreadLocalVar tlv) {
+        __threadLocals.put (tlv.getID (), tlv);
+    }
 
     public Map <String, ThreadLocalVar> getThreadLocals () {
-        return threadLocals;
+        return Collections.unmodifiableMap (__threadLocals);
     }
-
 
     //
 
     public void putAll (final LocalVars other) {
-        syntheticLocals.putAll (other.getSyntheticLocals ());
-        threadLocals.putAll (other.getThreadLocals ());
+        __syntheticLocals.putAll (other.__syntheticLocals);
+        __threadLocals.putAll (other.__threadLocals);
     }
 
 }
