@@ -16,7 +16,7 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import ch.usi.dag.disl.dynamicbypass.BypassCheck;
 import ch.usi.dag.disl.exception.DiSLFatalException;
-import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
+import ch.usi.dag.disl.util.AsmHelper;
 
 
 abstract class CodeMerger {
@@ -33,8 +33,8 @@ abstract class CodeMerger {
     // NOTE: the originalCN and instrumentedCN will be destroyed in the process
     // NOTE: abstract or native methods should not be included in the
     // changedMethods list
-    public static ClassNode mergeClasses (final ClassNode originalCN,
-        final ClassNode instrumentedCN, final Set <String> changedMethods) {
+    public static ClassNode mergeClasses (final ClassNode origCN,
+        final ClassNode instCN, final Set <String> changedMethods) {
 
         // NOTE: that instrumentedCN can contain added fields
         // - has to be returned
@@ -46,53 +46,58 @@ abstract class CodeMerger {
 
         // no changed method - no merging
         if (changedMethods.isEmpty ()) {
-            return instrumentedCN;
+            return instCN;
         }
 
         // merge methods one by one
-        for (final MethodNode instrMN : instrumentedCN.methods) {
-
-            // We will construct the merged method node in the instrumented
-            // class node
-
-            // skip unchanged methods
-            if (!changedMethods.contains (instrMN.name + instrMN.desc)) {
+        for (final MethodNode instMN : instCN.methods) {
+            if (!changedMethods.contains (instMN.name + instMN.desc)) {
                 continue;
             }
 
-            final MethodNode origMN = getMethodNode (originalCN, instrMN.name,
-                instrMN.desc);
+            //
+            // Merge original method code into the instrumented method code.
+            // Duplicate the original method code to preserve it for the case
+            // where the resulting method is too long.
+            //
+            final MethodNode cloneMN = AsmHelper.cloneMethod (getMethodNode (
+                origCN, instMN.name, instMN.desc
+            ));
 
-            final InsnList ilist = instrMN.instructions;
-            final List <TryCatchBlockNode> tcblist = instrMN.tryCatchBlocks;
-
-            // crate copy of the original instruction list
-            // this copy will be destroyed during merging
-            // we need the original code if the method is too long
-            final ClonedCode origCodeCopy = ClonedCode.create (
-                origMN.instructions, origMN.tryCatchBlocks
-                );
-
-            // add reference to the original code
-            final LabelNode origCodeL = new LabelNode ();
-            ilist.add (origCodeL);
-
-            // add original code
-            ilist.add (origCodeCopy.getInstructions ());
-            // add exception handlers of the original code
-            tcblist.addAll (origCodeCopy.getTryCatchBlocks ());
-
-            // if the dynamic bypass is activated (non-zero value returned)
-            // then jump to original code
-            ilist.insert (new JumpInsnNode (Opcodes.IFNE, origCodeL));
-            ilist.insert (new MethodInsnNode (Opcodes.INVOKESTATIC,
-                BPC_CLASS, BPC_METHOD, BPC_DESC));
-
+            __createBypassCheck (
+                instMN.instructions, instMN.tryCatchBlocks,
+                cloneMN.instructions, cloneMN.tryCatchBlocks
+            );
         }
 
-        return instrumentedCN;
+        return instCN;
     }
 
+
+    private static void __createBypassCheck (
+        final InsnList instCode, final List <TryCatchBlockNode> instTcbs,
+        final InsnList origCode, final List <TryCatchBlockNode> origTcbs
+    ) {
+        // The bypass check code has the following layout:
+        //
+        //     if (!BypassCheck.executeUninstrumented ()) {
+        //         <instrumented code>
+        //     } else {
+        //         <original code>
+        //     }
+        //
+        final MethodInsnNode checkNode = new MethodInsnNode (
+            Opcodes.INVOKESTATIC, BPC_CLASS, BPC_METHOD, BPC_DESC, false
+        );
+        instCode.insert (checkNode);
+
+        final LabelNode origLabel = new LabelNode ();
+        instCode.insert (checkNode, new JumpInsnNode (Opcodes.IFNE, origLabel));
+
+        instCode.add (origLabel);
+        instCode.add (origCode);
+        instTcbs.addAll (origTcbs);
+    }
 
     // NOTE: the originalCN and instrumentedCN will be destroyed in the process
     // NOTE: abstract or native methods should not be included in the

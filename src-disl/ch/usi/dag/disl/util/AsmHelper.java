@@ -438,6 +438,27 @@ public abstract class AsmHelper {
 
     //
 
+    /**
+     * Clones a method node, including all code, try-catch blocks, and
+     * annotations. This is actually faster than just cloning the code and the
+     * try-catch blocks by hand.
+     *
+     * @param method
+     *        {@link MethodNode} to clone
+     * @return a new instance of {@link MethodNode}
+     */
+    public static MethodNode cloneMethod (final MethodNode method) {
+        final MethodNode result = new MethodNode (
+            Opcodes.ASM5, method.access, method.name, method.desc,
+            method.signature, method.exceptions.toArray (
+                new String [method.exceptions.size ()]
+            )
+        );
+
+        method.accept (result);
+        return result;
+    }
+
     public static final class ClonedCode {
         private final InsnList __instructions;
         private final List <TryCatchBlockNode> __tryCatchBlocks;
