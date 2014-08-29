@@ -23,7 +23,6 @@ public abstract class Runner {
     protected static final Duration _WATCH_DELAY_ = Duration.of (100, MILLISECONDS);
 
     protected static final String _ENV_JAVA_HOME_ = "JAVA_HOME";
-    protected static final String _JAVA_COMMAND_ = __getJavaCommand ();
 
     protected static final File _DISL_LIB_DIR_ = new File (System.getProperty ("disl.lib.dir", "lib"));
 
@@ -58,10 +57,14 @@ public abstract class Runner {
         __testName = __extractTestName (testClass);
     }
 
-    private static String __getJavaCommand () {
-        final String javaHome = System.getenv (_ENV_JAVA_HOME_);
-        if (javaHome != null) {
-            return Strings.join (File.separator, javaHome, "jre", "bin", "java");
+    protected static String _getJavaCommand (final String javaHome) {
+        final String home = (javaHome != null) ? javaHome : System.getenv (_ENV_JAVA_HOME_);
+        if (home != null) {
+            if (new File (home, "jre").exists ()) {
+                return Strings.join (File.separator, home, "jre", "bin", "java");
+            } else {
+                return Strings.join (File.separator, home, "bin", "java");
+            }
         } else {
             return "java";
         }

@@ -13,6 +13,16 @@ import ch.usi.dag.util.Lists;
 
 public class ClientServerRunner extends Runner {
 
+    private static final String __CLIENT_JAVA_COMMAND__ = _getJavaCommand (
+        System.getProperty ("disl.java.home")
+    );
+
+    private static final String __SERVER_JAVA_COMMAND__ = _getJavaCommand (
+        System.getProperty ("disl.server.java.home")
+    );
+
+    //
+
     private Job __client;
 
     private Job __server;
@@ -62,7 +72,7 @@ public class ClientServerRunner extends Runner {
         final File testInstJar, final File testAppJar
     ) throws IOException {
         final List <String> command = Lists.newLinkedList (
-            _JAVA_COMMAND_,
+            __CLIENT_JAVA_COMMAND__,
             String.format ("-agentpath:%s", _DISL_AGENT_LIB_),
             String.format ("-Xbootclasspath/a:%s", Runner.classPath (
                 _DISL_BYPASS_JAR_, testInstJar
@@ -84,7 +94,7 @@ public class ClientServerRunner extends Runner {
         final File testInstJar, final File statusFile
     ) throws IOException {
         final List <String> command = Lists.newLinkedList (
-            _JAVA_COMMAND_,
+            __SERVER_JAVA_COMMAND__,
             "-classpath", Runner.classPath (_DISL_SERVER_JAR_, testInstJar)
         );
 
