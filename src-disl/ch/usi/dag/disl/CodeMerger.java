@@ -30,45 +30,37 @@ abstract class CodeMerger {
     private static final int ALLOWED_SIZE = 64 * 1024; // 64KB limit
 
 
-    // NOTE: the originalCN and instrumentedCN will be destroyed in the process
-    // NOTE: abstract or native methods should not be included in the
-    // changedMethods list
-    public static ClassNode mergeClasses (final ClassNode origCN,
-        final ClassNode instCN, final Set <String> changedMethods) {
-
+    // NOTE: the instCN ClassNode will be modified in the process
+    // NOTE: abstract/native methods should not be included in changedMethods list
+    public static ClassNode mergeClasses (
+        final ClassNode origCN, final ClassNode instCN,
+        final Set <String> changedMethods
+    ) {
         // NOTE: that instrumentedCN can contain added fields
         // - has to be returned
-
         if (changedMethods == null) {
             throw new DiSLFatalException (
                 "Set of changed methods cannot be null");
         }
 
-        // no changed method - no merging
-        if (changedMethods.isEmpty ()) {
-            return instCN;
-        }
+        //
+        // Selected instrumented methods and merge into their code the original
+        // (un-instrumented) method to be executed when the bypass is active.
+        // Duplicate the original method code to preserve it for the case
+        // where the resulting method is too long.
+        //
+        instCN.methods.parallelStream ()
+            .filter (instMN -> changedMethods.contains (instMN.name + instMN.desc))
+            .forEach (instMN -> {
+                final MethodNode cloneMN = AsmHelper.cloneMethod (
+                    getMethodNode (origCN, instMN.name, instMN.desc)
+                );
 
-        // merge methods one by one
-        for (final MethodNode instMN : instCN.methods) {
-            if (!changedMethods.contains (instMN.name + instMN.desc)) {
-                continue;
-            }
-
-            //
-            // Merge original method code into the instrumented method code.
-            // Duplicate the original method code to preserve it for the case
-            // where the resulting method is too long.
-            //
-            final MethodNode cloneMN = AsmHelper.cloneMethod (getMethodNode (
-                origCN, instMN.name, instMN.desc
-            ));
-
-            __createBypassCheck (
-                instMN.instructions, instMN.tryCatchBlocks,
-                cloneMN.instructions, cloneMN.tryCatchBlocks
-            );
-        }
+                __createBypassCheck (
+                    instMN.instructions, instMN.tryCatchBlocks,
+                    cloneMN.instructions, cloneMN.tryCatchBlocks
+                );
+            });
 
         return instCN;
     }
