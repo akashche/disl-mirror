@@ -1,7 +1,9 @@
 <project name="disl" default="build" basedir=".">
 
 	<property name="build.sysclasspath" value="ignore" />
+
 	<property file="disl.version" />
+	<property file="build.local.properties" />
 	<property file="build.properties" />
 
 
@@ -174,7 +176,7 @@
 		<for list="always,never,dynamic" param="variant">
 			<sequential>
 				<mkdir dir="${build.disl.bypass}/@{variant}" />
-				<javac destdir="${build.disl.bypass}/@{variant}" srcdir="${src.disl.bypass}/@{variant}" debug="true" source="1.4" target="1.4">
+				<javac destdir="${build.disl.bypass}/@{variant}" srcdir="${src.disl.bypass}/@{variant}" debug="true" source="${target.disl.bypass}" target="${target.disl.bypass}">
 					<compilerarg value="-Xbootclasspath/p:${basedir}/${build.disl.thread}" />
 				</javac>
 			</sequential>
@@ -374,7 +376,7 @@
 
 	<target name="compile-shvm-dispatch">
 		<mkdir dir="${build.shvm.dispatch}" />
-		<javac destdir="${build.shvm.dispatch}" srcdir="${src.shvm.dispatch}" debug="true" />
+		<javac destdir="${build.shvm.dispatch}" srcdir="${src.shvm.dispatch}" debug="true" source="${target.disl.client}" target="${target.disl.client}" />
 	</target>
 
 
@@ -434,7 +436,7 @@
 
 	<target name="compile-test" depends="compile-util,compile-disl,compile-shvm">
 		<mkdir dir="${build.test}" />
-		<javac destdir="${build.test}" srcdir="${src.test}" debug="true">
+		<javac destdir="${build.test}" srcdir="${src.test}" debug="true" source="${target.disl.client}" target="${target.disl.client}">
 			<classpath refid="test.classpath" />
 		</javac>
 
