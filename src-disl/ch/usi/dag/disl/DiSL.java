@@ -413,7 +413,8 @@ public final class DiSL {
             );
         }
 
-        instCN = CodeMerger.handleLongMethod (origCN, instCN, splitLongMethods);
+        // TODO LB: Only fix-up changed methods.
+        instCN = CodeMerger.fixupMethods (origCN, instCN, splitLongMethods);
         return ClassNodeHelper.marshal (instCN);
     }
 

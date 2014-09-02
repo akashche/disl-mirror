@@ -2,6 +2,9 @@ package ch.usi.dag.disl;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -53,7 +56,7 @@ abstract class CodeMerger {
             .filter (instMN -> changedMethods.contains (instMN.name + instMN.desc))
             .forEach (instMN -> {
                 final MethodNode cloneMN = AsmHelper.cloneMethod (
-                    getMethodNode (origCN, instMN.name, instMN.desc)
+                    __findMethodNode (origCN, instMN.name, instMN.desc)
                 );
 
                 __createBypassCheck (
@@ -91,74 +94,112 @@ abstract class CodeMerger {
         instTcbs.addAll (origTcbs);
     }
 
+
     // NOTE: the originalCN and instrumentedCN will be destroyed in the process
     // NOTE: abstract or native methods should not be included in the
     // changedMethods list
-    public static ClassNode handleLongMethod (final ClassNode originalCN,
-        final ClassNode instrumentedCN, final boolean splitLongMethods) {
+    public static ClassNode fixupMethods (
+        final ClassNode origCN, final ClassNode instCN,
+        final boolean splitLongMethods
+    ) {
+        //
+        // Choose fixup strategy so that we don't have to it when processing.
+        //
+        final Consumer <FixupState> fixupStrategy = splitLongMethods ?
+            fs -> fs.splitLongMethod () : fs -> fs.revertToOriginal ();
 
-        // merge methods one by one
-        for (final MethodNode instrMN : instrumentedCN.methods) {
-            // calculate the code size and if it is larger then allowed size,
-            // skip it
-            final CodeSizeEvaluator cse = new CodeSizeEvaluator (null);
-            instrMN.accept (cse);
+        IntStream.range (0, instCN.methods.size ())
+            .mapToObj (i -> new FixupState (instCN, i))
+            .collect (Collectors.toList ()).parallelStream ().unordered ()
+            .filter (s -> s.instMethodSize () > ALLOWED_SIZE)
+            .forEach (s -> {
+                s.attachOrigMethod (origCN);
+                fixupStrategy.accept (s);
+            });
 
-            if (cse.getMaxSize () > ALLOWED_SIZE) {
+        return instCN;
+    }
 
-                final MethodNode origMN = getMethodNode (originalCN, instrMN.name,
-                    instrMN.desc);
 
-                if (splitLongMethods) {
-                    // split methods
-                    splitLongMethods (instrumentedCN, origMN, instrMN);
-                } else {
+    private static final class FixupState {
+        final ClassNode instClass;
+        final int instIndex;
 
-                    // insert original code into the instrumented method node
-                    instrMN.instructions = origMN.instructions;
-                    instrMN.tryCatchBlocks = origMN.tryCatchBlocks;
+        // The following fields are assigned during processing.
 
-                    // print error msg
-                    System.err.println ("WARNING: code of the method "
-                        + instrumentedCN.name + "." + instrMN.name
-                        + " is larger ("
-                        + cse.getMaxSize ()
-                        + ") then allowed size (" +
-                        +ALLOWED_SIZE
-                        + ") - skipping");
-                }
-            }
+        int instSize = -1;
+        MethodNode origMethod;
+        ClassNode origClass;
+
+        //
+
+        FixupState (final ClassNode instClass, final int instIndex) {
+            this.instClass = instClass;
+            this.instIndex = instIndex;
         }
 
-        return instrumentedCN;
-    }
 
-
-    private static void splitLongMethods (final ClassNode instrumentedCN,
-        final MethodNode origMN, final MethodNode instrMN) {
-
-        // TODO jb ! add splitting for to long methods
-        // - ignore clinit - output warning
-        // - output warning if splitted is to large and ignore
-
-        // check the code size of the instrumented method
-        // add if to the original method that jumps to the renamed instrumented
-        // method
-        // add original method to the instrumented code
-        // rename instrumented method
-    }
-
-
-    private static MethodNode getMethodNode (final ClassNode cnToSearch,
-        final String methodName, final String methodDesc) {
-
-        for (final MethodNode mn : cnToSearch.methods) {
-            if (methodName.equals (mn.name) && methodDesc.equals (mn.desc)) {
-                return mn;
+        int instMethodSize () {
+            if (instSize == -1) {
+                final CodeSizeEvaluator cse = new CodeSizeEvaluator (null);
+                instMethod ().accept (cse);
+                instSize = cse.getMaxSize ();
             }
+
+            return instSize;
         }
 
-        throw new RuntimeException (
-            "Code merger fatal error: method for merge not found");
+
+        MethodNode instMethod () {
+            return instClass.methods.get (instIndex);
+        }
+
+
+        void attachOrigMethod (final ClassNode origClass) {
+            final MethodNode im = instMethod ();
+            origMethod = __findMethodNode (origClass, im.name, im.desc);
+            this.origClass = origClass;
+        }
+
+
+        void splitLongMethod () {
+            // TODO jb ! add splitting for to long methods
+            // - ignore clinit - output warning
+            // - output warning if splitted is to large and ignore
+
+            // check the code size of the instrumented method
+            // add if to the original method that jumps to the renamed instrumented
+            // method
+            // add original method to the instrumented code
+            // rename instrumented method
+        }
+
+
+        void revertToOriginal () {
+            //
+            // Replace the instrumented method with the original method,
+            // and print a warning about it.
+            //
+            instClass.methods.set (instIndex, origMethod);
+
+            System.err.printf (
+                "warning: method %s.%s not instrumented, because its size "+
+                "(%d) exceeds the maximal allowed method size (%d)\n",
+                instMethod ().name, instMethod ().desc, instMethodSize (),
+                ALLOWED_SIZE
+            );
+        }
     }
+
+
+    private static MethodNode __findMethodNode (
+        final ClassNode cn, final String name, final String desc
+    ) {
+        return cn.methods.parallelStream ().unordered ()
+            .filter (m -> m.name.equals (name) && m.desc.equals (desc))
+            .findAny ().orElseThrow (() -> new RuntimeException (
+                "Code merger fatal error: method for merge not found"
+            ));
+    }
+
 }
