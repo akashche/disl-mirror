@@ -3,7 +3,7 @@ package ch.usi.dag.disl.localvar;
 import org.objectweb.asm.Type;
 
 
-abstract class AbstractLocalVar {
+public abstract class AbstractLocalVar {
 
     private final static String NAME_DELIM = ".";
 
@@ -47,11 +47,11 @@ abstract class AbstractLocalVar {
     //
 
     /**
-     * Returns a fully qualified field name for the given class name
+     * Returns a fully qualified internal field name for the given class name
      * and field name.
      *
      * @param ownerClassName
-     *      name of the field owner class
+     *      internal name of the field owner class
      * @param fieldName
      *      name of the field within the class
      *

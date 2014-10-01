@@ -2,6 +2,9 @@ package ch.usi.dag.disl.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.AbstractList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -9,6 +12,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -301,9 +305,23 @@ public abstract class AsmHelper {
     }
 
     public static FieldInsnNode getField (
+        final Type ownerType, final String name, final String desc
+    ) {
+        return getField (ownerType.getInternalName (), name, desc);
+    }
+
+
+    public static FieldInsnNode getField (
         final String owner, final String name, final String desc
     ) {
         return new FieldInsnNode (Opcodes.GETFIELD, owner, name, desc);
+    }
+
+
+    public static FieldInsnNode putField (
+        final Type ownerType, final String name, final String desc
+    ) {
+        return putField (ownerType.getInternalName (), name, desc);
     }
 
 
@@ -458,6 +476,7 @@ public abstract class AsmHelper {
         method.accept (result);
         return result;
     }
+
 
     public static final class ClonedCode {
         private final InsnList __instructions;
@@ -736,6 +755,205 @@ public abstract class AsmHelper {
             };
         }
 
+
+        /**
+         * Wraps an {@link InsnList} into a {@link List} instance to enable
+         * stream processing.
+         *
+         * @param insns
+         *        the {@link InsnList} to wrap
+         * @return an instance of {@link List} wrapping the given
+         *         {@link InsnList}
+         */
+        public static List <AbstractInsnNode> asList (final InsnList insns) {
+            return new AbstractList <AbstractInsnNode> () {
+
+                @Override
+                public int size () {
+                    return insns.size ();
+                }
+
+
+                //
+                // Each AbstractInsnNode instance is considered unique
+                // and cannot be part of multiple lists. Therefore if an
+                // instruction appears in a list, it is its first as well
+                // the last occurrence.
+                //
+
+                @Override
+                public boolean contains (final Object obj) {
+                    if (obj instanceof AbstractInsnNode) {
+                        return insns.contains ((AbstractInsnNode) obj);
+                    } else {
+                        return false;
+                    }
+                }
+
+
+                @Override
+                public int indexOf (final Object obj) {
+                    return __indexOf (insns, obj);
+                }
+
+
+                @Override
+                public int lastIndexOf (final Object obj) {
+                    return __indexOf (insns, obj);
+                }
+
+
+                private int __indexOf (final InsnList insns, final Object obj) {
+                    if (obj instanceof AbstractInsnNode) {
+                        return insns.indexOf ((AbstractInsnNode) obj);
+                    } else {
+                        return -1;
+                    }
+                }
+
+                //
+
+                @Override
+                public AbstractInsnNode [] toArray () {
+                    return insns.toArray ();
+                }
+
+                @Override
+                public <T> T [] toArray (final T [] output) {
+                    //
+                    // The following cast may fail, if the target type
+                    // is not a super-type of AbstractInsnNode [].
+                    //
+                    @SuppressWarnings ("unchecked")
+                    final T [] nodes = (T []) insns.toArray ();
+
+                    if (output.length < nodes.length) {
+                        return nodes;
+                    } else {
+                        System.arraycopy (nodes, 0, output, 0, nodes.length);
+                        if (output.length > nodes.length) {
+                            Arrays.fill (output, nodes.length, output.length, null);
+                        }
+
+                        return output;
+                    }
+                }
+
+                //
+
+                @Override
+                public boolean add (final AbstractInsnNode insn) {
+                    __ensureValidInsn (insn);
+                    insns.add (insn);
+                    return true;
+                }
+
+
+                @Override
+                public void add (final int index, final AbstractInsnNode insn) {
+                    __ensureValidInsn (insn);
+                    insns.insertBefore (insns.get (index), insn);
+                }
+
+
+                @Override
+                public boolean addAll (
+                    final int index, final Collection <? extends AbstractInsnNode> c
+                ) {
+                    final int sizeBefore = insns.size ();
+                    final AbstractInsnNode oldInsn = insns.get (index);
+
+                    for (final AbstractInsnNode insn : c) {
+                        __ensureValidInsn (insn);
+                        insns.insertBefore (oldInsn, insn);
+                    }
+
+                    return sizeBefore != insns.size ();
+                }
+
+
+                private void __ensureValidInsn (final AbstractInsnNode insn) {
+                    //
+                    // Make sure the instruction is not null and does not
+                    // belong to any other instruction list.
+                    //
+                    Objects.requireNonNull (insn, "insn cannot be <null>");
+                    __ensureFreeStandingInsn (insn);
+                }
+
+
+                private void __ensureFreeStandingInsn (final AbstractInsnNode insn) {
+                    if (insn.getPrevious () != null || insn.getNext () != null) {
+                        throw new IllegalArgumentException ("cannot add instruction already belonging to a list");
+                    }
+                }
+
+                //
+
+                @Override
+                public boolean remove (final Object obj) {
+                    if (obj instanceof AbstractInsnNode) {
+                        //
+                        // Make sure the instruction belongs to this list.
+                        //
+                        final AbstractInsnNode insn = (AbstractInsnNode) obj;
+                        if (insns.contains (insn)) {
+                            insns.remove (insn);
+                            return true;
+
+                        } else {
+                            throw new IllegalArgumentException ("cannot remove instruction not belonging to the list");
+                        }
+                    }
+
+                    return false;
+                }
+
+
+                @Override
+                public AbstractInsnNode remove (final int index) {
+                    final AbstractInsnNode oldInsn = insns.get (index);
+                    insns.remove (oldInsn);
+                    return oldInsn;
+                }
+
+
+                @Override
+                public void clear () {
+                    insns.clear ();
+                }
+
+                //
+
+                @Override
+                public AbstractInsnNode get (final int index) {
+                    return insns.get (index);
+                }
+
+
+                @Override
+                public AbstractInsnNode set (final int index, final AbstractInsnNode insn) {
+                    __ensureValidInsn (insn);
+
+                    final AbstractInsnNode oldInsn = insns.get (index);
+                    insns.set (oldInsn, insn);
+                    return oldInsn;
+                }
+
+                //
+
+                @Override
+                public Iterator <AbstractInsnNode> iterator () {
+                    return listIterator ();
+                }
+
+                @Override
+                public ListIterator <AbstractInsnNode> listIterator (final int index) {
+                    return insns.iterator (index);
+                }
+            };
+        }
+
     }
 
     //
@@ -746,6 +964,10 @@ public abstract class AsmHelper {
         return type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY;
     }
 
+
+    public static boolean isStaticFieldAccess (final AbstractInsnNode node) {
+        return isStaticFieldAccess (node.getOpcode ());
+    }
 
     public static boolean isStaticFieldAccess (final int opcode) {
         return opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC;
