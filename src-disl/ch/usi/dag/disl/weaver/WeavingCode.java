@@ -923,7 +923,7 @@ public class WeavingCode {
 
             final int position = processorMethod.getArgPos ();
             final int totalCount = processorMethod.getArgsCount ();
-            final Type type = processorMethod.getArgType ().getASMType ();
+            final Type type = processorMethod.getArgType ().primaryType ();
             final InsnList insns = code.getInstructions();
             rewriteArgumentContextCalls (position, totalCount, type, insns);
 
@@ -953,7 +953,7 @@ public class WeavingCode {
 
             final int index = pmi.getArgPos ();
             final int total = pmi.getArgsCount ();
-            final Type type = pmi.getArgType ().getASMType ();
+            final Type type = pmi.getArgType ().primaryType ();
             final InsnList insns = code.getInstructions ();
             rewriteArgumentContextCalls (index, total, type, insns);
 
