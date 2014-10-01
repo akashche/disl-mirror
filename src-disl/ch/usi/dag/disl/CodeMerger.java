@@ -2,8 +2,7 @@ package ch.usi.dag.disl;
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
 import org.objectweb.asm.Opcodes;
@@ -24,35 +23,32 @@ import ch.usi.dag.disl.util.AsmHelper;
 
 abstract class CodeMerger {
 
-    private static final String BPC_CLASS = Type.getInternalName (BypassCheck.class);
+    private static final Type BPC_CLASS = Type.getType (BypassCheck.class);
 
     private static final String BPC_METHOD = "executeUninstrumented";
 
-    private static final String BPC_DESC = "()Z";
+    private static final Type BPC_DESC = Type.getMethodType ("()Z");
 
     private static final int ALLOWED_SIZE = 64 * 1024; // 64KB limit
 
 
     // NOTE: the instCN ClassNode will be modified in the process
     // NOTE: abstract/native methods should not be included in changedMethods list
-    public static ClassNode mergeClasses (
-        final ClassNode origCN, final ClassNode instCN,
-        final Set <String> changedMethods
+    public static void mergeOriginalCode (
+        final Set <String> changedMethods, final ClassNode origCN,
+        final ClassNode instCN
     ) {
-        // NOTE: that instrumentedCN can contain added fields
-        // - has to be returned
         if (changedMethods == null) {
-            throw new DiSLFatalException (
-                "Set of changed methods cannot be null");
+            throw new DiSLFatalException ("Set of changed methods cannot be null");
         }
 
         //
-        // Selected instrumented methods and merge into their code the original
+        // Select instrumented methods and merge into their code the original
         // (un-instrumented) method to be executed when the bypass is active.
         // Duplicate the original method code to preserve it for the case
         // where the resulting method is too long.
         //
-        instCN.methods.parallelStream ()
+        instCN.methods.parallelStream ().unordered ()
             .filter (instMN -> changedMethods.contains (instMN.name + instMN.desc))
             .forEach (instMN -> {
                 final MethodNode cloneMN = AsmHelper.cloneMethod (
@@ -64,8 +60,6 @@ abstract class CodeMerger {
                     cloneMN.instructions, cloneMN.tryCatchBlocks
                 );
             });
-
-        return instCN;
     }
 
 
@@ -81,8 +75,8 @@ abstract class CodeMerger {
         //         <original code>
         //     }
         //
-        final MethodInsnNode checkNode = new MethodInsnNode (
-            Opcodes.INVOKESTATIC, BPC_CLASS, BPC_METHOD, BPC_DESC, false
+        final MethodInsnNode checkNode = AsmHelper.invokeStatic (
+            BPC_CLASS, BPC_METHOD, BPC_DESC
         );
         instCode.insert (checkNode);
 
@@ -95,100 +89,68 @@ abstract class CodeMerger {
     }
 
 
-    // NOTE: the originalCN and instrumentedCN will be destroyed in the process
+    // NOTE: the origCN and instCN nodes will be destroyed in the process
     // NOTE: abstract or native methods should not be included in the
     // changedMethods list
-    public static ClassNode fixupMethods (
-        final ClassNode origCN, final ClassNode instCN,
-        final boolean splitLongMethods
+    public static ClassNode fixupLongMethods (
+        final boolean splitLongMethods, final ClassNode origCN,
+        final ClassNode instCN
     ) {
         //
-        // Choose fixup strategy so that we don't have to it when processing.
+        // Choose a fix-up strategy and process all over-size methods in the
+        // instrumented class.
         //
-        final Consumer <FixupState> fixupStrategy = splitLongMethods ?
-            fs -> fs.splitLongMethod () : fs -> fs.revertToOriginal ();
+        final IntConsumer fixupStrategy = splitLongMethods ?
+            i -> __splitLongMethod (i, instCN, origCN) :
+            i -> __revertToOriginal (i, instCN, origCN);
 
-        IntStream.range (0, instCN.methods.size ())
-            .mapToObj (i -> new FixupState (instCN, i))
-            .collect (Collectors.toList ()).parallelStream ().unordered ()
-            .filter (s -> s.instMethodSize () > ALLOWED_SIZE)
-            .forEach (s -> {
-                s.attachOrigMethod (origCN);
-                fixupStrategy.accept (s);
-            });
+        IntStream.range (0, instCN.methods.size ()).parallel ().unordered ()
+            .filter (i -> __methodSize (instCN.methods.get (i)) > ALLOWED_SIZE)
+            .forEach (i -> fixupStrategy.accept (i));
 
         return instCN;
     }
 
 
-    private static final class FixupState {
-        final ClassNode instClass;
-        final int instIndex;
+    private static void __splitLongMethod (
+        final int methodIndex, final ClassNode instCN, final ClassNode origCN
+    ) {
+        // TODO jb ! add splitting for to long methods
+        // - ignore clinit - output warning
+        // - output warning if splitted is to large and ignore
 
-        // The following fields are assigned during processing.
+        // check the code size of the instrumented method
+        // add if to the original method that jumps to the renamed instrumented
+        // method
+        // add original method to the instrumented code
+        // rename instrumented method
+    }
 
-        int instSize = -1;
-        MethodNode origMethod;
-        ClassNode origClass;
 
+    private static void __revertToOriginal (
+        final int instIndex, final ClassNode instCN, final ClassNode origCN
+    ) {
         //
+        // Replace the instrumented method with the original method,
+        // and print a warning about it.
+        //
+        final MethodNode instMN = instCN.methods.get (instIndex);
+        final MethodNode origMN = __findMethodNode (origCN, instMN.name, instMN.desc);
+        instCN.methods.set (instIndex, origMN);
 
-        FixupState (final ClassNode instClass, final int instIndex) {
-            this.instClass = instClass;
-            this.instIndex = instIndex;
-        }
-
-
-        int instMethodSize () {
-            if (instSize == -1) {
-                final CodeSizeEvaluator cse = new CodeSizeEvaluator (null);
-                instMethod ().accept (cse);
-                instSize = cse.getMaxSize ();
-            }
-
-            return instSize;
-        }
+        System.err.printf (
+            "warning: method %s.%s%s not instrumented, because its size "+
+            "(%d) exceeds the maximal allowed method size (%d)\n",
+            AsmHelper.className (instCN), instMN.name, instMN.desc,
+            __methodSize (instMN), ALLOWED_SIZE
+        );
+    }
 
 
-        MethodNode instMethod () {
-            return instClass.methods.get (instIndex);
-        }
-
-
-        void attachOrigMethod (final ClassNode origClass) {
-            final MethodNode im = instMethod ();
-            origMethod = __findMethodNode (origClass, im.name, im.desc);
-            this.origClass = origClass;
-        }
-
-
-        void splitLongMethod () {
-            // TODO jb ! add splitting for to long methods
-            // - ignore clinit - output warning
-            // - output warning if splitted is to large and ignore
-
-            // check the code size of the instrumented method
-            // add if to the original method that jumps to the renamed instrumented
-            // method
-            // add original method to the instrumented code
-            // rename instrumented method
-        }
-
-
-        void revertToOriginal () {
-            //
-            // Replace the instrumented method with the original method,
-            // and print a warning about it.
-            //
-            instClass.methods.set (instIndex, origMethod);
-
-            System.err.printf (
-                "warning: method %s.%s not instrumented, because its size "+
-                "(%d) exceeds the maximal allowed method size (%d)\n",
-                instMethod ().name, instMethod ().desc, instMethodSize (),
-                ALLOWED_SIZE
-            );
-        }
+    private static int __methodSize (final MethodNode method) {
+        final CodeSizeEvaluator cse = new CodeSizeEvaluator (null);
+        method.accept (cse);
+        return cse.getMaxSize ();
     }
 
 
