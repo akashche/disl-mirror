@@ -207,4 +207,9 @@ public class ScopeTest {
         assertFalse(s.toString(), s.matches("my/pkg/TargetClass", "method", "(IIII)I"));
         assertFalse(s.toString(), s.matches("my/pkg/TargetClass", "method", "(Ljava.lang.String;)I"));
     }
+
+    @Test(expected=ScopeParserException.class)
+    public void cannotCreateEmptyScope() throws ScopeParserException {
+        final Scope s = new ScopeImpl ("");
+    }
 }
