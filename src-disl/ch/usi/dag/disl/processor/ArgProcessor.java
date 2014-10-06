@@ -6,30 +6,47 @@ import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 
+
+/**
+ * Argument processor is a collection of argument processor methods. Each method
+ * is similar to a snippet and can be specialized for a particular method
+ * parameter or a type of method parameters.
+ */
 public class ArgProcessor {
 
-	private String name;
-	private List<ArgProcessorMethod> methods;
+    /**
+     * Canonical name of the argument processor class.
+     */
+    private final String __className;
 
-	public ArgProcessor(String name, List<ArgProcessorMethod> methods) {
-		super();
-		this.name = name;
-		this.methods = methods;
-	}
+    private final List <ArgProcessorMethod> __methods;
 
-	public String getName() {
-		return name;
-	}
-	
-	public List<ArgProcessorMethod> getMethods() {
-		return methods;
-	}
-	
-	public void init(LocalVars allLVs) throws StaticContextGenException,
-			ReflectionException {
-		
-		for(ArgProcessorMethod method : methods) {
-			method.init(allLVs);
-		}
-	}
+    //
+
+    public ArgProcessor (final String name, final List <ArgProcessorMethod> methods) {
+        __className = name;
+        __methods = methods;
+    }
+
+
+    /**
+     * @return canonical name of the argument processor class.
+     */
+    public String getName () {
+        return __className;
+    }
+
+
+    public List <ArgProcessorMethod> getMethods () {
+        return __methods;
+    }
+
+
+    public void init (final LocalVars localVars)
+    throws StaticContextGenException, ReflectionException {
+        for (final ArgProcessorMethod method : __methods) {
+            method.init (localVars);
+        }
+    }
+
 }
