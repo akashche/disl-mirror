@@ -10,19 +10,19 @@ import ch.usi.dag.disl.exception.DiSLException;
 
 public class Transformer implements ClassFileTransformer {
 
-	private static DiSL __disl;
+    private static DiSL __disl;
 
-	static {
-	    try {
-	        // don't use dynamic bypass
+    static {
+        try {
+            // don't use dynamic bypass
             __disl = new DiSL (false);
 
         } catch (final DiSLException e) {
             throw new RuntimeException (e);
         }
-	}
+    }
 
-	//
+    //
 
     @Override
     public byte [] transform (
@@ -33,36 +33,36 @@ public class Transformer implements ClassFileTransformer {
     ) throws IllegalClassFormatException {
         byte [] instrumentedClass = null;
 
-    	try {
+        try {
             instrumentedClass = __disl.instrument (classfileBuffer);
             if (instrumentedClass != null) {
-				/*
-				// print class
-				ClassReader cr = new ClassReader(instrumentedClass);
-				TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
-				cr.accept(tcv, 0);
-				/**/
+                /*
+                // print class
+                ClassReader cr = new ClassReader(instrumentedClass);
+                TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
+                cr.accept(tcv, 0);
+                /**/
 
-				/*
-				// check class
-				ClassReader cr2 = new ClassReader(instrumentedClass);
-				ClassWriter cw = new ClassWriter(cr2, ClassWriter.COMPUTE_MAXS);
-				cr2.accept(new CheckClassAdapter(cw), 0);
-				/**/
+                /*
+                // check class
+                ClassReader cr2 = new ClassReader(instrumentedClass);
+                ClassWriter cw = new ClassWriter(cr2, ClassWriter.COMPUTE_MAXS);
+                cr2.accept(new CheckClassAdapter(cw), 0);
+                /**/
 
-				/*
-				// output class
-				try {
-					File f = new File("ModifiedClass.class");
-					FileOutputStream fos = new FileOutputStream(f);
-					fos.write(instrumentedClass);
-					fos.flush();
-					fos.close();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				/**/
-			}
+                /*
+                // output class
+                try {
+                    File f = new File("ModifiedClass.class");
+                    FileOutputStream fos = new FileOutputStream(f);
+                    fos.write(instrumentedClass);
+                    fos.flush();
+                    fos.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                /**/
+            }
 
         } catch (final Throwable e) {
             e.printStackTrace ();
