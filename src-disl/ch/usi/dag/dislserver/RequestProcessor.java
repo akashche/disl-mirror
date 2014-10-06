@@ -25,14 +25,9 @@ final class RequestProcessor {
 
     //
 
-    private static final String PROP_UNINSTR = "dislserver.uninstrumented";
-    private static final String uninstrPath = System.getProperty (PROP_UNINSTR, null);
-
-    private static final String PROP_INSTR = "dislserver.instrumented";
-    private static final String instrPath = System.getProperty (PROP_INSTR, null);
-
-    private static final String PROP_BYPASS = "dislserver.disablebypass";
-    private static final boolean bypass = ! Boolean.getBoolean(PROP_BYPASS);
+    private static final String uninstrPath = System.getProperty ("dislserver.uninstrumented");
+    private static final String instrPath = System.getProperty ("dislserver.instrumented");
+    private static final boolean useBypass = !Boolean.getBoolean ("dislserver.disablebypass");
 
     //
 
@@ -251,7 +246,7 @@ final class RequestProcessor {
     public static RequestProcessor newInstance () throws DiSLServerException {
         try {
             // TODO LB: Configure bypass on a per-request basis.
-            final DiSL disl = new DiSL (bypass);
+            final DiSL disl = new DiSL (useBypass);
             return new RequestProcessor (disl);
 
         } catch (final DiSLException de) {
