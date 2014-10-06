@@ -25,23 +25,23 @@ public class ProcGenerator {
 
     Map<ArgProcessor, ProcInstance> insideMethodPIs = new HashMap<ArgProcessor, ProcInstance>();
 
-    public PIResolver compute(Map<Snippet, List<Shadow>> snippetMarkings)
+    public PIResolver compute(final Map<Snippet, List<Shadow>> snippetMarkings)
             throws ProcessorException {
 
-        PIResolver piResolver = new PIResolver();
+        final PIResolver piResolver = new PIResolver();
 
         // for each snippet
-        for (Snippet snippet : snippetMarkings.keySet()) {
+        for (final Snippet snippet : snippetMarkings.keySet()) {
 
-            Map<Integer, ProcInvocation> invokedProcs = snippet.getCode()
+            final Map<Integer, ProcInvocation> invokedProcs = snippet.getCode()
                     .getInvokedProcessors();
 
-            for (Shadow shadow : snippetMarkings.get(snippet)) {
+            for (final Shadow shadow : snippetMarkings.get(snippet)) {
 
                 // for each processor defined in snippet
-                for (Integer instrPos : invokedProcs.keySet()) {
+                for (final Integer instrPos : invokedProcs.keySet()) {
 
-                    ProcInvocation prcInv = invokedProcs.get(instrPos);
+                    final ProcInvocation prcInv = invokedProcs.get(instrPos);
 
                     ProcInstance prcInst = null;
 
@@ -74,8 +74,8 @@ public class ProcGenerator {
         return piResolver;
     }
 
-    private ProcInstance computeInsideMethod(Shadow shadow,
-            ProcInvocation prcInv) {
+    private ProcInstance computeInsideMethod(final Shadow shadow,
+            final ProcInvocation prcInv) {
 
         // all instances of inside method processor will be the same
         // if we have one, we can use it multiple times
@@ -90,8 +90,8 @@ public class ProcGenerator {
         return procInst;
     }
 
-    private ProcInstance computeBeforeInvocation(Shadow shadow,
-            ProcInvocation prcInv) throws ProcessorException {
+    private ProcInstance computeBeforeInvocation(final Shadow shadow,
+            final ProcInvocation prcInv) throws ProcessorException {
 
         // NOTE: ProcUnprocessedCode checks that CALLSITE_ARGS is
         // used only with BytecodeMarker
@@ -104,9 +104,9 @@ public class ProcGenerator {
 
         // get instruction from the method code
         // the method invocation is the instruction marked as end
-        AbstractInsnNode instr = shadow.getRegionEnds().get(0);
+        final AbstractInsnNode instr = shadow.getRegionEnds().get(0);
 
-        String fullMethodName = shadow.getClassNode().name + "."
+        final String fullMethodName = shadow.getClassNode().name + "."
                 + shadow.getMethodNode().name;
 
         // check - method invocation
@@ -117,25 +117,25 @@ public class ProcGenerator {
                     + fullMethodName);
         }
 
-        MethodInsnNode methodInvocation = (MethodInsnNode) instr;
+        final MethodInsnNode methodInvocation = (MethodInsnNode) instr;
 
         return createProcInstance(ArgumentProcessorMode.CALLSITE_ARGS,
                 methodInvocation.desc, shadow, prcInv);
     }
 
-    private ProcInstance createProcInstance(ArgumentProcessorMode procApplyType,
-            String methodDesc, Shadow shadow, ProcInvocation prcInv) {
+    private ProcInstance createProcInstance(final ArgumentProcessorMode procApplyType,
+            final String methodDesc, final Shadow shadow, final ProcInvocation prcInv) {
 
-        List<ProcMethodInstance> procMethodInstances =
+        final List<ProcMethodInstance> procMethodInstances =
             new LinkedList<ProcMethodInstance>();
 
         // get argument types
-        Type[] argTypeArray = Type.getArgumentTypes(methodDesc);
+        final Type[] argTypeArray = Type.getArgumentTypes(methodDesc);
 
         // create processor method instances for each argument if applicable
         for (int i = 0; i < argTypeArray.length; ++i) {
 
-            List<ProcMethodInstance> pmis = createMethodInstances(i,
+            final List<ProcMethodInstance> pmis = createMethodInstances(i,
                     argTypeArray.length, argTypeArray[i],
                     prcInv.getProcessor(), shadow, prcInv);
 
@@ -150,29 +150,28 @@ public class ProcGenerator {
         return new ProcInstance(procApplyType, procMethodInstances);
     }
 
-    private List<ProcMethodInstance> createMethodInstances(int argPos,
-            int argsCount, Type argType, ArgProcessor processor, Shadow shadow,
-            ProcInvocation prcInv) {
 
-        ArgProcessorKind methodArgType = ArgProcessorKind.valueOf(argType);
-
-        List<ProcMethodInstance> result = new LinkedList<ProcMethodInstance>();
+    private List <ProcMethodInstance> createMethodInstances (
+        final int argPos, final int argsCount, final Type argType,
+        final ArgProcessor processor, final Shadow shadow,
+        final ProcInvocation procInv
+    ) {
+        final ArgProcessorKind methodArgType = ArgProcessorKind.valueOf (argType);
+        final List <ProcMethodInstance> result = new LinkedList <ProcMethodInstance> ();
 
         // traverse all methods and find the proper ones
-        for (ArgProcessorMethod method : processor.getMethods()) {
-
+        for (final ArgProcessorMethod method : processor.getMethods ()) {
             // check argument type
-            if(method.getTypes().contains(methodArgType)) {
-
-                ProcMethodInstance pmi = new ProcMethodInstance(argPos,
-                        argsCount, methodArgType, argType.getDescriptor(),
-                        method.getCode());
+            if (method.getTypes ().contains (methodArgType)) {
+                final ProcMethodInstance pmi = new ProcMethodInstance (
+                    argPos, argsCount, methodArgType, argType.getDescriptor (),
+                    method.getCode ()
+                );
 
                 // check guard
-                if (isPMGuardApplicable(method.getGuard(), shadow, pmi)) {
-
+                if (isPMGuardApplicable (method.getGuard (), shadow, pmi)) {
                     // add method
-                    result.add(pmi);
+                    result.add (pmi);
                 }
             }
         }
@@ -180,11 +179,14 @@ public class ProcGenerator {
         return result;
     }
 
-    private boolean isPMGuardApplicable(Method guard, Shadow shadow,
-            ProcMethodInstance pmi) {
 
+    private boolean isPMGuardApplicable (
+        final Method guard, final Shadow shadow, final ProcMethodInstance pmi
+    ) {
         // evaluate processor method guard
-        return GuardHelper.guardApplicable(guard, shadow, pmi.getArgPos(),
-                pmi.getArgTypeDesc(), pmi.getArgsCount());
+        return GuardHelper.guardApplicable (
+            guard, shadow,
+            pmi.getArgPos (), pmi.getArgTypeDesc (), pmi.getArgsCount ()
+        );
     }
 }
