@@ -1,6 +1,8 @@
 package ch.usi.dag.disl.classparser;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,11 +19,14 @@ import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.SourceValue;
 
 import ch.usi.dag.disl.annotation.SyntheticLocal;
+import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.ParserException;
+import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
@@ -30,9 +35,10 @@ import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.util.Insn;
+import ch.usi.dag.disl.util.ReflectionHelper;
 
 /**
- * Parses DiSL class with local variables
+ * Parses DiSL class with local variables.
  */
 abstract class AbstractParser {
 
@@ -48,17 +54,18 @@ abstract class AbstractParser {
     // ****************************************
 
     // returns local vars defined in this class
-    protected void processLocalVars (final ClassNode dislClass) throws ParserException {
-
+    protected void processLocalVars (
+        final ClassNode dislClass
+    ) throws ParserException {
         // parse local variables
-        LocalVars localVars = parseLocalVars(dislClass.name, dislClass.fields);
+        final LocalVars localVars = parseLocalVars(dislClass.name, dislClass.fields);
 
         // add local vars from this class to all local vars from all classes
         allLocalVars.putAll(localVars);
 
         // get static initialization code
         MethodNode cinit = null;
-        for (MethodNode method : dislClass.methods) {
+        for (final MethodNode method : dislClass.methods) {
 
             // get the code
             if (Constants.isInitializerName (method.name)) {
@@ -75,16 +82,16 @@ abstract class AbstractParser {
     }
 
 
-    private LocalVars parseLocalVars(String className, List<FieldNode> fields)
-            throws ParserException {
-
+    private LocalVars parseLocalVars (
+        final String className, final List <FieldNode> fields
+    ) throws ParserException {
         // NOTE: if two synthetic local vars with the same name are defined
         // in different files they will be prefixed with class name as it is
         // also in byte code
 
-        LocalVars result = new LocalVars();
+        final LocalVars result = new LocalVars();
 
-        for (FieldNode field : fields) {
+        for (final FieldNode field : fields) {
 
             if (field.invisibleAnnotations == null) {
                 throw new ParserException("DiSL annotation for field "
@@ -96,24 +103,24 @@ abstract class AbstractParser {
                         + field.name + " may have only one anotation");
             }
 
-            AnnotationNode annotation =
+            final AnnotationNode annotation =
                 field.invisibleAnnotations.get(0);
 
-            Type annotationType = Type.getType(annotation.desc);
+            final Type annotationType = Type.getType (annotation.desc);
 
             // thread local
-            Type tlvAnnotation = Type.getType(
+            final Type tlvAnnotation = Type.getType(
                     ch.usi.dag.disl.annotation.ThreadLocal.class);
             if (annotationType.equals(tlvAnnotation)) {
-                ThreadLocalVar tlv = parseThreadLocal (className, field, annotation);
+                final ThreadLocalVar tlv = parseThreadLocal (className, field, annotation);
                 result.put(tlv);
                 continue;
             }
 
             // synthetic local
-            Type slvAnnotation = Type.getType(SyntheticLocal.class);
+            final Type slvAnnotation = Type.getType(SyntheticLocal.class);
             if (annotationType.equals(slvAnnotation)) {
-                SyntheticLocalVar slv = parseSyntheticLocal(className, field, annotation);
+                final SyntheticLocalVar slv = parseSyntheticLocal(className, field, annotation);
                 result.put(slv);
                 continue;
             }
@@ -125,13 +132,16 @@ abstract class AbstractParser {
         return result;
     }
 
-    private static class TLAnnotationData {
 
+    private static class TLAnnotationData {
         public boolean inheritable = false; // default
     }
 
-    private ThreadLocalVar parseThreadLocal(String className, FieldNode field,
-            AnnotationNode annotation) throws ParserException {
+
+    private ThreadLocalVar parseThreadLocal (
+        final String className, final FieldNode field,
+        final AnnotationNode annotation
+    ) throws ParserException {
 
         // check if field is static
         if ((field.access & Opcodes.ACC_STATIC) == 0) {
@@ -140,25 +150,27 @@ abstract class AbstractParser {
         }
 
         // parse annotation
-        TLAnnotationData tlad = new TLAnnotationData();
-        ParserHelper.parseAnnotation(tlad, annotation);
+        final TLAnnotationData tlad = new TLAnnotationData();
+        AbstractParser.parseAnnotation(annotation, tlad);
 
-        Type fieldType = Type.getType(field.desc);
+        final Type fieldType = Type.getType (field.desc);
 
         // default value will be set later on
         return new ThreadLocalVar(className, field.name, fieldType,
                 tlad.inheritable);
     }
 
-    private static class SLAnnotationData {
 
+    private static class SLAnnotationData {
         // see code below for default
         public String[] initialize = null;
     }
 
-    private SyntheticLocalVar parseSyntheticLocal(String className,
-            FieldNode field, AnnotationNode annotation)
-            throws ParserException {
+
+    private SyntheticLocalVar parseSyntheticLocal (
+        final String className, final FieldNode field,
+        final AnnotationNode annotation
+    ) throws ParserException {
 
         // check if field is static
         if ((field.access & Opcodes.ACC_STATIC) == 0) {
@@ -167,8 +179,8 @@ abstract class AbstractParser {
         }
 
         // parse annotation data
-        SLAnnotationData slad = new SLAnnotationData();
-        ParserHelper.parseAnnotation(slad, annotation);
+        final SLAnnotationData slad = new SLAnnotationData();
+        AbstractParser.parseAnnotation(annotation, slad);
 
         // default val for init
         SyntheticLocal.Initialize slvInit = SyntheticLocal.Initialize.ALWAYS;
@@ -182,7 +194,7 @@ abstract class AbstractParser {
         }
 
         // field type
-        Type fieldType = Type.getType(field.desc);
+        final Type fieldType = Type.getType (field.desc);
 
         return new SyntheticLocalVar(className, field.name, fieldType, slvInit);
     }
@@ -194,7 +206,7 @@ abstract class AbstractParser {
     // method call.
     //
     private void parseInitCodeForSLV (
-        InsnList initInsns, final Map <String, SyntheticLocalVar> slvs
+        final InsnList initInsns, final Map <String, SyntheticLocalVar> slvs
     ) {
         //
         // Mark the first instruction of a block of initialization code and scan
@@ -283,13 +295,13 @@ abstract class AbstractParser {
         final String className, final MethodNode cinitMethod,
         final Map <String, ThreadLocalVar> tlvs
     ) throws ParserException {
-        Frame <SourceValue> [] frames =
+        final Frame <SourceValue> [] frames =
             FrameHelper.getSourceFrames (className, cinitMethod);
 
         // analyze instructions in each frame
         // one frame should cover one field initialization
         for (int i = 0; i < frames.length; i++) {
-            AbstractInsnNode instr = cinitMethod.instructions.get (i);
+            final AbstractInsnNode instr = cinitMethod.instructions.get (i);
 
             // if the last instruction puts some value into the field...
             if (instr.getOpcode() != Opcodes.PUTSTATIC) {
@@ -309,7 +321,7 @@ abstract class AbstractParser {
             }
 
             // get the instruction that put the field value on the stack
-            Set <AbstractInsnNode> sources =
+            final Set <AbstractInsnNode> sources =
                 frames [i].getStack (frames [i].getStackSize () - 1).insns;
 
             if (sources.size () != 1) {
@@ -319,9 +331,9 @@ abstract class AbstractParser {
                 ));
             }
 
-            AbstractInsnNode source = sources.iterator().next();
+            final AbstractInsnNode source = sources.iterator().next();
 
-            // analyze oppcode and set the proper default value
+            // analyze opcode and set the proper default value
             switch (source.getOpcode()) {
             // not supported
             // case Opcodes.ACONST_NULL:
@@ -400,6 +412,106 @@ abstract class AbstractParser {
                         + " defined for thread local variable " + tlv.getName());
             }
         }
+    }
+
+    //
+
+    public static void ensureMethodUsesContextProperly (
+        final MethodNode method
+    ) throws ParserException {
+        //
+        // Check accesses to method parameters to ensure that the context
+        // is not overwritten or stored to a local variable.
+        //
+        // WARNING: The following code assumes that DiSL snippets are
+        // static methods, and therefore do not have the "this" parameter.
+        // This should have been ensured by the ensureMethodIsStatic() method.
+        //
+        final int firstLocalSlot = AsmHelper.getParameterSlotCount (method);
+        for (final AbstractInsnNode insn : Insns.selectAll (method.instructions)) {
+            if (Insn.ASTORE.matches (insn)) {
+                //
+                // Make sure that nothing is stored into a context argument.
+                //
+                final int storeSlot = ((VarInsnNode) insn).var;
+                if (storeSlot < firstLocalSlot) {
+                    throw new ParserException (String.format (
+                        "context parameter stored into%s!",
+                        AsmHelper.formatLineNo (" (at line %d)", insn)
+                    ));
+                }
+
+            } else if (Insn.ALOAD.matches (insn)) {
+                //
+                // Make sure that the context argument is not loaded and
+                // immediately stored (in the next instruction) into a local
+                // variable. This is just a sanity check -- we would need escape
+                // analysis to handle this properly (i.e. to avoid passing
+                // context to some method).
+                //
+                final int loadSlot = ((VarInsnNode) insn).var;
+                if (loadSlot < firstLocalSlot) {
+                    final AbstractInsnNode nextInsn = Insns.FORWARD.nextRealInsn (insn);
+                    if (Insn.ASTORE.matches (nextInsn)) {
+                        throw new ParserException (String.format (
+                            "context parameter stored into a local variable%s!",
+                            AsmHelper.formatLineNo (" (at line %d)", nextInsn)
+                        ));
+                    }
+                }
+            }
+        } // for
+
+    }
+
+
+    // NOTE: second parameter is modified by this function
+    static <T> void parseAnnotation (
+        final AnnotationNode annotation, final T parsedDataObject
+    ) {
+        // nothing to do
+        if (annotation.values == null) {
+            return;
+        }
+
+        try {
+            final Iterator <?> it = annotation.values.iterator ();
+            while (it.hasNext ()) {
+                //
+                // Name-value pairs are stored as two consecutive elements.
+                // Find the right field and set its value.
+                //
+                final String name = (String) it.next ();
+                final Object value = it.next ();
+
+                final Field attr = parsedDataObject.getClass ().getField (name);
+                if (attr != null) {
+                    attr.set (parsedDataObject, value);
+
+                } else {
+                    throw new DiSLFatalException (
+                        "Unknown attribute "+ name +" in annotation "+
+                        Type.getType (annotation.desc).toString () +
+                        ". This may happen if annotation class is changed"+
+                        "  but parser class is not."
+                    );
+                }
+            }
+
+        } catch (final Exception e) {
+            throw new DiSLFatalException (
+                "Reflection error while parsing annotation", e);
+        }
+    }
+
+
+    public static Class <?> getGuard (final Type guardType)
+    throws ReflectionException {
+        if (guardType == null) {
+            return null;
+        }
+
+        return ReflectionHelper.resolveClass (guardType);
     }
 
 }

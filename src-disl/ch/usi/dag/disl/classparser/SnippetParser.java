@@ -126,7 +126,7 @@ class SnippetParser extends AbstractParser {
         final Scope scope = new ScopeImpl(annotData.scope);
 
         // ** guard **
-        final Class<?> guardClass = ParserHelper.getGuard(annotData.guard);
+        final Class<?> guardClass = getGuard(annotData.guard);
         final Method guardMethod = GuardHelper.findAndValidateGuardMethod(guardClass,
                 GuardHelper.snippetContextSet());
 
@@ -143,7 +143,7 @@ class SnippetParser extends AbstractParser {
 
         // context arguments (local variables 1, 2, ...) cannot be stored or
         // overwritten, may be used only in method calls
-        ParserHelper.usesContextProperly(className, method);
+        ensureMethodUsesContextProperly(method);
 
         // ** create unprocessed code holder class **
         // code is processed after everything is parsed
@@ -210,7 +210,7 @@ class SnippetParser extends AbstractParser {
             final AnnotationNode annotation) {
 
         final SnippetAnnotationData sad = new SnippetAnnotationData(type);
-        ParserHelper.parseAnnotation(sad, annotation);
+        parseAnnotation(annotation, sad);
 
         if (sad.marker == null) {
 

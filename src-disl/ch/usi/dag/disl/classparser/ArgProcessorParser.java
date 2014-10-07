@@ -135,7 +135,7 @@ class ArgProcessorParser extends AbstractParser {
         allProcessedTypes.addAll(pmad.processAlsoTypes);
 
         // ** guard **
-        Class<?> guardClass = ParserHelper.getGuard(pmad.guard);
+        Class<?> guardClass = getGuard(pmad.guard);
         Method guardMethod = GuardHelper.findAndValidateGuardMethod(guardClass,
                 GuardHelper.processorContextSet());
 
@@ -149,7 +149,7 @@ class ArgProcessorParser extends AbstractParser {
 
         // context arguments (local variables 1, 2, ...) cannot be stored or
         // overwritten, may be used only in method calls
-        ParserHelper.usesContextProperly(className, method);
+        ensureMethodUsesContextProperly(method);
 
         // ** create unprocessed code holder class **
         // code is processed after everything is parsed
@@ -317,7 +317,7 @@ class ArgProcessorParser extends AbstractParser {
     private void parseGuardedAnnotation(
             ProcMethodAnnotationsData pmad, AnnotationNode annotation) {
 
-        ParserHelper.parseAnnotation(pmad, annotation);
+        parseAnnotation(annotation, pmad);
 
         if(pmad.guard == null) {
 
@@ -339,7 +339,7 @@ class ArgProcessorParser extends AbstractParser {
 
         ProcessAlsoAnnotationData paData = new ProcessAlsoAnnotationData();
 
-        ParserHelper.parseAnnotation(paData, annotation);
+        parseAnnotation(annotation, paData);
 
         if(paData.types == null) {
 
