@@ -135,11 +135,11 @@
 		if not, we use a thread extended from build tools to generate
 		the extended Thread class.
 	-->
-	<pathconvert property="disl.thread.available" setonempty="false">
+	<pathconvert property="build.disl.thread.available" setonempty="false">
 		<fileset dir="." includes="${build.disl.thread}/**/Thread.class" />
 	</pathconvert>
 
-	<target name="prepare-disl-thread" unless="disl.thread.available">
+	<target name="prepare-disl-thread" unless="build.disl.thread.available">
 		<antcall target="create-disl-thread" />
 	</target>
 
@@ -229,18 +229,20 @@
 
 
 	<target name="build-disl" depends="compile-disl,build-disl-bypass">
-		<local name="disl.server.class" />
-		<find-class property="disl.server.class" dir="${build.disl}" name="DiSLServer" />
-		<find-class property="disl.classfinder.class" dir="${build.disl}" name="DislClassFinder" />
+		<local name="server.class" />
+		<find-class property="server.class" dir="${build.disl}" name="DiSLServer" />
+		
+		<local name="classfinder.class" />
+		<find-class property="classfinder.class" dir="${build.disl}" name="DislClassFinder" />
 
 		<jar destfile="${out.lib}/${disl.lib}">
 			<manifest>
 				<attribute name="Class-Path" value="${asm.lib}" />
-				<attribute name="Main-Class" value="${disl.server.class}" />
+				<attribute name="Main-Class" value="${server.class}" />
 				<attribute name="DiSL-Version" value="${disl.version}" />
 			</manifest>
 
-			<service type="javax.annotation.processing.Processor" provider="${disl.classfinder.class}" />
+			<service type="javax.annotation.processing.Processor" provider="${classfinder.class}" />
 
 			<fileset dir="${build.util}" />
 			<fileset dir="${build.disl}" />
@@ -256,8 +258,8 @@
 		various code generation options. This target generates the
 		header using "javah" after compiling DiSL.
 	-->
-	<property name="disl.agent.codeflags.path" value="${src.disl.agent}/codeflags.h" />
-	<uptodate property="disl.agent.codeflags.uptodate" targetfile="${disl.agent.codeflags.path}">
+	<property name="build.disl.agent.codeflags.path" value="${src.disl.agent}/codeflags.h" />
+	<uptodate property="disl.agent.codeflags.uptodate" targetfile="${build.disl.agent.codeflags.path}">
 		<srcfiles dir="${src.disl}" includes="**/DiSL.java" />
 	</uptodate>
 
@@ -270,7 +272,7 @@
 		<local name="flags.class" />
 		<find-class property="flags.class" dir="${build.disl}" name="*CodeOption$Flag" />
 
-		<javah outputFile="${disl.agent.codeflags.path}">
+		<javah outputFile="${build.disl.agent.codeflags.path}">
 			<class name="${flags.class}" />
 			<classpath refid="disl.classpath" />
 		</javah>
@@ -282,29 +284,32 @@
 		classes. This target generates the "bytecode.c" containing
 		the necessary bytecode.
 	-->
-	<property name="disl.agent.bytecode.path" value="${src.disl.agent}/bytecode.c" />
-	<uptodate property="disl.agent.bytecode.uptodate" targetfile="${disl.agent.bytecode.path}">
+	<property name="build.disl.agent.bytecode.path" value="${src.disl.agent}/bytecode.c" />
+	<uptodate property="build.disl.agent.bytecode.uptodate" targetfile="${build.disl.agent.bytecode.path}">
 		<srcfiles dir="${src.disl.bypass}" />
 	</uptodate>
 
-	<target name="prepare-disl-agent-bytecode" unless="disl.agent.bytecode.uptodate">
+	<target name="prepare-disl-agent-bytecode" unless="build.disl.agent.bytecode.uptodate">
 		<antcall target="generate-disl-agent-bytecode" />
 	</target>
 
 
 	<target name="generate-disl-agent-bytecode" depends="compile-tools,compile-disl">
+		<local name="output.file" />
+		<property name="output.file" value="${build.disl.agent.bytecode.path}" />
+
 		<taskdef name="bytedump" classname="ch.usi.dag.disl.tools.ByteDumpTask">
 			<classpath>
 				<pathelement location="${build.tools}" />
 			</classpath>
 		</taskdef>
 
-		<echo file="${disl.agent.bytecode.path}">/**${line.separator}</echo>
-		<echo file="${disl.agent.bytecode.path}" append="true"> * DO NOT EDIT!${line.separator}</echo>
-		<echo file="${disl.agent.bytecode.path}" append="true"> *${line.separator}</echo>
-		<echo file="${disl.agent.bytecode.path}" append="true"> * This file was generated using the 'generate-disl-agent-bytecode' target.${line.separator}</echo>
-		<echo file="${disl.agent.bytecode.path}" append="true"> */${line.separator}</echo>
-		<echo file="${disl.agent.bytecode.path}" append="true">#include &lt;jvmti.h&gt;${line.separator}</echo>
+		<echo file="${output.file}">/**${line.separator}</echo>
+		<echo file="${output.file}" append="true"> * DO NOT EDIT!${line.separator}</echo>
+		<echo file="${output.file}" append="true"> *${line.separator}</echo>
+		<echo file="${output.file}" append="true"> * This file was generated using the 'generate-disl-agent-bytecode' target.${line.separator}</echo>
+		<echo file="${output.file}" append="true"> */${line.separator}</echo>
+		<echo file="${output.file}" append="true">#include &lt;jvmti.h&gt;${line.separator}</echo>
 
 		<for param="file.path">
 			<path>
@@ -330,15 +335,15 @@
 				<length property="file.length" file="@{file.path}" />
 
 				<!-- Define a structure for each class file. -->
-				<echo file="${disl.agent.bytecode.path}" append="true">${line.separator}jvmtiClassDefinition ${file.variant}_${file.class}_classdef = {${line.separator}</echo>
-				<echo file="${disl.agent.bytecode.path}" append="true">&#9;.class_byte_count = ${file.length},${line.separator}</echo>
-				<echo file="${disl.agent.bytecode.path}" append="true">&#9;.class_bytes = (unsigned char *)${line.separator}</echo>
+				<echo file="${output.file}" append="true">${line.separator}jvmtiClassDefinition ${file.variant}_${file.class}_classdef = {${line.separator}</echo>
+				<echo file="${output.file}" append="true">&#9;.class_byte_count = ${file.length},${line.separator}</echo>
+				<echo file="${output.file}" append="true">&#9;.class_bytes = (unsigned char *)${line.separator}</echo>
 				<bytedump
-					srcFile="@{file.path}" destFile="${disl.agent.bytecode.path}" append="true"
+					srcFile="@{file.path}" destFile="${output.file}" append="true"
 					blockLength="16"  byteFormat="\x%02x"
 					blockPrefix="&#9;&#9;&quot;" blockSuffix="&quot;${line.separator}" lastSuffix="&quot;,${line.separator}"
 				/>
-				<echo file="${disl.agent.bytecode.path}" append="true">};${line.separator}</echo>
+				<echo file="${output.file}" append="true">};${line.separator}</echo>
 			</sequential>
 		</for>
 	</target>
@@ -507,27 +512,29 @@
 			would result in "javac" task excluding all source files
 			for which it could find up-to-date class files.
 		-->
-		<tempfile property="disl.classfinder.output" destDir="${out.dir}" createFile="true" deleteOnExit="true" />
-		<find-class property="disl.classfinder.class" dir="${build.disl}" name="DislClassFinder" />
+		<local name="classfinder.output" />
+		<tempfile property="classfinder.output" destDir="${out.dir}" createFile="true" deleteOnExit="true" />
+
+		<local name="classfinder.class" />
+		<find-class property="classfinder.class" dir="${build.disl}" name="DislClassFinder" />
 
 		<mkdir dir="${out.dir}/empty" />
 		<javac srcdir="${src.test}" destDir="${out.dir}/empty">
 			<classpath refid="test.classpath" />
 
 			<compilerArg value="-proc:only" />
-			<compilerArg line="-processor ${disl.classfinder.class}" />
-			<compilerArg value="-Adisl.classfinder.output=${disl.classfinder.output}" />
+			<compilerArg line="-processor ${classfinder.class}" />
+			<compilerArg value="-Adisl.classfinder.output=${classfinder.output}" />
 			<compilerArg value="-Adisl.classfinder.separator=," />
 
 			<include name="${test.suite.path}/**/*.java" />
 		</javac>
 
-		<loadfile property="disl.classes" srcFile="${disl.classfinder.output}" />
+		<loadfile property="disl.classes" srcFile="${classfinder.output}" />
 
 
 		<!-- Package instrumentation classes. -->
-		<property name="inst.jar" value="${out.test}/${test.suite.name}-inst.jar" />
-		<jar destfile="${inst.jar}">
+		<jar destfile="${out.test}/${test.suite.name}-inst.jar">
 			<manifest>
 				<attribute name="DiSL-Classes" value="${disl.classes}" />
 			</manifest>
