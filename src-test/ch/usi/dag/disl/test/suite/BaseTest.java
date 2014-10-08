@@ -25,7 +25,7 @@ public abstract class BaseTest {
         //
 
         __runner.assertIsFinished ();
-        if (Boolean.getBoolean ("disl.test.verbose")) {
+        if (Boolean.getBoolean ("test.verbose")) {
             __runner.destroyIfRunningAndDumpOutputs ();
         }
 
@@ -34,7 +34,7 @@ public abstract class BaseTest {
         //
 
         _checkOutErr (__runner);
-        __runner.assertRestOutErrNull ();
+        __runner.assertRestOutErrEmpty ();
     }
 
 

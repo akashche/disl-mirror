@@ -14,36 +14,27 @@ import ch.usi.dag.util.Lists;
 public class ClientServerRunner extends Runner {
 
     private static final String __CLIENT_JAVA_COMMAND__ = _getJavaCommand (
-        System.getProperty ("disl.java.home")
+        System.getProperty ("runner.disl.java.home")
     );
 
     private static final String __SERVER_JAVA_COMMAND__ = _getJavaCommand (
-        System.getProperty ("disl.server.java.home")
+        System.getProperty ("runner.disl.server.java.home")
     );
 
     //
 
     private Job __client;
+    private boolean __clientOutEmpty = true;
+    private boolean __clientErrEmpty = true;
 
     private Job __server;
-
-    private boolean clientOutNull;
-
-    private boolean clientErrNull;
-
-    private boolean serverOutNull;
-
-    private boolean serverErrNull;
+    private boolean __serverOutEmpty = true;
+    private boolean __serverErrEmpty = true;
 
     //
 
     public ClientServerRunner (final Class <?> testClass) {
         super (testClass);
-
-        clientOutNull = true;
-        clientErrNull = true;
-        serverOutNull = true;
-        serverErrNull = true;
     }
 
 
@@ -116,6 +107,7 @@ public class ClientServerRunner extends Runner {
 
     @Override
     protected boolean _waitFor (final Duration duration) {
+        // FIXME Wait in parallel for the specified duration.
         boolean finished = true;
         finished = finished & __client.waitFor (duration);
         finished = finished & __server.waitFor (duration);
@@ -152,7 +144,7 @@ public class ClientServerRunner extends Runner {
 
 
     public void assertClientOut (final String fileName) throws IOException {
-        clientOutNull = false;
+        __clientOutEmpty = false;
         assertEquals (
             "client out does not match",
             _loadResource (fileName), __client.getOutput ()
@@ -160,14 +152,14 @@ public class ClientServerRunner extends Runner {
     }
 
 
-    public void assertClientOutNull () throws IOException {
-        clientOutNull = false;
-        assertEquals ("client out does not match", "", __client.getOutput ());
+    public void assertClientOutEmpty () throws IOException {
+        __clientOutEmpty = false;
+        assertEquals ("client out is not empty", "", __client.getOutput ());
     }
 
 
     public void assertClientErr (final String fileName) throws IOException {
-        clientErrNull = false;
+        __clientErrEmpty = false;
         assertEquals (
             "client err does not match",
             _loadResource (fileName), __client.getError ()
@@ -175,14 +167,14 @@ public class ClientServerRunner extends Runner {
     }
 
 
-    public void assertClientErrNull () throws IOException {
-        clientErrNull = false;
-        assertEquals ("client err does not match", "", __client.getError ());
+    public void assertClientErrEmpty () throws IOException {
+        __clientErrEmpty = false;
+        assertEquals ("client err is not empty", "", __client.getError ());
     }
 
 
     public void assertServerOut (final String fileName) throws IOException {
-        serverOutNull = false;
+        __serverOutEmpty = false;
         assertEquals (
             "server out does not match",
             _loadResource (fileName), __server.getOutput ()
@@ -190,14 +182,14 @@ public class ClientServerRunner extends Runner {
     }
 
 
-    public void assertServerOutNull () throws IOException {
-        serverOutNull = false;
-        assertEquals ("server out does not match", "", __server.getOutput ());
+    public void assertServerOutEmpty () throws IOException {
+        __serverOutEmpty = false;
+        assertEquals ("server out is not empty", "", __server.getOutput ());
     }
 
 
     public void assertServerErr (final String fileName) throws IOException {
-        serverErrNull = false;
+        __serverErrEmpty = false;
         assertEquals (
             "server err does not match",
             _loadResource (fileName), __server.getError ()
@@ -205,25 +197,25 @@ public class ClientServerRunner extends Runner {
     }
 
 
-    public void assertServerErrNull () throws IOException {
-        serverErrNull = false;
-        assertEquals ("server err does not match", "", __server.getError ());
+    public void assertServerErrEmpty () throws IOException {
+        __serverErrEmpty = false;
+        assertEquals ("server err is not empty", "", __server.getError ());
     }
 
 
     @Override
-    protected void _assertRestOutErrNull () throws IOException {
-        if (clientOutNull) {
-            assertClientOutNull ();
+    protected void _assertRestOutErrEmpty () throws IOException {
+        if (__clientOutEmpty) {
+            assertClientOutEmpty ();
         }
-        if (clientErrNull) {
-            assertClientErrNull ();
+        if (__clientErrEmpty) {
+            assertClientErrEmpty ();
         }
-        if (serverOutNull) {
-            assertServerOutNull ();
+        if (__serverOutEmpty) {
+            assertServerOutEmpty ();
         }
-        if (serverErrNull) {
-            assertServerErrNull ();
+        if (__serverErrEmpty) {
+            assertServerErrEmpty ();
         }
     }
 

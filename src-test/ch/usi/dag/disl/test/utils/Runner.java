@@ -24,16 +24,16 @@ public abstract class Runner {
 
     protected static final String _ENV_JAVA_HOME_ = "JAVA_HOME";
 
-    protected static final File _DISL_LIB_DIR_ = new File (System.getProperty ("disl.lib.dir", "lib"));
+    protected static final File _DISL_LIB_DIR_ = new File (System.getProperty ("runner.disl.lib.dir", "lib"));
 
-    protected static final File _DISL_AGENT_LIB_ = __libPath ("disl.agent.lib", "libdislagent.so");
-    protected static final File _DISL_BYPASS_JAR_ = __libPath ("disl.bypass.jar", "disl-bypass.jar");
-    protected static final File _DISL_SERVER_JAR_ = __libPath ("disl.server.jar", "disl-server.jar");
+    protected static final File _DISL_AGENT_LIB_ = __libPath ("runner.disl.agent.lib", "libdislagent.so");
+    protected static final File _DISL_BYPASS_JAR_ = __libPath ("runner.disl.bypass.jar", "disl-bypass.jar");
+    protected static final File _DISL_SERVER_JAR_ = __libPath ("runner.disl.server.jar", "disl-server.jar");
     protected static final Class <?> _DISL_SERVER_CLASS_ = DiSLServer.class;
 
-    protected static final File _SHVM_AGENT_LIB_ = __libPath ("shvm.agent.lib", "libdislreagent.so");
-    protected static final File _SHVM_DISPATCH_JAR_ = __libPath ("shvm.dispatch.jar", "dislre-dispatch.jar");
-    protected static final File _SHVM_SERVER_JAR_ = __libPath ("shvm.server.jar", "dislre-server.jar");
+    protected static final File _SHVM_AGENT_LIB_ = __libPath ("runner.shvm.agent.lib", "libdislreagent.so");
+    protected static final File _SHVM_DISPATCH_JAR_ = __libPath ("runner.shvm.dispatch.jar", "dislre-dispatch.jar");
+    protected static final File _SHVM_SERVER_JAR_ = __libPath ("runner.shvm.server.jar", "dislre-server.jar");
     protected static final Class <?> _SHVM_SERVER_CLASS_ = DiSLREServer.class;
 
     private static File __libPath (final String property, final String defaultValue) {
@@ -42,8 +42,8 @@ public abstract class Runner {
 
     //
 
-    protected static final File _TEST_LIB_DIR_ = new File (System.getProperty ("test.lib.dir", "test-jars"));
-    static final boolean TEST_DEBUG = Boolean.getBoolean ("disl.test.debug");
+    protected static final File _TEST_LIB_DIR_ = new File (System.getProperty ("runner.lib.dir", "test-jars"));
+    static final boolean TEST_DEBUG = Boolean.getBoolean ("runner.debug");
 
     //
 
@@ -161,13 +161,13 @@ public abstract class Runner {
         }
 
         Strings.storeToFile (
-            String.format ("tmp.%s.%s.out.txt", __testName, prefix),
+            String.format ("test.%s.%s.out.txt", __testName, prefix),
             job.getOutput ()
         );
 
 
         Strings.storeToFile (
-            String.format ("tmp.%s.%s.err.txt", __testName, prefix),
+            String.format ("test.%s.%s.err.txt", __testName, prefix),
             job.getError ()
         );
     }
@@ -182,11 +182,11 @@ public abstract class Runner {
 
     //
 
-    public final void assertRestOutErrNull () throws IOException {
-        _assertRestOutErrNull ();
+    public final void assertRestOutErrEmpty () throws IOException {
+        _assertRestOutErrEmpty ();
     }
 
-    protected abstract void _assertRestOutErrNull () throws IOException;
+    protected abstract void _assertRestOutErrEmpty () throws IOException;
 
     //
 

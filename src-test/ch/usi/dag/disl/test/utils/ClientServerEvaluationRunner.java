@@ -15,47 +15,36 @@ import ch.usi.dag.util.Lists;
 public class ClientServerEvaluationRunner extends Runner {
 
     private static final String __CLIENT_JAVA_COMMAND__ = _getJavaCommand (
-        System.getProperty ("disl.java.home")
+        System.getProperty ("runner.disl.java.home")
     );
 
     private static final String __SERVER_JAVA_COMMAND__ = _getJavaCommand (
-        System.getProperty ("disl.server.java.home")
+        System.getProperty ("runner.disl.server.java.home")
     );
 
     private static final String __SHADOW_JAVA_COMMAND__ = _getJavaCommand (
-        System.getProperty ("shvm.server.java.home")
+        System.getProperty ("runner.shvm.server.java.home")
     );
 
     //
 
     private Job __client;
+    private boolean __clientOutEmpty = true;
+    private boolean __clientErrEmpty = true;
+
 
     private Job __server;
+    private boolean __serverOutEmpty = true;
+    private boolean __serverErrEmpty = true;
 
     private Job __shadow;
+    private boolean __shadowOutEmpty = true;
+    private boolean __shadowErrEmpty = true;
 
-    private boolean clientOutNull;
-
-    private boolean clientErrNull;
-
-    private boolean shadowOutNull;
-
-    private boolean shadowErrNull;
-
-    private boolean serverOutNull;
-
-    private boolean serverErrNull;
-
+    //
 
     public ClientServerEvaluationRunner (final Class <?> testClass) {
         super (testClass);
-
-        clientOutNull = true;
-        clientErrNull = true;
-        shadowOutNull = true;
-        shadowErrNull = true;
-        serverOutNull = true;
-        serverErrNull = true;
     }
 
     private Job __startServer (
@@ -170,6 +159,7 @@ public class ClientServerEvaluationRunner extends Runner {
 
     @Override
     protected boolean _waitFor (final Duration duration) {
+        // FIXME Wait in parallel for the specified duration.
         boolean finished = true;
         finished = finished & __client.waitFor (duration);
         finished = finished & __server.waitFor (duration);
@@ -211,7 +201,7 @@ public class ClientServerEvaluationRunner extends Runner {
 
 
     public void assertClientOut (final String fileName) throws IOException {
-        clientOutNull = false;
+        __clientOutEmpty = false;
         assertEquals (
             "client out does not match",
             _loadResource (fileName), __client.getOutput ()
@@ -219,14 +209,14 @@ public class ClientServerEvaluationRunner extends Runner {
     }
 
 
-    public void assertClientOutNull () throws IOException {
-        clientOutNull = false;
-        assertEquals ("client out does not match", "", __client.getOutput ());
+    public void assertClientOutEmpty () throws IOException {
+        __clientOutEmpty = false;
+        assertEquals ("client out is not empty", "", __client.getOutput ());
     }
 
 
     public void assertClientErr (final String fileName) throws IOException {
-        clientErrNull = false;
+        __clientErrEmpty = false;
         assertEquals (
             "client err does not match",
             _loadResource (fileName), __client.getError ()
@@ -234,14 +224,14 @@ public class ClientServerEvaluationRunner extends Runner {
     }
 
 
-    public void assertClientErrNull () throws IOException {
-        clientErrNull = false;
-        assertEquals ("client err does not match", "", __client.getError ());
+    public void assertClientErrEmpty () throws IOException {
+        __clientErrEmpty = false;
+        assertEquals ("client err is not empty", "", __client.getError ());
     }
 
 
     public void assertShadowOut (final String fileName) throws IOException {
-        shadowOutNull = false;
+        __shadowOutEmpty = false;
         assertEquals (
             "shadow out does not match",
             _loadResource (fileName), __shadow.getOutput ()
@@ -249,14 +239,14 @@ public class ClientServerEvaluationRunner extends Runner {
     }
 
 
-    public void assertShadowOutNull () throws IOException {
-        shadowOutNull = false;
-        assertEquals ("shadow out does not match", "", __shadow.getOutput ());
+    public void assertShadowOutEmpty () throws IOException {
+        __shadowOutEmpty = false;
+        assertEquals ("shadow out is not empty", "", __shadow.getOutput ());
     }
 
 
     public void assertShadowErr (final String fileName) throws IOException {
-        shadowErrNull = false;
+        __shadowErrEmpty = false;
         assertEquals (
             "shadow err does not match",
             _loadResource (fileName), __shadow.getError ()
@@ -264,14 +254,14 @@ public class ClientServerEvaluationRunner extends Runner {
     }
 
 
-    public void assertShadowErrNull () throws IOException {
-        shadowErrNull = false;
-        assertEquals ("shadow err does not match", "", __shadow.getError ());
+    public void assertShadowErrEmpty () throws IOException {
+        __shadowErrEmpty = false;
+        assertEquals ("shadow err is not empty", "", __shadow.getError ());
     }
 
 
     public void assertServerOut (final String fileName) throws IOException {
-        serverOutNull = false;
+        __serverOutEmpty = false;
         assertEquals (
             "server out does not match",
             _loadResource (fileName), __server.getOutput ()
@@ -279,15 +269,15 @@ public class ClientServerEvaluationRunner extends Runner {
     }
 
 
-    public void assertServerOutNull ()
+    public void assertServerOutEmpty ()
     throws IOException {
-        serverOutNull = false;
-        assertEquals ("server out does not match", "", __server.getOutput ());
+        __serverOutEmpty = false;
+        assertEquals ("server out is not empty", "", __server.getOutput ());
     }
 
 
     public void assertServerErr (final String fileName) throws IOException {
-        serverErrNull = false;
+        __serverErrEmpty = false;
         assertEquals (
             "server err does not match",
             _loadResource (fileName), __server.getError ()
@@ -295,34 +285,34 @@ public class ClientServerEvaluationRunner extends Runner {
     }
 
 
-    public void assertServerErrNull () throws IOException {
-        serverErrNull = false;
-        assertEquals ("server err does not match", "", __server.getError ());
+    public void assertServerErrEmpty () throws IOException {
+        __serverErrEmpty = false;
+        assertEquals ("server err is not empty", "", __server.getError ());
     }
 
 
     @Override
-    protected void _assertRestOutErrNull () throws IOException {
-        if (clientOutNull) {
-            assertClientOutNull ();
+    protected void _assertRestOutErrEmpty () throws IOException {
+        if (__clientOutEmpty) {
+            assertClientOutEmpty ();
         }
 
-        if (clientErrNull) {
-            assertClientErrNull ();
+        if (__clientErrEmpty) {
+            assertClientErrEmpty ();
         }
 
-        if (shadowOutNull) {
-            assertShadowOutNull ();
+        if (__shadowOutEmpty) {
+            assertShadowOutEmpty ();
         }
-        if (shadowErrNull) {
-            assertShadowErrNull ();
+        if (__shadowErrEmpty) {
+            assertShadowErrEmpty ();
         }
 
-        if (serverOutNull) {
-            assertServerOutNull ();
+        if (__serverOutEmpty) {
+            assertServerOutEmpty ();
         }
-        if (serverErrNull) {
-            assertServerErrNull ();
+        if (__serverErrEmpty) {
+            assertServerErrEmpty ();
         }
     }
 

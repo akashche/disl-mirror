@@ -572,17 +572,18 @@
 				<pathelement location="${build.shvm}" />
 			</classpath>
 
-			<!-- allow "disl.", "dislserver.", and "dislreserver." properties to be passed to tests -->
+			<!-- pass properties starting with "disl.", "dislserver.", and "dislreserver." to the tests -->
 			<syspropertyset>
 				<propertyref prefix="disl." />
 				<propertyref prefix="dislserver." />
 				<propertyref prefix="dislreserver." />
 			</syspropertyset>
 
-			<sysproperty key="disl.lib.dir" value="${out.lib}" />
-			<sysproperty key="test.lib.dir" value="${out.test}" />
-			<sysproperty key="disl.agent.lib" value="${disl.agent.lib}" />
-			<sysproperty key="shvm.agent.lib" value="${shvm.agent.lib}" />
+			<sysproperty key="runner.disl.lib.dir" value="${out.lib}" />
+			<sysproperty key="runner.lib.dir" value="${out.test}" />
+			<sysproperty key="runner.disl.agent.lib" value="${disl.agent.lib}" />
+			<sysproperty key="runner.shvm.agent.lib" value="${shvm.agent.lib}" />
+			<sysproperty key="runner.debug" value="${test.debug}" />
 
 			<batchtest fork="yes">
 				<fileset refid="test.batch" />
