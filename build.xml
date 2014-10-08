@@ -584,6 +584,7 @@
 			<sysproperty key="runner.disl.agent.lib" value="${disl.agent.lib}" />
 			<sysproperty key="runner.shvm.agent.lib" value="${shvm.agent.lib}" />
 			<sysproperty key="runner.debug" value="${test.debug}" />
+			<sysproperty key="test.verbose" value="${test.verbose}" />
 
 			<batchtest fork="yes">
 				<fileset refid="test.batch" />
