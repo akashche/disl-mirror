@@ -1,33 +1,43 @@
 package ch.usi.dag.disl.processor.generator;
 
+import org.objectweb.asm.Type;
+
+import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.processor.ArgProcessorKind;
-import ch.usi.dag.disl.processor.ProcCode;
 
 
 public class ProcMethodInstance {
 
-    private final int argPos;
+    private final int argIndex;
+    private final Type argType;
     private final int argsCount;
-    private final ArgProcessorKind argType;
-    private final String argTypeDesc;
-    private final ProcCode code;
+
+    private final ArgProcessorKind kind;
+    private final Code code;
 
     //
 
     public ProcMethodInstance (
-        final int argPos, final int argsCount, final ArgProcessorKind argType,
-        final String argTypeDesc, final ProcCode code
+        final int argIndex, final Type argType,
+        final int argsCount, final ArgProcessorKind kind,
+        final Code code
     ) {
-        this.argPos = argPos;
-        this.argsCount = argsCount;
+        this.argIndex = argIndex;
         this.argType = argType;
-        this.argTypeDesc = argTypeDesc;
+        this.argsCount = argsCount;
+
+        this.kind = kind;
         this.code = code;
     }
 
 
-    public int getArgPos () {
-        return argPos;
+    public int getArgIndex () {
+        return argIndex;
+    }
+
+
+    public Type getArgType () {
+        return argType;
     }
 
 
@@ -36,20 +46,14 @@ public class ProcMethodInstance {
     }
 
 
-    public ArgProcessorKind getArgType () {
-        return argType;
+    public ArgProcessorKind getKind () {
+        return kind;
     }
-
-
-    public String getArgTypeDesc () {
-        return argTypeDesc;
-    }
-
 
     // Note: Code is NOT cloned for each ProcMethodInstance.
     // If the weaver does not rely on this, we can reuse processor instances
     // which can save us some computation
-    public ProcCode getCode () {
+    public Code getCode () {
         return code;
     }
 

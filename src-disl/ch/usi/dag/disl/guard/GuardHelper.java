@@ -11,6 +11,7 @@ import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.GuardRuntimeException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.guardcontext.GuardContext;
+import ch.usi.dag.disl.processor.generator.ProcMethodInstance;
 import ch.usi.dag.disl.processorcontext.ArgumentContext;
 import ch.usi.dag.disl.resolver.GuardMethod;
 import ch.usi.dag.disl.resolver.GuardResolver;
@@ -22,21 +23,21 @@ import ch.usi.dag.disl.util.ReflectionHelper;
 public abstract class GuardHelper {
 
     public static Method findAndValidateGuardMethod (
-        Class <?> guardClass, Set <Class <?>> validArgs
+        final Class <?> guardClass, final Set <Class <?>> validArgs
     ) throws GuardException {
         if (guardClass == null) {
             return null;
         }
 
         // TODO LB: Cache validated methods and don't validate them again?
-        GuardMethod guardMethod = GuardResolver.getInstance ().getGuardMethod (guardClass);
+        final GuardMethod guardMethod = GuardResolver.getInstance ().getGuardMethod (guardClass);
         validateGuardMethod (guardMethod, validArgs);
         return guardMethod.getMethod ();
     }
 
 
     private static void validateGuardMethod (
-        GuardMethod guardMethod, Set <Class <?>> validArgs
+        final GuardMethod guardMethod, final Set <Class <?>> validArgs
     ) throws GuardException {
         // quick validation
         if(guardMethod.getArgTypes() != null) {
@@ -48,7 +49,7 @@ public abstract class GuardHelper {
             // we have some additional argument types then only valid ones
 
             // prepare invalid argument type set
-            Set <Class <?>> invalidArgTypes =
+            final Set <Class <?>> invalidArgTypes =
                 new HashSet <Class <?>> (guardMethod.getArgTypes ());
             invalidArgTypes.removeAll (validArgs);
 
@@ -62,8 +63,8 @@ public abstract class GuardHelper {
         }
 
         // validate properly
-        Method method = guardMethod.getMethod();
-        String methodName = __fullMethodName (method);
+        final Method method = guardMethod.getMethod();
+        final String methodName = __fullMethodName (method);
         if (!method.getReturnType ().equals (boolean.class)) {
             throw new GuardException (
                 "Guard method "+ methodName +" MUST return boolean type");
@@ -75,8 +76,8 @@ public abstract class GuardHelper {
         }
 
         // remember argument types for quick validation
-        Set <Class <?>> argTypes = new HashSet <Class <?>> ();
-        for (Class <?> argType : method.getParameterTypes ()) {
+        final Set <Class <?>> argTypes = new HashSet <Class <?>> ();
+        for (final Class <?> argType : method.getParameterTypes ()) {
             // throws exception in the case of invalidity
             argTypes.add (validateArgument (methodName, argType, validArgs));
         }
@@ -86,10 +87,10 @@ public abstract class GuardHelper {
 
 
     private static Class <?> validateArgument (
-        String guardMethodName, Class <?> argClass, Set <Class <?>> validArgClasses
+        final String guardMethodName, final Class <?> argClass, final Set <Class <?>> validArgClasses
     ) throws GuardException {
         // validate that implements one of the allowed interfaces
-        for (Class <?> allowedInterface : validArgClasses) {
+        for (final Class <?> allowedInterface : validArgClasses) {
             // valid
             if (argClass.equals (allowedInterface)) {
                 return allowedInterface;
@@ -113,7 +114,7 @@ public abstract class GuardHelper {
         );
 
         String comma = "";
-        for (Class <?> allowedInterface : validArgClasses) {
+        for (final Class <?> allowedInterface : validArgClasses) {
             message.format ("%s%s", comma, allowedInterface.getName ());
             comma = ", ";
         }
@@ -124,7 +125,7 @@ public abstract class GuardHelper {
     // *** Methods tight with processor or snippet guard ***
 
     public static Set <Class <?>> snippetContextSet () {
-        Set <Class <?>> allowedSet = new HashSet <Class <?>> ();
+        final Set <Class <?>> allowedSet = new HashSet <Class <?>> ();
 
         allowedSet.add (GuardContext.class);
         allowedSet.add (StaticContext.class);
@@ -134,7 +135,7 @@ public abstract class GuardHelper {
 
 
     public static Set <Class <?>> processorContextSet () {
-        Set <Class <?>> allowedSet = new HashSet <Class <?>> ();
+        final Set <Class <?>> allowedSet = new HashSet <Class <?>> ();
 
         allowedSet.add (GuardContext.class);
         allowedSet.add (StaticContext.class);
@@ -145,7 +146,7 @@ public abstract class GuardHelper {
 
 
     // invoke guard method for snippet guard
-    public static boolean guardApplicable (Method guardMethod, Shadow shadow) {
+    public static boolean guardApplicable (final Method guardMethod, final Shadow shadow) {
         if (guardMethod == null) {
             return true;
         }
@@ -157,17 +158,16 @@ public abstract class GuardHelper {
 
     // invoke guard method for processor guard
     public static boolean guardApplicable (
-        Method guardMethod, Shadow shadow,
-        int position, String typeDescriptor, int totalCount
+        final Method guardMethod, final Shadow shadow,
+        final ProcMethodInstance pmi
     ) {
-        if(guardMethod == null) {
+        if (guardMethod == null) {
             return true;
         }
 
         // no method validation needed - already validated
         return invokeGuardMethod (
-            guardMethod, shadow,
-            new ArgumentContextImpl (position, typeDescriptor, totalCount)
+            guardMethod, shadow, new ArgumentContextImpl (pmi)
         );
     }
 
@@ -175,7 +175,7 @@ public abstract class GuardHelper {
     // invoke guard for processor or snippet guard
     // this is just helper method for GuardContextImpl - reduced visibility
     static boolean invokeGuard (
-        Class <?> guardClass, Shadow shadow, ArgumentContext ac
+        final Class <?> guardClass, final Shadow shadow, final ArgumentContext ac
     ) throws GuardException {
         //
         // Find and validate the guard method first, then invoke it.
@@ -183,7 +183,7 @@ public abstract class GuardHelper {
         // The validation set depends on whether we are in a snippet (no
         // processor context supplied) or in an argument processor.
         //
-        GuardMethod guardMethod = GuardResolver.getInstance ().
+        final GuardMethod guardMethod = GuardResolver.getInstance ().
             getGuardMethod (guardClass);
 
         final Set <Class <?>> validationSet = (ac == null) ?
@@ -200,7 +200,7 @@ public abstract class GuardHelper {
     // NOTE: all calling methods should guarantee using validation method,
     // that if ArgumentContext is needed, it cannot be null
     private static boolean invokeGuardMethod (
-        Method guardMethod, Shadow shadow, ArgumentContext ac
+        final Method guardMethod, final Shadow shadow, final ArgumentContext ac
     ) {
         final Class <?> [] paramTypes = guardMethod.getParameterTypes ();
         final Object [] arguments = new Object [paramTypes.length];
@@ -250,7 +250,7 @@ public abstract class GuardHelper {
         try {
             return (Boolean) guardMethod.invoke (null, arguments);
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             final String message = String.format (
                 "Invocation of guard method %s failed",
                 __fullMethodName (guardMethod)

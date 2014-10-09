@@ -1,6 +1,8 @@
 package ch.usi.dag.disl.snippet;
 
 import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,18 +14,20 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import ch.usi.dag.disl.DiSL.CodeOption;
 import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.coderep.UnprocessedCode;
 import ch.usi.dag.disl.dynamicbypass.DynamicBypass;
+import ch.usi.dag.disl.exception.DiSLFatalException;
+import ch.usi.dag.disl.exception.DiSLInitializationException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.marker.BytecodeMarker;
 import ch.usi.dag.disl.marker.Marker;
@@ -33,316 +37,334 @@ import ch.usi.dag.disl.processorcontext.ArgumentProcessorMode;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
 
-/**
- * Contains unprocessed code of the Snippet.
- */
-public class SnippetUnprocessedCode extends UnprocessedCode {
 
-    private String className;
-    private String methodName;
-    private boolean dynamicBypass;
-    private boolean usesProcessorContext;
+/**
+ * Represents a snippet code template. This template contains the original code
+ * produced by the Java compiler, potentially wrapped with dynamic bypass
+ * control code and an exception handler to catch all exceptions.
+ */
+public class SnippetUnprocessedCode {
+    /**
+     * Determines whether the snippet should control dynamic bypass if the
+     * dynamic bypass is enabled.
+     */
+    private final boolean __snippetDynamicBypass;
 
     /**
-     * Creates unprocessed code structure.
+     * The code template we are decorating.
      */
-    public SnippetUnprocessedCode(String className, String methodName,
-            InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
-            Set<String> declaredStaticContexts, boolean usesDynamicContext,
-            boolean dynamicBypass, boolean usesClassContext,
-            boolean usesProcessorContext) {
+    private final UnprocessedCode __template;
 
-        super(instructions, tryCatchBlocks, declaredStaticContexts,
-                usesDynamicContext, usesClassContext);
-        this.className = className;
-        this.methodName = methodName;
-        this.dynamicBypass = dynamicBypass;
-        this.usesProcessorContext = usesProcessorContext;
+    //
+
+    /**
+     * Initializes a snippet code template with information about source class,
+     * source method, usage of context parameters in the template, and whether
+     * the snippet requires automatic control of dynamic bypass.
+     */
+    public SnippetUnprocessedCode (
+        final String className, final MethodNode method,
+        final boolean snippetDynamicBypass
+    ) {
+        __template = new UnprocessedCode (className, method);
+        __snippetDynamicBypass = snippetDynamicBypass;
     }
+
+
+
+    //
+
+    public String className () {
+        return __template.className ();
+    }
+
+
+    public String methodName () {
+        return __template.methodName ();
+    }
+
+    //
 
     /**
      * Processes the stored data and creates snippet code structure.
      */
-    public SnippetCode process(LocalVars allLVs, Map<Type, ArgProcessor> processors,
-            Marker marker, boolean exceptHandler, boolean useDynamicBypass)
-            throws StaticContextGenException, ReflectionException,
-            ProcessorException {
+    public SnippetCode process (
+        final LocalVars vars, final Map <Type, ArgProcessor> processors,
+        final Marker marker, final Set <CodeOption> options
+    ) throws DiSLInitializationException, ProcessorException, ReflectionException  {
+        //
+        // Pre-process code with local variables.
+        //
+        final Code code = __template.process (vars);
 
-        // process code
-        Code code = super.process(allLVs);
-
-        // process snippet code
-
-        InsnList instructions = code.getInstructions();
-        List<TryCatchBlockNode> tryCatchBlocks = code.getTryCatchBlocks();
-
-        // *** CODE PROCESSING ***
-        // !NOTE ! : Code processing has to be done before "processors in use"
-        // analysis otherwise the instruction reference produced by this
-        // analysis may be wrong
-        // NOTE: methods are modifying arguments
-
-        if (useDynamicBypass && dynamicBypass) {
-            insertDynamicBypass(instructions);
+        //
+        // Process code:
+        //
+        // If required, insert dynamic bypass control around the snippet,
+        // or code to catch all exceptions to avoid disrupting program flow.
+        //
+        // Code processing has to be done before looking for argument processor
+        // invocations, otherwise the analysis will produce wrong instruction
+        // references.
+        //
+        final InsnList insns = code.getInstructions ();
+        if (options.contains (CodeOption.DYNAMIC_BYPASS) && __snippetDynamicBypass) {
+            __insertDynamicBypassControl (insns);
         }
 
-        if (exceptHandler) {
-            // catch all exceptions
-            // it is forbidden to throw an exception in a snippet
-            insertExceptionHandler(instructions, tryCatchBlocks);
+        final List <TryCatchBlockNode> tcbs = code.getTryCatchBlocks ();
+        if (options.contains (CodeOption.CATCH_EXCEPTIONS)) {
+            __insertExceptionHandler (insns, tcbs);
         }
 
-        // *** CODE ANALYSIS ***
+        //
+        // Analyze code:
+        //
+        // Find argument processor invocations so that we can determine the
+        // complete set of static context methods invoked within the snippet.
+        // This is required later to prepare static context data for all snippet
+        // invocations.
+        //
+        // No other modification should be done to the snippet code before
+        // weaving, otherwise the produced instruction references will be
+        // invalid.
+        //
+        // TODO LB: Why do we reference the invocations by bytecode index and
+        // not an instruction node reference? Possibly because the index will
+        // be still valid after cloning the code.
+        //
+        final Map <Integer, ProcInvocation> argProcInvocations =
+            __collectArgProcInvocations (insns, processors, marker);
 
-        Map<Integer, ProcInvocation> invokedProcessors =
-            new HashMap<Integer, ProcInvocation>();
+        return new SnippetCode (code, argProcInvocations);
+    }
+
+
+    private Map <Integer, ProcInvocation>  __collectArgProcInvocations (
+        final InsnList insns, final Map <Type, ArgProcessor> procs, final Marker marker
+    ) throws ProcessorException, ReflectionException {
+        final Map <Integer, ProcInvocation> result = new HashMap <> ();
 
         int insnIndex = 0;
-        for (AbstractInsnNode insn : Insns.selectAll (instructions)) {
-            // *** Parse processors in use ***
-            // no other modifications to the code should be done before weaving
-            // otherwise, produced instruction reference can be invalid
-
-            ProcessorInfo processor = insnInvokesProcessor (
-                insn, insnIndex, processors, marker
+        for (final AbstractInsnNode insn : Insns.selectAll (insns)) {
+            final ProcessorInfo apInfo = insnInvokesProcessor (
+                insn, insnIndex, procs, marker
             );
 
-            if (processor != null) {
-                invokedProcessors.put (
-                    processor.getInstrPos (),
-                    processor.getProcInvoke ()
-                );
+            if (apInfo != null) {
+                result.put (apInfo.insnIndex, apInfo.invocation);
             }
 
             insnIndex++;
         }
 
-        return new SnippetCode(
-            instructions, tryCatchBlocks, code.getReferencedSLVs(),
-            code.getReferencedTLVs(), code.containsHandledException(),
-            code.getStaticContexts(), code.usesDynamicContext(),
-            code.usesClassContext(), usesProcessorContext,
-            invokedProcessors
-        );
+        return result;
     }
+
 
     private static class ProcessorInfo {
+        final Integer insnIndex;
+        final ProcInvocation invocation;
 
-        private Integer instrPos;
-        private ProcInvocation procInvoke;
-
-        public ProcessorInfo(Integer instrPos, ProcInvocation procInvoke) {
-            super();
-            this.instrPos = instrPos;
-            this.procInvoke = procInvoke;
-        }
-
-        public Integer getInstrPos() {
-            return instrPos;
-        }
-
-        public ProcInvocation getProcInvoke() {
-            return procInvoke;
+        public ProcessorInfo (final Integer insnIndex, final ProcInvocation invocation) {
+            this.insnIndex = insnIndex;
+            this.invocation = invocation;
         }
     }
 
-    private ProcessorInfo insnInvokesProcessor(AbstractInsnNode instr, int i,
-            Map<Type, ArgProcessor> processors, Marker marker)
-            throws ProcessorException, ReflectionException {
 
-        final String APPLY_METHOD = "apply";
-
+    private ProcessorInfo insnInvokesProcessor (
+        final AbstractInsnNode instr, final int i,
+        final Map <Type, ArgProcessor> processors, final Marker marker
+    ) throws ProcessorException, ReflectionException {
         // check method invocation
         if (!(instr instanceof MethodInsnNode)) {
             return null;
         }
 
-        MethodInsnNode min = (MethodInsnNode) instr;
-
         // check if the invocation is processor invocation
-        if (!(min.owner.equals(Type.getInternalName(ArgumentProcessorContext.class))
-                && min.name.equals(APPLY_METHOD))) {
+        final MethodInsnNode min = (MethodInsnNode) instr;
+        final String apcClassName = Type.getInternalName (ArgumentProcessorContext.class);
+        if (!apcClassName.equals (min.owner)) {
+            return null;
+        }
+
+        if (!"apply".equals (min.name)) {
             return null;
         }
 
         // resolve load parameter instruction
-        AbstractInsnNode secondParam = instr.getPrevious();
-        AbstractInsnNode firstParam = secondParam.getPrevious();
+        final AbstractInsnNode secondParam = Insns.REVERSE.nextRealInsn (instr);
+        final AbstractInsnNode firstParam = Insns.REVERSE.nextRealInsn (secondParam);
 
         // NOTE: object parameter is ignored - will be removed by weaver
 
-        // first parameter has to be loaded by LDC
+        // the first parameter has to be loaded by LDC
         if (firstParam == null || firstParam.getOpcode() != Opcodes.LDC) {
-            throw new ProcessorException("In snippet " + className + "."
-                    + methodName + " - pass the first (class)"
-                    + " argument of a ProcMethod.apply method direcltly."
-                    + " ex: ProcMethod.apply(ProcMethod.class,"
-                    + " ArgumentProcessorMode.METHOD_ARGS)");
+            throw new ProcessorException (
+                "%s: pass the first (class) argument to the apply() method "+
+                "directly as a class literal", __template.location (min)
+            );
         }
 
-        // second parameter has to be loaded by GETSTATIC
+        // the second parameter has to be loaded by GETSTATIC
         if (secondParam == null || secondParam.getOpcode() != Opcodes.GETSTATIC) {
-            throw new ProcessorException("In snippet " + className + "."
-                    + methodName + " - pass the second (type)"
-                    + " argument of a ProcMethod.apply method direcltly."
-                    + " ex: ProcMethod.apply(ProcMethod.class,"
-                    + " ArgumentProcessorMode.METHOD_ARGS)");
+            throw new ProcessorException (
+                "%s: pass the second (type) argument to the apply() method "+
+                "directly as an enum literal", __template.location (min)
+            );
         }
 
-        Object asmType = ((LdcInsnNode) firstParam).cst;
 
+        final Object asmType = ((LdcInsnNode) firstParam).cst;
         if (!(asmType instanceof Type)) {
-            throw new ProcessorException("In snippet " + className + "."
-                    + methodName + " - unsupported processor type "
-                    + asmType.getClass().toString());
+            throw new ProcessorException (
+                "%s: unsupported processor type %s",
+                __template.location (min), asmType.getClass ().toString ()
+            );
         }
 
-        Type processorType = (Type) asmType;
-
-        ArgumentProcessorMode procApplyType = ArgumentProcessorMode
-                .valueOf(((FieldInsnNode) secondParam).name);
+        final Type processorType = (Type) asmType;
+        final ArgumentProcessorMode procApplyType = ArgumentProcessorMode.valueOf (
+            ((FieldInsnNode) secondParam).name
+        );
 
         // if the processor apply type is CALLSITE_ARGS
         // the only allowed marker is BytecodeMarker
-        if(ArgumentProcessorMode.CALLSITE_ARGS.equals(procApplyType)
-                && marker.getClass() != BytecodeMarker.class) {
-            throw new ProcessorException(
-                    "ArgumentProcessor applied in mode CALLSITE_ARGS in method "
-                    + className + "." + methodName
-                    + " can be used only with BytecodeMarker");
+        if (ArgumentProcessorMode.CALLSITE_ARGS.equals (procApplyType)
+            && marker.getClass () != BytecodeMarker.class
+        ) {
+            throw new ProcessorException (
+                "%s: ArgumentProcessor applied in the CALLSITE_ARGS mode can "+
+                "be only used with the BytecodeMarker", __template.location (min)
+            );
         }
 
-        ArgProcessor processor = processors.get(processorType);
-
+        final ArgProcessor processor = processors.get (processorType);
         if (processor == null) {
-            throw new ProcessorException("In snippet " + className + "."
-                    + methodName + " - unknow processor used: "
-                    + processorType.getClassName());
+            throw new ProcessorException (
+                "%s: unknown processor: %s", __template.location (min),
+                processorType.getClassName ()
+            );
         }
 
-        ProcInvocation prcInv = new ProcInvocation(processor, procApplyType);
-
-        // get instruction index
-
-        return new ProcessorInfo(i, prcInv);
+        //
+        // Create an argument processor invocation instance tied to a
+        // particular instruction index.
+        //
+        return new ProcessorInfo (
+            i, new ProcInvocation (processor, procApplyType)
+        );
     }
 
-    private void insertExceptionHandler(InsnList instructions,
-            List<TryCatchBlockNode> tryCatchBlocks) {
+    //
 
-        // NOTE: snippet should not throw an exception
-        // this method inserts try-finally for each snippet and fails
-        // immediately in the case of exception produced by snippet
+    private static final Method __printlnMethod__ = __getMethod (PrintStream.class, "println", String.class);
+    private static final Method __printStackTraceMethod__ = __getMethod (Throwable.class, "printStackTrace");
+    private static final Method __exitMethod__ = __getMethod (System.class, "exit", int.class);
+    private static final Field __errField__ = __getField (System.class, "err");
 
-        // inserts
-        // try {
-        // ... original code
-        // } finally {
-        //   System.err.println("...");
-        //   e.printStackTrace(); // possible here :)
-        //   System.exit(...);
-        // }
+    /**
+     * Inserts a try-finally block for each snippet and fails immediately if a
+     * snippet produces an exception.
+     */
+    private void __insertExceptionHandler (
+        final InsnList insns, final List <TryCatchBlockNode> tcbs
+    ) {
+        //
+        // The inserted code:
+        //
+        // TRY_BEGIN:       try {
+        //                      ... original snippet code ...
+        //                      goto HANDLER_END;
+        // TRY_END:         } finally (e) {
+        // HANDLER_BEGIN:       System.err.println(...);
+        //                      e.printStackTrace();
+        //                      System.exit(666);
+        //                      throw e;
+        // HANDLER_END:     }
+        //
+        // In the finally block, the exception will be at the top of the stack.
+        //
+        final LabelNode tryBegin = new LabelNode();
+        insns.insert (tryBegin);
 
-        // resolve types
-        Type typeSystem = Type.getType(System.class);
-        Type typePS = Type.getType(PrintStream.class);
-        Type typeString = Type.getType(String.class);
-        Type typeThrowable = Type.getType(Throwable.class);
+        final LabelNode handlerEnd = new LabelNode ();
+        insns.add (AsmHelper.jumpTo (handlerEnd));
 
-        // add try label at the beginning
-        LabelNode tryBegin = new LabelNode();
-        instructions.insert(tryBegin);
+        final LabelNode tryEnd = new LabelNode ();
+        insns.add (tryEnd);
 
-        // ## try {
+        final LabelNode handlerBegin = new LabelNode ();
+        insns.add (handlerBegin);
 
-        // ## }
+        // System.err.println(...);
+        insns.add (AsmHelper.getStatic (__errField__));
+        insns.add (AsmHelper.loadConst (String.format (
+            "%s: failed to handle an exception", __template.location (tryBegin)
+        )));
+        insns.add (AsmHelper.invokeVirtual (__printlnMethod__));
 
-        // normal flow should jump after handler
-        LabelNode handlerEnd = new LabelNode();
-        instructions.add(new JumpInsnNode(Opcodes.GOTO, handlerEnd));
+        // e.printStackTrace();
+        insns.add (new InsnNode (Opcodes.DUP));
+        insns.add (AsmHelper.invokeVirtual (__printStackTraceMethod__));
 
-        // ## after normal flow
+        // System.exit(666)
+        insns.add (AsmHelper.loadConst (666));
+        insns.add (AsmHelper.invokeStatic (__exitMethod__));
 
-        // add try label at the end
-        LabelNode tryEnd = new LabelNode();
-        instructions.add(tryEnd);
+        // Re-throw the exception (just for proper stack frame calculation)
+        insns.add (new InsnNode (Opcodes.ATHROW));
+        insns.add (handlerEnd);
 
-        // ## after abnormal flow - exception handler
-
-        // add handler begin
-        LabelNode handlerBegin = new LabelNode();
-        instructions.add(handlerBegin);
-
-        // add error report
-
-        // put error stream on the stack
-        instructions.add(new FieldInsnNode(Opcodes.GETSTATIC,
-                typeSystem.getInternalName(),
-                "err",
-                typePS.getDescriptor()));
-
-        // put error report on the stack
-        instructions.add(new LdcInsnNode(
-                "Snippet " + className + "." + methodName
-                + " introduced exception that was not"
-                + " handled. This would change the application control flow."
-                + " Exiting..."));
-
-        // invoke printing
-        instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
-                typePS.getInternalName(),
-                "println",
-                "(" + typeString.getDescriptor() + ")V"));
-
-        // duplicate exception reference on the stack
-        instructions.add(new InsnNode(Opcodes.DUP));
-
-        // invoke printing stack trace
-        instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
-                typeThrowable.getInternalName(),
-                "printStackTrace",
-                "()V"));
-
-        // add system exit
-
-        // add exit code
-        final int EXIT_CODE = 666;
-        instructions.add(AsmHelper.loadConst(EXIT_CODE));
-
-        // invoke System.exit()
-        instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                typeSystem.getInternalName(), "exit", "(I)V"));
-
-        // add throw exception just for proper stack frame calculation
-        instructions.add(new InsnNode(Opcodes.ATHROW));
-
-        // add handler end
-        instructions.add(handlerEnd);
-
-        // ## add handler to the list
-        tryCatchBlocks.add(new TryCatchBlockNode(tryBegin, tryEnd,
-                handlerBegin, null));
-
+        // Add the exception handler to the list.
+        tcbs.add (new TryCatchBlockNode (tryBegin, tryEnd, handlerBegin, null));
     }
 
-    private void insertDynamicBypass(InsnList instructions) {
+    //
 
-        // inserts
-        // DynamicBypass.activate();
-        // ... original code
-        // DynamicBypass.deactivate();
+    private static final Method __dbActivate__ = __getMethod (DynamicBypass.class, "activate");
+    private static final Method __dbDeactivate__ = __getMethod (DynamicBypass.class, "deactivate");
 
-        // resolve type
-        Type typeDB = Type.getType(DynamicBypass.class);
-
-        // add invocation of activate at the beginning
-        instructions.insert(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                typeDB.getInternalName(), "activate", "()V"));
-
-        // ## after normal flow
-
-        // add invocation of deactivate - normal flow
-        instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                typeDB.getInternalName(), "deactivate", "()V"));
+    private static void __insertDynamicBypassControl (final InsnList insns) {
+        //
+        // Wraps the given list of instructions with code that controls the
+        // dynamic bypass. The bypass is enabled before the first instruction
+        // and disabled again after the last instruction:
+        //
+        //      DynamicBypass.activate();
+        //      ... original snippet code ...
+        //      DynamicBypass.deactivate();
+        //
+        insns.insert (AsmHelper.invokeStatic (__dbActivate__));
+        insns.add (AsmHelper.invokeStatic (__dbDeactivate__));
     }
+
+    //
+
+
+    private static Method __getMethod (
+        final Class <?> owner, final String name, final Class <?> ... types
+    ) {
+        try {
+            return owner.getMethod (name, types);
+
+        } catch (final NoSuchMethodException e) {
+            throw new DiSLFatalException (
+                "could not find method %s in class %s", name, owner.getName ()
+            );
+        }
+    }
+
+    private static Field __getField (final Class <?> owner, final String name) {
+        try {
+            return owner.getField (name);
+
+        } catch (final NoSuchFieldException nsfe) {
+            throw new DiSLFatalException (
+                "could not find field %s in class %s", name, owner.getName ()
+            );
+        }
+    }
+
 }

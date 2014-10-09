@@ -2,123 +2,163 @@ package ch.usi.dag.disl.snippet;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.asm.Type;
 
+import ch.usi.dag.disl.DiSL.CodeOption;
+import ch.usi.dag.disl.exception.DiSLInitializationException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.processor.ArgProcessor;
+import ch.usi.dag.disl.processor.ArgProcessorMethod;
 import ch.usi.dag.disl.scope.Scope;
 
+
 /**
- * Holds all the information about a snippet.
+ * Holds all the information about a snippet. Is analogous to
+ * {@link ArgProcessorMethod}.
  */
-public class Snippet implements Comparable<Snippet> {
+public class Snippet implements Comparable <Snippet> {
 
-    private String originClassName;
-    private String originMethodName;
+    private final Class <?> annotationClass;
+    private final Marker marker;
+    private final Scope scope;
+    private final Method guard;
+    private final int order;
+    private final SnippetUnprocessedCode __template;
 
-    private Class<?> annotationClass;
-    private Marker marker;
-    private Scope scope;
-    private Method guard;
-    private int order;
-    private SnippetUnprocessedCode unprocessedCode;
-    private SnippetCode code;
+    private SnippetCode __code;
+
 
     /**
      * Creates snippet structure.
      */
-    public Snippet(String originClassName, String originMethodName,
-            Class<?> annotationClass, Marker marker, Scope scope, Method guard,
-            int order, SnippetUnprocessedCode unprocessedCode) {
-        super();
-        this.originClassName = originClassName;
-        this.originMethodName = originMethodName;
+    public Snippet (
+        final Class <?> annotationClass, final Marker marker,
+        final Scope scope, final Method guard,
+        final int order, final SnippetUnprocessedCode template
+    ) {
         this.annotationClass = annotationClass;
         this.marker = marker;
         this.scope = scope;
         this.guard = guard;
         this.order = order;
-        this.unprocessedCode = unprocessedCode;
+
+        __template = template;
     }
 
+    //
+
     /**
-     * Get the class name where the snippet is defined.
+     * @return The canonical name of the class in which the snippet was defined.
      */
     public String getOriginClassName() {
-        return originClassName;
+        return __template.className ();
     }
 
+
     /**
-     * Get the method name where the snippet is defined.
+     * @return The name of the snippet method.
      */
     public String getOriginMethodName() {
-        return originMethodName;
+        return __template.methodName ();
     }
 
+
     /**
-     * Get the snippet annotation class.
+     * @return A fully qualified name of the snippet method.
      */
-    public Class<?> getAnnotationClass() {
+    public String getOriginName () {
+        return __template.className () +"."+ __template.methodName ();
+    }
+
+
+    /**
+     * @return The snippet annotation class.
+     */
+    public Class <?> getAnnotationClass () {
         return annotationClass;
     }
 
+
     /**
-     * Get the snippet marker.
+     * @return The marker associated with the snippet.
      */
-    public Marker getMarker() {
+    public Marker getMarker () {
         return marker;
     }
 
+
     /**
-     * Get the snippet scope.
+     * @returns The scope in which the snippet should be applied.
      */
-    public Scope getScope() {
+    public Scope getScope () {
         return scope;
     }
 
+
     /**
-     * Get the snippet guard.
+     * @returns The guard which determines where the snippet should be applied.
      */
-    public Method getGuard() {
+    public Method getGuard () {
         return guard;
     }
 
+
     /**
-     * Get the snippet order.
+     * Returns the snippet weaving order. The lower the order, the closer a
+     * snippet gets to the marked code location.
+     *
+     * @return The snippet weaving order.
      */
-    public int getOrder() {
+    public int getOrder () {
         return order;
     }
 
-    /**
-     * Get the snippet code.
-     */
-    public SnippetCode getCode() {
-        return code;
-    }
 
     /**
-     * Compares snippets according to order.
+     * Returns the instantiated snippet code. Before calling this method, the
+     * snippet must be initialized using the {@link #init(LocalVars, Map, Set)
+     * init()} method.
+     *
+     * @return {@link SnippetCode} representing an instantiate snippet.
      */
-    public int compareTo(Snippet o) {
-        return o.getOrder() - order;
+    public SnippetCode getCode () {
+        if (__code == null) {
+            throw new IllegalStateException ("snippet not initialized");
+        }
+
+        return __code;
     }
+
 
     /**
-     * Initializes snippet -- prepares the snippet code.
+     * Compares a snippet to another snippet. The natural ordering of snippets
+     * is determined by their weaving order. A snippet with a lower weaving
+     * order is considered greater and vice-versa.
      */
-    public void init(LocalVars allLVs, Map<Type, ArgProcessor> processors,
-            boolean exceptHandler, boolean useDynamicBypass)
-            throws StaticContextGenException, ReflectionException,
-            ProcessorException {
-
-        code = unprocessedCode.process(allLVs, processors, marker,
-                exceptHandler, useDynamicBypass);
-        unprocessedCode = null;
+    @Override
+    public int compareTo (final Snippet that) {
+        return Integer.compare (that.order, this.order);
     }
+
+
+    /**
+     * Prepares a snippet for weaving by instantiating the snippet code template
+     * with the given local variables, argument processors, and code options.
+     * <p>
+     * TODO LB: Consider actually returning an initialized copy of this
+     * snippet and making this class immutable. Moreover, the state of a
+     * snippet should not be determined by its static type.
+     */
+    public void init (
+        final LocalVars locals, final Map <Type, ArgProcessor> processors,
+        final Set <CodeOption> options
+    ) throws DiSLInitializationException, ProcessorException, ReflectionException  {
+        __code = __template.process (locals, processors, marker, options);
+    }
+
 }

@@ -921,9 +921,9 @@ public class WeavingCode {
         for (final ProcMethodInstance processorMethod : processor.getMethods ()) {
             final Code code = processorMethod.getCode().clone();
 
-            final int position = processorMethod.getArgPos ();
+            final int position = processorMethod.getArgIndex ();
             final int totalCount = processorMethod.getArgsCount ();
-            final Type type = processorMethod.getArgType ().primaryType ();
+            final Type type = processorMethod.getKind ().primaryType ();
             final InsnList insns = code.getInstructions();
             rewriteArgumentContextCalls (position, totalCount, type, insns);
 
@@ -931,7 +931,7 @@ public class WeavingCode {
             __shiftLocalSlots (maxLocals, insns);
             maxLocals = __calcMaxLocals (maxLocals + type.getSize (), insns);
             insns.insert (AsmHelper.loadVar (type,
-                AsmHelper.getParameterSlot (method, processorMethod.getArgPos ()) - method.maxLocals
+                AsmHelper.getParameterSlot (method, processorMethod.getArgIndex ()) - method.maxLocals
             ));
 
             result.add (insns);
@@ -951,9 +951,9 @@ public class WeavingCode {
         for (final ProcMethodInstance pmi : processor.getMethods ()) {
             final Code code = pmi.getCode ().clone ();
 
-            final int index = pmi.getArgPos ();
+            final int index = pmi.getArgIndex ();
             final int total = pmi.getArgsCount ();
-            final Type type = pmi.getArgType ().primaryType ();
+            final Type type = pmi.getKind ().primaryType (); // TODO LB: Why not get the type directly from pmi?
             final InsnList insns = code.getInstructions ();
             rewriteArgumentContextCalls (index, total, type, insns);
 

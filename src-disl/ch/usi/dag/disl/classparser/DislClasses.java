@@ -3,16 +3,16 @@ package ch.usi.dag.disl.classparser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Set;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
+import ch.usi.dag.disl.DiSL.CodeOption;
 import ch.usi.dag.disl.annotation.ArgumentProcessor;
 import ch.usi.dag.disl.cbloader.ClassByteLoader;
 import ch.usi.dag.disl.exception.DiSLInitializationException;
-import ch.usi.dag.disl.exception.GuardException;
-import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
@@ -41,9 +41,9 @@ public class DislClasses {
     //
 
     public static DislClasses load (
-        final boolean useDynamicBypass, final boolean useExceptHandler
-    ) throws DiSLInitializationException, ParserException, ReflectionException,
-    StaticContextGenException, MarkerException, GuardException, ProcessorException {
+        final Set <CodeOption> options
+    ) throws DiSLInitializationException, ParserException,
+    StaticContextGenException, ReflectionException, ProcessorException {
         final List <InputStream> classStreams = ClassByteLoader.loadDiSLClasses ();
         if (classStreams == null) {
             throw new DiSLInitializationException (
@@ -83,12 +83,13 @@ public class DislClasses {
             processor.init (localVars);
         }
 
+        // TODO LB: Consider whether we need to create the argument processor
+        // invocation map now -- we basically discard the argument processors
+        // and keep an invocation map keyed to instruction indices! :-(
+
         // TODO LB: Move the loop to the SnippetParser class
         for (final Snippet snippet : sp.getSnippets ()) {
-            snippet.init (
-                localVars, app.getProcessors (),
-                useExceptHandler, useDynamicBypass
-            );
+            snippet.init (localVars, app.getProcessors (), options);
         }
 
         return new DislClasses (sp);

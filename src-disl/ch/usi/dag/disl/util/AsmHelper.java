@@ -458,7 +458,7 @@ public abstract class AsmHelper {
 
     /**
      * Clones a method node, including all code, try-catch blocks, and
-     * annotations. This is actually faster than just cloning the code and the
+     * annotations. This is actually faster than cloning just the code and the
      * try-catch blocks by hand.
      *
      * @param method
@@ -1152,101 +1152,23 @@ public abstract class AsmHelper {
         return -1;
     }
 
+    //
 
+    /**
+     * @return Canonical class name for the given {@link ClassNode}.
+     */
     public static String className (final ClassNode classNode) {
         return internalToStdName (classNode.name);
     }
 
+
+    /**
+     * @return Canonical class name for the given internal class name.
+     */
     public static String internalToStdName (final String internalName) {
         return internalName.replace (
-            Constants.PACKAGE_INTERN_DELIM,
-            Constants.PACKAGE_STD_DELIM
+            Constants.PACKAGE_INTERN_DELIM, Constants.PACKAGE_STD_DELIM
         );
-    }
-
-    //
-    // !@# COMPATIBILITY METHODS !@#
-    //
-
-    /**
-     * Detects if the instruction list contains only return.
-     */
-    @Deprecated
-    public static boolean containsOnlyReturn(final InsnList ilst) {
-        AbstractInsnNode instr = ilst.getFirst();
-        while (instr != null && Insn.isVirtual (instr)) {
-            instr = instr.getNext();
-        }
-
-        if (instr == null) {
-            throw new IllegalArgumentException("instr is null");
-        }
-
-        return isReturn(instr.getOpcode());
-    }
-
-
-    /**
-     * Adds a label to the end of the given instruction list and replaces all
-     * types of RETURN instructions in the list with a GOTO instruction to jump
-     * to the label at the end of the instruction list.
-     *
-     * @param insnList
-     *      list of instructions to perform the replacement on
-     */
-    @Deprecated
-    public static void replaceRetWithGoto(final InsnList insnList) {
-
-        // collect all RETURN instructions
-        final List<AbstractInsnNode> returnInsns = new LinkedList<AbstractInsnNode>();
-        for (final AbstractInsnNode instr : Insns.selectAll (insnList)) {
-            if (isReturn(instr.getOpcode())) {
-                returnInsns.add(instr);
-            }
-        }
-
-        if (returnInsns.size() > 1) {
-            //
-            // Replace all RETURN instructions with a GOTO instruction to
-            // jump to a label at the end of the list.
-            //
-            final LabelNode endLabel = new LabelNode(new Label());
-            for (final AbstractInsnNode insn : returnInsns) {
-                insnList.insertBefore(insn, new JumpInsnNode(Opcodes.GOTO, endLabel));
-                insnList.remove(insn);
-            }
-
-            insnList.add(endLabel);
-
-        } else if (returnInsns.size() == 1) {
-            // there is only one return at the end
-            insnList.remove(returnInsns.get(0));
-        }
-    }
-
-
-    /**
-     * Returns {@code true} if the given instruction loads a type constant
-     * (i.e. a class literal) on the stack, {@code false} otherwise.
-     *
-     * @param insn
-     *            the instruction to check
-     * @return
-     *         {@code true} if the instruction loads a type constant on the
-     *         stack, {@code false} otherwise.
-     */
-    @Deprecated
-    public static boolean isTypeConstLoadInsn(final AbstractInsnNode insn) {
-        if (insn.getOpcode() == Opcodes.LDC) {
-            return ((LdcInsnNode) insn).cst instanceof Type;
-        } else if (insn.getOpcode() == Opcodes.GETSTATIC) {
-            final FieldInsnNode fieldInsn = (FieldInsnNode) insn;
-            final Type type = PRIMITIVE_TYPES.get(fieldInsn.owner);
-            return "TYPE".equals(fieldInsn.name) && type != null;
-
-        } else {
-            return false;
-        }
     }
 
 }

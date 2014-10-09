@@ -1,119 +1,136 @@
 package ch.usi.dag.disl.coderep;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
-import ch.usi.dag.disl.util.AsmHelper.ClonedCode;
+import ch.usi.dag.disl.util.AsmHelper;
+
 
 /**
- * Stores various information about a piece of java bytecode.
+ * Represents an analyzed and partially expanded code template. Instances of
+ * {@link Code} are obtained from {@link UnprocessedCode} instances as a result
+ * of calling the {@link UnprocessedCode#process(LocalVars) process()} method on
+ * them.
  */
 public class Code {
 
-    private InsnList instructions;
-    private List<TryCatchBlockNode> tryCatchBlocks;
-    private Set<SyntheticLocalVar> referencedSLVs;
-    private Set<ThreadLocalVar> referencedTLVs;
-    private Set<StaticContextMethod> staticContexts;
-    private boolean usesDynamicContext;
-    private boolean usesClassContext;
-    // the code contains handler that handles exception and doesn't propagate
-    // it further - can cause stack inconsistency that has to be handled
-    private boolean containsHandledException;
+    /** A method representing the code template. */
+    private final MethodNode __method;
+
+    /** Synthetic-local variables referenced by the code template. */
+    private final Set <SyntheticLocalVar> __syntheticLocals;
+
+    /** Thread-local variables referenced by the code template. */
+    private final Set <ThreadLocalVar> __threadLocals;
+
+    /** Static context methods invoked by the code template. */
+    private final Set <StaticContextMethod> __staticContextMethods;
 
     /**
-     * Constructs the Code structure.
+     * Determines whether the code contains an exception handler that handles an
+     * exception and does not propagate it. This may cause stack inconsistency
+     * which needs to be handled.
      */
-    public Code(InsnList instructions, List<TryCatchBlockNode> tryCatchBlocks,
-            Set<SyntheticLocalVar> referencedSLVs,
-            Set<ThreadLocalVar> referencedTLVs,
-            Set<StaticContextMethod> staticContexts,
-            boolean usesDynamicContext,
-            boolean usesClassContext,
-            boolean containsHandledException) {
-        super();
-        this.instructions = instructions;
-        this.tryCatchBlocks = tryCatchBlocks;
-        this.referencedSLVs = referencedSLVs;
-        this.referencedTLVs = referencedTLVs;
-        this.staticContexts = staticContexts;
-        this.usesDynamicContext = usesDynamicContext;
-        this.usesClassContext = usesClassContext;
-        this.containsHandledException = containsHandledException;
+    private final boolean _containsHandledException;
+
+    //
+
+    public Code (
+        final MethodNode method,
+        final Set <SyntheticLocalVar> syntheticLocals,
+        final Set <ThreadLocalVar> threadLocals,
+        final Set <StaticContextMethod> staticContextMethods,
+        final boolean containsHandledException
+    ) {
+        __method = method; // caller responsible for giving us a clone
+
+        __syntheticLocals = Collections.unmodifiableSet (syntheticLocals);
+        __threadLocals = Collections.unmodifiableSet (threadLocals);
+        __staticContextMethods = Collections.unmodifiableSet (staticContextMethods);
+
+        _containsHandledException = containsHandledException;
     }
+
+
+    private Code (final Code that) {
+        __method = AsmHelper.cloneMethod (that.__method);
+
+        // The following immutables can be shared.
+        __syntheticLocals = that.__syntheticLocals;
+        __threadLocals = that.__threadLocals;
+        __staticContextMethods = that.__staticContextMethods;
+
+        _containsHandledException = that._containsHandledException;
+    }
+
 
     /**
-     * Returns an ASM instruction list.
+     * @return An ASM instruction list.
      */
-    public InsnList getInstructions() {
-        return instructions;
+    public InsnList getInstructions () {
+        return __method.instructions;
     }
+
 
     /**
-     * Returns list of exceptions (as represented in ASM).
+     * @return A list of try-catch blocks (as represented in ASM).
      */
-    public List<TryCatchBlockNode> getTryCatchBlocks() {
-        return tryCatchBlocks;
+    public List <TryCatchBlockNode> getTryCatchBlocks () {
+        return __method.tryCatchBlocks;
     }
+
 
     /**
-     * Returns list of all synthetic local variables referenced in the code.
+     * @returns An unmodifiable set of all synthetic local variables referenced
+     *          in the code.
      */
-    public Set<SyntheticLocalVar> getReferencedSLVs() {
-        return referencedSLVs;
+    public Set <SyntheticLocalVar> getReferencedSLVs () {
+        return __syntheticLocals;
     }
+
 
     /**
-     * Returns list of all thread local variables referenced in the code.
+     * @return An unmodifiable set all thread local variables referenced in the
+     *         code.
      */
-    public Set<ThreadLocalVar> getReferencedTLVs() {
-        return referencedTLVs;
+    public Set <ThreadLocalVar> getReferencedTLVs () {
+        return __threadLocals;
     }
+
 
     /**
-     * Returns list of all static contexts referenced in the code.
+     * @return An unmodifiable set of static context methods referenced in the
+     *         code.
      */
-    public Set<StaticContextMethod> getStaticContexts() {
-        return staticContexts;
+    public Set <StaticContextMethod> getReferencedSCMs () {
+        return __staticContextMethods;
     }
+
 
     /**
-     * Returns true if the code is using dynamic context. False otherwise.
+     * @return {@code true} if the code contains a catch block that handles the
+     *         caught exception.
      */
-    public boolean usesDynamicContext() {
-        return usesDynamicContext;
+    public boolean containsHandledException () {
+        return _containsHandledException;
     }
+
+    //
 
     /**
-     * Returns true if the code is using class context. False otherwise.
+     * Creates a clone of this code.
      */
-    public boolean usesClassContext() {
-        return usesClassContext;
+    @Override
+    public Code clone () {
+        return new Code (this);
     }
 
-    /**
-     * Returns true if the code contains catch block (handles exception).
-     */
-    public boolean containsHandledException() {
-        return containsHandledException;
-    }
-
-    public Code clone() {
-        // clone code first
-        ClonedCode cc = ClonedCode.create (instructions, tryCatchBlocks);
-
-        return new Code (
-            cc.getInstructions (), cc.getTryCatchBlocks (),
-            new HashSet <SyntheticLocalVar> (referencedSLVs),
-            new HashSet <ThreadLocalVar> (referencedTLVs),
-            new HashSet <StaticContextMethod> (staticContexts),
-            usesDynamicContext, usesClassContext, containsHandledException
-        );
-    }
 }

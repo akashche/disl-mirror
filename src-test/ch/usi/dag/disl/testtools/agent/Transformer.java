@@ -15,7 +15,8 @@ public class Transformer implements ClassFileTransformer {
     static {
         try {
             // don't use dynamic bypass
-            __disl = new DiSL (false);
+            System.setProperty ("disl.disablebypass", "true");
+            __disl = DiSL.init ();
 
         } catch (final DiSLException e) {
             throw new RuntimeException (e);

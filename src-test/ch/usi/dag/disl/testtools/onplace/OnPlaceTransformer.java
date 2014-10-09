@@ -22,7 +22,8 @@ public class OnPlaceTransformer {
         // -Ddisl.classes=bin/ch/usi/dag/disl/test/bodymarker/DiSLClass.class
 
         // do not use dynamic bypass
-        DiSL disl = new DiSL(false);
+        System.setProperty ("disl.disablebypass", "true");
+        DiSL disl = DiSL.init ();
 
         String classToTransform = null;
 

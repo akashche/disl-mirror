@@ -4,17 +4,13 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import ch.usi.dag.disl.coderep.StaticContextMethod;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.exception.StaticContextGenException;
-import ch.usi.dag.disl.processor.ArgProcessorMethod;
 import ch.usi.dag.disl.resolver.SCResolver;
-import ch.usi.dag.disl.snippet.ProcInvocation;
 import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
-import ch.usi.dag.disl.snippet.SnippetCode;
 import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.Constants;
 
@@ -25,13 +21,13 @@ public class SCGenerator {
         private final String methodId;
 
 
-        public StaticContextKey (Shadow shadow, String methodId) {
+        public StaticContextKey (final Shadow shadow, final String methodId) {
             this.shadow = shadow;
             this.methodId = methodId;
         }
 
         public StaticContextKey (
-            Shadow shadow, String className, String methodName
+            final Shadow shadow, final String className, final String methodName
         ) {
             this (shadow, className + Constants.STATIC_CONTEXT_METHOD_DELIM + methodName);
         }
@@ -65,7 +61,7 @@ public class SCGenerator {
                 // Shadows and methods must either be null in both
                 // objects, or equal.
                 //
-                boolean shadowsEqual = __nullOrEqual (this.shadow, that.shadow);
+                final boolean shadowsEqual = __nullOrEqual (this.shadow, that.shadow);
                 if (shadowsEqual) {
                     return __nullOrEqual (this.methodId, that.methodId);
                 }
@@ -85,69 +81,54 @@ public class SCGenerator {
 
     //
 
-    private final Map <StaticContextKey, Object>
-        staticInfoData = new HashMap <StaticContextKey, Object> ();
+    private final Map <StaticContextKey, Object> staticInfoData;
 
-
-    public SCGenerator (
-        final Map <Snippet, List <Shadow>> snippetMarkings
+    private SCGenerator (
+        final Map <StaticContextKey, Object> staticInfoData
     ) throws ReflectionException, StaticContextGenException {
-        computeStaticInfo (snippetMarkings);
+        this.staticInfoData = staticInfoData;
     }
 
 
     // Call static context for each snippet and each marked region and create
     // a static info values
-    private void computeStaticInfo (
-        Map <Snippet, List <Shadow>> snippetMarkings
+    public static SCGenerator computeStaticInfo (
+        final Map <Snippet, List <Shadow>> snippetMarkings
     ) throws ReflectionException, StaticContextGenException {
-
+        //
+        // For each snippet, obtain a set of invoked static context methods
+        // (including those invoked in argument processors) and get static
+        // context data for each static context method for each snippet
+        // instance (shadow).
+        //
+        final Map <StaticContextKey, Object> staticInfoData = new HashMap <> ();
         for (final Snippet snippet : snippetMarkings.keySet ()) {
-            for (final Shadow shadow : snippetMarkings.get (snippet)) {
-                // compute static data for snippet and all processors
-                // static data for snippets and processors can be evaluated
-                // and stored together
+            for (final StaticContextMethod scm : snippet.getCode ().getReferencedSCMs ()) {
 
-                final SnippetCode snippetCode = snippet.getCode ();
-                Set <StaticContextMethod>
-                    scMethods = snippetCode.getStaticContexts ();
-
-                // add static contexts from all processors
-                for (ProcInvocation pi : snippetCode.getInvokedProcessors ().values ()) {
-
-                    // add static contexts from all processor methods
-                    for (ArgProcessorMethod pm : pi.getProcessor ().getMethods ()) {
-
-                        // add to the pool
-                        scMethods.addAll (pm.getCode ().getStaticContexts ());
-                    }
-                }
-
-                //
-                // For all static context methods, get a static context
-                // instance, resolve static context data for the method,
-                // and store the result.
-                //
-                for (final StaticContextMethod scm : scMethods) {
+                for (final Shadow shadow : snippetMarkings.get (snippet)) {
                     final StaticContext staticContext =
                         SCResolver.getInstance().getStaticContextInstance (
                             scm.getReferencedClass (), shadow
                         );
 
-                    Object result = getStaticContextData (
+                    final Object result = getStaticContextData (
                         staticContext, scm.getMethod ()
                     );
 
                     // store the result
-                    put (shadow, scm.getId (), result);
+                    staticInfoData.put (
+                        new StaticContextKey (shadow, scm.getId ()), result
+                    );
                 }
             }
         }
+
+        return new SCGenerator (staticInfoData);
     }
 
     // resolves static context data - uses static context data caching
-    private Object getStaticContextData (
-        StaticContext staticContext, final Method method
+    private static Object getStaticContextData (
+        final StaticContext staticContext, final Method method
     ) throws StaticContextGenException, ReflectionException {
 
         try {
@@ -156,7 +137,7 @@ public class SCGenerator {
             return method.invoke (staticContext);
 
         } catch (final Exception e) {
-            String message = String.format (
+            final String message = String.format (
                 "Invocation of static context method %s failed",
                 method.getName ()
             );
@@ -166,22 +147,17 @@ public class SCGenerator {
 
     //
 
-    public boolean contains (Shadow shadow, String infoClass, String infoMethod) {
+    public boolean contains (final Shadow shadow, final String infoClass, final String infoMethod) {
         return staticInfoData.containsKey (new StaticContextKey (
             shadow, infoClass, infoMethod
         ));
     }
 
 
-    public Object get (Shadow shadow, String infoClass, String infoMethod) {
+    public Object get (final Shadow shadow, final String infoClass, final String infoMethod) {
         return staticInfoData.get (new StaticContextKey (
             shadow, infoClass, infoMethod
         ));
-    }
-
-
-    private void put (Shadow shadow, String methodId, Object value) {
-        staticInfoData.put (new StaticContextKey (shadow, methodId), value);
     }
 
 }

@@ -35,12 +35,18 @@ import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.util.Insn;
+import ch.usi.dag.disl.util.Logging;
 import ch.usi.dag.disl.util.ReflectionHelper;
+import ch.usi.dag.util.logging.Logger;
 
 /**
  * Parses DiSL class with local variables.
  */
 abstract class AbstractParser {
+
+    private final Logger __log = Logging.getPackageInstance ();
+
+    //
 
     protected LocalVars allLocalVars = new LocalVars();
 
@@ -142,7 +148,6 @@ abstract class AbstractParser {
         final String className, final FieldNode field,
         final AnnotationNode annotation
     ) throws ParserException {
-
         // check if field is static
         if ((field.access & Opcodes.ACC_STATIC) == 0) {
             throw new ParserException("Field " + className + "." + field.name
@@ -171,7 +176,6 @@ abstract class AbstractParser {
         final String className, final FieldNode field,
         final AnnotationNode annotation
     ) throws ParserException {
-
         // check if field is static
         if ((field.access & Opcodes.ACC_STATIC) == 0) {
             throw new ParserException("Field " + field.name + className
@@ -251,8 +255,8 @@ abstract class AbstractParser {
                 // which marks the end of the initialization code.
                 //
                 if (slv.hasInitCode ()) {
-                    System.out.printf (
-                        "DiSL: warning, replacing initialization code "+
+                    __log.warn (
+                        "replacing initialization code "+
                         "for synthetic local variable %s\n", slv.getID ()
                     );
                 }
@@ -416,6 +420,25 @@ abstract class AbstractParser {
 
     //
 
+    public static void ensureMethodReturnsVoid (
+        final MethodNode method
+    ) throws ParserException {
+        final Type returnType = Type.getReturnType (method.desc);
+        if (! Type.VOID_TYPE.equals (returnType)) {
+            throw new ParserException ("method may not return any value!");
+        }
+    }
+
+
+    public static void ensureMethodIsStatic (
+        final MethodNode method
+    ) throws ParserException {
+        if ((method.access & Opcodes.ACC_STATIC) == 0) {
+            throw new ParserException ("method must be declared static!");
+        }
+    }
+
+
     public static void ensureMethodUsesContextProperly (
         final MethodNode method
     ) throws ParserException {
@@ -462,6 +485,55 @@ abstract class AbstractParser {
             }
         } // for
 
+    }
+
+
+    public static void ensureMethodHasOnlyContextArguments (
+        final MethodNode method
+    ) throws ParserException {
+        //
+        // The type of each method argument must be a context of some kind.
+        //
+        final Type [] argTypes = Type.getArgumentTypes (method.desc);
+        for (int argIndex = 0; argIndex < argTypes.length; argIndex++) {
+            final Type argType = argTypes [argIndex];
+
+            final ContextKind contextType = ContextKind.forType (argType);
+            if (contextType == null) {
+                throw new ParserException (
+                    "argument #%d has invalid type, %s does not "+
+                    "implement any context interface!",
+                    (argIndex + 1), argType.getClassName ()
+                );
+            }
+        }
+    }
+
+
+    /**
+     * Ensures that a given method is not empty, i.e., it does not start with a
+     * return instruction.
+     *
+     * @param method the method to check
+     * @throws ParserException if the method is empty
+     */
+    public static void ensureMethodIsNotEmpty (
+        final MethodNode method
+    ) throws ParserException {
+        final AbstractInsnNode head = method.instructions.getFirst ();
+        final AbstractInsnNode firstInsn = Insns.FORWARD.firstRealInsn (head);
+        if (AsmHelper.isReturn (firstInsn)) {
+            throw new ParserException ("method does not contain any code!");
+        }
+    }
+
+
+    public static void ensureMethodThrowsNoExceptions (
+        final MethodNode method
+    ) throws ParserException {
+        if (! method.exceptions.isEmpty ()) {
+            throw new ParserException ("method may not throw any exceptions!");
+        }
     }
 
 

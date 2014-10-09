@@ -42,28 +42,20 @@ public class PIResolver {
                 return true;
             }
 
-            if (obj == null) {
+            if (obj == null || getClass () != obj.getClass ()) {
                 return false;
             }
 
-            if (getClass () != obj.getClass ()) {
-                return false;
-            }
-
-            final ResolverKey other = (ResolverKey) obj;
-            if (instrPos != other.instrPos) {
+            final ResolverKey that = (ResolverKey) obj;
+            if (instrPos != that.instrPos) {
                 return false;
             }
 
             if (shadow == null) {
-                if (other.shadow != null) {
-                    return false;
-                }
-            } else if (!shadow.equals (other.shadow)) {
-                return false;
+                return that.shadow == null;
+            } else {
+                return shadow.equals (that.shadow);
             }
-
-            return true;
         }
     }
 

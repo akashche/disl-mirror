@@ -1,12 +1,13 @@
 package ch.usi.dag.disl.classparser;
 
 import java.lang.reflect.Method;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -16,177 +17,203 @@ import ch.usi.dag.disl.annotation.After;
 import ch.usi.dag.disl.annotation.AfterReturning;
 import ch.usi.dag.disl.annotation.AfterThrowing;
 import ch.usi.dag.disl.annotation.Before;
-import ch.usi.dag.disl.classcontext.ClassContext;
-import ch.usi.dag.disl.dynamiccontext.DynamicContext;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 import ch.usi.dag.disl.exception.GuardException;
 import ch.usi.dag.disl.exception.MarkerException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.ScopeParserException;
 import ch.usi.dag.disl.exception.SnippetParserException;
-import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.marker.Parameter;
-import ch.usi.dag.disl.processorcontext.ArgumentProcessorContext;
 import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeImpl;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetUnprocessedCode;
-import ch.usi.dag.disl.staticcontext.StaticContext;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
+
 /**
- * The parser takes annotated java file as input and creates Snippet classes
+ * Parses annotated Java class files and converts them to {@link Snippet}
+ * instances which it collects.
  */
 class SnippetParser extends AbstractParser {
 
-    private final List<Snippet> snippets = new LinkedList<Snippet>();
+    private final List <Snippet> snippets = new LinkedList <> ();
 
-    public List<Snippet> getSnippets() {
 
+    public List <Snippet> getSnippets () {
         return snippets;
     }
 
-    public void parse(final ClassNode classNode) throws ParserException,
-            SnippetParserException, ReflectionException, ScopeParserException,
-            StaticContextGenException, MarkerException,
-            GuardException {
+    //
 
-        // NOTE: this method can be called many times
+    // NOTE: this method can be called many times
+    public void parse (final ClassNode dislClass) throws ParserException {
+        processLocalVars (dislClass);
 
-        // process local variables
-        processLocalVars(classNode);
+        //
 
-        for (final MethodNode method : classNode.methods) {
+        try {
+            final String className = AsmHelper.className (dislClass);
 
-            // skip the constructor
-            if (Constants.isConstructorName (method.name)) {
-                continue;
-            }
+            snippets.addAll (dislClass.methods.parallelStream ().unordered ()
+                .filter (m -> !Constants.isConstructorName (m.name))
+                .filter (m -> !Constants.isInitializerName (m.name))
+                .map (m -> __parseSnippetWrapper (className, m))
+                .collect (Collectors.toList ())
+            );
 
-            // skip static initializer
-            if (Constants.isInitializerName (method.name)) {
-                continue;
-            }
-
-            snippets.add(parseSnippet(classNode.name, method));
+        } catch (final ParserRuntimeException e) {
+            throw new ParserException (e.getMessage (), e.getCause ());
         }
     }
+
+
+    private Snippet __parseSnippetWrapper (
+        final String className, final MethodNode method
+    ) {
+        //
+        // Wrap all parser exceptions into ParserRuntimeException so that
+        // __parseSnippet() can be called from a stream pipeline.
+        //
+        try {
+            return __parseSnippet (className, method);
+
+        } catch (final Exception e) {
+            throw new ParserRuntimeException (
+                e, "error parsing snippet %s.%s()",
+                className, method.name
+            );
+        }
+    }
+
 
     // parse snippet
-    private Snippet parseSnippet(final String className, final MethodNode method)
-            throws SnippetParserException, ReflectionException,
-            ScopeParserException, StaticContextGenException, MarkerException,
-            GuardException, ParserException {
+    private Snippet __parseSnippet (
+        final String className, final MethodNode method
+    ) throws ParserException, ReflectionException, MarkerException, GuardException  {
+        __ensureSnippetIsWellDefined (method);
 
-        // check annotation
+        //
+
+        final SnippetAnnotationData data = __parseSnippetAnnotation (
+            method.invisibleAnnotations.get (0)
+        );
+
+        //
+
+        final Marker marker = getMarker (data.marker, data.args);
+        final Scope scope = new ScopeImpl (data.scope);
+        final Method guard = GuardHelper.findAndValidateGuardMethod (
+            AbstractParser.getGuard (data.guard), GuardHelper.snippetContextSet ()
+        );
+
+        final SnippetUnprocessedCode template = new SnippetUnprocessedCode (
+            className, method, data.dynamicBypass
+        );
+
+        //
+
+        return new Snippet (
+            data.type, marker, scope, guard, data.order, template
+        );
+    }
+
+    //
+
+    private void __ensureSnippetIsWellDefined (
+        final MethodNode method
+    ) throws ParserException {
+        //
+        // The ordering of (some of) these checks is important -- some may
+        // rely on certain assumptions to be satisfied.
+        //
+        __ensureSnippetHasAnnotations (method);
+        __ensureSnippetOnlyHasOneAnnotation (method);
+        __ensureSnippetOnlyHasDislAnnotations (method);
+
+        ensureMethodIsStatic (method);
+        ensureMethodReturnsVoid (method);
+        ensureMethodHasOnlyContextArguments (method);
+        ensureMethodThrowsNoExceptions (method);
+
+        ensureMethodIsNotEmpty (method);
+        ensureMethodUsesContextProperly (method);
+    }
+
+    private static void __ensureSnippetHasAnnotations (
+        final MethodNode method
+    ) throws SnippetParserException {
         if (method.invisibleAnnotations == null) {
-            throw new SnippetParserException("DiSL anottation for method "
-                    + className + "." + method.name + " is missing");
+            throw new SnippetParserException ("no annotations found!");
         }
-
-        // check only one annotation
-        if (method.invisibleAnnotations.size() > 1) {
-            throw new SnippetParserException("Method " + className + "."
-                    + method.name + " can have only one DiSL anottation");
-        }
-
-        // check static
-        if ((method.access & Opcodes.ACC_STATIC) == 0) {
-            throw new SnippetParserException("Method " + className + "."
-                    + method.name + " should be declared as static");
-        }
-
-        // check return type
-        if (!Type.getReturnType(method.desc).equals(Type.VOID_TYPE)) {
-            throw new SnippetParserException("Method " + className + "."
-                    + method.name + " cannot return value");
-        }
-
-        // no exception can be thrown
-        if(! method.exceptions.isEmpty()) {
-            throw new SnippetParserException("Method " + className + "."
-                    + method.name + " cannot throw any exception");
-        }
-
-        final AnnotationNode annotation = method.invisibleAnnotations.get(0);
-
-        final SnippetAnnotationData annotData =
-            parseMethodAnnotation(className + "." + method.name, annotation);
-
-        // ** marker **
-        final Marker marker =
-            getMarker(annotData.marker, annotData.args);
-
-        // ** scope **
-        final Scope scope = new ScopeImpl(annotData.scope);
-
-        // ** guard **
-        final Class<?> guardClass = getGuard(annotData.guard);
-        final Method guardMethod = GuardHelper.findAndValidateGuardMethod(guardClass,
-                GuardHelper.snippetContextSet());
-
-        // ** parse used static and dynamic context **
-        final Contexts context = parseUsedContexts(method.desc);
-
-        // ** checks **
-
-        // detect empty snippets
-        if (AsmHelper.containsOnlyReturn(method.instructions)) {
-            throw new SnippetParserException("Method " + className + "."
-                    + method.name + " cannot be empty");
-        }
-
-        // context arguments (local variables 1, 2, ...) cannot be stored or
-        // overwritten, may be used only in method calls
-        ensureMethodUsesContextProperly(method);
-
-        // ** create unprocessed code holder class **
-        // code is processed after everything is parsed
-        final SnippetUnprocessedCode uscd = new SnippetUnprocessedCode(className,
-                method.name, method.instructions, method.tryCatchBlocks,
-                context.getStaticContexts(), context.usesDynamicContext(),
-                annotData.dynamicBypass, context.usesClassContext(),
-                context.usesProcessorContext());
-
-        // return whole snippet
-        return new Snippet(className, method.name, annotData.type, marker,
-                scope, guardMethod, annotData.order, uscd);
     }
 
-    private SnippetAnnotationData parseMethodAnnotation(final String fullMethodName,
-            final AnnotationNode annotation) throws SnippetParserException {
 
-        final Type annotationType = Type.getType(annotation.desc);
-
-        // after annotation
-        if (annotationType.equals(Type.getType(After.class))) {
-            return parseMethodAnnotFields(After.class, annotation);
+    private static void __ensureSnippetOnlyHasOneAnnotation (
+        final MethodNode method
+    ) throws SnippetParserException {
+        if (method.invisibleAnnotations.size () > 1) {
+            throw new SnippetParserException ("only one annotation allowed!");
         }
-
-        // after normal execution annotation
-        if (annotationType.equals(Type.getType(AfterReturning.class))) {
-            return parseMethodAnnotFields(AfterReturning.class, annotation);
-        }
-
-        // after abnormal execution annotation
-        if (annotationType.equals(Type.getType(AfterThrowing.class))) {
-            return parseMethodAnnotFields(AfterThrowing.class, annotation);
-        }
-
-        // before annotation
-        if (annotationType.equals(Type.getType(Before.class))) {
-            return parseMethodAnnotFields(Before.class, annotation);
-        }
-
-        // unknown annotation
-        throw new SnippetParserException("Method " + fullMethodName
-                + " has unsupported DiSL annotation");
     }
+
+
+    private static void __ensureSnippetOnlyHasDislAnnotations (
+        final MethodNode method
+    ) throws SnippetParserException {
+        for (final AnnotationNode annotation : method.invisibleAnnotations) {
+            final Type annotationType = Type.getType (annotation.desc);
+            if (! __isSnippetAnnotation (annotationType)) {
+                throw new SnippetParserException (String.format (
+                    "unsupported annotation: %s", annotationType.getClassName ()
+                ));
+            }
+        }
+    }
+
+    //
+
+    private SnippetAnnotationData __parseSnippetAnnotation (
+        final AnnotationNode annotation
+    ) throws SnippetParserException {
+        //
+        // At this point, the snippet has been checked for unsupported
+        // annotations. The lookup is therefore safe.
+        //
+        final Type annotationType = Type.getType (annotation.desc);
+        final Class <?> annotationClass = __getAnnotationClass (annotationType);
+        return __parseSnippetAnnotationFields (annotation, annotationClass);
+    }
+
+
+    private static boolean __isSnippetAnnotation (final Type annotationType) {
+        return __SNIPPET_ANNOTATIONS__.containsKey (annotationType);
+    }
+
+    private static Class <?> __getAnnotationClass (final Type annotationType) {
+        return __SNIPPET_ANNOTATIONS__.get (annotationType);
+    }
+
+    @SuppressWarnings ("serial")
+    private static final Map <Type, Class <?>> __SNIPPET_ANNOTATIONS__ =
+        Collections.unmodifiableMap (new HashMap <Type, Class <?>> () {
+            {
+                put (After.class);
+                put (AfterReturning.class);
+                put (AfterThrowing.class);
+                put (Before.class);
+            }
+
+            private void put (final Class <?> annotationClass) {
+                put (Type.getType (annotationClass), annotationClass);
+            }
+        });
+
+
 
     // data holder for AnnotationParser
     private static class SnippetAnnotationData {
@@ -206,45 +233,43 @@ class SnippetParser extends AbstractParser {
         }
     }
 
-    private SnippetAnnotationData parseMethodAnnotFields(final Class<?> type,
-            final AnnotationNode annotation) {
 
-        final SnippetAnnotationData sad = new SnippetAnnotationData(type);
-        parseAnnotation(annotation, sad);
+    private SnippetAnnotationData __parseSnippetAnnotationFields (
+        final AnnotationNode annotation, final Class <?> type
+    ) {
+        final SnippetAnnotationData result = new SnippetAnnotationData (type);
 
-        if (sad.marker == null) {
-
-            throw new DiSLFatalException("Missing attribute in annotation "
-                    + type.toString()
-                    + ". This may happen if annotation class is changed but"
-                    + " data holder class is not.");
+        parseAnnotation (annotation, result);
+        if (result.marker == null) {
+            throw new DiSLFatalException (
+                "Missing [marker] attribute in annotation "+ type.toString ()
+                + ". This may happen if annotation class is changed but"
+                + " data holder class is not."
+            );
         }
 
-        return sad;
+        return result;
     }
 
-    private Marker getMarker(final Type markerType, final String markerParam)
-            throws ReflectionException, MarkerException {
+    //
 
-        // get marker class - as generic class
-        final Class<?> genMarkerClass = ReflectionHelper.resolveClass(markerType);
-
-        // get marker class - as subclass
-        final Class<? extends Marker> markerClass =
-                genMarkerClass.asSubclass(Marker.class);
+    private Marker getMarker (
+        final Type markerType, final String markerParam
+    ) throws ReflectionException, MarkerException {
+        final Class <?> rawMarkerClass = ReflectionHelper.resolveClass (markerType);
+        final Class <? extends Marker> markerClass = rawMarkerClass.asSubclass (Marker.class);
 
         // instantiate marker WITHOUT Parameter as an argument
-        if(markerParam == null) {
+        if (markerParam == null) {
             try {
-                return ReflectionHelper.createInstance(markerClass);
-            }
-            catch(final ReflectionException e) {
+                return ReflectionHelper.createInstance (markerClass);
 
-                if(e.getCause() instanceof NoSuchMethodException) {
-                    throw new MarkerException("Marker " + markerClass.getName()
-                            + " requires \"param\" annotation attribute"
-                            + " declared",
-                            e);
+            } catch (final ReflectionException e) {
+                if (e.getCause () instanceof NoSuchMethodException) {
+                    throw new MarkerException ("Marker " + markerClass.getName ()
+                        + " requires \"param\" annotation attribute"
+                        + " declared",
+                        e);
                 }
 
                 throw e;
@@ -253,96 +278,18 @@ class SnippetParser extends AbstractParser {
 
         // try to instantiate marker WITH Parameter as an argument
         try {
-            return ReflectionHelper.createInstance(markerClass, new Parameter(
-                    markerParam));
-        }
-        catch(final ReflectionException e) {
+            return ReflectionHelper.createInstance (
+                markerClass, new Parameter (markerParam)
+            );
 
-            if(e.getCause() instanceof NoSuchMethodException) {
-                throw new MarkerException("Marker " + markerClass.getName()
-                        + " does not support \"param\" attribute", e);
+        } catch (final ReflectionException e) {
+            if (e.getCause () instanceof NoSuchMethodException) {
+                throw new MarkerException ("Marker " + markerClass.getName ()
+                    + " does not support \"param\" attribute", e);
             }
 
             throw e;
         }
     }
 
-    private static class Contexts {
-
-        private final Set<String> staticContexts;
-        private final boolean usesDynamicContext;
-        private final boolean usesClassContext;
-        private final boolean usesProcessorContext;
-
-        public Contexts(final Set<String> staticContexts, final boolean usesDynamicContext,
-                final boolean usesClassContext, final boolean usesProcessorContext) {
-            super();
-            this.staticContexts = staticContexts;
-            this.usesDynamicContext = usesDynamicContext;
-            this.usesClassContext = usesClassContext;
-            this.usesProcessorContext = usesProcessorContext;
-        }
-
-        public Set<String> getStaticContexts() {
-            return staticContexts;
-        }
-
-        public boolean usesDynamicContext() {
-            return usesDynamicContext;
-        }
-
-        public boolean usesClassContext() {
-            return usesClassContext;
-        }
-
-        public boolean usesProcessorContext() {
-            return usesProcessorContext;
-        }
-    }
-
-    private Contexts parseUsedContexts(final String methodDesc)
-            throws ReflectionException, StaticContextGenException {
-
-        final Set<String> knownStCo = new HashSet<String>();
-        boolean usesDynamicContext = false;
-        boolean usesClassContext = false;
-        boolean usesArgProcContext = false;
-
-        for (final Type argType : Type.getArgumentTypes(methodDesc)) {
-
-            // skip dynamic context class - don't check anything
-            if (argType.equals(Type.getType(DynamicContext.class))) {
-                usesDynamicContext = true;
-                continue;
-            }
-
-            // skip class context class - don't check anything
-            if (argType.equals(Type.getType(ClassContext.class))) {
-                usesClassContext = true;
-                continue;
-            }
-
-            // skip processor context class - don't check anything
-            if (argType.equals(Type.getType(ArgumentProcessorContext.class))) {
-                usesArgProcContext = true;
-                continue;
-            }
-
-            final Class<?> argClass = ReflectionHelper.resolveClass(argType);
-
-            // static context should implement static context interface
-            if (!ReflectionHelper.implementsInterface(argClass,
-                    StaticContext.class)) {
-
-                throw new StaticContextGenException(argClass.getName()
-                        + " does not implement StaticContext interface and"
-                        + " cannot be used as snippet method parameter");
-            }
-
-            knownStCo.add(argType.getInternalName());
-        }
-
-        return new Contexts(knownStCo, usesDynamicContext, usesClassContext,
-                usesArgProcContext);
-    }
 }

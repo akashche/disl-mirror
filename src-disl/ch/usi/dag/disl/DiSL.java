@@ -9,7 +9,10 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -20,11 +23,6 @@ import ch.usi.dag.disl.classparser.DislClasses;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.exception.DiSLIOException;
 import ch.usi.dag.disl.exception.DiSLInMethodException;
-import ch.usi.dag.disl.exception.InvalidContextUsageException;
-import ch.usi.dag.disl.exception.MarkerException;
-import ch.usi.dag.disl.exception.ProcessorException;
-import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticContextGenException;
 import ch.usi.dag.disl.exclusion.ExclusionSet;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.localvar.SyntheticLocalVar;
@@ -38,27 +36,26 @@ import ch.usi.dag.disl.snippet.Shadow;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.staticcontext.generator.SCGenerator;
 import ch.usi.dag.disl.util.ClassNodeHelper;
+import ch.usi.dag.disl.util.Logging;
 import ch.usi.dag.disl.weaver.Weaver;
+import ch.usi.dag.util.logging.Logger;
 
-// TODO javadoc comment all
+
 /**
- * Main DiSL class providing interface for an instrumentation framework
- * (normally DiSL Server).
+ * Provides an entry-point and a simple interface to the DiSL instrumentation
+ * framework. This interface is primarily used by the DiSL instrumentation
+ * server, but is generally intended for any instrumentation tool wishing to use
+ * DiSL.
  */
 public final class DiSL {
 
-    public static final boolean trace = Boolean.getBoolean ("trace");
-    public static final boolean debug = trace || Boolean.getBoolean ("debug");
+    private final Logger __log = Logging.getPackageInstance ();
 
-    // default is that exception handler is inserted
-    // this is the reason for "double" negation in assignment
-    private final boolean useExceptHandler = !Boolean.getBoolean("disl.noexcepthandler");
-
-    private final boolean splitLongMethods = Boolean.getBoolean ("disl.splitmethods");
-
-    private final boolean useDynamicBypass;
+    private final boolean debug = Boolean.getBoolean ("debug");
 
     //
+
+    private final Set <CodeOption> __codeOptions;
 
     private final Transformers __transformers;
 
@@ -67,20 +64,80 @@ public final class DiSL {
     private final DislClasses __dislClasses;
 
 
-
     /**
-     * DiSL initialization.
+     * Initializes a DiSL instance by loading transformers, exclusion lists, and
+     * DiSL classes.
+     * <p>
+     * <b>Note:</b> This constructor is deprecated and will be removed in later
+     * releases. Use the {@link #init()} static factory method to obtain a
+     * {@link DiSL} instance.
      *
      * @param useDynamicBypass
-     *        enable or disable dynamic bypass instrumentation
+     *        determines whether to generate bypass code and whether to control
+     *        the bypass dynamically.
      */
-    // this method should be called only once
+    @Deprecated
     public DiSL (final boolean useDynamicBypass) throws DiSLException {
-        this.useDynamicBypass = useDynamicBypass;
+        __codeOptions = __codeOptionsFrom (System.getProperties ());
+
+        // Add the necessary bypass options for backwards compatibility.
+        if (useDynamicBypass) {
+            __codeOptions.add (CodeOption.CREATE_BYPASS);
+            __codeOptions.add (CodeOption.DYNAMIC_BYPASS);
+        }
 
         __transformers = Transformers.load ();
         __excludedScopes = ExclusionSet.prepare();
-        __dislClasses = DislClasses.load (useDynamicBypass, useExceptHandler);
+        __dislClasses = DislClasses.load (__codeOptions);
+    }
+
+
+    /**
+     * Initializes a DiSL instance.
+     */
+    private DiSL (
+        final Set <CodeOption> codeOptions, final Transformers transformers,
+        final Set <Scope> excludedScopes, final DislClasses dislClasses
+    ) {
+        __codeOptions = codeOptions;
+        __transformers = transformers;
+        __excludedScopes = excludedScopes;
+        __dislClasses = dislClasses;
+    }
+
+
+    /**
+     * Loads transformers, exclusion lists, and DiSL classes with snippets, and
+     * creates an instance of the {@link DiSL} class.
+     *
+     * @return A {@link DiSL} instance.
+     * @throws DiSLException
+     *         if the initialization failed.
+     */
+    public static DiSL init () throws DiSLException {
+        return init (System.getProperties ());
+    }
+
+
+    /**
+     * Loads transformers, exclusion lists, and DiSL classes with snippets, and
+     * creates an instance of the {@link DiSL} class.
+     *
+     * @param properties
+     *        the properties to use in place of system properties, may not be
+     *        {@code null}
+     * @return A {@link DiSL} instance.
+     * @throws DiSLException
+     *         if the initialization failed.
+     */
+    private static DiSL init (final Properties properties) throws DiSLException {
+        final Set <CodeOption> codeOptions = __codeOptionsFrom (
+            Objects.requireNonNull (properties)
+        );
+
+        final Transformers transformers = Transformers.load ();
+        final Set <Scope> excludedScopes = ExclusionSet.prepare();
+        final DislClasses dislClasses = DislClasses.load (codeOptions);
 
         // TODO put checker here
         // like After should catch normal and abnormal execution
@@ -89,25 +146,59 @@ public final class DiSL {
         // probably something, you don't want - so just warn the user
         // also it can warn about unknown opcodes if you let user to
         // specify this for InstructionMarker
+
+        return new DiSL (codeOptions, transformers, excludedScopes, dislClasses);
     }
 
 
     /**
-     * Instruments a method in a class.
-     *
-     * NOTE: This method changes the classNode argument
+     * Derives code options from global properties. This is a transitional
+     * compatibility method for the transition to per-request code options.
+     */
+    private static Set <CodeOption> __codeOptionsFrom (
+        final Properties properties
+    ) {
+        final Set <CodeOption> result = EnumSet.noneOf (CodeOption.class);
+
+        final boolean useExceptHandler = !__getBoolean ("disl.noexcepthandler", properties);
+        if (useExceptHandler) {
+            result.add (CodeOption.CATCH_EXCEPTIONS);
+        }
+
+        final boolean disableBypass = __getBoolean ("disl.disablebypass", properties);
+        if (!disableBypass) {
+            result.add (CodeOption.CREATE_BYPASS);
+            result.add (CodeOption.DYNAMIC_BYPASS);
+        }
+
+        final boolean splitLongMethods = __getBoolean ("disl.splitmethods", properties);
+        if (splitLongMethods) {
+            result.add (CodeOption.SPLIT_METHODS);
+        }
+
+        return result;
+    }
+
+    private static boolean __getBoolean (
+        final String name, final Properties properties
+    ) {
+        return Boolean.parseBoolean (properties.getProperty(name));
+    }
+
+
+    /**
+     * Instruments a method in a class. <b>Note:</b> This method changes the
+     * {@code classNode} arugment.
      *
      * @param classNode
-     *            class that will be instrumented
+     *        class that will be instrumented
      * @param methodNode
-     *            method in the classNode argument, that will be instrumented
-     * @return
-     *         {@code true} if the methods was changed, {@code false} otherwise.
+     *        method in the classNode argument, that will be instrumented
+     * @return {@code true} if the methods was changed, {@code false} otherwise.
      */
     private boolean instrumentMethod (
         final ClassNode classNode, final MethodNode methodNode
-    ) throws ReflectionException, StaticContextGenException,
-    ProcessorException, InvalidContextUsageException, MarkerException {
+    ) throws DiSLException {
 
         // skip abstract methods
         if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
@@ -124,9 +215,10 @@ public final class DiSL {
         final String methodDesc = methodNode.desc;
 
         // evaluate exclusions
+        // TODO LB: Add support for inclusion
         for (final Scope exclScope : __excludedScopes) {
             if (exclScope.matches (className, methodName, methodDesc)) {
-                __debug ("DiSL: excluding method: %s.%s(%s)\n",
+                __log.debug ("excluding method: %s.%s(%s)",
                     className, methodName, methodDesc);
                 return false;
             }
@@ -144,22 +236,18 @@ public final class DiSL {
         // if there is nothing to instrument -> quit
         // just to be faster out
         if (matchedSnippets.isEmpty ()) {
-            __debug ("DiSL: skipping unaffected method: %s.%s(%s)\n",
+            __log.debug ("skipping unaffected method: %s.%s(%s)",
                 className, methodName, methodDesc);
             return false;
         }
 
         // *** create shadows ***
 
-        __trace ("DiSL: processing method: %s.%s(%s)\n",
-            className, methodName, methodDesc);
-
         // shadows mapped to snippets - for weaving
-        final Map<Snippet, List<Shadow>> snippetMarkings =
-                new HashMap<Snippet, List<Shadow>>();
+        final Map<Snippet, List<Shadow>> snippetMarkings = new HashMap <> ();
 
         for (final Snippet snippet : matchedSnippets) {
-            __trace ("DiSL:     snippet: %s.%s()\n",
+            __log.trace ("\tsnippet: %s.%s()",
                 snippet.getOriginClassName (), snippet.getOriginMethodName ());
 
             // marking
@@ -172,8 +260,7 @@ public final class DiSL {
                 snippet.getGuard (), shadows
             );
 
-            __trace ("DiSL:         selected shadows: %d\n",
-                selectedShadows.size ());
+            __log.trace ("\tselected shadows: %d", selectedShadows.size ());
 
             // add to map
             if (!selectedShadows.isEmpty ()) {
@@ -183,10 +270,16 @@ public final class DiSL {
 
         // *** compute static info ***
 
+        __log.trace ("calculating static information for method: %s.%s(%s)",
+            className, methodName, methodDesc);
+
         // prepares SCGenerator class (computes static context)
-        final SCGenerator staticInfo = new SCGenerator (snippetMarkings);
+        final SCGenerator staticInfo = SCGenerator.computeStaticInfo (snippetMarkings);
 
         // *** used synthetic local vars in snippets ***
+
+        __log.trace ("finding synthetic locals used by method: %s.%s(%s)",
+            className, methodName, methodDesc);
 
         // weaver needs list of synthetic locals that are actively used in
         // selected (matched) snippets
@@ -197,6 +290,9 @@ public final class DiSL {
         }
 
         // *** prepare processors ***
+
+        __log.trace ("preparing argument processors for method: %s.%s(%s)",
+            className, methodName, methodDesc);
 
         final PIResolver piResolver = new ProcGenerator ().compute (snippetMarkings);
 
@@ -211,10 +307,9 @@ public final class DiSL {
 
         // *** weaving ***
 
-        __trace ("DiSL:     snippet markings: %d\n", snippetMarkings.size ());
         if (snippetMarkings.size () > 0) {
-            __debug ("DiSL: instrumenting method: %s.%s(%s)\n",
-                className, methodName, methodDesc);
+            __log.debug ("found %d snippet marking(s), weaving method: %s.%s(%s)",
+                snippetMarkings.size (), className, methodName, methodDesc);
             Weaver.instrument (
                 classNode, methodNode, snippetMarkings,
                 new LinkedList <SyntheticLocalVar> (usedSLVs),
@@ -224,8 +319,8 @@ public final class DiSL {
             return true;
 
         } else {
-            __debug ("DiSL: skipping unaffected method: %s.%s(%s)\n",
-                className, methodName, methodDesc);
+            __log.debug ("found %d snippet marking(s), skipping method: %s.%s(%s)",
+                snippetMarkings.size (), className, methodName, methodDesc);
 
             return false;
         }
@@ -233,31 +328,25 @@ public final class DiSL {
 
 
     /**
-     * Selects only shadows matching the passed guard.
+     * Selects only shadows passing the given guard.
      *
      * @param guard
-     *            guard, on witch conditions are the shadows selected
-     * @param marking
-     *            the list of shadows from where the gurads selects
-     * @return selected shadows
+     *        the guard to use for filtering the {@link Shadow} instances.
+     * @param shadows
+     *        the list of {@link Shadow} instances to filter.
+     * @return A list of {@link Shadow} instances passing the guard.
      */
     private List <Shadow> selectShadowsWithGuard (
-        final Method guard, final List <Shadow> marking
+        final Method guard, final List <Shadow> shadows
     ) {
         if (guard == null) {
-            return marking;
+            return shadows;
         }
 
-        final List <Shadow> selectedMarking = new LinkedList <Shadow> ();
-
-        // check guard for each shadow
-        for (final Shadow shadow : marking) {
-            if (GuardHelper.guardApplicable (guard, shadow)) {
-                selectedMarking.add (shadow);
-            }
-        }
-
-        return selectedMarking;
+        return shadows.stream ()
+            // potentially .parallel(), needs thread-safe static context
+            .filter (shadow -> GuardHelper.guardApplicable (guard, shadow))
+            .collect (Collectors.toList ());
     }
 
 
@@ -265,25 +354,15 @@ public final class DiSL {
      * Data holder for an instrumented class
      */
     private static class InstrumentedClass {
-        private final ClassNode __classNode;
-        private final Set <String> __changedMethods;
+        final ClassNode classNode;
+        final Set <String> changedMethods;
 
 
         public InstrumentedClass (
             final ClassNode classNode, final Set <String> changedMethods
         ) {
-            __classNode = classNode;
-            __changedMethods = changedMethods;
-        }
-
-
-        public ClassNode classNode () {
-            return __classNode;
-        }
-
-
-        public Set <String> changedMethods () {
-            return __changedMethods;
+            this.classNode = classNode;
+            this.changedMethods = changedMethods;
         }
     }
 
@@ -314,6 +393,8 @@ public final class DiSL {
 
             // intercept all exceptions and add a method name
             try {
+                __log.trace ("processing method: %s.%s(%s)",
+                    classNode.name, methodNode.name, methodNode.desc);
                 methodChanged = instrumentMethod (classNode, methodNode);
 
             } catch (final DiSLException e) {
@@ -333,7 +414,7 @@ public final class DiSL {
             final Set <ThreadLocalVar> insertTLVs = new HashSet <ThreadLocalVar> ();
 
             // dynamic bypass
-            if (useDynamicBypass) {
+            if (__codeOptions.contains (CodeOption.DYNAMIC_BYPASS)) {
                 // prepare dynamic bypass thread local variable
                 final ThreadLocalVar tlv = new ThreadLocalVar (
                     null, "bypass", Type.getType (boolean.class), false
@@ -408,12 +489,13 @@ public final class DiSL {
         // with the instrumented method code and create code to switch between
         // the two versions based on the result of a bypass check.
         //
-        final ClassNode instCN = instResult.classNode();
-        if (useDynamicBypass) {
+        final ClassNode instCN = instResult.classNode;
+        if (__codeOptions.contains (CodeOption.CREATE_BYPASS)) {
             CodeMerger.mergeOriginalCode (
-                instResult.changedMethods (), origCN, instCN
+                instResult.changedMethods, origCN, instCN
             );
         }
+
 
         //
         // Fix-up methods that have become too long due to instrumentation.
@@ -423,7 +505,7 @@ public final class DiSL {
         // XXX LB: This will not help long methods produced by the transformers.
         //
         CodeMerger.fixupLongMethods (
-            splitLongMethods, origCN, instCN
+            __codeOptions.contains (CodeOption.SPLIT_METHODS), origCN, instCN
         );
 
         return ClassNodeHelper.marshal (instCN);
@@ -533,20 +615,6 @@ public final class DiSL {
             }
 
             return result;
-        }
-    }
-
-    //
-
-    private void __debug (final String format, final Object ... args) {
-        if (debug) {
-            System.out.printf (format, args);
-        }
-    }
-
-    private void __trace (final String format, final Object ... args) {
-        if (trace) {
-            System.out.printf (format, args);
         }
     }
 

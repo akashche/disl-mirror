@@ -7,7 +7,6 @@ import java.util.Set;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
-import ch.usi.dag.disl.annotation.ProcessAlso;
 import ch.usi.dag.disl.exception.DiSLFatalException;
 
 
@@ -86,26 +85,6 @@ public enum ArgProcessorKind {
         throw new DiSLFatalException (
             "conversion from %s not defined", type.getClassName ()
         );
-    }
-
-
-    public static ArgProcessorKind valueOf (final ProcessAlso.Type type) {
-        if (type == null) {
-            throw new DiSLFatalException ("conversion from <null> not defined");
-        }
-
-        switch (type) {
-        case BOOLEAN:
-            return BOOLEAN;
-        case BYTE:
-            return BYTE;
-        case SHORT:
-            return SHORT;
-        default:
-            throw new DiSLFatalException (
-                "conversion from %s not defined", type.toString ()
-            );
-        }
     }
 
 

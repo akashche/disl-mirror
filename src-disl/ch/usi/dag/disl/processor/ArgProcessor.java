@@ -1,9 +1,11 @@
 package ch.usi.dag.disl.processor;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import ch.usi.dag.disl.exception.ReflectionException;
-import ch.usi.dag.disl.exception.StaticContextGenException;
+import ch.usi.dag.disl.coderep.StaticContextMethod;
+import ch.usi.dag.disl.exception.DiSLInitializationException;
 import ch.usi.dag.disl.localvar.LocalVars;
 
 
@@ -42,8 +44,15 @@ public class ArgProcessor {
     }
 
 
+    public Set <StaticContextMethod> getReferencedSCMs () {
+        return __methods.stream ()
+            .flatMap (apm -> apm.getCode ().getReferencedSCMs ().stream ())
+            .collect (Collectors.toSet ());
+    }
+
+
     public void init (final LocalVars localVars)
-    throws StaticContextGenException, ReflectionException {
+    throws DiSLInitializationException {
         for (final ArgProcessorMethod method : __methods) {
             method.init (localVars);
         }

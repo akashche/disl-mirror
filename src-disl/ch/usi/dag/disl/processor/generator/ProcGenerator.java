@@ -1,6 +1,5 @@
 package ch.usi.dag.disl.processor.generator;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,7 +44,7 @@ public class ProcGenerator {
 
                     ProcInstance prcInst = null;
 
-                    // handle apply type
+                    // handle apply typegetInvokedProcessors
                     switch (prcInv.getProcApplyType()) {
 
                     case METHOD_ARGS: {
@@ -134,10 +133,10 @@ public class ProcGenerator {
 
         // create processor method instances for each argument if applicable
         for (int i = 0; i < argTypeArray.length; ++i) {
-
-            final List<ProcMethodInstance> pmis = createMethodInstances(i,
-                    argTypeArray.length, argTypeArray[i],
-                    prcInv.getProcessor(), shadow, prcInv);
+            final List <ProcMethodInstance> pmis = createMethodInstances (
+                i, argTypeArray [i], argTypeArray.length,
+                prcInv.getProcessor (), shadow, prcInv
+            );
 
             procMethodInstances.addAll(pmis);
         }
@@ -152,25 +151,23 @@ public class ProcGenerator {
 
 
     private List <ProcMethodInstance> createMethodInstances (
-        final int argPos, final int argsCount, final Type argType,
+        final int argIndex, final Type argType, final int argsCount,
         final ArgProcessor processor, final Shadow shadow,
         final ProcInvocation procInv
     ) {
-        final ArgProcessorKind methodArgType = ArgProcessorKind.valueOf (argType);
-        final List <ProcMethodInstance> result = new LinkedList <ProcMethodInstance> ();
+        final ArgProcessorKind argProcType = ArgProcessorKind.valueOf (argType);
+        final List <ProcMethodInstance> result = new LinkedList <> ();
 
         // traverse all methods and find the proper ones
         for (final ArgProcessorMethod method : processor.getMethods ()) {
             // check argument type
-            if (method.getTypes ().contains (methodArgType)) {
+            if (method.handlesType (argProcType)) {
                 final ProcMethodInstance pmi = new ProcMethodInstance (
-                    argPos, argsCount, methodArgType, argType.getDescriptor (),
-                    method.getCode ()
+                    argIndex, argType, argsCount, argProcType, method.getCode ()
                 );
 
                 // check guard
-                if (isPMGuardApplicable (method.getGuard (), shadow, pmi)) {
-                    // add method
+                if (GuardHelper.guardApplicable (method.getGuard (), shadow, pmi)) {
                     result.add (pmi);
                 }
             }
@@ -179,14 +176,4 @@ public class ProcGenerator {
         return result;
     }
 
-
-    private boolean isPMGuardApplicable (
-        final Method guard, final Shadow shadow, final ProcMethodInstance pmi
-    ) {
-        // evaluate processor method guard
-        return GuardHelper.guardApplicable (
-            guard, shadow,
-            pmi.getArgPos (), pmi.getArgTypeDesc (), pmi.getArgsCount ()
-        );
-    }
 }
