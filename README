@@ -30,38 +30,41 @@ link: http://forge.ow2.org/projects/disl/
 INSTALL
 =======
 
-DiSL currently fully supports "Linux" and "OS X" platforms with Java, ant, GCC
-and make installed and found on the executable path. DiSL has been used on the
-Windows/Cygwin platform as well, but it was not extensively tested there.
+If you have downloaded a binary distribution of DiSL, this step is not
+necessary. Simply extract the archive to a preferred location and update your
+project to use it.
+
+If you have downloaded a source distribution of DiSL, you need to compile it
+first by running the "ant" command in the top-level directory.
 
 While most of the DiSL is written in Java, it requires a JVM enhanced with a
-native agent written in C, which must be compiled first. For that, the simple
-build system needs to know where your JDK is installed to be able to find JNI
-header files for your platform. On many systems, the JAVA_HOME environment
-variable points to the root of the JDK installation and you should be fine.
+native agent written in C. Compiling the agent requires JNI header files for
+your platform. For commonly used platforms, these are part of the DiSL source
+distribution. Should the compilation fail on your machine, you may need to
+modify Makefile.local files in the src-disl-agent and src-shvm-agent
+directories to override the default value of the INCLUDE_DIR variable.
 
-If this is not the case, please enter the src-agent-c directory, copy the
-javahome/var.local.tmp file to javahome/var.local and modify it to set the
-JAVA_HOME variable to point to the root of the JDK installation you want to
-use.
-
-Finally, to compile DiSL, run the "ant" command in the top-level directory.
+DiSL currently fully supports "Linux" and "OS X" platforms with Java, ant, GCC
+and make installed and found on the executable path. DiSL has been used on the
+Windows/Cygwin platform as well, and there is experimental support for cross-
+compiling the DiSL agent for the Win32/Win64 platforms using MinGW. However,
+these targets were not extensively tested.
 
 
 DOCUMENTATION =============
 
 Please look at http://disl.projects.ow2.org/xwiki/bin/view/Main/Doc.
 
-After building DiSL, you will find the API documentation and an introduction
-to instrumenting applications with DiSL in the output/dist/doc directory.
+After building DiSL, you will find the API documentation in the output/jdoc
+directory, and document containing an introduction to instrumenting
+applications with DiSL in the output/build/intro directory. However, to build
+the document, you will need a working LaTeX installation with "pdflatex".
 
 
 EXAMPLES ========
 
-For a set of simple examples showcasing basic DiSL features, please look in
-the "examples" directory. Note that the "examples" are meant to be used with
-DiSL a distribution directory layout, which will be created in the
-"output/dist" directory after buildig DiSL.
+For a set of simple examples showcasing basic DiSL features, please check
+the "examples" directory.
 
 In addition, the "src-test" directory contains additional examples used for
 testing other DiSL features -- these can be run using Ant.
@@ -70,4 +73,4 @@ testing other DiSL features -- these can be run using Ant.
 USER ERRORS ===========
 
 If you get a Java error during instrumentation or running your application,
-please look at the USER_ERRORS document describing most common problems.
+please look at the USER_ERRORS document describing the most common problems.
