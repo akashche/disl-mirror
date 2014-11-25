@@ -669,7 +669,7 @@
 			noDeprecated="false" nodeprecatedlist="false"
 			noIndex="false" splitIndex="true" noNavbar="false" noTree="false"
 			overview="${src.doc.jdoc}/overview.html"
-			source="1.7"
+			source="1.8"
 		>
 			<sourcepath>
 				<pathelement path="${src.disl}" />
@@ -685,10 +685,23 @@
 				<fileset dir="${src.disl.bypass}">
 					<include name="**/DynamicBypass.java" />
 				</fileset>
+
+				<fileset dir="${src.shvm}">
+					<include name="**/RemoteAnalysis.java" />
+					<include name="**/ShadowObject.java" />
+					<include name="**/ShadowString.java" />
+					<include name="**/ShadowThread.java" />
+					<include name="**/ShadowClass.java" />
+				</fileset>
+				<fileset dir="${src.shvm.dispatch}">
+					<include name="**/REDispatch.java" />
+				</fileset>
 			</sourcefiles>
 
 			<classpath>
 				<path refid="disl.bypass.classpath" />
+				<path refid="shvm.classpath" />
+				<path refid="util.classpath" />
 				<path refid="asm.classpath" />
 			</classpath>
 
