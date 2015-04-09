@@ -51,7 +51,8 @@ compiling the DiSL agent for the Win32/Win64 platforms using MinGW. However,
 these targets were not extensively tested.
 
 
-DOCUMENTATION =============
+DOCUMENTATION
+=============
 
 Please look at http://disl.projects.ow2.org/xwiki/bin/view/Main/Doc.
 
@@ -61,7 +62,8 @@ applications with DiSL in the output/build/intro directory. However, to build
 the document, you will need a working LaTeX installation with "pdflatex".
 
 
-EXAMPLES ========
+EXAMPLES
+========
 
 For a set of simple examples showcasing basic DiSL features, please check
 the "examples" directory.
@@ -70,7 +72,8 @@ In addition, the "src-test" directory contains additional examples used for
 testing other DiSL features -- these can be run using Ant.
 
 
-USER ERRORS ===========
+USER ERRORS
+===========
 
 If you get a Java error during instrumentation or running your application,
 please look at the USER_ERRORS document describing the most common problems.
