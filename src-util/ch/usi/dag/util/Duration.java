@@ -8,6 +8,9 @@ import ch.usi.dag.util.function.Predicate;
 
 
 /**
+ * Represents a fixed time interval. The interval is expressed as an integral
+ * amount of a particular {@link TimeUnit}, and does not support the notion of
+ * date, even though it may express durations measured in days.
  *
  * @author Lubomir Bulej
  */
@@ -184,6 +187,15 @@ public final class Duration {
         }
 
         return new Duration (amount, unit);
+    }
+
+
+    /**
+     * Returns a string representation of this {@link Duration}.
+     */
+    @Override
+    public String toString () {
+        return String.format ("Duration [%d %s]", __amount, __unit);
     }
 
 }
