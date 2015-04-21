@@ -1347,6 +1347,13 @@ void JNICALL jvmti_callback_class_file_load_hook(
 	printf("Sending new class (thread %ld)\n", tld_get()->id);
 #endif
 
+	if (name == NULL) {
+#ifdef DEBUG
+		printf("Skipped class with no name (thread %ld)\n", tld_get()->id);
+#endif
+		return;
+	}
+
 	// *** send new class message ***
 
 	// tag the class loader - with lock
