@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import ch.usi.dag.util.Duration;
 import ch.usi.dag.util.Strings;
-import ch.usi.dag.util.function.Predicate;
 
 
 /**
@@ -46,7 +45,7 @@ final class Job {
     private String __error;
 
     /**
-     * Waits for {@link #__process} to finish. What that happens, sets
+     * Waits for {@link #__process} to finish. When that happens, sets
      * {@link #__isRunning} to {@code false}, and notifies all objects waiting
      * on {@link #__isRunning}.
      */
@@ -57,7 +56,7 @@ final class Job {
 
     //
 
-    public Job (final List <String> command) {
+    protected Job (final List <String> command) {
         final ProcessBuilder builder = new ProcessBuilder ();
         builder.command (command);
         builder.environment ().clear ();
@@ -260,16 +259,8 @@ final class Job {
 
         //
 
-        return duration.awaitUninterruptibly (__isRunning, __BOOLEAN_IS_FALSE__);
+        return duration.awaitUninterruptibly (__isRunning, val -> !val.get ());
     }
-
-    private static Predicate <AtomicBoolean> __BOOLEAN_IS_FALSE__ =
-        new Predicate <AtomicBoolean> () {
-            @Override
-            public boolean test (final AtomicBoolean value) {
-                return !value.get ();
-            }
-        };
 
 
     /**
@@ -292,7 +283,9 @@ final class Job {
      *         otherwise.
      */
     public boolean isRunning () {
-        return isStarted () && __isRunning.get ();
+        __ensureJobStarted ();
+
+        return __isRunning.get ();
     }
 
 
@@ -304,14 +297,15 @@ final class Job {
      *         otherwise.
      */
     public boolean isFinished () {
-        return isStarted () && !__isRunning.get ();
+        __ensureJobStarted ();
+
+        return !__isRunning.get ();
     }
 
 
     /**
      * Determines the status of this {@link Job} and returns {@code true} if the
-     * job has been started and finished successfully, i.e. it exited with a
-     * zero value.
+     * job has finished successfully, i.e., exited with a zero value.
      *
      * @return {@code true} if a started job finished successfully,
      *         {@code false} otherwise.
@@ -320,4 +314,5 @@ final class Job {
         // The exit value MUST be queried AFTER a process has terminated.
         return isFinished () && __process.exitValue () == 0;
     }
+
 }
