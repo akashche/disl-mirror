@@ -3,8 +3,7 @@ package ch.usi.dag.util;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.util.concurrent.TimeUnit;
-
-import ch.usi.dag.util.function.Predicate;
+import java.util.function.Predicate;
 
 
 /**
