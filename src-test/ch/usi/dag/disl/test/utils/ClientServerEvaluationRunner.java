@@ -47,12 +47,38 @@ public class ClientServerEvaluationRunner extends Runner {
         super (testClass);
     }
 
+
+    @Override
+    protected void _start (
+        final File instJar, final File appJar
+    ) throws IOException {
+        final File serverFile = createStatusFile ("disl-");
+        __server = __startServer (instJar, serverFile);
+        ensureJobInitialized (__server, "server", serverFile);
+
+        //
+
+        final File shadowFile = createStatusFile ("shvm-");
+        __shadow = __startShadow (instJar, shadowFile);
+        ensureJobInitialized (__shadow, "shadow", shadowFile);
+
+        //
+
+        __client = __startClient (instJar, appJar);
+        if (! __client.isRunning ()) {
+            throw new RunnerException (
+                "client initialization failed:\n%s", getJobError (__client)
+            );
+        }
+    }
+
+
     private Job __startServer (
-        final File testInstJar, final File statusFile
+        final File instJar, final File statusFile
     ) throws IOException {
         final List <String> command = Lists.newLinkedList (
             __SERVER_JAVA_COMMAND__,
-            "-classpath", Runner.classPath (_DISL_SERVER_JAR_, testInstJar)
+            "-classpath", Runner.classPath (_DISL_SERVER_JAR_, instJar)
         );
 
         if (statusFile != null) {
@@ -65,20 +91,16 @@ public class ClientServerEvaluationRunner extends Runner {
         command.addAll (propertiesStartingWith ("disl."));
         command.add (_DISL_SERVER_CLASS_.getName ());
 
-        //
-
-        final Job result = new Job (command);
-        result.start ();
-        return result;
+        return new Job (command).start ();
     }
 
 
     private Job __startShadow (
-        final File testInstJar, final File statusFile
+        final File instJar, final File statusFile
     ) throws IOException {
         final List <String> command = Lists.newLinkedList (
             __SHADOW_JAVA_COMMAND__, "-Xms1G", "-Xmx2G",
-            "-classpath", Runner.classPath (_SHVM_SERVER_JAR_, testInstJar)
+            "-classpath", Runner.classPath (_SHVM_SERVER_JAR_, instJar)
         );
 
         if (statusFile != null) {
@@ -90,70 +112,30 @@ public class ClientServerEvaluationRunner extends Runner {
         command.addAll (propertiesStartingWith ("dislreserver."));
         command.add (_SHVM_SERVER_CLASS_.getName ());
 
-        //
-
-        final Job result = new Job (command);
-        result.start ();
-        return result;
+        return new Job (command).start ();
     }
 
 
     private Job __startClient (
-        final File testInstJar, final File testAppJar
+        final File instJar, final File appJar
     ) throws IOException {
         final List <String> command = Lists.newLinkedList (
             __CLIENT_JAVA_COMMAND__,
             String.format ("-agentpath:%s", _DISL_AGENT_LIB_),
             String.format ("-agentpath:%s", _SHVM_AGENT_LIB_),
             String.format ("-Xbootclasspath/a:%s", Runner.classPath (
-                _DISL_BYPASS_JAR_, _SHVM_DISPATCH_JAR_, testInstJar
+                _DISL_BYPASS_JAR_, _SHVM_DISPATCH_JAR_, instJar
             ))
         );
 
         command.addAll (propertiesStartingWith ("disl."));
         command.addAll (Arrays.asList (
-            "-jar", testAppJar.toString ()
+            "-jar", appJar.toString ()
         ));
 
         //
 
-        final Job result = new Job (command);
-        result.start ();
-        return result;
-    }
-
-
-    @Override
-    protected void _start (
-        final File testInstJar, final File testAppJar
-    ) throws IOException {
-        final File serverFile = File.createTempFile ("disl-", ".status");
-        serverFile.deleteOnExit ();
-
-        __server = __startServer (testInstJar, serverFile);
-
-        watchFile (serverFile, _INIT_TIME_LIMIT_);
-
-        if (! __server.isRunning ()) {
-            throw new IOException ("server failed: "+ __server.getError ());
-        }
-
-        //
-
-        final File shadowFile = File.createTempFile ("shvm-", ".status");
-        shadowFile.deleteOnExit ();
-
-        __shadow = __startShadow (testInstJar, shadowFile);
-
-        watchFile (shadowFile, _INIT_TIME_LIMIT_);
-
-        if (! __shadow.isRunning ()) {
-            throw new IOException ("shadow failed: "+ __shadow.getError ());
-        }
-
-        //
-
-        __client = __startClient (testInstJar, testAppJar);
+        return new Job (command).start ();
     }
 
 
@@ -319,14 +301,6 @@ public class ClientServerEvaluationRunner extends Runner {
 
     @Override
     protected void _destroy () {
-        if (__client != null) {
-            __client.destroy ();
-        }
-        if (__shadow != null) {
-            __shadow.destroy ();
-        }
-        if (__server != null) {
-            __server.destroy ();
-        }
+        killJobs ( __server, __shadow, __client );
     }
 }

@@ -40,44 +40,20 @@ public class ClientServerRunner extends Runner {
 
     @Override
     protected void _start (
-        final File testInstJar, final File testAppJar
+        final File instJar, final File appJar
     ) throws IOException {
-        final File serverFile = File.createTempFile ("disl-", ".status");
-        serverFile.deleteOnExit ();
+        final File serverFile = createStatusFile ("disl-");
+        __server = __startServer (instJar, serverFile);
+        ensureJobInitialized (__server, "server", serverFile);
 
-        __server = __startServer (testInstJar, serverFile);
+        //
 
-        watchFile (serverFile, _INIT_TIME_LIMIT_);
-
-        if (! __server.isRunning ()) {
-            throw new IOException ("server failed: "+ __server.getError ());
+        __client = __startClient (instJar, appJar);
+        if (! __client.isRunning ()) {
+            throw new RunnerException (
+                "client initialization failed:\n%s", getJobError (__client)
+            );
         }
-
-        //
-
-        __client = __startClient (testInstJar, testAppJar);
-    }
-
-
-    private Job __startClient (
-        final File testInstJar, final File testAppJar
-    ) throws IOException {
-        final List <String> command = Lists.newLinkedList (
-            __CLIENT_JAVA_COMMAND__,
-            String.format ("-agentpath:%s", _DISL_AGENT_LIB_),
-            String.format ("-Xbootclasspath/a:%s", Runner.classPath (
-                _DISL_BYPASS_JAR_, testInstJar
-            ))
-        );
-
-        command.addAll (propertiesStartingWith ("disl."));
-        command.addAll (Arrays.asList (
-            "-jar", testAppJar.toString ()
-        ));
-
-        //
-
-        return new Job (command).start ();
     }
 
 
@@ -98,6 +74,28 @@ public class ClientServerRunner extends Runner {
         command.addAll (propertiesStartingWith ("dislserver."));
         command.addAll (propertiesStartingWith ("disl."));
         command.add (_DISL_SERVER_CLASS_.getName ());
+
+        //
+
+        return new Job (command).start ();
+    }
+
+
+    private Job __startClient (
+        final File testInstJar, final File testAppJar
+    ) throws IOException {
+        final List <String> command = Lists.newLinkedList (
+            __CLIENT_JAVA_COMMAND__,
+            String.format ("-agentpath:%s", _DISL_AGENT_LIB_),
+            String.format ("-Xbootclasspath/a:%s", Runner.classPath (
+                _DISL_BYPASS_JAR_, testInstJar
+            ))
+        );
+
+        command.addAll (propertiesStartingWith ("disl."));
+        command.addAll (Arrays.asList (
+            "-jar", testAppJar.toString ()
+        ));
 
         //
 
@@ -222,12 +220,6 @@ public class ClientServerRunner extends Runner {
 
     @Override
     protected void _destroy () {
-        if (__client != null) {
-            __client.destroy ();
-        }
-
-        if (__server != null) {
-            __server.destroy ();
-        }
+        killJobs (__server, __client);
     }
 }

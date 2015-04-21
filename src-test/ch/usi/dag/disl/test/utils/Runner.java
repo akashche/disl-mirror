@@ -4,7 +4,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -78,33 +77,33 @@ public abstract class Runner {
 
     //
 
-    public void start () throws IOException {
-        final File testInstJar = new File (
-            _TEST_LIB_DIR_, String.format ("%s-inst.jar", __testName)
-        );
+    public void start () {
+        final File instJar = __getTestJar ("instrumentation", "%s-inst.jar", __testName);
+        final File appJar = __getTestJar ("application", "%s-app.jar", __testName);
 
-        if (!testInstJar.exists ()) {
-            throw new FileNotFoundException (String.format (
-                "instrumentation jar not found: %s", testInstJar.toString ()
-            ));
+        try {
+            _start (instJar, appJar);
+
+        } catch (final IOException ioe) {
+            throw new RunnerException (ioe, "failed to start runner");
         }
-
-        final File testAppJar = new File (
-            _TEST_LIB_DIR_, String.format ("%s-app.jar", __testName)
-        );
-
-        if (!testAppJar.exists ()) {
-            throw new FileNotFoundException (String.format (
-                "application jar not found: %s", testAppJar.toString ()
-            ));
-        }
-
-        _start (testInstJar, testAppJar);
     }
 
-    protected abstract void _start (
-        final File testInstJar, final File testAppJar
-    ) throws IOException;
+    private static File __getTestJar (
+        final String jarType, final String format, final Object ... args
+    ) {
+        final File result = new File (
+            _TEST_LIB_DIR_, String.format (format, args)
+        );
+
+        if (!result.exists ()) {
+            throw new RunnerException ("%s jar not found: %s", jarType, result);
+        }
+
+        return result;
+    }
+
+    protected abstract void _start (File instJar, File appJar) throws IOException;
 
     //
 
@@ -190,17 +189,69 @@ public abstract class Runner {
 
     //
 
+    static File createStatusFile (final String prefix) throws IOException {
+        final File result = File.createTempFile (prefix, ".status");
+        result.deleteOnExit ();
+        return result;
+    }
+
+    static void killJobs (final Job ... jobs) {
+        for (final Job job : jobs) {
+            if (job != null) {
+                job.destroy ();
+            }
+        }
+    }
+
+    static void ensureJobInitialized (
+        final Job job, final String jobName, final File statusFile
+    ) {
+        final boolean jobTimedOut = __awaitRemoval (statusFile, _INIT_TIME_LIMIT_);
+
+        if (! job.isRunning ()) {
+            throw new RunnerException (
+                "%s initialization failed:\n%s", jobName, getJobError (job)
+            );
+        }
+
+        if (jobTimedOut) {
+            throw new RunnerException (
+                "%s initialization timed out", jobName, getJobError (job)
+            );
+        }
+    }
+
+
+    private static boolean __awaitRemoval (
+        final File file, final Duration duration
+    ) {
+        final long watchEnd = System.nanoTime () + duration.to (TimeUnit.NANOSECONDS);
+        while (file.exists () &&  System.nanoTime () < watchEnd) {
+            _WATCH_DELAY_.sleepUninterruptibly ();
+        }
+
+        return file.exists ();
+    }
+
+
+    static String getJobError (final Job job) {
+        try {
+            return job.getError ();
+
+        } catch (final IOException e) {
+            return "unknown error, failed to read job error output";
+        }
+    }
+
+
     static List <String> propertiesStartingWith (final String prefix) {
         final List <String> result = new LinkedList <String> ();
 
         for (final String key : System.getProperties ().stringPropertyNames ()) {
             if (key.startsWith (prefix)) {
-                final Object valueObject = System.getProperty (key);
-                if (valueObject instanceof String) {
-                    final String value = (String) valueObject;
-                    if (! value.isEmpty ()) {
-                        result.add (String.format ("-D%s=%s", key, value));
-                    }
+                final String value = System.getProperty (key);
+                if (value != null) {
+                    result.add (String.format ("-D%s=%s", key, value));
                 }
             }
         }
@@ -211,16 +262,6 @@ public abstract class Runner {
 
     static String classPath (final File ... paths) {
         return Strings.join (File.pathSeparator, (Object []) paths);
-    }
-
-
-    static boolean watchFile (final File file, final Duration duration) {
-        final long watchEnd = System.nanoTime () + duration.to (TimeUnit.NANOSECONDS);
-        while (file.exists () &&  System.nanoTime () < watchEnd) {
-            _WATCH_DELAY_.sleepUninterruptibly ();
-        }
-
-        return file.exists ();
     }
 
 }
