@@ -381,7 +381,7 @@
 
 	<target name="compile-shvm-dispatch">
 		<mkdir dir="${build.shvm.dispatch}" />
-		<javac destdir="${build.shvm.dispatch}" srcdir="${src.shvm.dispatch}" debug="true" source="${target.disl.client}" target="${target.disl.client}" />
+		<javac destdir="${build.shvm.dispatch}" srcdir="${src.shvm.dispatch}" debug="true" source="${target.shvm.dispatch}" target="${target.shvm.dispatch}" />
 	</target>
 
 
@@ -441,7 +441,7 @@
 
 	<target name="compile-test" depends="compile-util,compile-disl,compile-shvm">
 		<mkdir dir="${build.test}" />
-		<javac destdir="${build.test}" srcdir="${src.test}" debug="true" source="${target.disl.client}" target="${target.disl.client}">
+		<javac destdir="${build.test}" srcdir="${src.test}" debug="true">
 			<classpath refid="test.classpath" />
 		</javac>
 
