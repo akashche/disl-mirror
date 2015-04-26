@@ -10,8 +10,8 @@ public interface Scope {
      * Determines whether this scope matches the given class name (including
      * package name), method name, and method type descriptor.
      *
-     * @param className
-     *        standard or internal name of the class to match
+     * @param classInternalName
+     *        <b>internal name</b> (i.e., delimited using slashes) of the class to match
      * @param methodName
      *        name of the method to match
      * @param methodDesc
@@ -19,6 +19,6 @@ public interface Scope {
      * @return {@code true} if the scope matches the given class name, method
      *         name, and method type descriptor, {@code false} otherwise.
      */
-    boolean matches (String className, String methodName, String methodDesc);
+    boolean matches (String classInternalName, String methodName, String methodDesc);
 
 }

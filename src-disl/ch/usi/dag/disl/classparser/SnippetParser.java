@@ -27,7 +27,7 @@ import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.marker.Parameter;
 import ch.usi.dag.disl.scope.Scope;
-import ch.usi.dag.disl.scope.ScopeImpl;
+import ch.usi.dag.disl.scope.ScopeMatcher;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetUnprocessedCode;
 import ch.usi.dag.disl.util.AsmHelper;
@@ -106,7 +106,7 @@ class SnippetParser extends AbstractParser {
         //
 
         final Marker marker = getMarker (data.marker, data.args);
-        final Scope scope = new ScopeImpl (data.scope);
+        final Scope scope = ScopeMatcher.forPattern (data.scope);
         final Method guard = GuardHelper.findAndValidateGuardMethod (
             AbstractParser.getGuard (data.guard), GuardHelper.snippetContextSet ()
         );
