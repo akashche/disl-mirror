@@ -44,4 +44,21 @@ public final class LocalVars {
         __threadLocals.putAll (other.__threadLocals);
     }
 
+    //
+
+    /**
+     * Merges local variables from multiple sources.
+     *
+     * @param vars local variable sources
+     * @return New {@link LocalVars} instance containing local variables from all sources.
+     */
+    public static LocalVars merge (final LocalVars ... vars) {
+        final LocalVars result = new LocalVars ();
+        for (final LocalVars lvs : vars) {
+            result.putAll (lvs);
+        }
+
+        return result;
+    }
+
 }

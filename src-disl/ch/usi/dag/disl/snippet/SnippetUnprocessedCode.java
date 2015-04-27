@@ -25,7 +25,6 @@ import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.coderep.UnprocessedCode;
 import ch.usi.dag.disl.dynamicbypass.DynamicBypass;
 import ch.usi.dag.disl.exception.DiSLFatalException;
-import ch.usi.dag.disl.exception.DiSLInitializationException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.localvar.LocalVars;
@@ -91,7 +90,7 @@ public class SnippetUnprocessedCode {
     public SnippetCode process (
         final LocalVars vars, final Map <Type, ArgProcessor> processors,
         final Marker marker, final Set <CodeOption> options
-    ) throws DiSLInitializationException, ProcessorException, ReflectionException  {
+    ) throws ProcessorException, ReflectionException  {
         //
         // Pre-process code with local variables.
         //

@@ -1,18 +1,17 @@
 package ch.usi.dag.disl.classparser;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
 import ch.usi.dag.disl.DiSL.CodeOption;
+import ch.usi.dag.disl.InitializationException;
 import ch.usi.dag.disl.annotation.ArgumentProcessor;
-import ch.usi.dag.disl.cbloader.ClassByteLoader;
-import ch.usi.dag.disl.exception.DiSLInitializationException;
 import ch.usi.dag.disl.exception.ParserException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
@@ -25,9 +24,9 @@ import ch.usi.dag.disl.util.ClassNodeHelper;
 
 /**
  * Parser for DiSL classes containing either snippets or method argument
- * processors.
+ * processors. This class is not meant for public use.
  */
-public class DislClasses {
+public final class DislClasses {
 
     private final SnippetParser __snippetParser;
 
@@ -41,15 +40,23 @@ public class DislClasses {
     //
 
     public static DislClasses load (
-        final Set <CodeOption> options
-    ) throws DiSLInitializationException, ParserException,
-    StaticContextGenException, ReflectionException, ProcessorException {
-        final List <InputStream> classStreams = ClassByteLoader.loadDiSLClasses ();
-        if (classStreams == null) {
-            throw new DiSLInitializationException (
-                "Cannot load DiSL classes. Please set the property "+
-                ClassByteLoader.PROP_DISL_CLASSES +
-                " or supply jar with DiSL classes and proper manifest"
+        final Set <CodeOption> options, final Stream <String> classNames
+    ) throws ParserException, StaticContextGenException, ReflectionException,
+    ProcessorException {
+        //
+        // Get an ASM tree representation of the DiSL classes first, then
+        // parse them as snippets or argument processors depending on the
+        // annotations associated with each class.
+        //
+        final List <ClassNode> classNodes = classNames
+            .map (className -> __createClassNode (className))
+            .collect (Collectors.toList ());
+
+        if (classNodes.isEmpty ()) {
+            throw new InitializationException (
+                "No DiSL classes found. They must be explicitly specified "+
+                "using the disl.classes system property or the DiSL-Classes "+
+                "attribute in the instrumentation JAR manifest."
             );
         }
 
@@ -58,13 +65,7 @@ public class DislClasses {
         final SnippetParser sp = new SnippetParser ();
         final ArgProcessorParser app = new ArgProcessorParser ();
 
-        for (final InputStream is : classStreams) {
-            //
-            // Get an ASM tree representation of the DiSL class first, then
-            // parse it as a snippet or an argument processor depending on the
-            // annotations associated with the class.
-            //
-            final ClassNode classNode = __createClassNode (is);
+        for (final ClassNode classNode : classNodes) {
             if (__isArgumentProcessor (classNode)) {
                 app.parse (classNode);
             } else {
@@ -76,7 +77,9 @@ public class DislClasses {
         // Collect all local variables and initialize the argument processor
         // and snippets.
         //
-        final LocalVars localVars = __collectLocals (sp, app);
+        final LocalVars localVars = LocalVars.merge (
+            sp.getAllLocalVars (), app.getAllLocalVars ()
+        );
 
         // TODO LB: Move the loop to the ArgProcessorParser class
         for (final ArgProcessor processor : app.getProcessors ().values()) {
@@ -96,18 +99,19 @@ public class DislClasses {
     }
 
 
-    private static ClassNode __createClassNode (final InputStream is)
-    throws ParserException {
+    private static ClassNode __createClassNode (final String className) {
         //
         // Parse input stream into a class node. Include debug information so
         // that we can report line numbers in case of problems in DiSL classes.
-        // Re-throw any exceptions as DiSL exceptions.
+        // Re-throw any exceptions as DiSL initialization exceptions.
         //
         try {
-            return ClassNodeHelper.SNIPPET.unmarshal (is);
+            return ClassNodeHelper.SNIPPET.load (className);
 
-        } catch (final IOException ioe) {
-            throw new ParserException (ioe);
+        } catch (final Exception e) {
+            throw new InitializationException (
+                e, "failed to load DiSL class %s", className
+            );
         }
     }
 
@@ -135,19 +139,6 @@ public class DislClasses {
     }
 
     //
-
-    private static LocalVars __collectLocals (
-        final SnippetParser sp, final ArgProcessorParser app
-    ) {
-        //
-        // Merge all local variables from snippets and argument processors.
-        //
-        final LocalVars result = new LocalVars ();
-        result.putAll (sp.getAllLocalVars ());
-        result.putAll (app.getAllLocalVars ());
-        return result;
-    }
-
 
     public List <Snippet> getSnippets () {
         return __snippetParser.getSnippets ();

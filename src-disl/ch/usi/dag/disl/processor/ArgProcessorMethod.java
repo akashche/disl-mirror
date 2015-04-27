@@ -6,7 +6,6 @@ import java.util.Set;
 import ch.usi.dag.disl.annotation.ArgumentProcessor;
 import ch.usi.dag.disl.coderep.Code;
 import ch.usi.dag.disl.coderep.UnprocessedCode;
-import ch.usi.dag.disl.exception.DiSLInitializationException;
 import ch.usi.dag.disl.localvar.LocalVars;
 import ch.usi.dag.disl.snippet.Snippet;
 
@@ -91,7 +90,7 @@ public class ArgProcessorMethod {
 
     //
 
-    public void init (final LocalVars locals) throws DiSLInitializationException {
+    public void init (final LocalVars locals) {
         __code = __template.process (locals);
     }
 

@@ -1,51 +1,54 @@
 package ch.usi.dag.disl.exclusion;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Enumeration;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import ch.usi.dag.disl.cbloader.ManifestHelper;
-import ch.usi.dag.disl.cbloader.ManifestHelper.ManifestInfo;
-import ch.usi.dag.disl.exception.ExclusionPrepareException;
-import ch.usi.dag.disl.exception.ManifestInfoException;
+import ch.usi.dag.disl.InitializationException;
 import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeMatcher;
 import ch.usi.dag.disl.util.JavaNames;
 
 
+/**
+ * Helper class to prepare the default exclusion list, which comprises
+ * hard-coded exclusions, all classes in the instrumentation JAR files, and
+ * user-defined exclusions.
+ *
+ * @author Lukas Marek
+ * @author Lubomir Bulej
+ */
 public abstract class ExclusionSet {
 
-    private static final String excListPath =
-        System.getProperty ("disl.exclusionList", null);
-
-    private static final String JAR_PATH_BEGIN = "/";
-
-    private static final String JAR_PATH_END = "!";
-
-    private static final String ALL_METHODS = ".*";
-
-
-    public static Set <Scope> prepare () throws ExclusionPrepareException {
+    public static Set <Scope> prepare (final Stream <URL> urlStream) {
         try {
-            final Set <Scope> exclSet = defaultExcludes ();
-            exclSet.addAll (instrumentationJar ());
-            exclSet.addAll (readExlusionList ());
-            return exclSet;
+            final Set <Scope> result = __hardCodedExclusions ();
+            result.addAll (__instrumentationExclusions (urlStream));
+            result.addAll (__userDefinedExclusions ());
+            return result;
 
         } catch (final Exception e) {
-            throw new ExclusionPrepareException ("failed to prepare exclusion list", e);
+            e.printStackTrace ();
+            throw new InitializationException (
+                e, "failed to initialize exclusion list"
+            );
         }
     }
 
+    //
 
-    private static Set <Scope> defaultExcludes () {
-        final String [] excludedScopes = new String [] {
+    private static Set <Scope> __hardCodedExclusions () {
+        final String [] exclusions = new String [] {
             //
             // Our classes.
             //
@@ -60,87 +63,99 @@ public abstract class ExclusionSet {
             "java.lang.Object.finalize" /* Object finalizer */
         };
 
-        final Set <Scope> exclSet = new HashSet <Scope> ();
-        for (final String excludedScope : excludedScopes) {
-            exclSet.add (ScopeMatcher.forPattern (excludedScope));
-        }
-
-        return exclSet;
+        return Arrays.stream (exclusions)
+            .map (ScopeMatcher::forPattern)
+            .collect (Collectors.toCollection (HashSet::new));
     }
 
 
-    private static Set <Scope> instrumentationJar ()
-    throws ManifestInfoException, IOException {
-        // add classes from instrumentation jar
-        final Set <Scope> exclSet = new HashSet <Scope> ();
+    private static Set <Scope> __instrumentationExclusions (
+        final Stream <URL> urlStream
+    ) {
+        //
+        // Add all classes from instrumentation jar files, i.e., those that
+        // contain any DiSL classes (snippets and argument processors) that
+        // are listed in the manifest file.
+        //
+        return urlStream.unordered ()
+            .flatMap (url -> __jarExclusionScopes (url).stream ())
+            .collect (Collectors.toSet ());
+    }
 
-        // get DiSL manifest info
-        final ManifestInfo mi = ManifestHelper.getDiSLManifestInfo ();
+    private static List <Scope> __jarExclusionScopes (final URL manifestUrl) {
+        try {
+            final JarFile jarFile = new JarFile (__jarPath (manifestUrl));
 
-        // no manifest found
-        if (mi == null) {
-            return exclSet;
-        }
+            try {
+                //
+                // For each JAR file entry representing a class file, strip
+                // the class file extension, convert the resource name to
+                // class name, add a wild card for all methods, and create
+                // a scope pattern for it.
+                //
+                return jarFile.stream ()
+                    .filter (e -> !e.isDirectory ())
+                    .map (JarEntry::getName)
+                    .filter (JavaNames::hasClassFileExtension)
+                    .map (entryName -> {
+                        final String className = JavaNames.internalToCanonical (
+                            JavaNames.stripClassFileExtension (entryName)
+                        );
 
-        // get URL of the instrumentation jar manifest
-        final URL manifestURL = ManifestHelper.getDiSLManifestInfo ().getResource ();
+                        // exclude all methods of the class
+                        return ScopeMatcher.forPattern (className + ".*");
+                    })
+                    .collect (Collectors.toList ());
 
-        // manifest path contains "file:" + jar name + "!" + manifest path
-        final String manifestPath = manifestURL.getPath ();
-
-        // extract jar path
-        final int jarPathBegin = manifestPath.indexOf (JAR_PATH_BEGIN);
-        final int jarPathEnd = manifestPath.indexOf (JAR_PATH_END);
-        final String jarPath = manifestPath.substring (jarPathBegin, jarPathEnd);
-
-        // open jar...
-        final JarFile jarFile = new JarFile (jarPath);
-
-        // ... and iterate over items
-        final Enumeration <JarEntry> entries = jarFile.entries ();
-        while (entries.hasMoreElements ()) {
-            final JarEntry entry = entries.nextElement ();
-
-            // get entry name
-            final String entryName = entry.getName ();
-
-            // add all classes to the exclusion list
-            if (JavaNames.hasClassFileExtension (entryName)) {
-                final String className = JavaNames.internalToCanonical (
-                    JavaNames.stripClassFileExtension (entryName)
-                );
-
-                // add exclusion for all methods
-                final String classExcl = className + ALL_METHODS;
-
-                exclSet.add (ScopeMatcher.forPattern (classExcl));
+            } finally {
+                jarFile.close ();
             }
-        }
 
-        jarFile.close ();
-        return exclSet;
+        } catch (final IOException ioe) {
+            throw new InitializationException (
+                ioe, "failed to build exclusion list for %s", manifestUrl
+            );
+        }
     }
 
 
-    private static Set <Scope> readExlusionList () throws IOException {
-        final String COMMENT_START = "#";
+    private static String __jarPath (final URL manifestUrl) {
+        //
+        // Extract JAR file path from the manifest URL.
+        //
+        final String manifestPath = manifestUrl.getPath ();
+        final int jarPathBegin = manifestPath.indexOf ("/");
+        final int jarPathEnd = manifestPath.indexOf ("!");
 
-        final Set <Scope> exclSet = new HashSet <Scope> ();
+        return manifestPath.substring (jarPathBegin, jarPathEnd);
+    }
 
-        // if exclusion list path exits
-        if (excListPath != null) {
-            // read exclusion list line by line
-            final Scanner scanner = new Scanner (new FileInputStream (excListPath));
+    //
+
+    private static final String __DISL_EXCLUSION_LIST__ = "disl.exclusionList";
+
+    private static Set <Scope> __userDefinedExclusions ()
+    throws FileNotFoundException {
+        final String commentPrefix = "#";
+        final Set <Scope> result = new HashSet <> ();
+
+        //
+        // If a user specified a custom exclusion list, load it line by line,
+        // each line representing a single exclusion scope.
+        //
+        final String fileName = System.getProperty (__DISL_EXCLUSION_LIST__, "");
+        if (!fileName.isEmpty ()) {
+            final Scanner scanner = new Scanner (new FileInputStream (fileName));
             while (scanner.hasNextLine ()) {
                 final String line = scanner.nextLine ().trim ();
-                if (!line.isEmpty () && !line.startsWith (COMMENT_START)) {
-                    exclSet.add (ScopeMatcher.forPattern (line));
+                if (!line.isEmpty () && !line.startsWith (commentPrefix)) {
+                    result.add (ScopeMatcher.forPattern (line));
                 }
             }
 
             scanner.close ();
         }
 
-        return exclSet;
+        return result;
     }
 }

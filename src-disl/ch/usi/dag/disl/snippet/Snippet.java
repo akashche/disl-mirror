@@ -7,7 +7,6 @@ import java.util.Set;
 import org.objectweb.asm.Type;
 
 import ch.usi.dag.disl.DiSL.CodeOption;
-import ch.usi.dag.disl.exception.DiSLInitializationException;
 import ch.usi.dag.disl.exception.ProcessorException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.localvar.LocalVars;
@@ -157,7 +156,7 @@ public class Snippet implements Comparable <Snippet> {
     public void init (
         final LocalVars locals, final Map <Type, ArgProcessor> processors,
         final Set <CodeOption> options
-    ) throws DiSLInitializationException, ProcessorException, ReflectionException  {
+    ) throws ProcessorException, ReflectionException  {
         __code = __template.process (locals, processors, marker, options);
     }
 

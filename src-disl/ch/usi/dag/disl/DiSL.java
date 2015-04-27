@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -21,7 +22,6 @@ import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.classparser.DislClasses;
 import ch.usi.dag.disl.exception.DiSLException;
-import ch.usi.dag.disl.exception.DiSLIOException;
 import ch.usi.dag.disl.exception.DiSLInMethodException;
 import ch.usi.dag.disl.exclusion.ExclusionSet;
 import ch.usi.dag.disl.guard.GuardHelper;
@@ -78,7 +78,10 @@ public final class DiSL {
      */
     @Deprecated
     public DiSL (final boolean useDynamicBypass) throws DiSLException {
-        __codeOptions = __codeOptionsFrom (System.getProperties ());
+        final Properties properties = System.getProperties ();
+        __codeOptions = __codeOptionsFrom (
+            Objects.requireNonNull (properties)
+        );
 
         // Add the necessary bypass options for backwards compatibility.
         if (useDynamicBypass) {
@@ -86,9 +89,10 @@ public final class DiSL {
             __codeOptions.add (CodeOption.DYNAMIC_BYPASS);
         }
 
-        __transformers = Transformers.load ();
-        __excludedScopes = ExclusionSet.prepare();
-        __dislClasses = DislClasses.load (__codeOptions);
+        final ClassResources resources = ClassResources.discover (properties);
+        __transformers = Transformers.load (resources.transformers ());
+        __excludedScopes = ExclusionSet.prepare (resources.instrumentationResources ());
+        __dislClasses = DislClasses.load (__codeOptions, resources.dislClasses ());
     }
 
 
@@ -107,8 +111,10 @@ public final class DiSL {
 
 
     /**
-     * Loads transformers, exclusion lists, and DiSL classes with snippets, and
-     * creates an instance of the {@link DiSL} class.
+     * Creates a {@link DiSL} instance. This involves loading and parsing DiSL
+     * classes containing snippets, loading transformer classes, and setting up
+     * exclusion lists. This method uses the system properties to look for
+     * configuration settings.
      *
      * @return A {@link DiSL} instance.
      * @throws DiSLException
@@ -135,9 +141,10 @@ public final class DiSL {
             Objects.requireNonNull (properties)
         );
 
-        final Transformers transformers = Transformers.load ();
-        final Set <Scope> excludedScopes = ExclusionSet.prepare();
-        final DislClasses dislClasses = DislClasses.load (codeOptions);
+        final ClassResources resources = ClassResources.discover (properties);
+        final Transformers transformers = Transformers.load (resources.transformers ());
+        final Set <Scope> excludedScopes = ExclusionSet.prepare (resources.instrumentationResources ());
+        final DislClasses dislClasses = DislClasses.load (codeOptions, resources.dislClasses ());
 
         // TODO put checker here
         // like After should catch normal and abnormal execution
@@ -216,12 +223,13 @@ public final class DiSL {
 
         // evaluate exclusions
         // TODO LB: Add support for inclusion
-        for (final Scope exclScope : __excludedScopes) {
-            if (exclScope.matches (className, methodName, methodDesc)) {
-                __log.debug ("excluding method: %s.%s(%s)",
-                    className, methodName, methodDesc);
-                return false;
-            }
+        final Optional <Scope> excludeMatch = __excludedScopes.stream ()
+            .filter (ex -> ex.matches (className, methodName, methodDesc))
+            .findFirst ();
+
+        if (excludeMatch.isPresent ()) {
+            __log.debug ("excluded %s.%s(%s) via %s", className, methodName, methodDesc, excludeMatch.get ());
+            return false;
         }
 
         // *** match snippet scope ***
@@ -514,7 +522,7 @@ public final class DiSL {
 
     private void __dumpBytesToFile (
         final byte [] classBytes, final String fileName
-    ) throws DiSLIOException {
+    ) {
         try {
             final FileOutputStream fos = new FileOutputStream (fileName);
             try {
@@ -523,7 +531,9 @@ public final class DiSL {
                 fos.close ();
             }
         } catch (final IOException ioe) {
-            throw new DiSLIOException (ioe);
+            __log.warn (
+                ioe, "failed to dump class bytes to %s", fileName
+            );
         }
     }
 

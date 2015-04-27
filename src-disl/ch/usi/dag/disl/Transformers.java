@@ -1,11 +1,9 @@
 package ch.usi.dag.disl;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import ch.usi.dag.disl.cbloader.ManifestHelper;
-import ch.usi.dag.disl.cbloader.ManifestHelper.ManifestInfo;
-import ch.usi.dag.disl.exception.ManifestInfoException;
-import ch.usi.dag.util.Lists;
 
 class Transformers {
 
@@ -45,54 +43,40 @@ class Transformers {
     /**
      * Loads and instantiates {@link Transformer} classes.
      */
-    public static Transformers load () throws TransformerInitializationException {
+    public static Transformers load (final Stream <String> transformers) {
         try {
-            return new Transformers (__loadTransformers ());
-
-        } catch (final ManifestInfoException e) {
-            throw new TransformerInitializationException (
-                e, "failed to load transformers"
+            return new Transformers (
+                transformers
+                    .map (className -> __createTransformer (className))
+                    .collect (Collectors.toList ())
+            );
+        } catch (final Exception e) {
+            throw new InitializationException (
+                e, "failed to load class transformers"
             );
         }
     }
 
-    private static List <Transformer> __loadTransformers ()
-    throws ManifestInfoException, TransformerInitializationException {
-        final List <Transformer> result = Lists.newLinkedList ();
 
-        final ManifestInfo mi = ManifestHelper.getDiSLManifestInfo();
-        if (mi != null) {
-            final String xfClassName = mi.getDislTransformer ();
-            if (xfClassName != null) {
-                result.add (__createTransformer (xfClassName));
-            }
-        }
-
-        return result;
-    }
-
-    private static Transformer __createTransformer (
-        final String className
-    ) throws TransformerInitializationException {
+    private static Transformer __createTransformer (final String className) {
         final Class <?> resolvedClass = __resolveTransformer (className);
         if (Transformer.class.isAssignableFrom (resolvedClass)) {
             return __instantiateTransformer (resolvedClass);
         } else {
-            throw new TransformerInitializationException (
-                "invalid transformer %s: class does not implement %s",
+            throw new InitializationException (
+                "%s does not implement %s",
                 className, Transformer.class.getName ()
             );
         }
     }
 
 
-    private static Class <?> __resolveTransformer (final String className)
-    throws TransformerInitializationException {
+    private static Class <?> __resolveTransformer (final String className) {
         try {
             return Class.forName (className);
 
         } catch (final Exception e) {
-            throw new TransformerInitializationException (
+            throw new InitializationException (
                 e, "failed to resolve transformer %s", className
             );
         }
@@ -101,12 +85,12 @@ class Transformers {
 
     private static Transformer __instantiateTransformer (
         final Class <?> transformerClass
-    ) throws TransformerInitializationException {
+    ) {
         try {
             return (Transformer) transformerClass.newInstance ();
 
         } catch (final Exception e) {
-            throw new TransformerInitializationException (
+            throw new InitializationException (
                 e, "failed to instantiate transformer %s",
                 transformerClass.getName ()
             );

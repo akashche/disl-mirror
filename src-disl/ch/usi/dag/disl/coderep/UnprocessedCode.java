@@ -22,7 +22,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import ch.usi.dag.disl.exception.DiSLInitializationException;
+import ch.usi.dag.disl.InitializationException;
 import ch.usi.dag.disl.exception.ReflectionException;
 import ch.usi.dag.disl.localvar.AbstractLocalVar;
 import ch.usi.dag.disl.localvar.LocalVars;
@@ -80,8 +80,7 @@ public class UnprocessedCode {
 
     //
 
-    public Code process (final LocalVars vars)
-    throws DiSLInitializationException {
+    public Code process (final LocalVars vars) {
         //
         // Analyze code:
         //
@@ -140,14 +139,14 @@ public class UnprocessedCode {
      * @param scTypes
      *        a set of known static context types
      * @return A set of {@link StaticContextMethod} instances.
-     * @throws DiSLInitializationException
+     * @throws InitializationException
      *         if the static context method invocation is invalid, i.e., it
      *         contains arguments, has an invalid return type, or any of the
      *         referenced classes or methods could not be found via reflection
      */
     private Set <StaticContextMethod> __collectStaticContextMethods (
         final InsnList insns, final Set <Type> scTypes
-    ) throws DiSLInitializationException {
+    ) {
         try {
             final ConcurrentMap <String, Boolean> seen = new ConcurrentHashMap <> ();
             return Insns.asList (insns).parallelStream ().unordered ()
@@ -159,8 +158,8 @@ public class UnprocessedCode {
                 .map (insn -> (MethodInsnNode) insn)
                 .filter (insn -> scTypes.contains (Type.getObjectType (insn.owner)))
                 //
-                // Ensure ensure that each static context method invocation is
-                // valid. This means that it does not have any parameters and only
+                // Ensure that each static context method invocation is valid.
+                // This means that it does not have any parameters and only
                 // returns either a primitive type or a String.
                 //
                 .filter (insn -> {
@@ -170,7 +169,7 @@ public class UnprocessedCode {
                     return true;
                 })
                 //
-                // And finally create an instance of static method invocation, but
+                // Finally create an instance of static method invocation, but
                 // only for methods we have not seen so far.
                 //
                 .filter (insn -> seen.putIfAbsent (__methodId (insn), true) == null)
@@ -185,8 +184,8 @@ public class UnprocessedCode {
                 .collect (Collectors.toSet ());
 
         } catch (final InvalidStaticContextInvocationException e) {
-            final MethodInsnNode insn = e.getInsn ();
-            throw new DiSLInitializationException (
+            final MethodInsnNode insn = e.insn ();
+            throw new InitializationException (
                 "%s: invocation of static context method %s.%s: %s",
                 location (insn), JavaNames.internalToCanonical (insn.owner),
                 insn.name, e.getMessage ()

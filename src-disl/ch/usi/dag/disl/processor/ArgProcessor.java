@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import ch.usi.dag.disl.coderep.StaticContextMethod;
-import ch.usi.dag.disl.exception.DiSLInitializationException;
 import ch.usi.dag.disl.localvar.LocalVars;
 
 
@@ -51,8 +50,7 @@ public class ArgProcessor {
     }
 
 
-    public void init (final LocalVars localVars)
-    throws DiSLInitializationException {
+    public void init (final LocalVars localVars) {
         for (final ArgProcessorMethod method : __methods) {
             method.init (localVars);
         }

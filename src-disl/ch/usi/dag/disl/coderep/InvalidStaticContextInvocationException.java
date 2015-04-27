@@ -4,7 +4,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 
 
 @SuppressWarnings ("serial")
-class InvalidStaticContextInvocationException extends RuntimeException {
+final class InvalidStaticContextInvocationException extends RuntimeException {
 
     private final MethodInsnNode __insn;
 
@@ -17,7 +17,7 @@ class InvalidStaticContextInvocationException extends RuntimeException {
         __insn = insn;
     }
 
-    public MethodInsnNode getInsn () {
+    public MethodInsnNode insn () {
         return __insn;
     }
 }
