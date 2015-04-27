@@ -244,19 +244,14 @@ final class RequestProcessor {
 
     //
 
-    public static RequestProcessor newInstance () throws DiSLServerException {
-        try {
-            // TODO LB: Configure bypass on a per-request basis.
-            if (disableBypass) {
-                System.setProperty ("disl.disablebypass", "true");
-            }
-
-            final DiSL disl = DiSL.init ();
-            return new RequestProcessor (disl);
-
-        } catch (final DiSLException de) {
-            throw new DiSLServerException ("failed to initialize DiSL", de);
+    public static RequestProcessor newInstance () throws DiSLException {
+        // TODO LB: Configure bypass on a per-request basis.
+        if (disableBypass) {
+            System.setProperty ("disl.disablebypass", "true");
         }
+
+        final DiSL disl = DiSL.init ();
+        return new RequestProcessor (disl);
     }
 
 }

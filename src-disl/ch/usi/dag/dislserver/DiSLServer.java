@@ -200,8 +200,8 @@ public final class DiSLServer {
         __log.debug ("server starting");
         __serverStarting ();
 
-        final InetSocketAddress address = __getListenAddress ();
-        final ServerSocketChannel socket = __getServerSocket (address);
+        final InetSocketAddress address = __getListenAddressOrDie ();
+        final ServerSocketChannel socket = __getServerSocketOrDie (address);
 
         __log.debug (
             "listening on %s:%d", address.getHostString (), address.getPort ()
@@ -209,7 +209,7 @@ public final class DiSLServer {
 
         //
 
-        final RequestProcessor processor = __getRequestProcessor ();
+        final RequestProcessor processor = __getRequestProcessorOrDie ();
         final ExecutorService executor = Executors.newCachedThreadPool ();
         final DiSLServer server = new DiSLServer ();
 
@@ -227,6 +227,7 @@ public final class DiSLServer {
         System.exit (0);
     }
 
+    //
 
     private static void __serverStarting () {
         final File file = __getFileProperty (__PID_FILE__);
@@ -250,22 +251,19 @@ public final class DiSLServer {
     }
 
 
-    private static InetSocketAddress __getListenAddress () {
-        final int port = Integer.getInteger (PROP_PORT, DEFAULT_PORT);
-        if (port < 1 || port > 65535) {
-            __log.error (
-                "port must be between 1 and 65535, inclusive (found %d)", port
-            );
+    private static InetSocketAddress __getListenAddressOrDie () {
+        try {
+            final int port = Integer.getInteger (PROP_PORT, DEFAULT_PORT);
+            return new InetSocketAddress (port);
 
-            System.exit (1);
-            // unreachable
+        } catch (final IllegalArgumentException iae) {
+            __die (iae, "port must be between 1 and 65535 (inclusive)");
+            throw new AssertionError ("unreachable");
         }
-
-        return new InetSocketAddress (port);
     }
 
 
-    private static ServerSocketChannel __getServerSocket (final SocketAddress addr) {
+    private static ServerSocketChannel __getServerSocketOrDie (final SocketAddress addr) {
         try {
             final ServerSocketChannel ssc = ServerSocketChannel.open ();
             ssc.setOption (StandardSocketOptions.SO_REUSEADDR, true);
@@ -273,30 +271,19 @@ public final class DiSLServer {
             return ssc;
 
         } catch (final IOException ioe) {
-            __log.error ("failed to create socket: %s", ioe.getMessage ());
-            System.exit (1);
-
-            // unreachable
-            return null;
+            __die (ioe, "failed to create socket");
+            throw new AssertionError ("unreachable");
         }
     }
 
 
-    private static RequestProcessor __getRequestProcessor () {
+    private static RequestProcessor __getRequestProcessorOrDie () {
         try {
             return RequestProcessor.newInstance ();
 
-        } catch (final DiSLServerException dse) {
-            __log.error (dse.getMessage ());
-            final Throwable cause = dse.getCause ();
-            if (cause != null) {
-                __log.error (cause.getMessage ());
-            }
-
-            System.exit (1);
-
-            // unreachable
-            return null;
+        } catch (final Exception e) {
+            __die (e, "failed to initialize request processor");
+            throw new AssertionError ("unreachable");
         }
     }
 
@@ -307,6 +294,21 @@ public final class DiSLServer {
 
         } catch (final IOException ioe) {
             __log.warn ("failed to close socket: %s", ioe.getMessage ());
+        }
+    }
+
+
+    private static void __die (final Exception e, final String message) {
+        __logExceptionChain (e, 3);
+        __log.error (message);
+        System.exit (1);
+    }
+
+
+    private static void __logExceptionChain (final Throwable exception, final int limit) {
+        if (exception != null && limit > 0) {
+            __logExceptionChain (exception.getCause (), limit - 1);
+            __log.error (exception.getMessage ());
         }
     }
 
