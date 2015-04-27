@@ -211,6 +211,22 @@
 		<javac destdir="${build.util}" srcdir="${src.util}" debug="true">
 			<classpath refid="log4j.classpath" />
 		</javac>
+
+		<!-- Register logging providers -->
+		<!--
+		<local name="service.dir" />
+		<property name="service.dir" value="${build.util}/META-INF/services" />
+		
+		<local name="logging.package" />
+		<property name="logging.package" value="ch.usi.dag.util.logging" />
+
+		<local name="service.file" />
+		<property name="service.file" value="${service.dir}/${logging.package}.Provider" />
+
+		<mkdir dir="${service.dir}" />
+		<echo file="${service.file}" append="false">${logging.package}.JavaProvider${line.separator}</echo>
+		<echo file="${service.file}" append="true">${logging.package}.Log4jProvider${line.separator}</echo>
+		-->
 	</target>
 
 
