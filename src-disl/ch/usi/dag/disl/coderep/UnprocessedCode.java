@@ -32,6 +32,7 @@ import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.Insn;
+import ch.usi.dag.disl.util.JavaNames;
 import ch.usi.dag.disl.util.ReflectionHelper;
 import ch.usi.dag.disl.util.cfg.CtrlFlowGraph;
 
@@ -187,7 +188,7 @@ public class UnprocessedCode {
             final MethodInsnNode insn = e.getInsn ();
             throw new DiSLInitializationException (
                 "%s: invocation of static context method %s.%s: %s",
-                location (insn), AsmHelper.internalToStdName (insn.owner),
+                location (insn), JavaNames.internalToCanonical (insn.owner),
                 insn.name, e.getMessage ()
             );
         }

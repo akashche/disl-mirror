@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import ch.usi.dag.disl.util.AsmHelper.Insns;
-import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.JavaNames;
 
 /**
  * Marks object creation.
@@ -44,7 +44,7 @@ public class NewObjMarker extends AbstractDWRMarker {
 
                 MethodInsnNode min = (MethodInsnNode) instruction;
 
-                if (Constants.isConstructorName (min.name)) {
+                if (JavaNames.isConstructorName (min.name)) {
                     regions.add(new MarkedRegion(instruction, instruction));
                 }
             }

@@ -53,7 +53,7 @@ public final class JavaNames {
         return name + __CLASS_FILE_EXTENSION__;
     }
 
-    public static String removeClassFileExtension (final String name) {
+    public static String stripClassFileExtension (final String name) {
         final int extensionStart = name.lastIndexOf (__CLASS_FILE_EXTENSION__);
         return (extensionStart >= 0) ? name.substring (0, extensionStart) : name;
     }

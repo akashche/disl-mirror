@@ -14,7 +14,7 @@ import ch.usi.dag.disl.annotation.Before;
 import ch.usi.dag.disl.snippet.Shadow.WeavingRegion;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
-import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.JavaNames;
 
 
 /**
@@ -65,7 +65,7 @@ public class AfterInitBodyMarker extends AbstractMarker {
         //
         // Fast path for non-constructor methods.
         //
-        if (!Constants.isConstructorName (method.name)) {
+        if (!JavaNames.isConstructorName (method.name)) {
             return method.instructions.getFirst ();
         }
 

@@ -16,7 +16,7 @@ import ch.usi.dag.disl.exception.ExclusionPrepareException;
 import ch.usi.dag.disl.exception.ManifestInfoException;
 import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeMatcher;
-import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.JavaNames;
 
 
 public abstract class ExclusionSet {
@@ -27,10 +27,6 @@ public abstract class ExclusionSet {
     private static final String JAR_PATH_BEGIN = "/";
 
     private static final String JAR_PATH_END = "!";
-
-    private static final char JAR_ENTRY_DELIM = '/';
-
-    private static final char CLASS_DELIM = '.';
 
     private static final String ALL_METHODS = ".*";
 
@@ -109,12 +105,10 @@ public abstract class ExclusionSet {
             final String entryName = entry.getName ();
 
             // add all classes to the exclusion list
-            if (entryName.endsWith (Constants.CLASS_EXT)) {
-                String className = entryName.replace (JAR_ENTRY_DELIM, CLASS_DELIM);
-
-                // remove class ext
-                final int classNameEnd = className.lastIndexOf (Constants.CLASS_EXT);
-                className = className.substring (0, classNameEnd);
+            if (JavaNames.hasClassFileExtension (entryName)) {
+                final String className = JavaNames.internalToCanonical (
+                    JavaNames.stripClassFileExtension (entryName)
+                );
 
                 // add exclusion for all methods
                 final String classExcl = className + ALL_METHODS;

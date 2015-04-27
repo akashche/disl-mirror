@@ -39,6 +39,7 @@ import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
 import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.util.Insn;
+import ch.usi.dag.disl.util.JavaNames;
 import ch.usi.dag.disl.weaver.pe.MaxCalculator;
 import ch.usi.dag.disl.weaver.pe.PartialEvaluator;
 
@@ -1093,7 +1094,7 @@ public class WeavingCode {
                             "%s: unexpected bytecode at call site in %s.%s() "+
                             "when applying ArgumentProcessorContext.getArgs() ",
                             __location (snippet, invokeInsn),
-                            AsmHelper.internalToStdName (shadow.getClassNode ().name),
+                            JavaNames.internalToCanonical (shadow.getClassNode ().name),
                             shadow.getMethodNode ().name
                         );
                     }
@@ -1107,7 +1108,7 @@ public class WeavingCode {
                             "%s: failed to obtain source frame at call site in %s.%s() "+
                             "when applying ArgumentProcessorContext.getArgs() ",
                             __location (snippet, invokeInsn),
-                            AsmHelper.internalToStdName (shadow.getClassNode ().name),
+                            JavaNames.internalToCanonical (shadow.getClassNode ().name),
                             shadow.getMethodNode ().name
                         );
                     }

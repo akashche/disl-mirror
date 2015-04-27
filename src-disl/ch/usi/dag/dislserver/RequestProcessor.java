@@ -14,6 +14,7 @@ import ch.usi.dag.disl.DiSL;
 import ch.usi.dag.disl.DiSL.CodeOption;
 import ch.usi.dag.disl.exception.DiSLException;
 import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.JavaNames;
 import ch.usi.dag.disl.util.Logging;
 import ch.usi.dag.util.Strings;
 import ch.usi.dag.util.logging.Logger;
@@ -228,7 +229,7 @@ final class RequestProcessor {
         // dump the class code
         try (
             final FileOutputStream fo = new FileOutputStream (
-                pathWithPkg + simpleClassName + Constants.CLASS_EXT
+                pathWithPkg + JavaNames.appendClassFileExtension (simpleClassName)
             );
         ) {
             fo.write(byteCode);

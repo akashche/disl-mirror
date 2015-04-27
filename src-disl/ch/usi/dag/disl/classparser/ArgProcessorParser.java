@@ -23,7 +23,7 @@ import ch.usi.dag.disl.processor.ArgProcessor;
 import ch.usi.dag.disl.processor.ArgProcessorKind;
 import ch.usi.dag.disl.processor.ArgProcessorMethod;
 import ch.usi.dag.disl.util.AsmHelper;
-import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.JavaNames;
 import ch.usi.dag.util.Strings;
 
 
@@ -70,8 +70,8 @@ class ArgProcessorParser extends AbstractParser {
         try {
             final String className = AsmHelper.className (disClass);
             return disClass.methods.parallelStream ().unordered ()
-                .filter (m -> !Constants.isConstructorName (m.name))
-                .filter (m -> !Constants.isInitializerName (m.name))
+                .filter (m -> !JavaNames.isConstructorName (m.name))
+                .filter (m -> !JavaNames.isInitializerName (m.name))
                 // Throws ParserRuntimeException.
                 .map (m -> __parseMethodWrapper (className, m))
                 .collect (Collectors.toList ());

@@ -32,9 +32,9 @@ import ch.usi.dag.disl.localvar.SyntheticLocalVar;
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
 import ch.usi.dag.disl.util.AsmHelper.Insns;
-import ch.usi.dag.disl.util.Constants;
 import ch.usi.dag.disl.util.FrameHelper;
 import ch.usi.dag.disl.util.Insn;
+import ch.usi.dag.disl.util.JavaNames;
 import ch.usi.dag.disl.util.Logging;
 import ch.usi.dag.disl.util.ReflectionHelper;
 import ch.usi.dag.util.logging.Logger;
@@ -74,7 +74,7 @@ abstract class AbstractParser {
         for (final MethodNode method : dislClass.methods) {
 
             // get the code
-            if (Constants.isInitializerName (method.name)) {
+            if (JavaNames.isInitializerName (method.name)) {
                 cinit = method;
                 break;
             }

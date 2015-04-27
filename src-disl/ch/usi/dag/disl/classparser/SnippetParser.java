@@ -26,12 +26,12 @@ import ch.usi.dag.disl.exception.SnippetParserException;
 import ch.usi.dag.disl.guard.GuardHelper;
 import ch.usi.dag.disl.marker.Marker;
 import ch.usi.dag.disl.marker.Parameter;
-import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.scope.ScopeMatcher;
+import ch.usi.dag.disl.scope.Scope;
 import ch.usi.dag.disl.snippet.Snippet;
 import ch.usi.dag.disl.snippet.SnippetUnprocessedCode;
 import ch.usi.dag.disl.util.AsmHelper;
-import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.JavaNames;
 import ch.usi.dag.disl.util.ReflectionHelper;
 
 
@@ -60,8 +60,8 @@ class SnippetParser extends AbstractParser {
             final String className = AsmHelper.className (dislClass);
 
             snippets.addAll (dislClass.methods.parallelStream ().unordered ()
-                .filter (m -> !Constants.isConstructorName (m.name))
-                .filter (m -> !Constants.isInitializerName (m.name))
+                .filter (m -> !JavaNames.isConstructorName (m.name))
+                .filter (m -> !JavaNames.isInitializerName (m.name))
                 .map (m -> __parseSnippetWrapper (className, m))
                 .collect (Collectors.toList ())
             );
@@ -91,7 +91,6 @@ class SnippetParser extends AbstractParser {
     }
 
 
-    // parse snippet
     private Snippet __parseSnippet (
         final String className, final MethodNode method
     ) throws ParserException, ReflectionException, MarkerException, GuardException  {

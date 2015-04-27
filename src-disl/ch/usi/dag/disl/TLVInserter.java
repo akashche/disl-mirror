@@ -11,7 +11,7 @@ import org.objectweb.asm.commons.AdviceAdapter;
 
 import ch.usi.dag.disl.localvar.ThreadLocalVar;
 import ch.usi.dag.disl.util.AsmHelper;
-import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.JavaNames;
 
 final class TLVInserter extends ClassVisitor {
 
@@ -27,7 +27,7 @@ final class TLVInserter extends ClassVisitor {
             String sig, String[] exceptions) {
 
         // add field initialization
-        if (Constants.isConstructorName (name)) {
+        if (JavaNames.isConstructorName (name)) {
             return new TLVInitializer(super.visitMethod(access, name, desc,
                     sig, exceptions), access, name, desc);
         }

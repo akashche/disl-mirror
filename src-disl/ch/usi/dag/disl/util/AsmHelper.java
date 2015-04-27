@@ -1158,17 +1158,7 @@ public abstract class AsmHelper {
      * @return Canonical class name for the given {@link ClassNode}.
      */
     public static String className (final ClassNode classNode) {
-        return internalToStdName (classNode.name);
-    }
-
-
-    /**
-     * @return Canonical class name for the given internal class name.
-     */
-    public static String internalToStdName (final String internalName) {
-        return internalName.replace (
-            Constants.PACKAGE_INTERN_DELIM, Constants.PACKAGE_STD_DELIM
-        );
+        return JavaNames.internalToCanonical (classNode.name);
     }
 
 }

@@ -3,6 +3,7 @@ package ch.usi.dag.disl.staticcontext;
 import org.objectweb.asm.Opcodes;
 
 import ch.usi.dag.disl.util.Constants;
+import ch.usi.dag.disl.util.JavaNames;
 
 
 /**
@@ -38,9 +39,7 @@ public class MethodStaticContext extends AbstractStaticContext {
      * qualified class name, with packages delimited by the '.' character.
      */
     public String thisClassCanonicalName () {
-        return __classInternalName ().replace (
-            Constants.PACKAGE_INTERN_DELIM, Constants.PACKAGE_STD_DELIM
-        );
+        return JavaNames.internalToCanonical (__classInternalName ());
     }
 
 
@@ -217,7 +216,7 @@ public class MethodStaticContext extends AbstractStaticContext {
      * Returns {@code true} if this method is a constructor.
      */
     public boolean isMethodConstructor () {
-        return Constants.isConstructorName (__methodName ());
+        return JavaNames.isConstructorName (__methodName ());
     }
 
 
@@ -225,7 +224,7 @@ public class MethodStaticContext extends AbstractStaticContext {
      * Returns {@code true} if this method is a class initializer.
      */
     public boolean isMethodInitializer () {
-        return Constants.isInitializerName (__methodName ());
+        return JavaNames.isInitializerName (__methodName ());
     }
 
 
